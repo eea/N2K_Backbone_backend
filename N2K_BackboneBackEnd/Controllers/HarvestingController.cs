@@ -12,10 +12,17 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpGet]
         public IEnumerable<string> Get()
         {
-            return new string[] { "value1", "value2" };
+            return new string[] { "value1", "valueTwo" };
         }
 
-        
+
+        [HttpGet]
+        [Route("HarvestedAA")]
+        public IEnumerable<string> HarvestedAA()
+        {
+            return new string[] { "value1", "value2", "VALUE3" };
+        }
+
         [HttpGet]
         [Route("Harvested")]
         public IEnumerable<string> Harvested()
