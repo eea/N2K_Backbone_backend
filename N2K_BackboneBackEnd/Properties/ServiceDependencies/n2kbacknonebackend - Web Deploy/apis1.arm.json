@@ -97,7 +97,7 @@
               "type": "Microsoft.ApiManagement/service/apis",
               "name": "n2kbacknonebackend-apim/n2kbacknonebackend",
               "properties": {
-                "displayName": "WebApplication1, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "displayName": "N2K_BackboneBackEnd, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
                 "apiRevision": "1",
                 "description": null,
                 "subscriptionRequired": false,
