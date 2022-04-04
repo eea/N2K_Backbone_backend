@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "mssql1": {
-      "secretStore": "AzureAppSettings",
+      "secretStore": "LocalSecretsFile",
       "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/backbonedb/databases/n2k_backnone_db",
       "type": "mssql.azure",
       "connectionId": "ConnectionStrings:N2K_BackboneBackEndContext"

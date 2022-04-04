@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace N2K_BackboneBackEnd.Controllers
 {
@@ -16,16 +17,14 @@ namespace N2K_BackboneBackEnd.Controllers
             _context = context;
         }
 
-
         [Route("GetAsync")]
-        [HttpGet]        
-        public async Task<ActionResult<IEnumerable<SiteChange>>> GetAsync()
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<SiteChange>>> GetDBAsync()
         {
             return await _context.SiteChanges.ToListAsync();
         }
 
 
-        [Route("Get")]
         [HttpGet]
         public IEnumerable<SiteChange> Get()
         {
@@ -33,7 +32,151 @@ namespace N2K_BackboneBackEnd.Controllers
             //return _list.OrderBy(a => a.ChangeId).ToList();
             return _list;
         }
-        
+
+        /*
+        // GET: api/<SiteChangesController>
+        [HttpGet]
+        public ICollection<SiteChange> Get()
+        {
+
+
+            return new SiteChange[] { 
+                new SiteChange {
+                     SiteCode= "ES0000153",
+                     Country= "Spain",
+                     Status= "Accepted",
+                     Tags = null,
+                     ChangeId= 1,
+                     Level="Critical",
+                     ChangeCategory="Area decrease",
+                     ChangeType="AreaHa"
+                },
+                new SiteChange {
+                     SiteCode= "ES0000546",
+                     Country= "Spain",
+                     Status= "Accepted",
+                     Tags= null,
+                     ChangeId= 2,
+                     Level= "Warning",
+                     ChangeCategory= "Site name change",
+                     ChangeType= "Sitename"
+
+                },
+                new SiteChange {
+                     SiteCode= "ES0000390",
+                     Country= "Spain",
+                     Status= "Rejected",
+                     Tags= null,
+                     ChangeId= 3,
+                     Level= "Warning",
+                     ChangeCategory= "Site length change",
+                     ChangeType= "Length (Km)"
+                },
+                new SiteChange {
+                     SiteCode= "ES0000153",
+                     Country= "Spain",
+                     Status= "Accepted",
+                     Tags= null,
+                     ChangeId= 4,
+                     Level= "Critical",
+                     ChangeCategory= "Priority deleted",
+                     ChangeType= "Priority (A, B, C...)"
+
+                },
+                new SiteChange {
+                     SiteCode= "AT1206A00",
+                     Country= "Austria",
+                     Status= "Pending",
+                     Tags= null,
+                     ChangeId= 5,
+                     Level= "Critical",
+                     ChangeCategory= "Cover decrease",
+                     ChangeType= "Cover_ha"
+                },
+                new SiteChange {
+                     SiteCode= "AT1206A00",
+                     Country= "Austria",
+                     Status= "Pending",
+                     Tags= null,
+                     ChangeId= 6,
+                     Level= "Warning",
+                     ChangeCategory= "Centroid change",
+                     ChangeType= "Latitude-Longitude (centroid)"
+                },
+                new SiteChange {
+                     SiteCode= "ES6150012",
+                     Country= "Spain",
+                     Status= "Pending",
+                     Tags= null,
+                     ChangeId= 7,
+                     Level= "Warning",
+                     ChangeCategory= "Site name change",
+                     ChangeType= "Sitename"
+                },
+                new SiteChange {
+                     SiteCode= "ES6150012",
+                     Country= "Spain",
+                     Status= "Pending",
+                     Tags= null,
+                     ChangeId= 8,
+                     Level= "Warning",
+                     ChangeCategory= "Site length change",
+                     ChangeType= "Length (Km)"
+                },
+                new SiteChange {
+                     SiteCode= "ES6150012",
+                     Country= "Spain",
+                     Status= "Pending",
+                     Tags= null,
+                     ChangeId= 9,
+                     Level= "Medium",
+                     ChangeCategory= "Area decrease",
+                     ChangeType= "AreaHa"
+                },
+                new SiteChange {
+                     SiteCode= "ES6150012",
+                     Country= "Spain",
+                     Status= "Pending",
+                     Tags= null,
+                     ChangeId= 10,
+                     Level= "Critical",
+                     ChangeCategory= "Priority deleted",
+                     ChangeType= "Priority (A, B, C...)"
+                },
+                new SiteChange {
+                     SiteCode= "HR3000198",
+                     Country= "Croatia",
+                     Status= "Accepted",
+                     Tags= null,
+                     ChangeId= 11,
+                     Level= "Critical",
+                     ChangeCategory= "Priority deleted",
+                     ChangeType= "Priority (A, B, C...)"
+                },
+                new SiteChange {
+                     SiteCode= "HR3000199",
+                     Country= "Croatia",
+                     Status= "Accepted",
+                     Tags= null,
+                     ChangeId= 12,
+                     Level= "Critical",
+                     ChangeCategory= "Area decrease",
+                     ChangeType= "AreaHa"
+                },
+                new SiteChange {
+                     SiteCode= "FR4301287",
+                     Country= "France",
+                     Status= "Rejected",
+                     Tags= null,
+                     ChangeId= 13,
+                     Level= "Warning",
+                     ChangeCategory= "Site name change",
+                     ChangeType= "Sitename"
+                }
+
+            };
+        }
+        */
 
         // GET api/<SiteChangesController>/5
         [HttpGet("{id}")]
