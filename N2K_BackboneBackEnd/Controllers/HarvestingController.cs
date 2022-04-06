@@ -1,4 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.ServiceResponse;
+using N2K_BackboneBackEnd.Services;
+
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -8,13 +13,69 @@ namespace N2K_BackboneBackEnd.Controllers
     [ApiController]
     public class HarvestingController : ControllerBase
     {
-        // GET: api/<HarvestingController>
-        [HttpGet]
-        public IEnumerable<string> Get()
+
+        private readonly IHarvestedService _harvestedService;
+        private readonly IMapper _mapper;
+
+
+        public HarvestingController(IHarvestedService harvestedService, IMapper mapper)
         {
-            return new string[] { "valueOne", "valueTwo" };
+            _harvestedService = harvestedService;
+            _mapper = mapper;
         }
 
+
+
+        // GET: api/<HarvestingController>
+        [Route("Get")]
+        [HttpGet]
+        public async Task<ActionResult<ServiceResponse<List<Harvesting>>>> Get()
+        {
+            var response = new ServiceResponse<List<Harvesting>>();
+            try
+            {
+                var harvesting = await _harvestedService.GetHarvestedAsync();
+                response.Success = true;
+                response.Message = "";
+                response.Data = harvesting;
+                response.Count = (harvesting == null) ? 0 : harvesting.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<Harvesting>();
+                return Ok(response);
+            }
+        }
+
+
+
+        //Id=>envelopeID
+        [HttpGet("Get/{id}")]
+        public async Task<ActionResult<ServiceResponse<Harvesting>>> Get(int id)
+        {
+            var response = new ServiceResponse<Harvesting>();
+
+            try
+            {
+                var harvesting = await _harvestedService.GetHarvestedAsyncById(id);
+                response.Success = true;
+                response.Message = "";
+                response.Data = harvesting;
+                response.Count = (harvesting == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                return Ok(response);
+            }
+        }
 
 
         [HttpGet]
@@ -55,13 +116,6 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        // GET api/<HarvestingController>/5
-        //Id=>envelopeID
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
 
         // POST api/<HarvestingController>
         [HttpPost]

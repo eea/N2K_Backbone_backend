@@ -2,7 +2,10 @@
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
 using Microsoft.EntityFrameworkCore;
-
+using Newtonsoft.Json;
+using N2K_BackboneBackEnd.ServiceResponse;
+using AutoMapper;
+using N2K_BackboneBackEnd.Services;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
@@ -10,180 +13,90 @@ namespace N2K_BackboneBackEnd.Controllers
     [ApiController]
     public class SiteChangesController : ControllerBase
     {
-        private readonly N2KBackboneContext _context;
+        private readonly ISiteChangesService _siteChangesService;
+        private readonly IMapper _mapper;
 
-        public SiteChangesController(N2KBackboneContext context)
-        {
-            _context = context;
-        }
 
-        [Route("GetAsync")]
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<SiteChange>>> GetDBAsync()
+        public SiteChangesController(ISiteChangesService siteChangesService, IMapper mapper)
         {
-            return await _context.SiteChanges.ToListAsync();
+            _siteChangesService = siteChangesService;
+            _mapper = mapper;
         }
 
 
+        [Route("Get")]
         [HttpGet]
-        public IEnumerable<SiteChange> Get()
+        public async Task<ActionResult<ServiceResponse<List<SiteChange>>>> Get()
         {
-            var _list = _context.SiteChanges.ToList();
-            //return _list.OrderBy(a => a.ChangeId).ToList();
-            return _list;
+            var response = new ServiceResponse<List<SiteChange>>();
+            try
+            {
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync();
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count= (siteChanges== null)?0:siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<SiteChange>();
+                return Ok(response);
+            }
+        }
+
+      
+        
+        [HttpGet("Get/{id}")]
+        public async Task<ActionResult<ServiceResponse<SiteChange>>> Get(int id)
+        {
+            var response = new ServiceResponse<SiteChange>();
+
+            try
+            {
+                var siteChange = await _siteChangesService.GetSiteChangeByIdAsync(id);
+                response.Success = true;
+                response.Message = "";                
+                response.Data = siteChange;
+                response.Count = (siteChange == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                return Ok(response);
+            }
         }
 
         /*
-        // GET: api/<SiteChangesController>
-        [HttpGet]
-        public ICollection<SiteChange> Get()
+        [HttpGet("Get/{id}")]
+        public ActionResult<ServiceResponse<SiteChange>> Get(int id)
         {
-
-
-            return new SiteChange[] { 
-                new SiteChange {
-                     SiteCode= "ES0000153",
-                     Country= "Spain",
-                     Status= "Accepted",
-                     Tags = null,
-                     ChangeId= 1,
-                     Level="Critical",
-                     ChangeCategory="Area decrease",
-                     ChangeType="AreaHa"
-                },
-                new SiteChange {
-                     SiteCode= "ES0000546",
-                     Country= "Spain",
-                     Status= "Accepted",
-                     Tags= null,
-                     ChangeId= 2,
-                     Level= "Warning",
-                     ChangeCategory= "Site name change",
-                     ChangeType= "Sitename"
-
-                },
-                new SiteChange {
-                     SiteCode= "ES0000390",
-                     Country= "Spain",
-                     Status= "Rejected",
-                     Tags= null,
-                     ChangeId= 3,
-                     Level= "Warning",
-                     ChangeCategory= "Site length change",
-                     ChangeType= "Length (Km)"
-                },
-                new SiteChange {
-                     SiteCode= "ES0000153",
-                     Country= "Spain",
-                     Status= "Accepted",
-                     Tags= null,
-                     ChangeId= 4,
-                     Level= "Critical",
-                     ChangeCategory= "Priority deleted",
-                     ChangeType= "Priority (A, B, C...)"
-
-                },
-                new SiteChange {
-                     SiteCode= "AT1206A00",
-                     Country= "Austria",
-                     Status= "Pending",
-                     Tags= null,
-                     ChangeId= 5,
-                     Level= "Critical",
-                     ChangeCategory= "Cover decrease",
-                     ChangeType= "Cover_ha"
-                },
-                new SiteChange {
-                     SiteCode= "AT1206A00",
-                     Country= "Austria",
-                     Status= "Pending",
-                     Tags= null,
-                     ChangeId= 6,
-                     Level= "Warning",
-                     ChangeCategory= "Centroid change",
-                     ChangeType= "Latitude-Longitude (centroid)"
-                },
-                new SiteChange {
-                     SiteCode= "ES6150012",
-                     Country= "Spain",
-                     Status= "Pending",
-                     Tags= null,
-                     ChangeId= 7,
-                     Level= "Warning",
-                     ChangeCategory= "Site name change",
-                     ChangeType= "Sitename"
-                },
-                new SiteChange {
-                     SiteCode= "ES6150012",
-                     Country= "Spain",
-                     Status= "Pending",
-                     Tags= null,
-                     ChangeId= 8,
-                     Level= "Warning",
-                     ChangeCategory= "Site length change",
-                     ChangeType= "Length (Km)"
-                },
-                new SiteChange {
-                     SiteCode= "ES6150012",
-                     Country= "Spain",
-                     Status= "Pending",
-                     Tags= null,
-                     ChangeId= 9,
-                     Level= "Medium",
-                     ChangeCategory= "Area decrease",
-                     ChangeType= "AreaHa"
-                },
-                new SiteChange {
-                     SiteCode= "ES6150012",
-                     Country= "Spain",
-                     Status= "Pending",
-                     Tags= null,
-                     ChangeId= 10,
-                     Level= "Critical",
-                     ChangeCategory= "Priority deleted",
-                     ChangeType= "Priority (A, B, C...)"
-                },
-                new SiteChange {
-                     SiteCode= "HR3000198",
-                     Country= "Croatia",
-                     Status= "Accepted",
-                     Tags= null,
-                     ChangeId= 11,
-                     Level= "Critical",
-                     ChangeCategory= "Priority deleted",
-                     ChangeType= "Priority (A, B, C...)"
-                },
-                new SiteChange {
-                     SiteCode= "HR3000199",
-                     Country= "Croatia",
-                     Status= "Accepted",
-                     Tags= null,
-                     ChangeId= 12,
-                     Level= "Critical",
-                     ChangeCategory= "Area decrease",
-                     ChangeType= "AreaHa"
-                },
-                new SiteChange {
-                     SiteCode= "FR4301287",
-                     Country= "France",
-                     Status= "Rejected",
-                     Tags= null,
-                     ChangeId= 13,
-                     Level= "Warning",
-                     ChangeCategory= "Site name change",
-                     ChangeType= "Sitename"
-                }
-
-            };
+            var response = new ServiceResponse<SiteChange>();
+            try
+            {
+                var siteChange =  _siteChangesService.GetSiteChangeById(id);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChange;
+                response.Count = (siteChange == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                return Ok(response);
+            }
         }
         */
-
-        // GET api/<SiteChangesController>/5
-        [HttpGet("{id}")]
-        public SiteChange Get(int id)
-        {
-            return new SiteChange { ChangeCategory = "Site name change", ChangeId = 1, Country = "ES", Level = "Warning", ChangeType = "Sitename", SiteCode = "ES0000153", Status = "Accepted", Tags = null };
-        }
+        
 
         /*
         // POST api/<SiteChangesController>
@@ -202,6 +115,11 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpDelete("{id}")]
         public void Delete(int id)
         {
+        }
+        
+        private async Task<bool> Save()
+        {
+            return await _dataContext.SaveChangesAsync() >= 0 ? true : false;
         }
         */
     }
