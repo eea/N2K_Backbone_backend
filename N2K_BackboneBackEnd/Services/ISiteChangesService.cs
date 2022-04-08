@@ -6,5 +6,7 @@ namespace N2K_BackboneBackEnd.Services
     {
         Task<List<SiteChange>> GetSiteChangesAsync();
         Task<SiteChange> GetSiteChangeByIdAsync(int id);
+
+        List<SiteChangeExtended> GetSiteChangesFromSP();
     }
 }

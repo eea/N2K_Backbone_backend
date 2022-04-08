@@ -1,6 +1,7 @@
 ﻿using N2K_BackboneBackEnd.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System.Reflection;
 
 namespace N2K_BackboneBackEnd.Data
 {
@@ -12,19 +13,22 @@ namespace N2K_BackboneBackEnd.Data
         { }
 
         public DbSet<SiteChange> SiteChanges { get; set; }
+        public DbSet<SiteChangeExtended> SiteChangesExtended { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<SiteChange>()
-                .ToTable("test_table")
-                .Property(e => e.Status)
-                .HasConversion(new EnumToStringConverter<Enumerations.Status>());
-
-            modelBuilder.Entity<SiteChange>()
-                .ToTable("test_table")
-                .Property(e => e.Level)
-                .HasConversion(new EnumToStringConverter<Enumerations.Level>());
-
+            //create the definitions of Model Entities via individuals OnModelCreating event
+            var types = Assembly.GetExecutingAssembly().GetTypes()
+               .Where(s => s.GetInterfaces().Any(_interface => _interface.Equals(typeof(IEntityModel)) && 
+                    s.IsClass && !s.IsAbstract && s.IsPublic));
+            foreach (var type in types)
+            {
+                if (type != null)
+                {
+                    MethodInfo? v = type.GetMethods().FirstOrDefault(x => x.Name == "OnModelCreating");
+                    if (v != null) v.Invoke(type, new object[] { modelBuilder });
+                }
+            }
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

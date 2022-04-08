@@ -24,6 +24,21 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
+        public List<Harvesting> GetHarvested()
+        {
+            var a = new List<Harvesting>();
+            a.Add(
+                new Harvesting
+                {
+                    Date = DateTime.Now.AddDays(-3),
+                    TemperatureC = 100
+                });
+            return a;
+
+        }
+
+
+
 #pragma warning disable CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
         public async Task<Harvesting> GetHarvestedAsyncById(int id)
 #pragma warning restore CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
