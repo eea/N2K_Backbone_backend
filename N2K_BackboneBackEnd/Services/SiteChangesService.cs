@@ -30,8 +30,6 @@ namespace N2K_BackboneBackEnd.Services
                 .ToList();
 
             return list;                
-            
-
 
             /*
             //For the time we need to execute a sql (StoredProc) that returns an int 
