@@ -51,16 +51,16 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("GetFromSP")]
         [HttpGet]
-        public ActionResult<ServiceResponse<List<SiteChangeExtended>>> GetFromSP()
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeExtended>>>> GetFromSP()
         {
             var response = new ServiceResponse<List<SiteChangeExtended>>();
             try
             {
-                var siteChanges =  _siteChangesService.GetSiteChangesFromSP();
+                var siteChangesExt = await _siteChangesService.GetSiteChangesFromSP();
                 response.Success = true;
                 response.Message = "";
-                response.Data = siteChanges;
-                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                response.Data = siteChangesExt;
+                response.Count = (siteChangesExt == null) ? 0 : siteChangesExt.Count;
                 return Ok(response);
             }
             catch (Exception ex)

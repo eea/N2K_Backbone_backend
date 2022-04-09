@@ -19,15 +19,15 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public List<SiteChangeExtended> GetSiteChangesFromSP()
+        public async Task<List<SiteChangeExtended>> GetSiteChangesFromSP()
         {           
             var param1 = new SqlParameter("@param1", 1);
             var param2 = new SqlParameter("@param2", 2);
 
-            var list = _dataContext.Set<SiteChangeExtended>().FromSqlRaw($"exec dbo.Testing2  @param1, @param2",
+            var list = await _dataContext.Set<SiteChangeExtended>().FromSqlRaw($"exec dbo.Testing2  @param1, @param2",
                             param1, param2)
                 //.AsNoTrackingWithIdentityResolution()
-                .ToList();
+                .ToListAsync();
 
             return list;                
 

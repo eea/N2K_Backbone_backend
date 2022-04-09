@@ -7,17 +7,17 @@ namespace N2K_BackboneBackEnd.Data
 {
     public class N2KBackboneContext : DbContext
     {
-#pragma warning disable CS8618 // Un campo que no acepta valores NULL debe contener un valor distinto de NULL al salir del constructor. Considere la posibilidad de declararlo como que admite un valor NULL.
+#pragma warning disable CS8618 // Accept NULL value.
         public N2KBackboneContext(DbContextOptions<N2KBackboneContext> options) : base(options)
-#pragma warning restore CS8618 // Un campo que no acepta valores NULL debe contener un valor distinto de NULL al salir del constructor. Considere la posibilidad de declararlo como que admite un valor NULL.
+#pragma warning restore CS8618 // Accept NULL value
         { }
 
-        //here define the DB<Entities> for the actual tables in the DB
+        //here define the DB<Entities> only for the actual tables in the DB
         public DbSet<SiteChange> SiteChanges { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            //create the definitions of Model Entities via individuals OnModelCreating event
+            //create the definitions of Model Entities via OnModelCreating individuals in each Entity.cs file
             var types = Assembly.GetExecutingAssembly().GetTypes()
                .Where(s => s.GetInterfaces().Any(_interface => _interface.Equals(typeof(IEntityModel)) && 
                     s.IsClass && !s.IsAbstract && s.IsPublic));
@@ -26,7 +26,10 @@ namespace N2K_BackboneBackEnd.Data
                 if (type != null)
                 {
                     MethodInfo? v = type.GetMethods().FirstOrDefault(x => x.Name == "OnModelCreating");
-                    if (v != null) v.Invoke(type, new object[] { modelBuilder });
+                    if (v != null)
+                        v.Invoke(type, new object[] { modelBuilder });
+                    else
+                        throw new Exception(String.Format("static OnModelCreating of entitity {0} not implemented!!"));
                 }
             }
         }

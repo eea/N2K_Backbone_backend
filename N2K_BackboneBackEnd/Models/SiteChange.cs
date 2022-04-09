@@ -21,11 +21,6 @@ namespace N2K_BackboneBackEnd.Models
         public string? ChangeCategory { get; set; }
         public string? ChangeType { get; set; }
 
-        void IEntityModel.OnModelCreating(ModelBuilder builder)
-        {
-            OnModelCreating(builder);
-        }
-
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SiteChange>()
