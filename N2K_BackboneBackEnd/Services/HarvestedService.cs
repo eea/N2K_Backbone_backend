@@ -14,12 +14,6 @@ namespace N2K_BackboneBackEnd.Services
         public  async Task<List<Harvesting>> GetHarvestedAsync()
         {
             var a= new  List<Harvesting>();
-            a.Add(
-                new Harvesting
-                {
-                    Date = DateTime.Now.AddDays(-3),
-                    TemperatureC = 100
-                });
             return await Task.FromResult(a);
 
         }
@@ -27,12 +21,6 @@ namespace N2K_BackboneBackEnd.Services
         public List<Harvesting> GetHarvested()
         {
             var a = new List<Harvesting>();
-            a.Add(
-                new Harvesting
-                {
-                    Date = DateTime.Now.AddDays(-3),
-                    TemperatureC = 100
-                });
             return a;
 
         }
@@ -44,10 +32,64 @@ namespace N2K_BackboneBackEnd.Services
 #pragma warning restore CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
         {
             return await Task.FromResult(new Harvesting
-                {
-                    Date = DateTime.Now,
-                    TemperatureC = 123
-                });
+            {
+                Id = id,
+                EnvelopeId = id,
+                Country = "Spain",
+                PendingChanges = 0,
+                Status = Enumerations.HarvestingStatus.Pending,
+                SubmissionDate= DateTime.Today
+            });
+
+        }
+
+        public async Task<List<Harvesting>> GetPendingEnvelopes()
+        {
+            var a = new List<Harvesting>();
+            a.Add(
+               new Harvesting {
+                   EnvelopeId = 25654,
+                   Country = "Spain",
+                   PendingChanges = 11,
+                   SubmissionDate = Convert.ToDateTime("04/05/2021"),
+                   Id = 1,
+                   Status = Enumerations.HarvestingStatus.Pending
+             });
+            a.Add(
+               new Harvesting
+               {
+                   EnvelopeId = 25655,
+                   Country = "Spain",
+                   PendingChanges = 5,
+                   SubmissionDate = Convert.ToDateTime("05/05/2021"),
+                   Id = 2,
+                   Status = Enumerations.HarvestingStatus.Pending
+               });
+            a.Add(
+               new Harvesting
+               {
+                   EnvelopeId = 25656,
+                   Country = "Denmark",
+                   PendingChanges = 8,
+                   SubmissionDate = Convert.ToDateTime("06/05/2021"),
+                   Id = 3,
+                   Status = Enumerations.HarvestingStatus.Pending
+               });
+            a.Add(
+               new Harvesting
+               {
+                   EnvelopeId = 25657,
+                   Country = "Austria",
+                   PendingChanges = 10,
+                   SubmissionDate = Convert.ToDateTime("07/05/2021"),
+                   Id = 4,
+                   Status = Enumerations.HarvestingStatus.Pending
+               });
+
+
+            return await Task.FromResult(a);
+
+
 
         }
     }

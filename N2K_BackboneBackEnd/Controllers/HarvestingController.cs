@@ -102,9 +102,26 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [HttpGet]
         [Route("Pending")]
-        public IEnumerable<string> Pending()
+        public async Task<ActionResult<ServiceResponse<Harvesting>>> Pending()
         {
-            return new string[] { "value1", "value2" };
+            var response = new ServiceResponse<List<Harvesting>>();
+            try
+            {
+                var pending = await _harvestedService.GetPendingEnvelopes();
+                response.Success = true;
+                response.Message = "";
+                response.Data = pending;
+                response.Count = (pending == null) ? 0 : pending.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<Harvesting>();
+                return Ok(response);
+            }
         }
 
 

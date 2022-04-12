@@ -1,11 +1,32 @@
-﻿namespace N2K_BackboneBackEnd.Models
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using N2K_BackboneBackEnd.Enumerations;
+
+
+namespace N2K_BackboneBackEnd.Models
 {
-    public class Harvesting
+    public class Harvesting : IEntityModel
     {
+        [Key]
+        public long Id { get; set; }
+        public long EnvelopeId { get; set; }
 
-        public DateTime Date { get; set; }
+        public DateTime SubmissionDate { get; set; }
+        public string? Country { get; set; }
 
-        public int TemperatureC { get; set; }
+        public int PendingChanges { get; set; }
+
+        public HarvestingStatus Status { get; set; } = HarvestingStatus.Pending;
+
+        public static void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<Harvesting>()
+                //.ToTable("test_table")
+                .Property(e => e.Status)
+                .HasConversion(new EnumToStringConverter<Enumerations.HarvestingStatus>());
+        }
+
 
     }
 }

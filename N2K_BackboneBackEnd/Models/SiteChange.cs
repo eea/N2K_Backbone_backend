@@ -8,7 +8,7 @@ namespace N2K_BackboneBackEnd.Models
     public class SiteChange:IEntityModel
     {
         [Key]
-        public int ChangeId { get; set; }
+        public long ChangeId { get; set; }
 
         public string? SiteCode { get; set;  }
         public string? Country { get; set; }

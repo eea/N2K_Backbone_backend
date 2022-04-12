@@ -10,5 +10,7 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<Harvesting> GetHarvestedAsyncById(int id);
 
+        Task<List<Harvesting>> GetPendingEnvelopes();
+
     }
 }
