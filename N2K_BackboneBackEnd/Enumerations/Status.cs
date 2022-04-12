@@ -3,7 +3,7 @@
 namespace N2K_BackboneBackEnd.Enumerations
 {
     [DataContract]
-    public enum Status
+    public enum SiteChangeStatus
     {
         [DataMember]
         Accepted,

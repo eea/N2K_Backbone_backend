@@ -17,7 +17,6 @@ namespace N2K_BackboneBackEnd.Controllers
         private readonly IHarvestedService _harvestedService;
         private readonly IMapper _mapper;
 
-
         public HarvestingController(IHarvestedService harvestedService, IMapper mapper)
         {
             _harvestedService = harvestedService;

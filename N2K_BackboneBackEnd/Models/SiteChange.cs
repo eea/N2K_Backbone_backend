@@ -13,7 +13,7 @@ namespace N2K_BackboneBackEnd.Models
         public string? SiteCode { get; set;  }
         public string? Country { get; set; }
 
-        public Status? Status { get; set; }
+        public SiteChangeStatus? Status { get; set; }
 
         public string? Tags { get; set; }
         
@@ -26,7 +26,7 @@ namespace N2K_BackboneBackEnd.Models
             builder.Entity<SiteChange>()
                 .ToTable("test_table")
                 .Property(e => e.Status)
-                .HasConversion(new EnumToStringConverter<Enumerations.Status>());
+                .HasConversion(new EnumToStringConverter<Enumerations.SiteChangeStatus>());
 
             builder.Entity<SiteChange>()
                 .ToTable("test_table")

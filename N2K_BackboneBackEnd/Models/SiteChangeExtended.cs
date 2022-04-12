@@ -17,7 +17,7 @@ namespace N2K_BackboneBackEnd.Models
             builder.Entity<SiteChangeExtended>()
                 .HasNoKey()
                 .Property(e => e.Status)
-                .HasConversion(new EnumToStringConverter<Enumerations.Status>());
+                .HasConversion(new EnumToStringConverter<Enumerations.SiteChangeStatus>());
 
             builder.Entity<SiteChangeExtended>()
                 .Property(e => e.Level)

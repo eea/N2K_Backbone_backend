@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using N2K_BackboneBackEnd.Services;
+using N2K_BackboneBackEnd.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,10 +17,10 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<ISiteChangesService, SiteChangesService>();
 builder.Services.AddScoped<IHarvestedService, HarvestedService>();
-
-
+builder.Services.AddScoped<IEULoginService, EULoginService>();
 
 builder.Configuration.AddJsonFile("appsettings.json");
+
 
 var connectionString = builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext");
 builder.Services.AddDbContext<N2KBackboneContext>(options  =>
@@ -28,9 +29,8 @@ builder.Services.AddDbContext<N2KBackboneContext>(options  =>
 });
 
 //builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
 builder.Services.AddControllersWithViews();
-
+builder.Services.Configure<ConfigSettings>(builder.Configuration.GetSection("GeneralSettings"));
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
