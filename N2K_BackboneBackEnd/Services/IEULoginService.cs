@@ -5,10 +5,10 @@
 
         Task<string> GetLoginUrl(string redirectionUrl);
 
-        Task<String> GetUsername(string token);
+        Task<string> GetLoginUrl(string redirectionUrl, string code_challenge);
 
-        Task<int> Logout(string token);
-
+        Task<string> GetToken(string redirectionUri, string code, string code_verifier);
         
+        Task<String> GetUsername(string token);
     }
 }

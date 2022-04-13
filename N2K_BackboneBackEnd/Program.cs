@@ -19,11 +19,11 @@ builder.Services.AddScoped<ISiteChangesService, SiteChangesService>();
 builder.Services.AddScoped<IHarvestedService, HarvestedService>();
 builder.Services.AddScoped<IEULoginService, EULoginService>();
 
+builder.Services.AddCors();
 builder.Configuration.AddJsonFile("appsettings.json");
 
-
 var connectionString = builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext");
-builder.Services.AddDbContext<N2KBackboneContext>(options  =>
+builder.Services.AddDbContext<N2KBackboneContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
 });
@@ -34,7 +34,7 @@ builder.Services.Configure<ConfigSettings>(builder.Configuration.GetSection("Gen
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c=> { 
+builder.Services.AddSwaggerGen(c => {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "N2KBacboneAPI", Version = "v1" });
 });
 builder.Services.AddControllers()
@@ -45,12 +45,20 @@ builder.Services.AddControllers()
 
 
 var app = builder.Build();
+//if (app.Environment.IsDevelopment())
+//{
+app.UseCors(x => x
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .SetIsOriginAllowed(origin => true) // allow any origin
+    .AllowCredentials()); // allow credentials
+//}
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
 //{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+app.UseSwagger();
+app.UseSwaggerUI();
 //}
 
 app.UseHttpsRedirection();

@@ -11,6 +11,11 @@
         public string authorisation_url { get; set; } = "";
         public string par_url { get; set; } = "";
 
+        public string token_url { get; set; } = "";
+
+        public int refresh_token_max_age { get; set; }
+
+        public int id_token_max_age { get; set; }
 
     }
 }

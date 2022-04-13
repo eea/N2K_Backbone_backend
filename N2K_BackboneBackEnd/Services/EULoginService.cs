@@ -12,23 +12,10 @@ namespace N2K_BackboneBackEnd.Services
 {
     public class EULoginService : IEULoginService
     {
-        /*
-        private readonly IOptions<ConfigSettings> _appSettings;
-        private readonly IEULoginService _euLoginService;
-        private readonly IMapper _mapper;
-        */
-        /*
-        public EULoginService(IOptions<ConfigSettings> app, IEULoginService euLoginService, IMapper mapper)
-        {
-            _appSettings = app;
-            _euLoginService = euLoginService;
-            _mapper = mapper;
-        }
-        */
 
         private readonly IOptions<ConfigSettings> _appSettings;
 
-        static string ComputeSha256Hash(string rawData)
+        private static string ComputeSha256Hash(string rawData)
         {
             // Create a SHA256   
             using (SHA256 sha256Hash = SHA256.Create())
@@ -55,7 +42,7 @@ namespace N2K_BackboneBackEnd.Services
 
         private static Random random = new Random();
 
-        public static string generateRandomString(int length)
+        private static string generateRandomString(int length)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             return new string(Enumerable.Repeat(chars, length)
@@ -75,7 +62,12 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<string> GetLoginUrl(string redirectionUrl)
         {
+            return await GetLoginUrl(redirectionUrl, generateRandomString(128));
+        }
 
+
+        public async Task<string> GetLoginUrl(string redirectionUrl,string code_challenge)
+        {
             /*** GENERATE THE JWT token object */
             string key = _appSettings.Value.client_secret;
             // Create Security key  using private key above:
@@ -95,7 +87,6 @@ namespace N2K_BackboneBackEnd.Services
 
 
             //build the JSON data payload for the JWT token
-            var code_challenge = generateCodeChallenge(generateRandomString(128));
             TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
             int secondsSinceEpoch = (int)t.TotalSeconds;
 
@@ -104,7 +95,6 @@ namespace N2K_BackboneBackEnd.Services
                  {"code_challenge_method" , "S256" },
                  {"code_challenge",code_challenge },
                  {"exp" , secondsSinceEpoch},
-                 //{"iat" , iat},  
                  {"aud", _appSettings.Value.par_url},
                  { "iss", _appSettings.Value.client_id },
                  {"nonce", Guid.NewGuid().ToString()},
@@ -118,7 +108,8 @@ namespace N2K_BackboneBackEnd.Services
             // Token to String so you can use it in your client
             var tokenString = handler.WriteToken(secToken);
 
-            using (var client = new HttpClient()) { 
+            using (var client = new HttpClient())
+            {
                 //build the POST request so that we can obtain the request_uri
                 var acc = Base64Encode(String.Format("{0}:{1}", _appSettings.Value.client_id, _appSettings.Value.client_secret));
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", acc);
@@ -127,8 +118,8 @@ namespace N2K_BackboneBackEnd.Services
 
                 var values = new Dictionary<string, string>
                     {
-                            { "response_type", "code" },
-                            { "scope", "openid email" },
+                            {"response_type", "code" },
+                            {"scope", "openid email" },
                             {"client_id", _appSettings.Value.client_id },
                             {"redirect_uri",redirectionUrl },
                             {"request",tokenString }
@@ -155,7 +146,7 @@ namespace N2K_BackboneBackEnd.Services
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
                     }
                     res.Dispose();
-                    return  String.Format(@"{0}?client_id={1}&response_type=code&request_uri={2}",
+                    return String.Format(@"{0}?client_id={1}&response_type=code&request_uri={2}",
                         _appSettings.Value.authorisation_url,
                         _appSettings.Value.client_id,
                         requestUri);
@@ -164,20 +155,71 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     return ex.Message;
                 }
-                throw new NotImplementedException();
             }
         }
 
 
+        public async Task<string> GetToken(string redirectionUri, string code, string code_verifier)
+        {
+
+            using (var client = new HttpClient())
+            {
+                //build the POST request so that we can obtain the request_uri
+                var acc = Base64Encode(String.Format("{0}:{1}", _appSettings.Value.client_id, _appSettings.Value.client_secret));
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", acc);
+                //client.DefaultRequestHeaders.Accept
+                //    .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));//ACCEPT header
+
+                var values = new Dictionary<string, string>
+                    {
+                            {"grant_type", "authorization_code" },
+                            {"code", code },
+                            {"code_verifier",  code_verifier },
+                            {"refresh_token_max_age",_appSettings.Value.refresh_token_max_age.ToString() },
+                            {"id_token_max_age", _appSettings.Value.id_token_max_age.ToString()},
+                            {"redirect_uri",redirectionUri},
+                            {"version_ui_required", "false" }
+                    };
+                var content = new FormUrlEncodedContent(values);
+                var uri = _appSettings.Value.token_url;
+
+                try
+                {
+                    var res = await client.PostAsync(uri, content);
+                    var json = await res.Content.ReadAsStringAsync();
+                    JObject jResponse = JObject.Parse(json);
+                    var requestUri = "";
+                    if (jResponse.ContainsKey("id_token"))
+                    {
+#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
+                        requestUri = jResponse.GetValue("id_token").ToString();
+#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
+                    }
+                    else
+                    {
+#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
+                        requestUri = jResponse.GetValue("error_description").ToString();
+#pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
+                    }
+                    res.Dispose();
+                    return String.Format(@"{0}",requestUri);
+                }
+                catch (Exception ex)
+                {
+                    return ex.Message;
+                }
+            }
+        }
+
 
         public async Task<string> GetUsername(string token)
         {
-            throw new NotImplementedException();
-        }
+            var handler = new JwtSecurityTokenHandler();
+            var jwtSecurityToken  = handler.ReadJwtToken(token); 
+            var email = jwtSecurityToken.Claims.First(claim => claim.Type == "email").Value;
 
-        public async Task<int> Logout(string token)
-        {
-            throw new NotImplementedException();
+            return await Task.FromResult(email);
         }
-    }
+   }
 }
+
