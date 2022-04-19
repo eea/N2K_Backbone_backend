@@ -10,12 +10,9 @@ namespace N2K_BackboneBackEnd.Models
     {
         [Key]
         public long Id { get; set; }
-        public long EnvelopeId { get; set; }
 
         public DateTime SubmissionDate { get; set; }
         public string? Country { get; set; }
-
-        public int PendingChanges { get; set; }
 
         public HarvestingStatus Status { get; set; } = HarvestingStatus.Pending;
 

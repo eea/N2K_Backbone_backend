@@ -38,9 +38,7 @@ namespace N2K_BackboneBackEnd.Services
             return await Task.FromResult(new Harvesting
             {
                 Id = id,
-                EnvelopeId = id,
-                Country = "Spain",
-                PendingChanges = 0,
+                Country = "ES",
                 Status = Enumerations.HarvestingStatus.Pending,
                 SubmissionDate= DateTime.Today
             });
@@ -64,10 +62,9 @@ namespace N2K_BackboneBackEnd.Services
             return await Task.FromResult(result);
         }
 
-        public async Task<String> Harvest(int[] envelopeIDs)
+        public async Task<String> Harvest(EnvelopesToProcess[] envelopeIDs)
         {
             var a = "OK";
-
             return await Task.FromResult(a);
         }
 

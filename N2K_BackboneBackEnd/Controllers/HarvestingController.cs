@@ -136,12 +136,12 @@ namespace N2K_BackboneBackEnd.Controllers
         // POST api/<HarvestingController>
         [Route("Harvest/")]
         [HttpPost]
-        public async  Task<ActionResult<String>>  Post([FromBody] int[] envelopeIDs)
+        public async  Task<ActionResult<String>>  Harvest([FromBody] EnvelopesToProcess[] envelopes)
         {
             var response = new ServiceResponse<String>();
             try
             {
-                var pending = await _harvestedService.Harvest(envelopeIDs);
+                var pending = await _harvestedService.Harvest(envelopes);
                 response.Success = true;
                 response.Message = "";
                 response.Data = pending;
