@@ -37,6 +37,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c => {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "N2KBacboneAPI", Version = "v1" });
 });
+
+
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -45,14 +48,14 @@ builder.Services.AddControllers()
 
 
 var app = builder.Build();
-//if (app.Environment.IsDevelopment())
-//{
+if (app.Environment.IsDevelopment())
+{
 app.UseCors(x => x
     .AllowAnyMethod()
     .AllowAnyHeader()
     .SetIsOriginAllowed(origin => true) // allow any origin
     .AllowCredentials()); // allow credentials
-//}
+}
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())

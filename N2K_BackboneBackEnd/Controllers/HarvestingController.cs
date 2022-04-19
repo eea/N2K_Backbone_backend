@@ -134,11 +134,31 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         // POST api/<HarvestingController>
+        [Route("Harvest/")]
         [HttpPost]
-        public void Post([FromBody] string value)
+        public async  Task<ActionResult<String>>  Post([FromBody] int[] envelopeIDs)
         {
+            var response = new ServiceResponse<String>();
+            try
+            {
+                var pending = await _harvestedService.Harvest(envelopeIDs);
+                response.Success = true;
+                response.Message = "";
+                response.Data = pending;
+                response.Count = (pending == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = "";
+                return Ok(response);
+            }
         }
 
+        /*
         // PUT api/<HarvestingController>/5
         [HttpPut("{id}")]
         public void Put(int id, [FromBody] string value)
@@ -150,5 +170,6 @@ namespace N2K_BackboneBackEnd.Controllers
         public void Delete(int id)
         {
         }
+        */
     }
 }

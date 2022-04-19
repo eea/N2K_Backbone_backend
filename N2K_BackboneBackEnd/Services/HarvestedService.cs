@@ -92,5 +92,13 @@ namespace N2K_BackboneBackEnd.Services
 
 
         }
+
+        public async Task<String> Harvest(int[] envelopeIDs)
+        {
+            var a = "OK";
+
+            return await Task.FromResult(a);
+        }
+
     }
 }

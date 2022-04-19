@@ -12,5 +12,7 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<Harvesting>> GetPendingEnvelopes();
 
+
+        Task<String> Harvest(int[] envelopeIDs);
     }
 }
