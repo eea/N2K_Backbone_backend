@@ -34,16 +34,5 @@ namespace N2K_BackboneBackEnd.Data
             }
         }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            var connectionString = configuration.GetConnectionString("N2K_VersioningBackEndContext");
-            optionsBuilder.UseSqlServer(connectionString);
-        }
-
     }
 }

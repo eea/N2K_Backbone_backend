@@ -55,8 +55,7 @@ namespace N2K_BackboneBackEnd.Services
                 var param3 = new SqlParameter("@importdate", procCountry.ImportDate);
 
                 var list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetPendingCountryVersion  @country, @version,@importdate",
-                                param1, param2,param3)
-                    .ToListAsync();
+                                param1, param2,param3).ToListAsync();
                 if (list.Count>0 ) result.AddRange(list);
             }
             return await Task.FromResult(result);

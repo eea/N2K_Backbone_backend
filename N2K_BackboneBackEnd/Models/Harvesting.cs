@@ -19,7 +19,6 @@ namespace N2K_BackboneBackEnd.Models
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<Harvesting>()
-                //.ToTable("test_table")
                 .Property(e => e.Status)
                 .HasConversion(new EnumToStringConverter<Enumerations.HarvestingStatus>());
         }

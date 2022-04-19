@@ -22,10 +22,13 @@ builder.Services.AddScoped<IEULoginService, EULoginService>();
 builder.Services.AddCors();
 builder.Configuration.AddJsonFile("appsettings.json");
 
+
 builder.Services.AddDbContext<N2KBackboneContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
+
 });
+
 
 builder.Services.AddDbContext<N2K_VersioningContext>(options =>
 {
