@@ -5,23 +5,21 @@ using System.Reflection;
 
 namespace N2K_BackboneBackEnd.Data
 {
-    public class N2KBackboneContext : DbContext
+    public class N2K_VersioningContext : DbContext
     {
-#pragma warning disable CS8618 // Accept NULL value.
-        public N2KBackboneContext(DbContextOptions<N2KBackboneContext> options) : base(options)
-#pragma warning restore CS8618 // Accept NULL value
-        { }
+
+        public N2K_VersioningContext(DbContextOptions<N2K_VersioningContext> options) : base(options) { }
+
 
         //here define the DB<Entities> only for the actual tables in the DB
-        public DbSet<SiteChange> SiteChanges { get; set; }
-        public DbSet<ProcessedEnvelopes> ProcessedEnvelopes { get; set; }
+        //public DbSet<SiteChange> SiteChanges { get; set; }
 
-        
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             //create the definitions of Model Entities via OnModelCreating individuals in each Entity.cs file
             var types = Assembly.GetExecutingAssembly().GetTypes()
-               .Where(s => s.GetInterfaces().Any(_interface => _interface.Equals(typeof(IEntityModel)) && 
+               .Where(s => s.GetInterfaces().Any(_interface => _interface.Equals(typeof(IEntityModel)) &&
                     s.IsClass && !s.IsAbstract && s.IsPublic));
             foreach (var type in types)
             {
@@ -43,7 +41,7 @@ namespace N2K_BackboneBackEnd.Data
                 .AddJsonFile("appsettings.json")
                 .Build();
 
-            var connectionString = configuration.GetConnectionString("N2K_BackboneBackEndContext");
+            var connectionString = configuration.GetConnectionString("N2K_VersioningBackEndContext");
             optionsBuilder.UseSqlServer(connectionString);
         }
 

@@ -22,11 +22,17 @@ builder.Services.AddScoped<IEULoginService, EULoginService>();
 builder.Services.AddCors();
 builder.Configuration.AddJsonFile("appsettings.json");
 
-var connectionString = builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext");
 builder.Services.AddDbContext<N2KBackboneContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
 });
+
+builder.Services.AddDbContext<N2K_VersioningContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_VersioningBackEndContext"));
+});
+
+
 
 //builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddControllersWithViews();

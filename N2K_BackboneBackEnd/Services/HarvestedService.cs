@@ -1,4 +1,6 @@
-﻿using N2K_BackboneBackEnd.Data;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
 
 namespace N2K_BackboneBackEnd.Services
@@ -6,10 +8,12 @@ namespace N2K_BackboneBackEnd.Services
     public class HarvestedService : IHarvestedService
     {
         private readonly N2KBackboneContext _dataContext;
+        private readonly N2K_VersioningContext _versioningContext;
 
-        public HarvestedService(N2KBackboneContext dataContext)
+        public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext)
         {
             _dataContext = dataContext;
+            _versioningContext = versioningContext;
         }
         public  async Task<List<Harvesting>> GetHarvestedAsync()
         {
@@ -45,52 +49,19 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
-            var a = new List<Harvesting>();
-            a.Add(
-               new Harvesting {
-                   EnvelopeId = 25654,
-                   Country = "Spain",
-                   PendingChanges = 11,
-                   SubmissionDate = Convert.ToDateTime("04/05/2021"),
-                   Id = 1,
-                   Status = Enumerations.HarvestingStatus.Pending
-             });
-            a.Add(
-               new Harvesting
-               {
-                   EnvelopeId = 25655,
-                   Country = "Spain",
-                   PendingChanges = 5,
-                   SubmissionDate = Convert.ToDateTime("05/05/2021"),
-                   Id = 2,
-                   Status = Enumerations.HarvestingStatus.Pending
-               });
-            a.Add(
-               new Harvesting
-               {
-                   EnvelopeId = 25656,
-                   Country = "Denmark",
-                   PendingChanges = 8,
-                   SubmissionDate = Convert.ToDateTime("06/05/2021"),
-                   Id = 3,
-                   Status = Enumerations.HarvestingStatus.Pending
-               });
-            a.Add(
-               new Harvesting
-               {
-                   EnvelopeId = 25657,
-                   Country = "Austria",
-                   PendingChanges = 10,
-                   SubmissionDate = Convert.ToDateTime("07/05/2021"),
-                   Id = 4,
-                   Status = Enumerations.HarvestingStatus.Pending
-               });
+            var result = new List<Harvesting>();
+            var processed = await _dataContext.ProcessedEnvelopes.ToListAsync();
+            foreach (var procCountry in processed) {
+                var param1 = new SqlParameter("@country", procCountry.Country );
+                var param2 = new SqlParameter("@version", procCountry.Version);
+                var param3 = new SqlParameter("@importdate", procCountry.ImportDate);
 
-
-            return await Task.FromResult(a);
-
-
-
+                var list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetPendingCountryVersion  @country, @version,@importdate",
+                                param1, param2,param3)
+                    .ToListAsync();
+                if (list.Count>0 ) result.AddRange(list);
+            }
+            return await Task.FromResult(result);
         }
 
         public async Task<String> Harvest(int[] envelopeIDs)
