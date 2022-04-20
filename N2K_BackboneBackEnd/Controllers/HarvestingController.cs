@@ -136,16 +136,16 @@ namespace N2K_BackboneBackEnd.Controllers
         // POST api/<HarvestingController>
         [Route("Harvest/")]
         [HttpPost]
-        public async  Task<ActionResult<String>>  Harvest([FromBody] EnvelopesToProcess[] envelopes)
+        public async  Task<ActionResult<List<SiteChange>>>  Harvest([FromBody] EnvelopesToProcess[] envelopes)
         {
-            var response = new ServiceResponse<String>();
+            var response = new ServiceResponse<List<SiteChange>>();
             try
             {
-                var pending = await _harvestedService.Harvest(envelopes);
+                var siteChanges = await _harvestedService.Harvest(envelopes);
                 response.Success = true;
                 response.Message = "";
-                response.Data = pending;
-                response.Count = (pending == null) ? 0 : 1;
+                response.Data = siteChanges;
+                response.Count = (siteChanges  == null) ? 0 : siteChanges.Count;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -153,7 +153,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = "";
+                response.Data = new List<SiteChange>();
                 return Ok(response);
             }
         }

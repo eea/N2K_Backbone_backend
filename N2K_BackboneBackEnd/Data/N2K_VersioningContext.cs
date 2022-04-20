@@ -10,11 +10,7 @@ namespace N2K_BackboneBackEnd.Data
 
         public N2K_VersioningContext(DbContextOptions<N2K_VersioningContext> options) : base(options) { }
 
-
-        //here define the DB<Entities> only for the actual tables in the DB
-        //public DbSet<SiteChange> SiteChanges { get; set; }
-
-
+        //here define the DB<Entities> only for the existing tables in the DB
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             //create the definitions of Model Entities via OnModelCreating individuals in each Entity.cs file

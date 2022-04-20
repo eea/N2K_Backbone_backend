@@ -61,10 +61,32 @@ namespace N2K_BackboneBackEnd.Services
             return await Task.FromResult(result);
         }
 
-        public async Task<String> Harvest(EnvelopesToProcess[] envelopeIDs)
+        public async Task<List<SiteChange>> Harvest(EnvelopesToProcess[] envelopeIDs)
         {
-            var a = "OK";
-            return await Task.FromResult(a);
+
+            var changes = new List<SiteChange>();
+            var latestVersions = await _dataContext.ProcessedEnvelopes.ToListAsync();
+
+            latestVersions.Where( v=> v.Country== envelopeIDs[0].CountryCode).FirstOrDefault();
+
+
+            //from the view vLatestProcessedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
+
+
+
+            //Load all sites with the CountryVersionID-CountryCode from Versioning
+
+
+
+
+
+            //For each site in Versioning compare it with the that site in backboneDB
+
+            //if there is a change load it to changes list
+
+
+
+            return changes;
         }
 
     }

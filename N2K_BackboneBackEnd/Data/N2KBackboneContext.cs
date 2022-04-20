@@ -12,10 +12,9 @@ namespace N2K_BackboneBackEnd.Data
 #pragma warning restore CS8618 // Accept NULL value
         { }
 
-        //here define the DB<Entities> only for the actual tables in the DB
+        //here define the DB<Entities> only for the existing tables in the DB
         public DbSet<SiteChange> SiteChanges { get; set; }
         public DbSet<ProcessedEnvelopes> ProcessedEnvelopes { get; set; }
-
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
