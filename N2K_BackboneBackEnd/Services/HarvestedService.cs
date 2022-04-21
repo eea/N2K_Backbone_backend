@@ -113,27 +113,40 @@ namespace N2K_BackboneBackEnd.Services
                             changes.Add(siteChange);
                             numChanges++;
                         }
-                        if (harvestingSite.SiteType != storedSite.SiteType)
+                        //if (harvestingSite.SiteType != storedSite.SiteType)
+                        //{
+                        //    var siteChange = new SiteChangeDb();
+                        //    siteChange.SiteCode = harvestingSite.SiteCode;
+                        //    siteChange.ChangeCategory = "SiteType Changed";
+                        //    siteChange.ChangeType = "SiteType Changed";
+                        //    siteChange.Country = envelopeIDs[i].CountryCode;
+                        //    siteChange.Level = Enumerations.Level.Critical;
+                        //    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        //    siteChange.Tags = string.Empty;
+                        //    changes.Add(siteChange);
+                        //    numChanges++;
+                        //}
+                        if (harvestingSite.AreaHa > storedSite.AreaHa)
                         {
                             var siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "Site General Info";
-                            siteChange.ChangeType = "SiteType Changed";
+                            siteChange.ChangeCategory = "Area Increased";
+                            siteChange.ChangeType = "Area Increased";
                             siteChange.Country = envelopeIDs[i].CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
+                            siteChange.Level = Enumerations.Level.Warning;
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
                             changes.Add(siteChange);
                             numChanges++;
                         }
-                        if (harvestingSite.AreaHa != storedSite.AreaHa)
+                        if (harvestingSite.AreaHa < storedSite.AreaHa)
                         {
                             var siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "Site General Info";
+                            siteChange.ChangeCategory = "Area Changed";
                             siteChange.ChangeType = "Area Changed";
                             siteChange.Country = envelopeIDs[i].CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
+                            siteChange.Level = Enumerations.Level.Medium;
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
                             changes.Add(siteChange);
