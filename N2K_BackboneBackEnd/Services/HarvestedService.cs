@@ -62,11 +62,11 @@ namespace N2K_BackboneBackEnd.Services
             return await Task.FromResult(result);
         }
 
-        public async Task<String> Harvest(EnvelopesToProcess[] envelopeIDs)
+        public async Task<int?> Harvest(EnvelopesToProcess[] envelopeIDs)
         {
             var changes = new List<SiteChangeDb>();
             var latestVersions = await _dataContext.ProcessedEnvelopes.ToListAsync();
-
+            var numChanges = 0;
             await _dataContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.test_table");
 
             //from the view vLatestProcessedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
@@ -111,6 +111,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
                             changes.Add(siteChange);
+                            numChanges++;
                         }
                         if (harvestingSite.SiteType != storedSite.SiteType)
                         {
@@ -123,6 +124,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
                             changes.Add(siteChange);
+                            numChanges++;
                         }
                         if (harvestingSite.AreaHa != storedSite.AreaHa)
                         {
@@ -135,6 +137,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
                             changes.Add(siteChange);
+                            numChanges++;
                         }
                         if (harvestingSite.LengthKm != storedSite.LengthKm)
                         {
@@ -147,6 +150,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
                             changes.Add(siteChange);
+                            numChanges++;
                         }
                     }
                     else
@@ -161,6 +165,7 @@ namespace N2K_BackboneBackEnd.Services
                             Status = Enumerations.SiteChangeStatus.Pending,
                             Tags = string.Empty
                         });
+                        numChanges++;
                     }
                 }
                 try
@@ -176,7 +181,7 @@ namespace N2K_BackboneBackEnd.Services
                 //if there is a change load it to changes list
             }
 
-            return "okay";
+            return numChanges;
         }
 
     }

@@ -13,19 +13,18 @@ namespace N2K_BackboneBackEnd.Services
         {
             _dataContext = dataContext;
         }
-        public async Task<List<SiteChange>> GetSiteChangesAsync()
+        public async Task<List<SiteChangeViewModel>> GetSiteChangesAsync()
         {
             var changes = await _dataContext.SiteChanges.OrderBy(s => s.SiteCode).ToListAsync();
-            var result = new List<SiteChange>();
+            var result = new List<SiteChangeViewModel>();
             var siteCode = string.Empty;
-            var siteChange = new SiteChange();
+            var siteChange = new SiteChangeViewModel();
             foreach (var change in changes)
             {
                 if (change.SiteCode != siteCode)
                 {
                     if (siteCode != String.Empty) result.Add(siteChange);
-                    siteChange = new SiteChange();
-                    siteChange.Subrows = new List<SiteChange>();
+                    siteChange = new SiteChangeViewModel();
                     siteChange.ChangeId = change.ChangeId;
                     siteChange.SiteCode = change.SiteCode;
                     siteCode = change.SiteCode;
@@ -40,8 +39,8 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else
                 {
-                    if (siteChange.Subrows == null) siteChange.Subrows = new List<SiteChange>();
-                    siteChange.Subrows.Add(new SiteChange
+                    if (siteChange.Subrows == null) siteChange.Subrows = new List<SiteChangeView>();
+                    siteChange.Subrows.Add(new SiteChangeView
                     {
                         ChangeId = change.ChangeId,
                         SiteCode = string.Empty,
@@ -51,7 +50,6 @@ namespace N2K_BackboneBackEnd.Services
                         Country = change.Country,
                         Level = change.Level,
                         Status = change.Status,
-                        Subrows = new List<SiteChange>(),
                         Tags = string.Empty
                     });
                 }
@@ -60,12 +58,12 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<SiteChangeExtended>> GetSiteChangesFromSP()
+        public async Task<List<SiteChangeViewModel>> GetSiteChangesFromSP()
         {
             var param1 = new SqlParameter("@param1", 1);
             var param2 = new SqlParameter("@param2", 2);
 
-            var list = await _dataContext.Set<SiteChangeExtended>().FromSqlRaw($"exec dbo.Testing2  @param1, @param2",
+            var list = await _dataContext.Set<SiteChangeViewModel>().FromSqlRaw($"exec dbo.Testing2  @param1, @param2",
                             param1, param2)
                 //.AsNoTrackingWithIdentityResolution()
                 .ToListAsync();
@@ -109,13 +107,8 @@ namespace N2K_BackboneBackEnd.Services
             return Convert.ToInt32(userIdParam.Value);
 
                     */
-
         }
 
-        private Task<List<SiteChangeExtended>> Task(Func<List<SiteChangeExtended>> p)
-        {
-            throw new NotImplementedException();
-        }
 
 
 #pragma warning disable CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita

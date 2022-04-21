@@ -5,7 +5,7 @@ using N2K_BackboneBackEnd.Enumerations;
 
 namespace N2K_BackboneBackEnd.Models
 {
-    public class SiteChange:IEntityModel
+    public class SiteChangeView:IEntityModel
     {
         [Key]
         public long ChangeId { get; set; }
@@ -23,15 +23,13 @@ namespace N2K_BackboneBackEnd.Models
 
         public string? Action { get; set; } = string.Empty;
 
-        public List<SiteChange>? Subrows { get; set; } = new List<SiteChange>();
-
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<SiteChange>()
+            builder.Entity<SiteChangeView>()
                 .Property(e => e.Status)
                 .HasConversion(new EnumToStringConverter<Enumerations.SiteChangeStatus>());
 
-            builder.Entity<SiteChange>()
+            builder.Entity<SiteChangeView>()
                 .Property(e => e.Level)
                 .HasConversion(new EnumToStringConverter<Enumerations.Level>());
         }

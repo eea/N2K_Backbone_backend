@@ -26,9 +26,9 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("Get")]
         [HttpGet]
-        public async Task<ActionResult<ServiceResponse<List<SiteChange>>>> Get()
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeViewModel>>>> Get()
         {
-            var response = new ServiceResponse<List<SiteChange>>();
+            var response = new ServiceResponse<List<SiteChangeViewModel>>();
             try
             {
                 var siteChanges = await _siteChangesService.GetSiteChangesAsync();
@@ -43,32 +43,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<SiteChange>();
-                return Ok(response);
-            }
-        }
-
-
-        [Route("GetFromSP")]
-        [HttpGet]
-        public async Task<ActionResult<ServiceResponse<List<SiteChangeExtended>>>> GetFromSP()
-        {
-            var response = new ServiceResponse<List<SiteChangeExtended>>();
-            try
-            {
-                var siteChangesExt = await _siteChangesService.GetSiteChangesFromSP();
-                response.Success = true;
-                response.Message = "";
-                response.Data = siteChangesExt;
-                response.Count = (siteChangesExt == null) ? 0 : siteChangesExt.Count;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = new List<SiteChangeExtended>();
+                response.Data = new List<SiteChangeViewModel>();
                 return Ok(response);
             }
         }

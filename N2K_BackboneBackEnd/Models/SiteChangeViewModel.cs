@@ -5,25 +5,25 @@ using N2K_BackboneBackEnd.Enumerations;
 namespace N2K_BackboneBackEnd.Models
 {
     [Keyless]
-    public class SiteChangeExtended : SiteChange, IEntityModel
+    public class SiteChangeViewModel : SiteChangeView, IEntityModel
     {
+        public List<SiteChangeView>? Subrows { get; set; } = new List<SiteChangeView>();
 
-        public int? Extended1 { get; set; }
-        public int? Extended2 { get; set; }
+        public SiteChangeViewModel()
+        {
+            this.Subrows = new List<SiteChangeView> ();
+        }
+
 
         new public static void OnModelCreating(ModelBuilder builder)
         {
-            //definition of the DB entities, sources and enumerations
-            builder.Entity<SiteChangeExtended>()
-                .HasNoKey()
+            builder.Entity<SiteChangeDb>()
                 .Property(e => e.Status)
                 .HasConversion(new EnumToStringConverter<Enumerations.SiteChangeStatus>());
 
-            builder.Entity<SiteChangeExtended>()
+            builder.Entity<SiteChangeDb>()
                 .Property(e => e.Level)
                 .HasConversion(new EnumToStringConverter<Enumerations.Level>());
-
         }
-
     }
 }
