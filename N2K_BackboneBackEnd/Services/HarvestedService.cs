@@ -62,11 +62,11 @@ namespace N2K_BackboneBackEnd.Services
             return await Task.FromResult(result);
         }
 
-        public async Task<int?> Harvest(EnvelopesToProcess[] envelopeIDs)
+        public async Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs)
         {
+            var result = new List<HarvestedEnvelope>();
             var changes = new List<SiteChangeDb>();
             var latestVersions = await _dataContext.ProcessedEnvelopes.ToListAsync();
-            var numChanges = 0;
             await _dataContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.test_table");
 
             //from the view vLatestProcessedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
@@ -74,6 +74,14 @@ namespace N2K_BackboneBackEnd.Services
             //Load all sites with the CountryVersionID-CountryCode from Versioning
             for (var i = 0; i < envelopeIDs.Length; i++)
             {
+
+                var processedEnv = new HarvestedEnvelope
+                {
+                    CountryCode= envelopeIDs[i].CountryCode,
+                    VersionId=  envelopeIDs[i].VersionId,
+                    NumChanges =0
+                };
+                                          
                 var country = latestVersions.Where(v => v.Country == envelopeIDs[i].CountryCode).FirstOrDefault(); //Coger la ultima version de ese country
                 var lastReferenceCountryVersion = 0;
                 if (country != null)
@@ -111,7 +119,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
                             changes.Add(siteChange);
-                            numChanges++;
+                            processedEnv.NumChanges++;
                         }
                         //if (harvestingSite.SiteType != storedSite.SiteType)
                         //{
@@ -137,7 +145,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
                             changes.Add(siteChange);
-                            numChanges++;
+                            processedEnv.NumChanges++;
                         }
                         if (harvestingSite.AreaHa < storedSite.AreaHa)
                         {
@@ -150,7 +158,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
                             changes.Add(siteChange);
-                            numChanges++;
+                            processedEnv.NumChanges++;
                         }
                         if (harvestingSite.LengthKm != storedSite.LengthKm)
                         {
@@ -163,7 +171,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
                             changes.Add(siteChange);
-                            numChanges++;
+                            processedEnv.NumChanges++;
                         }
                     }
                     else
@@ -178,23 +186,22 @@ namespace N2K_BackboneBackEnd.Services
                             Status = Enumerations.SiteChangeStatus.Pending,
                             Tags = string.Empty
                         });
-                        numChanges++;
-                    }
+                        processedEnv.NumChanges++;
+                    }                    
                 }
+                result.Add(processedEnv);
                 try
                 {
                     _dataContext.SiteChanges.AddRange(changes);
                     _dataContext.SaveChanges();
                 }
-                catch (Exception ex)
+                catch 
                 {
-                    var a = ex.Message;
                     throw;
                 }
-                //if there is a change load it to changes list
             }
 
-            return numChanges;
+            return result;
         }
 
     }
