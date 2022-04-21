@@ -143,8 +143,8 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             var siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "Area Changed";
-                            siteChange.ChangeType = "Area Changed";
+                            siteChange.ChangeCategory = "Area Decreased";
+                            siteChange.ChangeType = "Area Decreased";
                             siteChange.Country = envelopeIDs[i].CountryCode;
                             siteChange.Level = Enumerations.Level.Medium;
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
