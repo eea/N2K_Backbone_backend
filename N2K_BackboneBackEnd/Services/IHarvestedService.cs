@@ -13,6 +13,6 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<Harvesting>> GetPendingEnvelopes();
 
 
-        Task<List<SiteChange>> Harvest(EnvelopesToProcess[] envelopeIDs);
+        Task<String> Harvest(EnvelopesToProcess[] envelopeIDs);
     }
 }

@@ -76,9 +76,9 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         [HttpGet("Get/{id}")]
-        public async Task<ActionResult<ServiceResponse<SiteChange>>> Get(int id)
+        public async Task<ActionResult<ServiceResponse<SiteChangeDb>>> Get(int id)
         {
-            var response = new ServiceResponse<SiteChange>();
+            var response = new ServiceResponse<SiteChangeDb>();
 
             try
             {

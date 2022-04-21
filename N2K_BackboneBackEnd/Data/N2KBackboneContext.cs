@@ -13,7 +13,8 @@ namespace N2K_BackboneBackEnd.Data
         { }
 
         //here define the DB<Entities> only for the existing tables in the DB
-        public DbSet<SiteChange> SiteChanges { get; set; }
+        //public DbSet<SiteChange> SiteChanges { get; set; }
+        public DbSet<SiteChangeDb> SiteChanges { get; set; }
         public DbSet<ProcessedEnvelopes> ProcessedEnvelopes { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -15,12 +15,53 @@ namespace N2K_BackboneBackEnd.Services
         }
         public async Task<List<SiteChange>> GetSiteChangesAsync()
         {
-            var result = await _dataContext.SiteChanges.ToListAsync();
+            var changes = await _dataContext.SiteChanges.OrderBy(s => s.SiteCode).ToListAsync();
+            var result = new List<SiteChange>();
+            var siteCode = string.Empty;
+            var siteChange = new SiteChange();
+            foreach (var change in changes)
+            {
+                if (change.SiteCode != siteCode)
+                {
+                    if (siteCode != String.Empty) result.Add(siteChange);
+                    siteChange = new SiteChange();
+                    siteChange.Subrows = new List<SiteChange>();
+                    siteChange.ChangeId = change.ChangeId;
+                    siteChange.SiteCode = change.SiteCode;
+                    siteCode = change.SiteCode;
+                    siteChange.ChangeCategory = change.ChangeCategory;
+                    siteChange.ChangeType = change.ChangeType;
+                    siteChange.Action = String.Empty;
+                    siteChange.Country = change.Country;
+                    siteChange.Level = change.Level;
+                    siteChange.Status = change.Status;
+                    siteChange.Tags = change.Tags;
+
+                }
+                else
+                {
+                    if (siteChange.Subrows == null) siteChange.Subrows = new List<SiteChange>();
+                    siteChange.Subrows.Add(new SiteChange
+                    {
+                        ChangeId = change.ChangeId,
+                        SiteCode = string.Empty,
+                        Action = string.Empty,
+                        ChangeCategory = change.ChangeCategory,
+                        ChangeType = change.ChangeType,
+                        Country = change.Country,
+                        Level = change.Level,
+                        Status = change.Status,
+                        Subrows = new List<SiteChange>(),
+                        Tags = string.Empty
+                    });
+                }
+            }
+            if (siteCode != String.Empty) result.Add(siteChange);
             return result;
         }
 
         public async Task<List<SiteChangeExtended>> GetSiteChangesFromSP()
-        {           
+        {
             var param1 = new SqlParameter("@param1", 1);
             var param2 = new SqlParameter("@param2", 2);
 
@@ -29,7 +70,7 @@ namespace N2K_BackboneBackEnd.Services
                 //.AsNoTrackingWithIdentityResolution()
                 .ToListAsync();
 
-            return list;                
+            return list;
 
             /*
             //For the time we need to execute a sql (StoredProc) that returns an int 
@@ -48,7 +89,7 @@ namespace N2K_BackboneBackEnd.Services
             // Output
             // InputOutput -- which does pass a value to Stored Procedure and retains a new state
             userIdParam.Direction = ParameterDirection.Output;
-    
+
             // we can also use context.Database.ExecuteSqlCommand() or awaitable ExecuteSqlCommandAsync()
             // which also produces the same result - but the method is now marked obselete
             // so we use ExecuteSqlRawAsync() instead
@@ -61,7 +102,7 @@ namespace N2K_BackboneBackEnd.Services
                     oidProviderParam, 
                     oidParam, 
                     userIdParam);
-    
+
             // the userIdParam which represents the Output param
             // now holds the Id of the new user and is an Object type
             // so we convert it to an Integer and send
@@ -78,7 +119,7 @@ namespace N2K_BackboneBackEnd.Services
 
 
 #pragma warning disable CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
-        public async Task<SiteChange?> GetSiteChangeByIdAsync(int id)
+        public async Task<SiteChangeDb?> GetSiteChangeByIdAsync(int id)
 #pragma warning restore CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
         {
             return await _dataContext.SiteChanges.SingleOrDefaultAsync(s => s.ChangeId == id);
