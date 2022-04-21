@@ -13,29 +13,30 @@ namespace N2K_BackboneBackEnd.Services
         {
             _dataContext = dataContext;
         }
-        public async Task<List<SiteChangeViewModel>> GetSiteChangesAsync()
+        public async Task<List<SiteChangeDb>> GetSiteChangesAsync()
         {
             var changes = await _dataContext.SiteChanges.OrderBy(s => s.SiteCode).ToListAsync();
-            var result = new List<SiteChangeViewModel>();
+            var result = new List<SiteChangeDb>();
             var siteCode = string.Empty;
-            var siteChange = new SiteChangeViewModel();
+            //var siteChange = new SiteChangeDb();
             foreach (var change in changes)
             {
-                if (change.SiteCode != siteCode)
-                {
-                    if (siteCode != String.Empty) result.Add(siteChange);
-                    siteChange = new SiteChangeViewModel();
+                //if (change.SiteCode != siteCode)
+                //{
+                    //if (siteCode != String.Empty) result.Add(siteChange);
+                    var siteChange = new SiteChangeDb();
                     siteChange.ChangeId = change.ChangeId;
                     siteChange.SiteCode = change.SiteCode;
                     siteCode = change.SiteCode;
                     siteChange.ChangeCategory = change.ChangeCategory;
                     siteChange.ChangeType = change.ChangeType;
-                    siteChange.Action = String.Empty;
                     siteChange.Country = change.Country;
                     siteChange.Level = change.Level;
                     siteChange.Status = change.Status;
                     siteChange.Tags = change.Tags;
+                    result.Add(siteChange);
 
+                /*
                 }
                 else
                 {
@@ -53,8 +54,9 @@ namespace N2K_BackboneBackEnd.Services
                         Tags = string.Empty
                     });
                 }
+                */
             }
-            if (siteCode != String.Empty) result.Add(siteChange);
+            //if (siteCode != String.Empty) result.Add(siteChange);
             return result;
         }
 

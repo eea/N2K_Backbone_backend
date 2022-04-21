@@ -104,7 +104,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             var siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "SiteName Changed";
+                            siteChange.ChangeCategory = "Site General Info";
                             siteChange.ChangeType = "SiteName Changed";
                             siteChange.Country = envelopeIDs[i].CountryCode;
                             siteChange.Level = Enumerations.Level.Warning;
@@ -117,7 +117,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             var siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "SiteType Changed";
+                            siteChange.ChangeCategory = "Site General Info";
                             siteChange.ChangeType = "SiteType Changed";
                             siteChange.Country = envelopeIDs[i].CountryCode;
                             siteChange.Level = Enumerations.Level.Critical;
@@ -130,7 +130,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             var siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "Area Changed";
+                            siteChange.ChangeCategory = "Site General Info";
                             siteChange.ChangeType = "Area Changed";
                             siteChange.Country = envelopeIDs[i].CountryCode;
                             siteChange.Level = Enumerations.Level.Critical;
@@ -143,7 +143,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             var siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "Length Changed";
+                            siteChange.ChangeCategory = "Site General Info";
                             siteChange.ChangeType = "Length Changed";
                             siteChange.Country = envelopeIDs[i].CountryCode;
                             siteChange.Level = Enumerations.Level.Warning;
