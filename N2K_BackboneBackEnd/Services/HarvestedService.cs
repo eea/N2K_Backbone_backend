@@ -77,11 +77,11 @@ namespace N2K_BackboneBackEnd.Services
 
                 var processedEnv = new HarvestedEnvelope
                 {
-                    CountryCode= envelopeIDs[i].CountryCode,
-                    VersionId=  envelopeIDs[i].VersionId,
-                    NumChanges =0
+                    CountryCode = envelopeIDs[i].CountryCode,
+                    VersionId = envelopeIDs[i].VersionId,
+                    NumChanges = 0
                 };
-                                          
+
                 var country = latestVersions.Where(v => v.Country == envelopeIDs[i].CountryCode).FirstOrDefault(); //Coger la ultima version de ese country
                 var lastReferenceCountryVersion = 0;
                 if (country != null)
@@ -102,12 +102,28 @@ namespace N2K_BackboneBackEnd.Services
                 }
 
 
-                //For each site in Versioning compare it with the that site in backboneDB
+                //For each site in Versioning compare it with that site in backboneDB
+#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
                 foreach (var harvestingSite in sitesVersioning)
                 {
                     var storedSite = referencedSites.Where(s => s.SiteCode == harvestingSite.SiteCode).FirstOrDefault();
                     if (storedSite != null)
                     {
+                        //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
+                        //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
+                        var siteAreaHaTolerance = 0.0;
+                        var siteLengthKmTolerance = 0.0;
+                        var habitatCoverHaTolerance = 0.0;
+
+                        #region SiteAttributesChecking
+                        //Null values are turned into empty strings and -1
+                        if (storedSite.SiteName == null) storedSite.SiteName = "";
+                        if (harvestingSite.SiteName == null) harvestingSite.SiteName = "";
+                        if (storedSite.AreaHa == null) storedSite.AreaHa = -1;
+                        if (harvestingSite.AreaHa == null) harvestingSite.AreaHa = -1;
+                        if (storedSite.LengthKm == null) storedSite.LengthKm = -1;
+                        if (harvestingSite.LengthKm == null) harvestingSite.LengthKm = -1;
+
                         if (harvestingSite.SiteName != storedSite.SiteName)
                         {
                             var siteChange = new SiteChangeDb();
@@ -125,7 +141,7 @@ namespace N2K_BackboneBackEnd.Services
                         //{
                         //    var siteChange = new SiteChangeDb();
                         //    siteChange.SiteCode = harvestingSite.SiteCode;
-                        //    siteChange.ChangeCategory = "SiteType Changed";
+                        //    siteChange.ChangeCategory = "Site General Info";
                         //    siteChange.ChangeType = "SiteType Changed";
                         //    siteChange.Country = envelopeIDs[i].CountryCode;
                         //    siteChange.Level = Enumerations.Level.Critical;
@@ -136,25 +152,44 @@ namespace N2K_BackboneBackEnd.Services
                         //}
                         if (harvestingSite.AreaHa > storedSite.AreaHa)
                         {
-                            var siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "Site General Info";
-                            siteChange.ChangeType = "Area Increased";
-                            siteChange.Country = envelopeIDs[i].CountryCode;
-                            siteChange.Level = Enumerations.Level.Warning;
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                            siteChange.Tags = string.Empty;
-                            changes.Add(siteChange);
-                            processedEnv.NumChanges++;
+                            if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
+                            {
+                                var siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.ChangeCategory = "Change of area";
+                                siteChange.ChangeType = "Area Increased";
+                                siteChange.Country = envelopeIDs[i].CountryCode;
+                                siteChange.Level = Enumerations.Level.Warning;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Tags = string.Empty;
+                                changes.Add(siteChange);
+                                processedEnv.NumChanges++;
+                            }
                         }
-                        if (harvestingSite.AreaHa < storedSite.AreaHa)
+                        else if (harvestingSite.AreaHa < storedSite.AreaHa)
+                        {
+                            if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
+                            {
+                                var siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.ChangeCategory = "Change of area";
+                                siteChange.ChangeType = "Area Decreased";
+                                siteChange.Country = envelopeIDs[i].CountryCode;
+                                siteChange.Level = Enumerations.Level.Medium;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Tags = string.Empty;
+                                changes.Add(siteChange);
+                                processedEnv.NumChanges++;
+                            }
+                        }
+                        else if (harvestingSite.AreaHa != storedSite.AreaHa)
                         {
                             var siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "Site General Info";
-                            siteChange.ChangeType = "Area Decreased";
+                            siteChange.ChangeCategory = "Change of area";
+                            siteChange.ChangeType = "Area Change";
                             siteChange.Country = envelopeIDs[i].CountryCode;
-                            siteChange.Level = Enumerations.Level.Medium;
+                            siteChange.Level = Enumerations.Level.Warning;
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
                             changes.Add(siteChange);
@@ -162,17 +197,297 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         if (harvestingSite.LengthKm != storedSite.LengthKm)
                         {
-                            var siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "Site General Info";
-                            siteChange.ChangeType = "Length Changed";
-                            siteChange.Country = envelopeIDs[i].CountryCode;
-                            siteChange.Level = Enumerations.Level.Warning;
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                            siteChange.Tags = string.Empty;
-                            changes.Add(siteChange);
-                            processedEnv.NumChanges++;
+                            if (Math.Abs((double)(harvestingSite.LengthKm - storedSite.LengthKm)) > siteLengthKmTolerance)
+                            {
+                                var siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.ChangeCategory = "Site General Info";
+                                siteChange.ChangeType = "Length Changed";
+                                siteChange.Country = envelopeIDs[i].CountryCode;
+                                siteChange.Level = Enumerations.Level.Warning;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Tags = string.Empty;
+                                changes.Add(siteChange);
+                                processedEnv.NumChanges++;
+                            }
                         }
+                        #endregion
+
+                        var param3 = new SqlParameter("@site", harvestingSite.SiteCode);
+
+                        #region HabitatChecking
+                        var habitatVersioning = await _versioningContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetHabitatDataByCountryIdAndCountryCodeAndSiteCode  @country, @version, @site",
+                                        param1, param2, param3).ToListAsync();
+                        var referencedHabitats = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCode  @site",
+                                        param3).ToListAsync();
+                        //For each habitat in Versioning compare it with that habitat in backboneDB
+                        foreach (var harvestingHabitat in habitatVersioning)
+                        {
+                            var storedHabitat = referencedHabitats.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
+                            if (storedHabitat != null)
+                            {
+                                //Null values are turned into empty strings and -1
+                                if (storedHabitat.RelSurface == null) storedHabitat.RelSurface = "";
+                                if (harvestingHabitat.RelSurface == null) harvestingHabitat.RelSurface = "";
+                                if (storedHabitat.Representativity == null) storedHabitat.Representativity = "";
+                                if (harvestingHabitat.Representativity == null) harvestingHabitat.Representativity = "";
+                                if (storedHabitat.Cover_ha == null) storedHabitat.Cover_ha = -1;
+                                if (harvestingHabitat.Cover_ha == null) harvestingHabitat.Cover_ha = -1;
+
+                                if (((storedHabitat.RelSurface.ToUpper() == "A" || storedHabitat.RelSurface.ToUpper() == "B") && harvestingHabitat.RelSurface.ToUpper() == "C")
+                                    || (storedHabitat.RelSurface.ToUpper() == "A" && harvestingHabitat.RelSurface.ToUpper() == "B"))
+                                {
+                                    var siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = harvestingSite.SiteCode;
+                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeType = "Relative surface Decrease";
+                                    siteChange.Country = envelopeIDs[i].CountryCode;
+                                    siteChange.Level = Enumerations.Level.Medium;
+                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                    siteChange.Tags = string.Empty;
+                                    changes.Add(siteChange);
+                                    processedEnv.NumChanges++;
+                                }
+                                else if (((storedHabitat.RelSurface.ToUpper() == "B" || storedHabitat.RelSurface.ToUpper() == "C") && harvestingHabitat.RelSurface.ToUpper() == "A")
+                                    || (storedHabitat.RelSurface.ToUpper() == "C" && harvestingHabitat.RelSurface.ToUpper() == "B"))
+                                {
+                                    var siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = harvestingSite.SiteCode;
+                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeType = "Relative surface Increase";
+                                    siteChange.Country = envelopeIDs[i].CountryCode;
+                                    siteChange.Level = Enumerations.Level.Warning;
+                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                    siteChange.Tags = string.Empty;
+                                    changes.Add(siteChange);
+                                    processedEnv.NumChanges++;
+                                }
+                                else if (storedHabitat.RelSurface.ToUpper() != harvestingHabitat.RelSurface.ToUpper())
+                                {
+                                    var siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = harvestingSite.SiteCode;
+                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeType = "Relative surface Change";
+                                    siteChange.Country = envelopeIDs[i].CountryCode;
+                                    siteChange.Level = Enumerations.Level.Warning;
+                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                    siteChange.Tags = string.Empty;
+                                    changes.Add(siteChange);
+                                    processedEnv.NumChanges++;
+                                }
+                                if (storedHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.Representativity.ToUpper() == "D")
+                                {
+                                    var siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = harvestingSite.SiteCode;
+                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeType = "Representativity Decrease";
+                                    siteChange.Country = envelopeIDs[i].CountryCode;
+                                    siteChange.Level = Enumerations.Level.Medium;
+                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                    siteChange.Tags = string.Empty;
+                                    changes.Add(siteChange);
+                                    processedEnv.NumChanges++;
+                                }
+                                else if (storedHabitat.Representativity.ToUpper() == "D" && harvestingHabitat.Representativity.ToUpper() != "D")
+                                {
+                                    var siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = harvestingSite.SiteCode;
+                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeType = "Representativity Increase";
+                                    siteChange.Country = envelopeIDs[i].CountryCode;
+                                    siteChange.Level = Enumerations.Level.Warning;
+                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                    siteChange.Tags = string.Empty;
+                                    changes.Add(siteChange);
+                                    processedEnv.NumChanges++;
+                                }
+                                else if (storedHabitat.Representativity.ToUpper() != harvestingHabitat.Representativity.ToUpper())
+                                {
+                                    var siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = harvestingSite.SiteCode;
+                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeType = "Representativity Change";
+                                    siteChange.Country = envelopeIDs[i].CountryCode;
+                                    siteChange.Level = Enumerations.Level.Warning;
+                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                    siteChange.Tags = string.Empty;
+                                    changes.Add(siteChange);
+                                    processedEnv.NumChanges++;
+                                }
+                                if (storedHabitat.Cover_ha > harvestingHabitat.Cover_ha)
+                                {
+                                    if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
+                                    {
+                                        var siteChange = new SiteChangeDb();
+                                        siteChange.SiteCode = harvestingSite.SiteCode;
+                                        siteChange.ChangeCategory = "Species and habitats";
+                                        siteChange.ChangeType = "Cover_ha Decrease";
+                                        siteChange.Country = envelopeIDs[i].CountryCode;
+                                        siteChange.Level = Enumerations.Level.Medium;
+                                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                        siteChange.Tags = string.Empty;
+                                        changes.Add(siteChange);
+                                        processedEnv.NumChanges++;
+                                    }
+                                }
+                                else if (storedHabitat.Cover_ha < harvestingHabitat.Cover_ha)
+                                {
+                                    if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
+                                    {
+                                        var siteChange = new SiteChangeDb();
+                                        siteChange.SiteCode = harvestingSite.SiteCode;
+                                        siteChange.ChangeCategory = "Species and habitats";
+                                        siteChange.ChangeType = "Cover_ha Increase";
+                                        siteChange.Country = envelopeIDs[i].CountryCode;
+                                        siteChange.Level = Enumerations.Level.Warning;
+                                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                        siteChange.Tags = string.Empty;
+                                        changes.Add(siteChange);
+                                        processedEnv.NumChanges++;
+                                    }
+                                }
+                                else if (storedHabitat.Cover_ha != harvestingHabitat.Cover_ha)
+                                {
+                                    var siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = harvestingSite.SiteCode;
+                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeType = "Cover_ha Change";
+                                    siteChange.Country = envelopeIDs[i].CountryCode;
+                                    siteChange.Level = Enumerations.Level.Warning;
+                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                    siteChange.Tags = string.Empty;
+                                    changes.Add(siteChange);
+                                    processedEnv.NumChanges++;
+                                }
+                            }
+                            else
+                            {
+                                changes.Add(new SiteChangeDb
+                                {
+                                    SiteCode = harvestingSite.SiteCode,
+                                    ChangeCategory = "Habitat Added",
+                                    ChangeType = "Habitat Added",
+                                    Country = envelopeIDs[i].CountryCode,
+                                    Level = Enumerations.Level.Warning,
+                                    Status = Enumerations.SiteChangeStatus.Pending,
+                                    Tags = string.Empty
+                                });
+                                processedEnv.NumChanges++;
+                            }
+                        }
+
+                        //For each habitat in backboneDB check if the habitat still exists in Versioning
+                        foreach (var storedHabitat in referencedHabitats)
+                        {
+                            var harvestingHabitat = habitatVersioning.Where(s => s.HabitatCode == storedHabitat.HabitatCode).FirstOrDefault();
+                            if (harvestingHabitat == null)
+                            {
+                                changes.Add(new SiteChangeDb
+                                {
+                                    SiteCode = storedSite.SiteCode,
+                                    ChangeCategory = "Habitat Deleted",
+                                    ChangeType = "Habitat Deleted",
+                                    Country = envelopeIDs[i].CountryCode,
+                                    Level = Enumerations.Level.Critical,
+                                    Status = Enumerations.SiteChangeStatus.Pending,
+                                    Tags = string.Empty
+                                });
+                                processedEnv.NumChanges++;
+                            }
+                        }
+                        #endregion
+
+                        #region SpeciesChecking
+                        var speciesVersioning = await _versioningContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetSpeciesDataByCountryIdAndCountryCodeAndSiteCode  @country, @version, @site",
+                                        param1, param2, param3).ToListAsync();
+                        var referencedSpecies = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCode  @site",
+                                        param3).ToListAsync();
+                        //For each species in Versioning compare it with that species in backboneDB
+                        foreach (var harvestingSpecies in speciesVersioning)
+                        {
+                            var storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+                            if (storedSpecies != null)
+                            {
+                                //Null values are turned into empty strings
+                                if (storedSpecies.Population == null) storedSpecies.Population = "";
+                                if (harvestingSpecies.Population == null) harvestingSpecies.Population = "";
+
+                                if (storedSpecies.Population.ToUpper() != "D" && harvestingSpecies.Population.ToUpper() == "D")
+                                {
+                                    var siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = harvestingSite.SiteCode;
+                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeType = "Population Increase";
+                                    siteChange.Country = envelopeIDs[i].CountryCode;
+                                    siteChange.Level = Enumerations.Level.Medium;
+                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                    siteChange.Tags = string.Empty;
+                                    changes.Add(siteChange);
+                                    processedEnv.NumChanges++;
+                                }
+                                else if (storedSpecies.Population.ToUpper() == "D" && harvestingSpecies.Population.ToUpper() != "D")
+                                {
+                                    var siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = harvestingSite.SiteCode;
+                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeType = "Population Decrease";
+                                    siteChange.Country = envelopeIDs[i].CountryCode;
+                                    siteChange.Level = Enumerations.Level.Warning;
+                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                    siteChange.Tags = string.Empty;
+                                    changes.Add(siteChange);
+                                    processedEnv.NumChanges++;
+                                }
+                                else if (storedSpecies.Population.ToUpper() != harvestingSpecies.Population.ToUpper())
+                                {
+                                    var siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = harvestingSite.SiteCode;
+                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeType = "Population Change";
+                                    siteChange.Country = envelopeIDs[i].CountryCode;
+                                    siteChange.Level = Enumerations.Level.Warning;
+                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                    siteChange.Tags = string.Empty;
+                                    changes.Add(siteChange);
+                                    processedEnv.NumChanges++;
+                                }
+                            }
+                            else
+                            {
+                                changes.Add(new SiteChangeDb
+                                {
+                                    SiteCode = harvestingSite.SiteCode,
+                                    ChangeCategory = "Species Added",
+                                    ChangeType = "Species Added",
+                                    Country = envelopeIDs[i].CountryCode,
+                                    Level = Enumerations.Level.Warning,
+                                    Status = Enumerations.SiteChangeStatus.Pending,
+                                    Tags = string.Empty
+                                });
+                                processedEnv.NumChanges++;
+                            }
+                        }
+
+                        //For each species in backboneDB check if the species still exists in Versioning
+                        foreach (var storedSpecies in referencedSpecies)
+                        {
+                            var harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode).FirstOrDefault();
+                            if (harvestingSpecies == null)
+                            {
+                                changes.Add(new SiteChangeDb
+                                {
+                                    SiteCode = storedSite.SiteCode,
+                                    ChangeCategory = "Species Deleted",
+                                    ChangeType = "Species Deleted",
+                                    Country = envelopeIDs[i].CountryCode,
+                                    Level = Enumerations.Level.Critical,
+                                    Status = Enumerations.SiteChangeStatus.Pending,
+                                    Tags = string.Empty
+                                });
+                                processedEnv.NumChanges++;
+                            }
+                        }
+                        #endregion
                     }
                     else
                     {
@@ -187,15 +502,36 @@ namespace N2K_BackboneBackEnd.Services
                             Tags = string.Empty
                         });
                         processedEnv.NumChanges++;
-                    }                    
+                    }
                 }
+
+                //For each site in backboneDB check if the site still exists in Versioning
+                foreach (var storedSite in referencedSites)
+                {
+                    var harvestingSite = sitesVersioning.Where(s => s.SiteCode == storedSite.SiteCode).FirstOrDefault();
+                    if (harvestingSite == null)
+                    {
+                        changes.Add(new SiteChangeDb
+                        {
+                            SiteCode = storedSite.SiteCode,
+                            ChangeCategory = "Site Deleted",
+                            ChangeType = "Site Deleted",
+                            Country = envelopeIDs[i].CountryCode,
+                            Level = Enumerations.Level.Critical,
+                            Status = Enumerations.SiteChangeStatus.Pending,
+                            Tags = string.Empty
+                        });
+                        processedEnv.NumChanges++;
+                    }
+                }
+
                 result.Add(processedEnv);
                 try
                 {
                     _dataContext.SiteChanges.AddRange(changes);
                     _dataContext.SaveChanges();
                 }
-                catch 
+                catch
                 {
                     throw;
                 }
