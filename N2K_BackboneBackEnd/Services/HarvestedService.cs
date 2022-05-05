@@ -97,29 +97,50 @@ namespace N2K_BackboneBackEnd.Services
                 var harvSiteCode = new HarvestSiteCode(); 
                 await harvSiteCode.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId);
 
-                if (lastReferenceCountryVersion!=0) { 
+                if (lastReferenceCountryVersion!=0) {
+                    var tablesToHarvest =new  Dictionary<int, IHarvestingTables>();
+
+                    var harvestingTasks = new List<Task<int>>();
+                    var validatingTasks = new List<Task<int>>();
 
                     //2. Once SiteCodes is harvested we can run a number of task in parallel
                     //Run the validation
-                    var siteVal= harvSiteCode.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion);
+                    validatingTasks.Add(harvSiteCode.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion));
 
-                    //harvest habitats
+                    //harvest 
                     var habitats = new HarvestHabitats();
-                    //harvest and wait until it is completed to validate
-                    await Task.WhenAny(new List<Task<int>> { habitats.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId) });
-                    //await habitats.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion);
+                    var habitatsTask = habitats.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId);
+                    tablesToHarvest.Add(habitatsTask.Id, habitats);
+                    harvestingTasks.Add(habitatsTask);
+
+                    var species = new HarvestSpecies();
+                    var speciesTask = species.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId);
+                    tablesToHarvest.Add(speciesTask.Id, species);
+                    harvestingTasks.Add(speciesTask);
 
 
-
-                    //harvest species
-
+                    //validate when the harvesting of each one is completed
+                    while (harvestingTasks.Count > 0)
+                    {
+                        var finishedTask = await Task.WhenAny(harvestingTasks);
+                        if (finishedTask != null && finishedTask.Id>0)
+                        {
+                            IHarvestingTables harvest = tablesToHarvest.GetValueOrDefault(finishedTask.Id);
+                            validatingTasks.Add(harvest.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion));                            
+                        }
+                        harvestingTasks.Remove(finishedTask);
+                    }
                     //...
 
+                    //wait until validation tasks are finished
+                    while (validatingTasks.Count > 0)
+                    {
+                        var finishedTask = await Task.WhenAny(validatingTasks);
+                        validatingTasks.Remove(finishedTask);
+                    }
+                    tablesToHarvest.Clear();
+
                 }
-
-
-
-
 
                 /*
                 var param1 = new SqlParameter("@country", envelopeIDs[i].CountryCode);
