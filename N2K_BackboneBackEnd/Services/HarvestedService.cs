@@ -2,6 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.VersioningDB;
+using N2K_BackboneBackEnd.Models.BackboneDB;
+using N2K_BackboneBackEnd.Models.ViewModel;
+
 using N2K_BackboneBackEnd.Services.HarvestingProcess;
 
 namespace N2K_BackboneBackEnd.Services
@@ -75,7 +79,7 @@ namespace N2K_BackboneBackEnd.Services
             var result = new List<HarvestedEnvelope>();
             var changes = new List<SiteChangeDb>();
             var latestVersions = await _dataContext.ProcessedEnvelopes.ToListAsync();
-            
+
 
             //from the view vLatestProcessedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
 
@@ -94,7 +98,7 @@ namespace N2K_BackboneBackEnd.Services
                 if (country != null)   lastReferenceCountryVersion = country.Version;
 
                 //1. Harvest SiteCodes
-                var harvSiteCode = new HarvestSiteCode(); 
+                var harvSiteCode = new HarvestSiteCode(_dataContext, _versioningContext);
                 await harvSiteCode.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId);
 
                 if (lastReferenceCountryVersion!=0) {
@@ -108,12 +112,12 @@ namespace N2K_BackboneBackEnd.Services
                     validatingTasks.Add(harvSiteCode.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion));
 
                     //harvest 
-                    var habitats = new HarvestHabitats();
+                    var habitats = new HarvestHabitats(_dataContext, _versioningContext);
                     var habitatsTask = habitats.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId);
                     tablesToHarvest.Add(habitatsTask.Id, habitats);
                     harvestingTasks.Add(habitatsTask);
 
-                    var species = new HarvestSpecies();
+                    var species = new HarvestSpecies(_dataContext, _versioningContext);
                     var speciesTask = species.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId);
                     tablesToHarvest.Add(speciesTask.Id, species);
                     harvestingTasks.Add(speciesTask);
@@ -125,8 +129,9 @@ namespace N2K_BackboneBackEnd.Services
                         var finishedTask = await Task.WhenAny(harvestingTasks);
                         if (finishedTask != null && finishedTask.Id>0)
                         {
-                            IHarvestingTables harvest = tablesToHarvest.GetValueOrDefault(finishedTask.Id);
-                            validatingTasks.Add(harvest.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion));                            
+                            IHarvestingTables? harvest = tablesToHarvest.GetValueOrDefault(finishedTask.Id);
+                            if (harvest!= null)
+                                validatingTasks.Add(harvest.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion));                            
                         }
                         harvestingTasks.Remove(finishedTask);
                     }

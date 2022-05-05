@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
 
-namespace N2K_BackboneBackEnd.Models
+namespace N2K_BackboneBackEnd.Models.ViewModel
 {
     public class SiteChangeView:IEntityModel
     {

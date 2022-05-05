@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.BackboneDB;
+using N2K_BackboneBackEnd.Models.VersioningDB;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using N2K_BackboneBackEnd.ServiceResponse;

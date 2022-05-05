@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
-namespace N2K_BackboneBackEnd.Models
+namespace N2K_BackboneBackEnd.Models.BackboneDB
 {
     public class ProcessedEnvelopes : IEntityModel
     {

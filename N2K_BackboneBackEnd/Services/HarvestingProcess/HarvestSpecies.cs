@@ -1,7 +1,13 @@
-﻿namespace N2K_BackboneBackEnd.Services.HarvestingProcess
+﻿using N2K_BackboneBackEnd.Data;
+
+namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 {
-    public class HarvestSpecies : IHarvestingTables
+    public class HarvestSpecies : BaseHarvestingProcess, IHarvestingTables
     {
+        public HarvestSpecies(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext) : base(dataContext, versioningContext)
+        {
+        }
+
         public async Task<int> Harvest(string countryCode, int versionId)
         {
             Console.WriteLine("=>Start species harvest...");
