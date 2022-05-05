@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Services.HarvestingProcess;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -57,7 +58,14 @@ namespace N2K_BackboneBackEnd.Services
 
                 var list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetPendingCountryVersion  @country, @version,@importdate",
                                 param1, param2, param3).ToListAsync();
-                if (list.Count > 0) result.AddRange(list);
+                if (list.Count > 0)
+                {
+                    foreach (var aaa in list)
+                    {
+                        if (!result.Contains(aaa))
+                            result.AddRange(list.Distinct());
+                    }                        
+                }
             }
             return await Task.FromResult(result);
         }
@@ -67,7 +75,7 @@ namespace N2K_BackboneBackEnd.Services
             var result = new List<HarvestedEnvelope>();
             var changes = new List<SiteChangeDb>();
             var latestVersions = await _dataContext.ProcessedEnvelopes.ToListAsync();
-            await _dataContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.test_table");
+            
 
             //from the view vLatestProcessedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
 
@@ -75,12 +83,12 @@ namespace N2K_BackboneBackEnd.Services
             for (var i = 0; i < envelopeIDs.Length; i++)
             {
 
-                var processedEnv = new HarvestedEnvelope
-                {
-                    CountryCode = envelopeIDs[i].CountryCode,
-                    VersionId = envelopeIDs[i].VersionId,
-                    NumChanges = 0
-                };
+
+                //remove version from database
+                var param1 = new SqlParameter("@country", envelopeIDs[i].CountryCode);
+                var param2 = new SqlParameter("@version", envelopeIDs[i].VersionId);
+                await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spRemoveVersionFromDB  @country, @version", param1, param2);
+                
 
                 var country = latestVersions.Where(v => v.Country == envelopeIDs[i].CountryCode).FirstOrDefault(); //Coger la ultima version de ese country
                 var lastReferenceCountryVersion = 0;
@@ -88,6 +96,32 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     lastReferenceCountryVersion = country.Version;
                 }
+
+
+                //1. Harvest SiteCodes
+                var harvSiteCode = new HarvestSiteCode(); 
+                await harvSiteCode.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId);
+
+                if (lastReferenceCountryVersion!=0) { 
+
+                    //2. Once SiteCodes is harvested
+                    //Run the validation
+                    await harvSiteCode.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion);
+
+
+                    //harvest habitats
+                    var habitats = new HarvestHabitats();
+                    await habitats.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId);
+
+                    await habitats.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion);
+
+                }
+
+
+
+
+
+                /*
                 var param1 = new SqlParameter("@country", envelopeIDs[i].CountryCode);
                 var param2 = new SqlParameter("@version", envelopeIDs[i].VersionId);
 
@@ -525,11 +559,14 @@ namespace N2K_BackboneBackEnd.Services
                     }
                 }
 
+                //for the time being do not load the changes and keep using test_table 
                 result.Add(processedEnv);
+                */
                 try
                 {
-                    _dataContext.SiteChanges.AddRange(changes);
-                    _dataContext.SaveChanges();
+                    var a = 1;
+                    //_dataContext.SiteChanges.AddRange(changes);
+                    //_dataContext.SaveChanges();
                 }
                 catch
                 {

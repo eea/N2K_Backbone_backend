@@ -1,11 +1,5 @@
 {
   "dependencies": {
-    "mssql1": {
-      "secretStore": "AzureAppSettings",
-      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/backbonedb/databases/n2k_backnone_db",
-      "type": "mssql.azure",
-      "connectionId": "ConnectionStrings:N2K_BackboneBackEndContext"
-    },
     "apis1": {
       "apiEndpoint": "https://n2kbacknonebackend-apim.azure-api.net/",
       "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.ApiManagement/service/n2kbacknonebackend-apim/apis/n2kbacknonebackend",

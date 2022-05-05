@@ -21,7 +21,6 @@ namespace N2K_BackboneBackEnd.Models
         public string? ChangeCategory { get; set; }
         public string? ChangeType { get; set; }
 
-        //public string? Action { get; set; } = string.Empty;
 
         public static void OnModelCreating(ModelBuilder builder)
         {
