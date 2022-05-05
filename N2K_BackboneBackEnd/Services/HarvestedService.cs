@@ -127,13 +127,16 @@ namespace N2K_BackboneBackEnd.Services
                     while (harvestingTasks.Count > 0)
                     {
                         var finishedTask = await Task.WhenAny(harvestingTasks);
-                        if (finishedTask != null && finishedTask.Id>0)
+                        if (finishedTask != null)                            
                         {
-                            IHarvestingTables? harvest = tablesToHarvest.GetValueOrDefault(finishedTask.Id);
-                            if (harvest!= null)
-                                validatingTasks.Add(harvest.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion));                            
-                        }
-                        harvestingTasks.Remove(finishedTask);
+                            if (finishedTask.Id > 0)
+                            {
+                                IHarvestingTables? harvest = tablesToHarvest[finishedTask.Id]; // .GetValueOrDefault();
+                                if (harvest != null)
+                                    validatingTasks.Add(harvest.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion));
+                            }
+                            harvestingTasks.Remove(finishedTask);
+                        }                        
                     }
                     //...
 
