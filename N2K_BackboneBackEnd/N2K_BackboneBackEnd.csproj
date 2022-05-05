@@ -29,11 +29,4 @@
     <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Helpers\" />
-    <Folder Include="Models\ViewModel\" />
-    <Folder Include="Models\versioning_db\" />
-    <Folder Include="Models\backbone_db\" />
-  </ItemGroup>
-
 </Project>

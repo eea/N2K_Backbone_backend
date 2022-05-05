@@ -83,7 +83,6 @@ namespace N2K_BackboneBackEnd.Services
             for (var i = 0; i < envelopeIDs.Length; i++)
             {
 
-
                 //remove version from database
                 var param1 = new SqlParameter("@country", envelopeIDs[i].CountryCode);
                 var param2 = new SqlParameter("@version", envelopeIDs[i].VersionId);
@@ -92,11 +91,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 var country = latestVersions.Where(v => v.Country == envelopeIDs[i].CountryCode).FirstOrDefault(); //Coger la ultima version de ese country
                 var lastReferenceCountryVersion = 0;
-                if (country != null)
-                {
-                    lastReferenceCountryVersion = country.Version;
-                }
-
+                if (country != null)   lastReferenceCountryVersion = country.Version;
 
                 //1. Harvest SiteCodes
                 var harvSiteCode = new HarvestSiteCode(); 
@@ -104,16 +99,21 @@ namespace N2K_BackboneBackEnd.Services
 
                 if (lastReferenceCountryVersion!=0) { 
 
-                    //2. Once SiteCodes is harvested
+                    //2. Once SiteCodes is harvested we can run a number of task in parallel
                     //Run the validation
-                    await harvSiteCode.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion);
-
+                    var siteVal= harvSiteCode.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion);
 
                     //harvest habitats
                     var habitats = new HarvestHabitats();
-                    await habitats.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId);
+                    //harvest and wait until it is completed to validate
+                    await Task.WhenAny(new List<Task<int>> { habitats.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId) });
+                    //await habitats.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion);
 
-                    await habitats.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion);
+
+
+                    //harvest species
+
+                    //...
 
                 }
 

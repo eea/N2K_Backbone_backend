@@ -4,14 +4,19 @@
     {
         public  async Task<int> Harvest(string countryCode, int versionId)
         {
-            return await Task.Run(() => 1 );
+            Console.WriteLine("Start Site Code harvest...");
+            await Task.Delay(5000);
+            Console.WriteLine("End Site Code harvest...");
+            return 1;
 
-            //throw new NotImplementedException();
         }
 
         public  async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
         {
-            return await Task.Run(() => 1);
+            Console.WriteLine("Start Site Code validate...");
+            await Task.Delay(10000);
+            Console.WriteLine("ENd Site Code validate...");
+            return 1;
         }
     }
 }

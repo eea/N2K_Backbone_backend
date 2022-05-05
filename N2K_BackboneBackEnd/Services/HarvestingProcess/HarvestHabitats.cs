@@ -4,14 +4,21 @@
     {
         public async Task<int> Harvest(string countryCode, int versionId)
         {
-            return await Task.Run(() => 1);
 
-            //throw new NotImplementedException();
+            Console.WriteLine("Start HarvestHabitats harvest...");
+            await Task.Delay(5000);
+            Console.WriteLine("End HarvestHabitatsharvest...");
+            return 1;
+
+
         }
 
         public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
         {
-            return await Task.Run(() => 1);
+            Console.WriteLine("Start HarvestHabitats validate...");
+            await Task.Delay(5000);
+            Console.WriteLine("End HarvestHabitats validate...");
+            return 1; 
         }
     }
 }
