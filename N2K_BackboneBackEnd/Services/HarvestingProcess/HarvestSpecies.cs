@@ -10,10 +10,21 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         public async Task<int> Harvest(string countryCode, int versionId)
         {
-            Console.WriteLine("=>Start species harvest...");
-            await Task.Delay(8000);
-            Console.WriteLine("=>End species harvest...");
-            return 1;
+            try
+            {
+                Console.WriteLine("=>Start species harvest...");
+                await Task.Delay(8000);
+                var a = 1;
+                var b = 1 / (a - 1);
+                Console.WriteLine("=>End species harvest...");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("=>End species harvest with error...");
+                return 0;
+            }
 
         }
 

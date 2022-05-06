@@ -133,7 +133,8 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 IHarvestingTables? harvest = tablesToHarvest[finishedTask.Id]; // .GetValueOrDefault();
                                 if (harvest != null)
-                                    validatingTasks.Add(harvest.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion));
+                                    if (finishedTask.Result==1)
+                                        validatingTasks.Add(harvest.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion));
                             }
                             harvestingTasks.Remove(finishedTask);
                         }                        
