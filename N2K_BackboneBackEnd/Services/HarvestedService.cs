@@ -54,8 +54,26 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
 
-            var aa = new List<BioRegions>();
-            var processed1 = await _dataContext.Set<BioRegions>().ToListAsync();
+            var aa = new List<Sites>();
+            var processed1 = await _dataContext.Set<Sites>().ToListAsync();
+            var bb = new List<BioRegions>();
+            var processed2 = await _dataContext.Set<BioRegions>().ToListAsync();
+            var cc = new List<NutsBySite>();
+            var processed3 = await _dataContext.Set<NutsBySite>().ToListAsync();
+            var dd = new List<HasNationalProtection>();
+            var processed4 = await _dataContext.Set<HasNationalProtection>().ToListAsync();
+            var ee = new List<IsImpactedBy>();
+            var processed5 = await _dataContext.Set<IsImpactedBy>().ToListAsync();
+            var ff = new List<SitesInXML>();
+            var processed6 = await _dataContext.Set<SitesInXML>().ToListAsync();
+            var gg = new List<SiteLargeDescriptions>();
+            var processed7 = await _dataContext.Set<SiteLargeDescriptions>().ToListAsync();
+            var hh = new List<DetailedProtectionStatus>();
+            var processed8 = await _dataContext.Set<DetailedProtectionStatus>().ToListAsync();
+            var ii = new List<DocumentationLinks>();
+            var processed9 = await _dataContext.Set<DocumentationLinks>().ToListAsync();
+            var jj = new List<SiteOwnerType>();
+            var processed10 = await _dataContext.Set<SiteOwnerType>().ToListAsync();
 
 
 

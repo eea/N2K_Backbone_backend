@@ -1,19 +1,23 @@
-﻿namespace N2K_BackboneBackEnd.Models.backbone_db
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+
+namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class DetailedProtectionStatus : IEntityModel
+    public class DetailedProtectionStatus : IEntityModel, IEntityModelBackboneDB
     {
-        public string? SiteCode { get; set; };
-        public int? Version { get; set; };
-        public string? DesignationCode { get; set; };
-        public string? Name { get; set; };
-        public int ID { get; set; };
-        public string? OverlapCode { get; set; };
-        public double? OverlapPercentage { get; set; };
-        public string? Convention { get; set; };
+        public string? SiteCode { get; set; }
+        public int? Version { get; set; }
+        public string? DesignationCode { get; set; }
+        public string? Name { get; set; }
+        public long ID { get; set; }
+        public string? OverlapCode { get; set; }
+        public decimal? OverlapPercentage { get; set; }
+        public string? Convention { get; set; }
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<DetailedProtectionStatus>()
-                .HasNoKey();
+                .ToTable("DetailedProtectionStatus")
+                .HasKey(c => new { c.ID });
         }
     }
 }
