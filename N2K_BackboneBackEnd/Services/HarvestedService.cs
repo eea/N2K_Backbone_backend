@@ -7,6 +7,7 @@ using N2K_BackboneBackEnd.Models.BackboneDB;
 using N2K_BackboneBackEnd.Models.ViewModel;
 
 using N2K_BackboneBackEnd.Services.HarvestingProcess;
+using N2K_BackboneBackEnd.Models.backbone_db;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -52,6 +53,12 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
+
+            var aa = new List<BioRegions>();
+            var processed1 = await _dataContext.Set<BioRegions>().ToListAsync();
+
+
+
             var result = new List<Harvesting>();
             var processed = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
             foreach (var procCountry in processed)

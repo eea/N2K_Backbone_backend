@@ -1,4 +1,6 @@
-﻿=namespace N2K_BackboneBackEnd.Models.backbone_db
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace N2K_BackboneBackEnd.Models.backbone_db
 {
     public class Sites : IEntityModel
     {
