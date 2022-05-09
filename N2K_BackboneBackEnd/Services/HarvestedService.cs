@@ -53,7 +53,7 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
             var result = new List<Harvesting>();
-            var processed = await _dataContext.ProcessedEnvelopes.ToListAsync();
+            var processed = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
             foreach (var procCountry in processed)
             {
                 var param1 = new SqlParameter("@country", procCountry.Country);
@@ -71,6 +71,7 @@ namespace N2K_BackboneBackEnd.Services
                     }                        
                 }
             }
+            
             return await Task.FromResult(result);
         }
 
@@ -78,7 +79,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             var result = new List<HarvestedEnvelope>();
             var changes = new List<SiteChangeDb>();
-            var latestVersions = await _dataContext.ProcessedEnvelopes.ToListAsync();
+            var latestVersions = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
 
 
             //from the view vLatestProcessedEnvelopes (backbonedb) load the sites with the latest versionid of the countries

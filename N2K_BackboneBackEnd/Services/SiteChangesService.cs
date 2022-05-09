@@ -18,7 +18,7 @@ namespace N2K_BackboneBackEnd.Services
         }
         public async Task<List<SiteChangeDb>> GetSiteChangesAsync()
         {
-            var changes = await _dataContext.SiteChanges.OrderBy(s => s.SiteCode).ToListAsync();
+            var changes = await _dataContext.Set<SiteChangeDb>().OrderBy(s => s.SiteCode).ToListAsync();
             var result = new List<SiteChangeDb>();
             var siteCode = string.Empty;
             //var siteChange = new SiteChangeDb();
@@ -120,7 +120,8 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<SiteChangeDb?> GetSiteChangeByIdAsync(int id)
 #pragma warning restore CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
         {
-            return await _dataContext.SiteChanges.SingleOrDefaultAsync(s => s.ChangeId == id);
+            var result = new List<Harvesting>();
+            return await _dataContext.Set<SiteChangeDb>().SingleOrDefaultAsync(s => s.ChangeId == id);
         }
 
 

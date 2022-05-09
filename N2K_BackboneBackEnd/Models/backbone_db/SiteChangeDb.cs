@@ -5,7 +5,7 @@ using N2K_BackboneBackEnd.Enumerations;
 
 namespace N2K_BackboneBackEnd.Models.BackboneDB
 {
-    public class SiteChangeDb : IEntityModel
+    public class SiteChangeDb : IEntityModel, IEntityModelBackboneDB
     {
         [Key]
         public long ChangeId { get; set; }
@@ -33,6 +33,8 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
                 .ToTable("test_table")
                 .Property(e => e.Level)
                 .HasConversion(new EnumToStringConverter<Enumerations.Level>());
+
+
         }
     }
 }

@@ -11,16 +11,37 @@ namespace N2K_BackboneBackEnd.Data
 {
     public class N2KBackboneContext : DbContext
     {
-#pragma warning disable CS8618 // Accept NULL value.
+
         public N2KBackboneContext(DbContextOptions<N2KBackboneContext> options) : base(options)
 #pragma warning restore CS8618 // Accept NULL value
-        { }
+        {
+
+            var types = Assembly.GetExecutingAssembly().GetTypes()
+       .Where(s => s.GetInterfaces().Any(_interface => _interface.Equals(typeof(IEntityModelBackboneDB)) &&
+            s.IsClass && !s.IsAbstract && s.IsPublic));
+            foreach (var type in types)
+            {
+                if (type != null)
+                {
+#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
+#pragma warning disable CS8604 // Posible argumento de referencia nulo
+                    Type? entityType = Assembly.GetAssembly(type: typeof(IEntityModelBackboneDB)).GetType(type.FullName);
+#pragma warning restore CS8604 // Posible argumento de referencia nulo
+#pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
+                    if (entityType != null)
+                    {
+                        // create an instance of that type
+#pragma warning disable CS8600 // Se va a convertir un literal nulo o un posible valor nulo en un tipo que no acepta valores NULL
+                        object instance = Activator.CreateInstance(entityType);
+#pragma warning restore CS8600 // Se va a convertir un literal nulo o un posible valor nulo en un tipo que no acepta valores NULL
+                        if (instance != null) this.Add(instance);
+                    }
+                }
+            }
+        }
 
         //here define the DB<Entities> only for the existing tables in the DB
         //public DbSet<SiteChange> SiteChanges { get; set; }
-        public DbSet<SiteChangeDb> SiteChanges { get; set; }
-        public DbSet<ProcessedEnvelopes> ProcessedEnvelopes { get; set; }
-        
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             //create the definitions of Model Entities via OnModelCreating individuals in each Entity.cs file
@@ -36,8 +57,12 @@ namespace N2K_BackboneBackEnd.Data
                         v.Invoke(type, new object[] { modelBuilder });
                     else
                         throw new Exception(String.Format("static OnModelCreating of entitity {0} not implemented!!"));
+
                 }
             }
+
+
+
         }
     }
 }

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.BackboneDB
 {
-    public class ProcessedEnvelopes : IEntityModel
+    public class ProcessedEnvelopes : IEntityModel, IEntityModelBackboneDB
     {
         [Key]
         public long Id { get; set; }
@@ -17,6 +17,8 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
         {
             builder.Entity<ProcessedEnvelopes>()
                 .ToView("vLatestProcessedEnvelopes");
+
+
         }
     }
 }

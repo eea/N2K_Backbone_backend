@@ -1,7 +1,5 @@
 ﻿using N2K_BackboneBackEnd.Data;
-using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.BackboneDB;
-using N2K_BackboneBackEnd.Models.VersioningDB;
 
 
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
@@ -20,7 +18,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         protected void SaveChanges(List<SiteChangeDb> changes)
         {
-            _dataContext.SiteChanges.AddRange(changes);
+            _dataContext.Set<SiteChangeDb>().AddRange(changes);
             _dataContext.SaveChanges();
         }
 
