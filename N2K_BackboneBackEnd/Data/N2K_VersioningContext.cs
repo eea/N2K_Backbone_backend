@@ -6,7 +6,8 @@ using System.Reflection;
 namespace N2K_BackboneBackEnd.Data
 {
     public class N2K_VersioningContext : DbContext
-    {
+    {        
+
         public N2K_VersioningContext(DbContextOptions<N2K_VersioningContext> options) : base(options) {
             var types = Assembly.GetExecutingAssembly().GetTypes()
        .Where(s => s.GetInterfaces().Any(_interface => _interface.Equals(typeof(IEntityModelVersioningDB)) &&
