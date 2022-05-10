@@ -37,7 +37,8 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<ContainsSpecies>()
-                .ToTable("CONTAINSSPECIES");
+                .ToTable("CONTAINSSPECIES")
+                .HasNoKey();
         }
     }
 }
