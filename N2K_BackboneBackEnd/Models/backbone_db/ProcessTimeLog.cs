@@ -9,13 +9,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string ActionPerformed { get; set; }
         public DateTime StampTime { get; set; }
 
-
-        public ProcessTimeLog(string pProcessName, string pActionPerformed) { 
-            this.ProcessName = pProcessName;
-            this.ActionPerformed = pActionPerformed;
-            this.StampTime = DateTime.Now;
-        }
-
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<ProcessTimeLog>()

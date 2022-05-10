@@ -9,7 +9,14 @@ namespace N2K_BackboneBackEnd.Models
         public static void setTime(N2KBackboneContext pDataContext, string pProcessName, string pAction) {
             try
             {
-                pDataContext.Set<ProcessTimeLog>().Add(new ProcessTimeLog(pProcessName, pAction));
+                ProcessTimeLog ptl = new ProcessTimeLog();
+
+                ptl.ProcessName = pProcessName;
+                ptl.ActionPerformed = pAction;
+                ptl.StampTime = DateTime.Now;
+
+
+                pDataContext.Set<ProcessTimeLog>().Add(ptl);
             }
             catch (Exception ex)
             {
