@@ -1,0 +1,29 @@
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
+
+namespace N2K_BackboneBackEnd.Models.versioning_db
+{
+    public class Description : VersioningBase, IEntityModel
+    {
+        public string COUNTRYCODE { get; set; }
+        public int VERSIONID { get; set; }
+        public int COUNTRYVERSIONID { get; set; }
+        public string SITECODE { get; set; }
+        public int OBJECTID { get; set; }
+        public string? QUALITY { get; set; }
+        public string? VULNARAB { get; set; }
+        public string? DESIGNATION { get; set; }
+        public string? MANAG_PLAN { get; set; }
+        public string? DOCUMENTATION { get; set; }
+        public string? OTHERCHARACT { get; set; }
+        public string? MANAG_CONSERV_MEASURES { get; set; }
+        public string? MANAG_PLAN_URL { get; set; }
+        public string? MANAG_STATUS { get; set; }
+     
+        public static void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<Description>()
+                .ToTable("DESCRIPTION");
+        }
+    }
+}

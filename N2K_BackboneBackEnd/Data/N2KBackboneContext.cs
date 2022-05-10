@@ -6,11 +6,23 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 
 using System.Reflection;
+using N2K_BackboneBackEnd.Models.backbone_db;
 
 namespace N2K_BackboneBackEnd.Data
 {
     public class N2KBackboneContext : DbContext
     {
+        public DbSet<Sites> Sites { get; set; }
+        public DbSet<BioRegions> BioRegions { get; set; }
+        public DbSet<NutsBySite> NutsBySite { get; set; } 
+        public DbSet<IsImpactedBy> IsImpactedBy { get; set; }
+        public DbSet<HasNationalProtection> HasNationalProtection { get; set; }
+        public DbSet<DetailedProtectionStatus> DetailedProtectionStatus { get; set; }
+        public DbSet<SiteLargeDescriptions> SiteLargeDescriptions { get; set; }
+        public DbSet<SiteOwnerType> SiteOwnerType { get; set; }
+
+        public DbSet<OwnerShipTypes> OwnerShipTypes { get; set; }
+
 
         public N2KBackboneContext(DbContextOptions<N2KBackboneContext> options) : base(options)
 #pragma warning restore CS8618 // Accept NULL value
