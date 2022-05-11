@@ -10,6 +10,8 @@ namespace N2K_BackboneBackEnd.Enumerations
         [DataMember]
         Pending,
         [DataMember]
-        Rejected
+        Rejected,
+        [DataMember]
+        Harvested
     }
 }

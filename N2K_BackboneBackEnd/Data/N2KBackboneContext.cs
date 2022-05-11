@@ -10,18 +10,13 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 
 namespace N2K_BackboneBackEnd.Data
 {
-    public class N2KBackboneContext : DbContext
+    public class N2KBackboneContext : BaseContext
     {
 
-
-
-        public N2KBackboneContext(DbContextOptions<N2KBackboneContext> options) : base(options)
-#pragma warning disable CS8618 // Accept NULL value
-        {
-
+        public N2KBackboneContext(DbContextOptions<N2KBackboneContext> options) :  base(options) {
             var types = Assembly.GetExecutingAssembly().GetTypes()
-                .Where(s => s.GetInterfaces().Any(_interface => _interface.Equals(typeof(IEntityModelBackboneDB)) &&
-            s.IsClass && !s.IsAbstract && s.IsPublic));
+.Where(s => s.GetInterfaces().Any(_interface => _interface.Equals(typeof(IEntityModelBackboneDB)) &&
+    s.IsClass && !s.IsAbstract && s.IsPublic));
             foreach (var type in types)
             {
                 if (type != null)
@@ -43,29 +38,5 @@ namespace N2K_BackboneBackEnd.Data
             }
         }
 
-        //here define the DB<Entities> only for the existing tables in the DB
-        //public DbSet<SiteChange> SiteChanges { get; set; }
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            //create the definitions of Model Entities via OnModelCreating individuals in each Entity.cs file
-            var types = Assembly.GetExecutingAssembly().GetTypes()
-               .Where(s => s.GetInterfaces().Any(_interface => _interface.Equals(typeof(IEntityModel)) && 
-                    s.IsClass && !s.IsAbstract && s.IsPublic));
-            foreach (var type in types)
-            {
-                if (type != null)
-                {
-                    MethodInfo? v = type.GetMethods().FirstOrDefault(x => x.Name == "OnModelCreating");
-                    if (v != null)
-                        v.Invoke(type, new object[] { modelBuilder });
-                    else
-                        throw new Exception(String.Format("static OnModelCreating of entitity {0} not implemented!!"));
-
-                }
-            }
-
-            //modelBuilder.Ignore<ProcessedEnvelopes>();
-
-        }
     }
 }

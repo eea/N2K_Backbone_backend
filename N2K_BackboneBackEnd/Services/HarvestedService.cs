@@ -80,7 +80,7 @@ namespace N2K_BackboneBackEnd.Services
             var processed9 = await _dataContext.Set<DocumentationLinks>().ToListAsync();
             var jj = new List<SiteOwnerType>();
             var processed10 = await _dataContext.Set<SiteOwnerType>().ToListAsync();
-            */
+            
             var kk = new List<Habitats>();
             var processed11 = await _dataContext.Set<Habitats>().ToListAsync();
             var ll = new List<HabitatAreas>();
@@ -93,11 +93,12 @@ namespace N2K_BackboneBackEnd.Services
             var oo = new List<SpeciesOther>();
             var processed15 = await _dataContext.Set<SpeciesOther>().ToListAsync();
 
-
+            */
 
 
             var result = new List<Harvesting>();
-            var processed = await _dataReadOnlyContext.Set<ProcessedEnvelopes>().ToListAsync();
+            var processed = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"select * from dbo.[vLatestProcessedEnvelopes]").ToListAsync();
+            var allEnvs = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
             foreach (var procCountry in processed)
             {
                 var param1 = new SqlParameter("@country", procCountry.Country);
@@ -108,10 +109,23 @@ namespace N2K_BackboneBackEnd.Services
                                 param1, param2, param3).ToListAsync();
                 if (list.Count > 0)
                 {
-                    foreach (var aaa in list)
+                    foreach (var pendEnv in list)
                     {
-                        if (!result.Contains(aaa))
-                            result.AddRange(list.Distinct());
+                        if (!result.Contains(pendEnv))
+                        {
+                            if (allEnvs.Where(e => e.Version == pendEnv.Id && e.Country == pendEnv.Country && e.Status == 0).ToList().Count == 0)
+                            {
+                                result.Add(
+                                    new Harvesting
+                                    {
+                                        Country = pendEnv.Country,
+                                        Status = pendEnv.Status,
+                                        Id = pendEnv.Id,
+                                        SubmissionDate = pendEnv.SubmissionDate
+                                    }
+                                 );
+                            }
+                        }
                     }
                 }
             }
@@ -662,12 +676,23 @@ namespace N2K_BackboneBackEnd.Services
             {
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
+                    
+                    var env = new ProcessedEnvelopes();
+                    env.Country = envelope.CountryCode;
+                    env.Version = envelope.VersionId;
+                    env.ImportDate= DateTime.Now;
+                    
 
-                    //por cada uno de los envelops que ya se han obtenido
+                    _dataContext.Database.ExecuteSqlRaw(                        
+                        String.Format("INSERT INTO [ProcessedEnvelopes] VALUES ('{0}', {1}, GetDate(), 'INITIAL',0 )",
+                        envelope.CountryCode, envelope.VersionId));
+
+
                     //Obtener los sites
                     List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
                     List<Sites> bbSites = new List<Sites>();
                     //Guardar los sites y su informacion relacionada con en BackBone
+                    /*
                     foreach (NaturaSite vSite in vSites)
                     {
                         try
@@ -698,6 +723,21 @@ namespace N2K_BackboneBackEnd.Services
 
                     }
                     _dataContext.Set<Sites>().AddRange(bbSites);
+                    */
+
+                    _dataContext.Database.ExecuteSqlRaw(
+                            String.Format("UPDATE [ProcessedEnvelopes]  SET Status=3 where Country='{0}' and version={1}",
+                            envelope.CountryCode, envelope.VersionId));
+                    result.Add(
+                        new HarvestedEnvelope
+                        {
+                             CountryCode = envelope.CountryCode,
+                             VersionId = envelope.VersionId,
+                             NumChanges=0,
+                             Status = SiteChangeStatus.Harvested
+                        }
+                     );
+
 
                     _dataContext.SaveChanges();
 

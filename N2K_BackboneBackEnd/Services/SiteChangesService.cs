@@ -21,13 +21,13 @@ namespace N2K_BackboneBackEnd.Services
             var changes = await _dataContext.Set<SiteChangeDb>().OrderBy(s => s.SiteCode).ToListAsync();
             var result = new List<SiteChangeDb>();
             var siteCode = string.Empty;
-            //var siteChange = new SiteChangeDb();
+            var siteChange = new SiteChangeDb();
             foreach (var change in changes)
             {
-                //if (change.SiteCode != siteCode)
-                //{
-                    //if (siteCode != String.Empty) result.Add(siteChange);
-                    var siteChange = new SiteChangeDb();
+                if (change.SiteCode != siteCode)
+                {
+                    if (siteCode != String.Empty) result.Add(siteChange);
+                    siteChange = new SiteChangeDb();
                     siteChange.ChangeId = change.ChangeId;
                     siteChange.SiteCode = change.SiteCode;
                     siteCode = change.SiteCode;
@@ -37,9 +37,9 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.Level = change.Level;
                     siteChange.Status = change.Status;
                     siteChange.Tags = change.Tags;
-                    result.Add(siteChange);
+                    //result.Add(siteChange);
+                    siteCode = change.SiteCode;
 
-                /*
                 }
                 else
                 {
@@ -57,9 +57,9 @@ namespace N2K_BackboneBackEnd.Services
                         Tags = string.Empty
                     });
                 }
-                */
+                
             }
-            //if (siteCode != String.Empty) result.Add(siteChange);
+            if (siteCode != String.Empty) result.Add(siteChange);
             return result;
         }
 
