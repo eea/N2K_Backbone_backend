@@ -143,9 +143,20 @@ namespace N2K_BackboneBackEnd.Services
             //from the view vLatestProcessedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
 
             //Load all sites with the CountryVersionID-CountryCode from Versioning
-            for (var i = 0; i < envelopeIDs.Length; i++)
+            foreach (EnvelopesToProcess envelope in envelopeIDs)
             {
 
+                result.Add(
+                    new HarvestedEnvelope
+                    {
+                        CountryCode = envelope.CountryCode,
+                        VersionId = envelope.VersionId,
+                        NumChanges = 0,
+                        Status = SiteChangeStatus.Harvested
+                    }
+                 );
+
+                /*
                 //remove version from database
                 var param1 = new SqlParameter("@country", envelopeIDs[i].CountryCode);
                 var param2 = new SqlParameter("@version", envelopeIDs[i].VersionId);
@@ -211,7 +222,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 }
 
-                /*
+                
                 var param1 = new SqlParameter("@country", envelopeIDs[i].CountryCode);
                 var param2 = new SqlParameter("@version", envelopeIDs[i].VersionId);
 
@@ -648,10 +659,11 @@ namespace N2K_BackboneBackEnd.Services
                         processedEnv.NumChanges++;
                     }
                 }
+                */
+
 
                 //for the time being do not load the changes and keep using test_table 
-                result.Add(processedEnv);
-                */
+                
                 try
                 {
                     var a = 1;
