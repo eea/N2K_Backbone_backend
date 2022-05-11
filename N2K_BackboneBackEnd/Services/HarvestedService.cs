@@ -679,6 +679,8 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
+
+
         public async Task<List<HarvestedEnvelope>> Start(EnvelopesToProcess[] envelopeIDs)
         {
 
@@ -688,23 +690,23 @@ namespace N2K_BackboneBackEnd.Services
             {
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
-                    
-                    var env = new ProcessedEnvelopes();
-                    env.Country = envelope.CountryCode;
-                    env.Version = envelope.VersionId;
-                    env.ImportDate= DateTime.Now;
-                    
 
-                    _dataContext.Database.ExecuteSqlRaw(                        
-                        String.Format("INSERT INTO [ProcessedEnvelopes] VALUES ('{0}', {1}, GetDate(), 'INITIAL',0 )",
-                        envelope.CountryCode, envelope.VersionId));
+                    var envelopeToProcess = new ProcessedEnvelopes
+                    {
+                        Country = envelope.CountryCode,
+                        Version = envelope.VersionId,
+                        ImportDate = await GetSubmissionDate(envelope.CountryCode, envelope.VersionId),
+                        Status = 0
+                    };
+                    _dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
+                    _dataContext.SaveChanges();
 
 
                     //Obtener los sites
                     List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
                     List<Sites> bbSites = new List<Sites>();
                     //Guardar los sites y su informacion relacionada con en BackBone
-                    /*
+                    
                     foreach (NaturaSite vSite in vSites)
                     {
                         try
@@ -712,9 +714,9 @@ namespace N2K_BackboneBackEnd.Services
                             _timeLog.setTime(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                             Sites bbSite = harvestSite(vSite, envelope);
 
-                            _dataContext.Set<Sites>().Add(bbSite);
+                            //_dataContext.Set<Sites>().Add(bbSite);
                             //Obtener los datos complementarios
-
+                            /*
                             _dataContext.Set<BioRegions>().AddRange(harvestBioregions(vSite, bbSite.Version));
                             _dataContext.Set<NutsBySite>().AddRange(harvestNutsBySite(vSite, bbSite.Version));
                             _dataContext.Set<Models.backbone_db.IsImpactedBy>().AddRange(harvestIsImpactedBy(vSite, bbSite.Version));
@@ -723,6 +725,7 @@ namespace N2K_BackboneBackEnd.Services
                             _dataContext.Set<SiteLargeDescriptions>().AddRange(harvestSiteLargeDescriptions(vSite, bbSite.Version));
                             _dataContext.Set<SiteOwnerType>().AddRange(harvestSiteOwnerType(vSite, bbSite.Version));
                             _timeLog.setTime(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Processed");
+                            */
                         }
                         catch (Exception ex)
                         {
@@ -734,12 +737,9 @@ namespace N2K_BackboneBackEnd.Services
                         }
 
                     }
-                    _dataContext.Set<Sites>().AddRange(bbSites);
-                    */
-
-                    _dataContext.Database.ExecuteSqlRaw(
-                            String.Format("UPDATE [ProcessedEnvelopes]  SET Status=3 where Country='{0}' and version={1}",
-                            envelope.CountryCode, envelope.VersionId));
+                    //_dataContext.Set<Sites>().AddRange(bbSites);
+                    envelopeToProcess.Status = 3;
+                    _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
                     result.Add(
                         new HarvestedEnvelope
                         {
@@ -765,6 +765,21 @@ namespace N2K_BackboneBackEnd.Services
             }
 
 
+        }
+
+        private async Task<DateTime> GetSubmissionDate(string country, int version)
+        {
+            var param1 = new SqlParameter("@country", country);
+            var param2 = new SqlParameter("@version", version);
+
+            var list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.GetSubmissionDateFromCountryAndVersionId  @country, @version",
+                            param1, param2).ToListAsync();
+            if (list.Count > 0)
+            {
+                return list.ElementAt(0).SubmissionDate;
+            }
+            else
+                return DateTime.MinValue;
         }
 
         private Sites harvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
