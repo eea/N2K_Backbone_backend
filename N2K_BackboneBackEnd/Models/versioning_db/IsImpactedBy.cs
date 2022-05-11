@@ -2,11 +2,12 @@
 using Microsoft.EntityFrameworkCore;
 namespace N2K_BackboneBackEnd.Models.versioning_db
 {
+    [Keyless]
     public class IsImpactedBy : VersioningBase, IEntityModel
     {
         public string COUNTRYCODE { get; set; }
-        public int VERSIONID { get; set; }
-        public int COUNTRYVERSIONID { get; set; }
+        public decimal VERSIONID { get; set; }
+        public decimal COUNTRYVERSIONID { get; set; }
         public string SITECODE { get; set; }
         public int RID { get; set; }
         public string? ACTIVITYCODE { get; set; }

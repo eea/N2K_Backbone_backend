@@ -17,5 +17,7 @@ namespace N2K_BackboneBackEnd.Services
 
 
         Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs);
+
+        Task<List<HarvestedEnvelope>> Start(EnvelopesToProcess[] envelopeIDs);
     }
 }

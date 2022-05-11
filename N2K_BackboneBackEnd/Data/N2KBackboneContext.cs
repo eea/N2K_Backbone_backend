@@ -12,24 +12,15 @@ namespace N2K_BackboneBackEnd.Data
 {
     public class N2KBackboneContext : DbContext
     {
-        public DbSet<Sites> Sites { get; set; }
-        public DbSet<BioRegions> BioRegions { get; set; }
-        public DbSet<NutsBySite> NutsBySite { get; set; } 
-        public DbSet<IsImpactedBy> IsImpactedBy { get; set; }
-        public DbSet<HasNationalProtection> HasNationalProtection { get; set; }
-        public DbSet<DetailedProtectionStatus> DetailedProtectionStatus { get; set; }
-        public DbSet<SiteLargeDescriptions> SiteLargeDescriptions { get; set; }
-        public DbSet<SiteOwnerType> SiteOwnerType { get; set; }
 
-        public DbSet<OwnerShipTypes> OwnerShipTypes { get; set; }
 
 
         public N2KBackboneContext(DbContextOptions<N2KBackboneContext> options) : base(options)
-#pragma warning restore CS8618 // Accept NULL value
+#pragma warning disable CS8618 // Accept NULL value
         {
 
             var types = Assembly.GetExecutingAssembly().GetTypes()
-       .Where(s => s.GetInterfaces().Any(_interface => _interface.Equals(typeof(IEntityModelBackboneDB)) &&
+                .Where(s => s.GetInterfaces().Any(_interface => _interface.Equals(typeof(IEntityModelBackboneDB)) &&
             s.IsClass && !s.IsAbstract && s.IsPublic));
             foreach (var type in types)
             {
@@ -73,7 +64,7 @@ namespace N2K_BackboneBackEnd.Data
                 }
             }
 
-
+            //modelBuilder.Ignore<ProcessedEnvelopes>();
 
         }
     }

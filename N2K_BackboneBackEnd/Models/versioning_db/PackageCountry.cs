@@ -1,13 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 namespace N2K_BackboneBackEnd.Models.versioning_db
 {
+    [Keyless]
     public class PackageCountry : VersioningBase, IEntityModel
     {
         public string CountryCode { get; set; }
-        public int CountryVersionID { get; set; }
+        public decimal CountryVersionID { get; set; }
         public string? Path { get; set; }
         public DateTime? Importdate { get; set; }
-        public float VERSIONID { get; set; }
+        public decimal VERSIONID { get; set; }
         public bool Versioned { get; set; }
         public bool Discarded { get; set; }
 

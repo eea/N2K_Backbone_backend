@@ -1,12 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 namespace N2K_BackboneBackEnd.Models.versioning_db
 {
+    [Keyless]
     public class ContainsSpecies : VersioningBase, IEntityModel
     {
         public int RID { get; set; }
         public string COUNTRYCODE { get; set; }
-        public int VERSIONID { get; set; }
-        public int COUNTRYVERSIONID { get; set; }
+        public decimal VERSIONID { get; set; }
+        public decimal COUNTRYVERSIONID { get; set; }
         public string SITECODE { get; set; }
         public string? SPECIESCODE { get; set; }
         public string? SPECIESNAME { get; set; } 
@@ -22,9 +23,9 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         public string? MOTIVATION { get; set; }
         public DateTime? STARTDATE { get; set; }
         public DateTime? ENDDATE { get; set; }
-        public int? OTHERSPECIES { get; set; }
-        public int? SENSITIVE { get; set; }
-        public int? NONPRESENCEINSITE { get; set; }
+        public Int16? OTHERSPECIES { get; set; }
+        public Int16? SENSITIVE { get; set; }
+        public Int16? NONPRESENCEINSITE { get; set; }
         public string? LOWERBOUND { get; set; }
         public string? UPPERBOUND { get; set; }
         public string? COUNTINGUNIT { get; set; }

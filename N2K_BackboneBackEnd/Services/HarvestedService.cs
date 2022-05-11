@@ -18,6 +18,7 @@ namespace N2K_BackboneBackEnd.Services
     {
         private readonly N2KBackboneContext _dataContext;
         private readonly N2K_VersioningContext _versioningContext;
+        private TimeLog _timeLog = new TimeLog();
 
         public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext)
         {
@@ -63,16 +64,16 @@ namespace N2K_BackboneBackEnd.Services
             var processed2 = await _dataContext.Set<BioRegions>().ToListAsync();
             var cc = new List<NutsBySite>();
             var processed3 = await _dataContext.Set<NutsBySite>().ToListAsync();
-            var dd = new List<HasNationalProtection>();
-            var processed4 = await _dataContext.Set<HasNationalProtection>().ToListAsync();
+            var dd = new List<Models.backbone_db.HasNationalProtection>();
+            var processed4 = await _dataContext.Set<Models.backbone_db.HasNationalProtection>().ToListAsync();
             var ee = new List<IsImpactedBy>();
             var processed5 = await _dataContext.Set<IsImpactedBy>().ToListAsync();
             var ff = new List<SitesInXML>();
             var processed6 = await _dataContext.Set<SitesInXML>().ToListAsync();
             var gg = new List<SiteLargeDescriptions>();
             var processed7 = await _dataContext.Set<SiteLargeDescriptions>().ToListAsync();
-            var hh = new List<DetailedProtectionStatus>();
-            var processed8 = await _dataContext.Set<DetailedProtectionStatus>().ToListAsync();
+            var hh = new List<Models.backbone_db.DetailedProtectionStatus>();
+            var processed8 = await _dataContext.Set<Models.backbone_db.DetailedProtectionStatus>().ToListAsync();
             var ii = new List<DocumentationLinks>();
             var processed9 = await _dataContext.Set<DocumentationLinks>().ToListAsync();
             var jj = new List<SiteOwnerType>();
@@ -636,7 +637,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<HarvestedEnvelope>> Start(EnvelopesToProcess[] envelopeIDs,  string pData="") {
+        public async Task<List<HarvestedEnvelope>> Start(EnvelopesToProcess[] envelopeIDs) {
 
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
             List<NaturaSite> sites = null;
@@ -645,24 +646,37 @@ namespace N2K_BackboneBackEnd.Services
 
                     //por cada uno de los envelops que ya se han obtenido
                     //Obtener los sites
-                    List<NaturaSite> vSites = _versioningContext.NaturaSite.Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID==envelope.VersionId)).ToList();
+                    List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID==envelope.VersionId)).ToList();
                     List<Sites> bbSites = new List<Sites>();
                     //Guardar los sites y su informacion relacionada con en BackBone
                     foreach (NaturaSite vSite in vSites) {
+                        try
+                        {
+                            _timeLog.setTime(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
+                            Sites bbSite = harvestSite(vSite, envelope);
+                            
+                            _dataContext.Set<Sites>().Add(bbSite);
+                            //Obtener los datos complementarios
+                            
+                            _dataContext.Set<BioRegions>().AddRange(harvestBioregions(vSite, bbSite.Version));
+                            _dataContext.Set<NutsBySite>().AddRange(harvestNutsBySite(vSite, bbSite.Version));
+                            _dataContext.Set<Models.backbone_db.IsImpactedBy>().AddRange(harvestIsImpactedBy(vSite, bbSite.Version));
+                            _dataContext.Set<Models.backbone_db.HasNationalProtection>().AddRange(harvestHasNationalProtection(vSite, bbSite.Version));
+                            _dataContext.Set<Models.backbone_db.DetailedProtectionStatus>().AddRange(harvestDetailedProtectionStatus(vSite, bbSite.Version));
+                            _dataContext.Set<SiteLargeDescriptions>().AddRange(harvestSiteLargeDescriptions(vSite, bbSite.Version));
+                            _dataContext.Set<SiteOwnerType>().AddRange(harvestSiteOwnerType(vSite, bbSite.Version));
+                            _timeLog.setTime(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Processed");
+                        }
+                        catch (Exception ex)
+                        {
 
-                        Sites bbSite = harvestSite(vSite, envelope);
-                        _dataContext.Sites.Add(bbSite);
-                        //Obtener los datos complementarios
-                        _dataContext.BioRegions.AddRange(harvestBioregions(vSite, bbSite.Version));
-                        _dataContext.NutsBySite.AddRange(harvestNutsBySite(vSite, bbSite.Version));
-                        _dataContext.IsImpactedBy.AddRange(harvestIsImpactedBy(vSite, bbSite.Version));
-                        _dataContext.HasNationalProtection.AddRange(harvestHasNationalProtection(vSite, bbSite.Version));
-                        _dataContext.DetailedProtectionStatus.AddRange(harvestDetailedProtectionStatus(vSite, bbSite.Version));
-                        _dataContext.SiteLargeDescriptions.AddRange(harvestSiteLargeDescriptions(vSite, bbSite.Version));
-                        _dataContext.SiteOwnerType.AddRange(harvestSiteOwnerType(vSite, bbSite.Version));
+                        }
+                        finally { 
+                        
+                        }
 
                     }
-                    _dataContext.Sites.AddRange(bbSites);
+                    _dataContext.Set<Sites>().AddRange(bbSites);
                     
                     _dataContext.SaveChanges();
 
@@ -686,26 +700,26 @@ namespace N2K_BackboneBackEnd.Services
 
             try
             {
-                versionNext = _dataContext.Sites.Where(s => s.SiteCode == pVSite.SITECODE).OrderBy(s => s.Version).Select(s => s.Version).FirstOrDefault(-1);
+                versionNext = _dataContext.Set<Sites>().Where(s => s.SiteCode == pVSite.SITECODE).OrderBy(s => s.Version).Select(s => s.Version).FirstOrDefault();
                 bbSite.SiteCode = pVSite.SITECODE;
                 bbSite.Version = versionNext + 1;
                 bbSite.Current = false;
                 bbSite.Name = pVSite.SITENAME;
                 if (pVSite.DATE_COMPILATION.HasValue)
                 {
-                    bbSite.CompilationDate = DateOnly.Parse(pVSite.DATE_COMPILATION.ToString());
+                    bbSite.CompilationDate = pVSite.DATE_COMPILATION;
                 }
                 if (pVSite.DATE_UPDATE.HasValue)
                 {
-                    bbSite.CompilationDate = DateOnly.Parse(pVSite.DATE_COMPILATION.ToString());
+                    bbSite.CompilationDate = pVSite.DATE_COMPILATION;
                 }
                 bbSite.CurrentStatus = (int?)SiteChangeStatus.Pending;
-                bbSite.SiteType = pVSite.SITETYPE;
+                bbSite.SyteType = pVSite.SITETYPE;
                 bbSite.AltitudeMin = pVSite.ALTITUDE_MIN;
                 bbSite.AltitudeMax = pVSite.ALTITUDE_MAX;
-                bbSite.Area = pVSite.AREAHA;
+                bbSite.Area = (double?)pVSite.AREAHA;
                 bbSite.CountryCode = pEnvelope.CountryCode;
-                bbSite.Length = pVSite.LENGTHKM;
+                bbSite.Length = (double?)pVSite.LENGTHKM;
                 bbSite.N2KVersioningRef = Int32.Parse(pVSite.VERSIONID.ToString());
                 bbSite.N2KVersioningVersion = pEnvelope.VersionId;
                 return bbSite;
@@ -720,17 +734,17 @@ namespace N2K_BackboneBackEnd.Services
         }
 
         private List<BioRegions> harvestBioregions(NaturaSite pVSite, int pVersion) {
-            List<BelongsToBioregion> elements = null;
+            List<BelongsToBioRegion> elements = null;
             List<BioRegions> items = new List<BioRegions>();
             try
             {
-                elements = _versioningContext.BelongsToBioRegions.Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (BelongsToBioregion element in elements) {
+                elements = _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
+                foreach (BelongsToBioRegion element in elements) {
                     BioRegions item = new BioRegions();
                     item.SiteCode = element.SITECODE;
                     item.Version = pVersion;
                     item.BGRID = element.BIOREGID;
-                    item.Percentage = element.PERCENTAGE;
+                    item.Percentage = (double?)element.PERCENTAGE;
                     items.Add(item);
                 }
                 return items;
@@ -751,14 +765,14 @@ namespace N2K_BackboneBackEnd.Services
             List<NutsBySite> items = new List<NutsBySite>();
             try
             {
-                elements = _versioningContext.NutsRegion.Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
+                elements = _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
                 foreach (NutsRegion element in elements)
                 {
                     NutsBySite item = new NutsBySite();
                     item.SiteCode = element.SITECODE;
                     item.Version = pVersion;
                     item.NutId = element.NUTSCODE;
-                    item.CoverPercentage = element.COVER;
+                    item.CoverPercentage = (double?)element.COVER;
                     items.Add(item);
                 }
                 return items;
@@ -780,7 +794,7 @@ namespace N2K_BackboneBackEnd.Services
             List<Models.backbone_db.IsImpactedBy> items = new List<Models.backbone_db.IsImpactedBy>();
             try
             {
-                elements = _versioningContext.IsImpactedBy.Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
+                elements = _versioningContext.Set<IsImpactedBy>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
                 foreach (Models.versioning_db.IsImpactedBy element in elements)
                 {
                     Models.backbone_db.IsImpactedBy item = new Models.backbone_db.IsImpactedBy();
@@ -793,11 +807,11 @@ namespace N2K_BackboneBackEnd.Services
                     item.Influence = element.INFLUENCE;
                     if (element.STARTDATE.HasValue)
                     {
-                        item.StartDate = DateOnly.Parse(element.STARTDATE.ToString());
+                        item.StartDate = element.STARTDATE;
                     }
                     if (element.ENDDATE.HasValue)
                     {
-                        item.EndDate = DateOnly.Parse(element.ENDDATE.ToString());
+                        item.EndDate = element.ENDDATE;
                     }
                     item.PollutionCode = element.POLLUTIONCODE;
                     item.Ocurrence = element.OCCURRENCE;
@@ -825,14 +839,14 @@ namespace N2K_BackboneBackEnd.Services
             List<Models.backbone_db.HasNationalProtection> items = new List<Models.backbone_db.HasNationalProtection>();
             try
             {
-                elements = _versioningContext.HasNationalProtection.Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
+                elements = _versioningContext.Set<Models.versioning_db.HasNationalProtection>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
                 foreach (Models.versioning_db.HasNationalProtection element in elements)
                 {
                     Models.backbone_db.HasNationalProtection item = new Models.backbone_db.HasNationalProtection();
                     item.SiteCode = element.SITECODE;
                     item.Version = pVersion;
                     item.DesignatedCode = element.DESIGNATEDCODE;
-                    item.Percentage = element.PERCENTAGE;
+                    item.Percentage = (decimal?)element.PERCENTAGE;
                     items.Add(item);
                 }
                 return items;
@@ -853,7 +867,7 @@ namespace N2K_BackboneBackEnd.Services
             List<Models.backbone_db.DetailedProtectionStatus> items = new List<Models.backbone_db.DetailedProtectionStatus>();
             try
             {
-                elements = _versioningContext.DetailedProtectionStatus.Where(s => s.N2K_SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
+                elements = _versioningContext.Set<Models.versioning_db.DetailedProtectionStatus>().Where(s => s.N2K_SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
                 foreach (Models.versioning_db.DetailedProtectionStatus element in elements)
                 {
                     Models.backbone_db.DetailedProtectionStatus item = new Models.backbone_db.DetailedProtectionStatus();
@@ -861,7 +875,7 @@ namespace N2K_BackboneBackEnd.Services
                     item.Version = pVersion;
                     item.DesignationCode = element.DESIGNATIONCODE;
                     item.OverlapCode = element.OVERLAPCODE;
-                    item.OverlapPercentage = element.OVERLAPPERC;
+                    item.OverlapPercentage = (decimal?)element.OVERLAPPERC;
                     item.Convention = element.CONVENTION;
                     items.Add(item);
                 }
@@ -884,7 +898,7 @@ namespace N2K_BackboneBackEnd.Services
             List<Models.backbone_db.SiteLargeDescriptions> items = new List<Models.backbone_db.SiteLargeDescriptions>();
             try
             {
-                elements = _versioningContext.Description.Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
+                elements = _versioningContext.Set<Models.versioning_db.Description>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
                 foreach (Models.versioning_db.Description element in elements)
                 {
                     Models.backbone_db.SiteLargeDescriptions item = new Models.backbone_db.SiteLargeDescriptions();
@@ -921,14 +935,14 @@ namespace N2K_BackboneBackEnd.Services
             List<Models.backbone_db.SiteOwnerType> items = new List<Models.backbone_db.SiteOwnerType>();
             try
             {
-                elements = _versioningContext.OwnerType.Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
+                elements = _versioningContext.Set<Models.versioning_db.OwnerType>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
                 foreach (Models.versioning_db.OwnerType element in elements)
                 {
                     Models.backbone_db.SiteOwnerType item = new Models.backbone_db.SiteOwnerType();
                     item.SiteCode = element.SITECODE;
                     item.Version = pVersion;
-                    item.Type = _dataContext.OwnerShipTypes.Where(s => s.Description == element.TYPE).Select(s => s.Id).FirstOrDefault();
-                    item.Percent = element.PERCENT;
+                    item.Type = _dataContext.Set<Models.backbone_db.OwnerShipTypes>().Where(s => s.Description == element.TYPE).Select(s => s.Id).FirstOrDefault();
+                    item.Percent = (decimal?)element.PERCENT;
                     items.Add(item);
                 }
                 return items;

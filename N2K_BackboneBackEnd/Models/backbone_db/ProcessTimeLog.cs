@@ -2,8 +2,10 @@
 using System.ComponentModel.DataAnnotations;
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
+
     public class ProcessTimeLog : IEntityModel, IEntityModelBackboneDB
     {
+        [Key]
         public long Id { get; set; }
         public string ProcessName { get; set; }
         public string ActionPerformed { get; set; }

@@ -1,12 +1,14 @@
-﻿using N2K_BackboneBackEnd.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models.backbone_db;
 
 namespace N2K_BackboneBackEnd.Models
 {
-    public static class TimeLog
+    
+    public class TimeLog 
     {
 
-        public static void setTime(N2KBackboneContext pDataContext, string pProcessName, string pAction) {
+        public void setTime(N2KBackboneContext pDataContext, string pProcessName, string pAction) {
             try
             {
                 ProcessTimeLog ptl = new ProcessTimeLog();
@@ -17,6 +19,7 @@ namespace N2K_BackboneBackEnd.Models
 
 
                 pDataContext.Set<ProcessTimeLog>().Add(ptl);
+                pDataContext.SaveChanges();
             }
             catch (Exception ex)
             {

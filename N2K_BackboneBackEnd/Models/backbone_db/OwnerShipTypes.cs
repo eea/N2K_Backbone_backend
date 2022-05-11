@@ -13,7 +13,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<OwnerShipTypes>()
-                .ToView("OwnerShipTypes")
+                .ToTable("OwnerShipTypes")
                 .HasKey("Id");
 
 

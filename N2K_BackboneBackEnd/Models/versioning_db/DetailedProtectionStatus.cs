@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 namespace N2K_BackboneBackEnd.Models.versioning_db
 {
+    [Keyless]
     public class DetailedProtectionStatus : VersioningBase, IEntityModel
     {
         public string COUNTRYCODE { get; set; }
-        public int VERSIONID { get; set; }
-        public int COUNTRYVERSIONID { get; set; }
+        public decimal VERSIONID { get; set; }
+        public decimal COUNTRYVERSIONID { get; set; }
         public string N2K_SITECODE { get; set; }
         public int RID { get; set; }
         public string? DESIGNATIONCODE { get; set; }
