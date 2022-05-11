@@ -17,12 +17,14 @@ namespace N2K_BackboneBackEnd.Services
     public class HarvestedService : IHarvestedService
     {
         private readonly N2KBackboneContext _dataContext;
+        private readonly N2KBackboneReadOnlyContext _dataReadOnlyContext;
         private readonly N2K_VersioningContext _versioningContext;
         private TimeLog _timeLog = new TimeLog();
 
-        public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext)
+        public HarvestedService(N2KBackboneContext dataContext, N2KBackboneReadOnlyContext dataReadOnlyContext, N2K_VersioningContext versioningContext)
         {
             _dataContext = dataContext;
+            _dataReadOnlyContext = dataReadOnlyContext;
             _versioningContext = versioningContext;
         }
         public async Task<List<Harvesting>> GetHarvestedAsync()
@@ -57,7 +59,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
-
+            /*
             var aa = new List<Sites>();
             var processed1 = await _dataContext.Set<Sites>().ToListAsync();
             var bb = new List<BioRegions>();
@@ -78,11 +80,24 @@ namespace N2K_BackboneBackEnd.Services
             var processed9 = await _dataContext.Set<DocumentationLinks>().ToListAsync();
             var jj = new List<SiteOwnerType>();
             var processed10 = await _dataContext.Set<SiteOwnerType>().ToListAsync();
+            */
+            var kk = new List<Habitats>();
+            var processed11 = await _dataContext.Set<Habitats>().ToListAsync();
+            var ll = new List<HabitatAreas>();
+            var processed12 = await _dataContext.Set<HabitatAreas>().ToListAsync();
+            var mm = new List<DescribeSites>();
+            var processed13 = await _dataContext.Set<DescribeSites>().ToListAsync();
+
+            var nn = new List<Species>();
+            var processed14 = await _dataContext.Set<Species>().ToListAsync();
+            var oo = new List<SpeciesOther>();
+            var processed15 = await _dataContext.Set<SpeciesOther>().ToListAsync();
+
 
 
 
             var result = new List<Harvesting>();
-            var processed = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
+            var processed = await _dataReadOnlyContext.Set<ProcessedEnvelopes>().ToListAsync();
             foreach (var procCountry in processed)
             {
                 var param1 = new SqlParameter("@country", procCountry.Country);
@@ -97,10 +112,10 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         if (!result.Contains(aaa))
                             result.AddRange(list.Distinct());
-                    }                        
+                    }
                 }
             }
-            
+
             return await Task.FromResult(result);
         }
 
@@ -121,18 +136,19 @@ namespace N2K_BackboneBackEnd.Services
                 var param1 = new SqlParameter("@country", envelopeIDs[i].CountryCode);
                 var param2 = new SqlParameter("@version", envelopeIDs[i].VersionId);
                 await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spRemoveVersionFromDB  @country, @version", param1, param2);
-                
+
 
                 var country = latestVersions.Where(v => v.Country == envelopeIDs[i].CountryCode).FirstOrDefault(); //Coger la ultima version de ese country
                 var lastReferenceCountryVersion = 0;
-                if (country != null)   lastReferenceCountryVersion = country.Version;
+                if (country != null) lastReferenceCountryVersion = country.Version;
 
                 //1. Harvest SiteCodes
                 var harvSiteCode = new HarvestSiteCode(_dataContext, _versioningContext);
                 await harvSiteCode.Harvest(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId);
 
-                if (lastReferenceCountryVersion!=0) {
-                    var tablesToHarvest =new  Dictionary<int, IHarvestingTables>();
+                if (lastReferenceCountryVersion != 0)
+                {
+                    var tablesToHarvest = new Dictionary<int, IHarvestingTables>();
 
                     var harvestingTasks = new List<Task<int>>();
                     var validatingTasks = new List<Task<int>>();
@@ -157,17 +173,17 @@ namespace N2K_BackboneBackEnd.Services
                     while (harvestingTasks.Count > 0)
                     {
                         var finishedTask = await Task.WhenAny(harvestingTasks);
-                        if (finishedTask != null)                            
+                        if (finishedTask != null)
                         {
                             if (finishedTask.Id > 0)
                             {
                                 IHarvestingTables? harvest = tablesToHarvest[finishedTask.Id]; // .GetValueOrDefault();
                                 if (harvest != null)
-                                    if (finishedTask.Result==1)
+                                    if (finishedTask.Result == 1)
                                         validatingTasks.Add(harvest.ValidateChanges(envelopeIDs[i].CountryCode, envelopeIDs[i].VersionId, lastReferenceCountryVersion));
                             }
                             harvestingTasks.Remove(finishedTask);
-                        }                        
+                        }
                     }
                     //...
 
@@ -637,27 +653,31 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<HarvestedEnvelope>> Start(EnvelopesToProcess[] envelopeIDs) {
+        public async Task<List<HarvestedEnvelope>> Start(EnvelopesToProcess[] envelopeIDs)
+        {
 
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
             List<NaturaSite> sites = null;
-            try {
-                foreach (EnvelopesToProcess envelope in envelopeIDs) {
+            try
+            {
+                foreach (EnvelopesToProcess envelope in envelopeIDs)
+                {
 
                     //por cada uno de los envelops que ya se han obtenido
                     //Obtener los sites
-                    List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID==envelope.VersionId)).ToList();
+                    List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
                     List<Sites> bbSites = new List<Sites>();
                     //Guardar los sites y su informacion relacionada con en BackBone
-                    foreach (NaturaSite vSite in vSites) {
+                    foreach (NaturaSite vSite in vSites)
+                    {
                         try
                         {
                             _timeLog.setTime(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                             Sites bbSite = harvestSite(vSite, envelope);
-                            
+
                             _dataContext.Set<Sites>().Add(bbSite);
                             //Obtener los datos complementarios
-                            
+
                             _dataContext.Set<BioRegions>().AddRange(harvestBioregions(vSite, bbSite.Version));
                             _dataContext.Set<NutsBySite>().AddRange(harvestNutsBySite(vSite, bbSite.Version));
                             _dataContext.Set<Models.backbone_db.IsImpactedBy>().AddRange(harvestIsImpactedBy(vSite, bbSite.Version));
@@ -671,28 +691,32 @@ namespace N2K_BackboneBackEnd.Services
                         {
 
                         }
-                        finally { 
-                        
+                        finally
+                        {
+
                         }
 
                     }
                     _dataContext.Set<Sites>().AddRange(bbSites);
-                    
+
                     _dataContext.SaveChanges();
 
                 }
-                return await Task.FromResult(result); 
+                return await Task.FromResult(result);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return await Task.FromResult(new List<HarvestedEnvelope>());
             }
-            finally { 
+            finally
+            {
             }
 
 
         }
 
-        private Sites harvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope) {
+        private Sites harvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
+        {
             //Tomamos el valor más alto que tiene en el campo Version para ese SiteCode. Por defecto es -1 para cuando no existe 
             //por que le vamos a sumar un 1 lo cual dejaría en 0
             Sites bbSite = new Sites();
@@ -714,7 +738,7 @@ namespace N2K_BackboneBackEnd.Services
                     bbSite.CompilationDate = pVSite.DATE_COMPILATION;
                 }
                 bbSite.CurrentStatus = (int?)SiteChangeStatus.Pending;
-                bbSite.SyteType = pVSite.SITETYPE;
+                bbSite.SiteType = pVSite.SITETYPE;
                 bbSite.AltitudeMin = pVSite.ALTITUDE_MIN;
                 bbSite.AltitudeMax = pVSite.ALTITUDE_MAX;
                 bbSite.Area = (double?)pVSite.AREAHA;
@@ -728,18 +752,21 @@ namespace N2K_BackboneBackEnd.Services
             {
                 return null;
             }
-            finally { 
-            
+            finally
+            {
+
             }
         }
 
-        private List<BioRegions> harvestBioregions(NaturaSite pVSite, int pVersion) {
+        private List<BioRegions> harvestBioregions(NaturaSite pVSite, int pVersion)
+        {
             List<BelongsToBioRegion> elements = null;
             List<BioRegions> items = new List<BioRegions>();
             try
             {
                 elements = _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (BelongsToBioRegion element in elements) {
+                foreach (BelongsToBioRegion element in elements)
+                {
                     BioRegions item = new BioRegions();
                     item.SiteCode = element.SITECODE;
                     item.Version = pVersion;
@@ -753,8 +780,9 @@ namespace N2K_BackboneBackEnd.Services
             {
                 return null;
             }
-            finally { 
-            
+            finally
+            {
+
             }
 
         }
@@ -891,7 +919,7 @@ namespace N2K_BackboneBackEnd.Services
             }
 
         }
-        
+
         private List<Models.backbone_db.SiteLargeDescriptions> harvestSiteLargeDescriptions(NaturaSite pVSite, int pVersion)
         {
             List<Models.versioning_db.Description> elements = null;
@@ -913,7 +941,7 @@ namespace N2K_BackboneBackEnd.Services
                     item.ManagConservMeasures = element.MANAG_CONSERV_MEASURES;
                     item.ManagPlanUrl = element.MANAG_PLAN_URL;
                     item.ManagStatus = element.MANAG_STATUS;
-                  
+
                     items.Add(item);
                 }
                 return items;
@@ -928,7 +956,7 @@ namespace N2K_BackboneBackEnd.Services
             }
 
         }
-        
+
         private List<Models.backbone_db.SiteOwnerType> harvestSiteOwnerType(NaturaSite pVSite, int pVersion)
         {
             List<Models.versioning_db.OwnerType> elements = null;
@@ -959,3 +987,4 @@ namespace N2K_BackboneBackEnd.Services
         }
     }
 }
+

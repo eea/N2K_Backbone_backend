@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.BackboneDB
 {
-    public class ProcessedEnvelopes : IEntityModel, IEntityModelBackboneDB
+    public class ProcessedEnvelopes : IEntityModel, IEntityModelBackboneReadOnlyDB
     {
         [Key]
         public long Id { get; }

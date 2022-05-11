@@ -13,7 +13,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public DateTime? ModifyTS { get; set; }
         public int? CurrentStatus { get; set; }
         public string? CountryCode { get; set; }
-        public string? SyteType { get; set; }
+        public string? SiteType { get; set; }
         public double? AltitudeMin { get; set; }
         public double? AltitudeMax { get; set; }
         public int? N2KVersioningVersion { get; set; }
