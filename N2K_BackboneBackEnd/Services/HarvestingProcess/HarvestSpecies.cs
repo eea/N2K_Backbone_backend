@@ -1,4 +1,7 @@
 ﻿using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.versioning_db;
 
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 {
@@ -28,6 +31,124 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
+        public async Task<int> HarvestByCountry(string pCountryCode, int pCountryVersion, int pVersion)
+        {
+            List<ContainsSpecies> elements = null;
+            try
+            {
+                Console.WriteLine("=>Start species harvest by country...");
+
+                elements = _versioningContext.Set<ContainsSpecies>().Where(s=> s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToList();
+
+                foreach (ContainsSpecies element in elements) {
+                    
+                    SpecieBase item = new SpecieBase();
+                    item.SiteCode = element.SITECODE;
+                    item.Version = pVersion;
+                    item.SpecieCode = element.SPECIESCODE;
+                    item.PopulationMin = (element.LOWERBOUND != null) ? Int32.Parse(element.LOWERBOUND) : null;
+                    item.PopulationMax = (element.UPPERBOUND != null) ? Int32.Parse(element.UPPERBOUND) : null;
+                    //item.Group = element.GROUP; // PENDING
+                    item.SensitiveInfo = (element.LOWERBOUND != null) ? ((element.SENSITIVE == 1) ? true : false) : null;
+                    item.Resident = element.RESIDENT;
+                    item.Breeding = element.BREEDING;
+                    item.Winter = element.WINTER;
+                    item.Staging = element.STAGING;
+                    //item.Path = element.PATH; // ??? PENDING
+                    item.AbundaceCategory = element.ABUNDANCECATEGORY;
+                    item.Motivation = element.MOTIVATION;
+                    item.PopulationType = element.POPULATION_TYPE;
+                    item.CountingUnit = element.COUNTINGUNIT;
+                    item.Population = element.POPULATION;
+                    item.Insolation = element.ISOLATIONFACTOR;
+                    item.Conservation = element.CONSERVATION;
+                    item.Global = element.GLOBALIMPORTANCE;
+                    item.NonPersistence = (element.NONPRESENCEINSITE != null) ? ((element.NONPRESENCEINSITE == 1) ? true : false) : null;
+                    item.DataQuality = element.DATAQUALITY;
+                    item.SpecieType = element.SPTYPE;
+
+                    if (element.SPECIESCODE is null || _dataContext.Set<SpeciesTypes>().Where(a => a.Code == element.SPECIESCODE).Count() < 1)
+                    {
+                        _dataContext.Set<SpeciesOther>().Add((SpeciesOther)item);
+                    }
+                    else
+                    {
+                        _dataContext.Set<Species>().Add((Species)item);
+                    }
+
+
+                }
+                
+                Console.WriteLine("=>End species harvest by country...");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("=>End species harvest by country with error...");
+                return 0;
+            }
+
+        }
+
+        public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion)
+        {
+            List<ContainsSpecies> elements = null;
+            try
+            {
+                Console.WriteLine("=>Start species by site harvest...");
+                elements = _versioningContext.Set<ContainsSpecies>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToList();
+                foreach (ContainsSpecies element in elements)
+                {
+
+                    //Check id the specie code is null or not present in the catalog
+                    SpecieBase item = new SpecieBase();
+                    item.SiteCode = element.SITECODE;
+                    item.Version = pVersion;
+                    item.SpecieCode = element.SPECIESCODE;
+                    item.PopulationMin = (element.LOWERBOUND != null) ? Int32.Parse(element.LOWERBOUND) : null;
+                    item.PopulationMax = (element.UPPERBOUND != null) ? Int32.Parse(element.UPPERBOUND) : null;
+                    //item.Group = element.GROUP; // PENDING
+                    item.SensitiveInfo = (element.LOWERBOUND != null) ? ((element.SENSITIVE == 1) ? true : false) : null;
+                    item.Resident = element.RESIDENT;
+                    item.Breeding = element.BREEDING;
+                    item.Winter = element.WINTER;
+                    item.Staging = element.STAGING;
+                    //item.Path = element.PATH; // ??? PENDING
+                    item.AbundaceCategory = element.ABUNDANCECATEGORY;
+                    item.Motivation = element.MOTIVATION;
+                    item.PopulationType = element.POPULATION_TYPE;
+                    item.CountingUnit = element.COUNTINGUNIT;
+                    item.Population = element.POPULATION;
+                    item.Insolation = element.ISOLATIONFACTOR;
+                    item.Conservation = element.CONSERVATION;
+                    item.Global = element.GLOBALIMPORTANCE;
+                    item.NonPersistence = (element.NONPRESENCEINSITE != null) ? ((element.NONPRESENCEINSITE == 1) ? true : false) : null;
+                    item.DataQuality = element.DATAQUALITY;
+                    item.SpecieType = element.SPTYPE;
+
+                    if (element.SPECIESCODE is null || _dataContext.Set<SpeciesTypes>().Where(a => a.Code == element.SPECIESCODE).Count() < 1)
+                    {
+                        _dataContext.Set<SpeciesOther>().Add((SpeciesOther)item);
+                    }
+                    else
+                    {
+                        _dataContext.Set<Species>().Add((Species)item);
+                    }
+                }
+
+                Console.WriteLine("=>End species by site harvest...");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("=>End species by site harvest with error...");
+                return 0;
+            }
+
+        }
+
         public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
         {
             Console.WriteLine("==>Start species validate...");
@@ -36,101 +157,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             return 1;
         }
 
-        private List<Models.backbone_db.Species> harvestSpecies(NaturaSite pVSite, int pVersion)
-        {
-            List<Models.versioning_db.ContainsSpecies> elements = null;
-            List<Models.backbone_db.Species> items = new List<Models.backbone_db.Species>();
-            try
-            {
-                elements = _versioningContext.Set<Models.versioning_db.ContainsSpecies>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (Models.versioning_db.ContainsSpecies element in elements)
-                {
-                    Models.backbone_db.Species item = new Models.backbone_db.Species();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.SpecieCode = element.SPECIESCODE;
-                    item.PopulationMin = element.POPULATION; // ??? PENDING
-                    item.PopulationMax = element.POPULATION; // ??? PENDING
-                    item.Group = element.GROUP; // PENDING
-                    item.SensitiveInfo = element.SENSITIVE; // ??? PENDING
-                    item.Resident = element.RESIDENT;
-                    item.Breeding = element.BREEDING;
-                    item.Winter = element.WINTER;
-                    item.Staging = element.STAGING;
-                    item.Path = element.PATH; // ??? PENDING
-                    item.AbundaceCategory = element.ABUNDANCECATEGORY;
-                    item.Motivation = element.MOTIVATION;
-                    item.PopulationType = element.POPULATION_TYPE;
-                    item.CountingUnit = element.COUNTINGUNIT;
-                    item.Population = element.POPULATION;
-                    item.Insolation = element.ISOLATIONFACTOR; // ??? PENDING
-                    item.Conservation = element.CONSERVATION;
-                    item.Global = element.GLOBALIMPORTANCE; // ??? PENDING
-                    item.NonPersistence = element.NONPRESENCEINSITE; // ??? PENDING
-                    item.DataQuality = element.DATAQUALITY;
-                    item.SpecieType = element.SPTYPE;
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        private List<Models.backbone_db.SpeciesOther> harvestSpeciesOther(NaturaSite pVSite, int pVersion)
-        {
-            List<Models.versioning_db.ContainsSpecies> elements = null;
-            List<Models.backbone_db.SpeciesOther> items = new List<Models.backbone_db.SpeciesOther>();
-            try
-            {
-                elements = _versioningContext.Set<Models.versioning_db.ContainsSpecies>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (Models.versioning_db.ContainsSpecies element in elements)
-                {
-                    Models.backbone_db.SpeciesOther item = new Models.backbone_db.SpeciesOther();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.SpecieCode = element.SPECIESCODE;
-                    item.PopulationMin = element.POPULATION; // ??? PENDING
-                    item.PopulationMax = element.POPULATION; // ??? PENDING
-                    item.Group = element.GROUP; // PENDING
-                    item.SensitiveInfo = element.SENSITIVE; // ??? PENDING
-                    item.Resident = element.RESIDENT;
-                    item.Breeding = element.BREEDING;
-                    item.Winter = element.WINTER;
-                    item.Staging = element.STAGING;
-                    item.Path = element.PATH; // ??? PENDING
-                    item.AbundaceCategory = element.ABUNDANCECATEGORY;
-                    item.Motivation = element.MOTIVATION;
-                    item.PopulationType = element.POPULATION_TYPE;
-                    item.CountingUnit = element.COUNTINGUNIT;
-                    item.Population = element.POPULATION;
-                    item.Insolation = element.ISOLATIONFACTOR; // ??? PENDING
-                    item.Conservation = element.CONSERVATION;
-                    item.Global = element.GLOBALIMPORTANCE; // ??? PENDING
-                    item.NonPersistence = element.NONPRESENCEINSITE; // ??? PENDING
-                    item.DataQuality = element.DATAQUALITY;
-                    item.SpecieType = element.SPTYPE;
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
+        
 
     }
 }

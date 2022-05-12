@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models.backbone_db;
+using Microsoft.Data.SqlClient;
 
 namespace N2K_BackboneBackEnd.Models
 {
@@ -27,6 +28,53 @@ namespace N2K_BackboneBackEnd.Models
             }
             finally { 
             
+            }
+
+        }
+
+        public void setTimeStamp(string pDataConexion, string pProcessName, string pAction)
+        {
+            SqlConnection conn=null;
+            SqlCommand cmd = null;
+            SqlParameter param1 = null;
+            SqlParameter param2 = null;
+            SqlParameter param3 = null;
+
+            try
+            {
+
+                conn = new SqlConnection(pDataConexion);
+
+                cmd = conn.CreateCommand();
+                param1 = new SqlParameter("@ProcessName", pProcessName);
+                param2 = new SqlParameter("@ActionPerformed", pAction);
+                param3 = new SqlParameter("@StampTime", DateTime.Now);
+
+                cmd.CommandText = "INSERT INTO ProcessTimeLog VALUES (@ProcessName,@ActionPerformed,@StampTime)";
+                cmd.Parameters.Add(param1);
+                cmd.Parameters.Add(param2);
+                cmd.Parameters.Add(param3);
+
+                cmd.ExecuteNonQuery();
+
+            }
+            catch (Exception ex)
+            {
+                ex = null;
+            }
+            finally
+            {
+                param1 = null;
+                param2 = null;
+                param3 = null;
+                if (cmd != null)
+                {
+                    cmd.Dispose();
+                }
+                if (conn != null && conn.State != System.Data.ConnectionState.Closed) { 
+                    conn.Close();
+                }
+                conn = null;
             }
 
         }

@@ -16,6 +16,8 @@
         public int refresh_token_max_age { get; set; }
 
         public int id_token_max_age { get; set; }
+        
+        public bool InDevelopment { get; set; }
 
     }
 }

@@ -11,6 +11,7 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.Enumerations;
 using IsImpactedBy = N2K_BackboneBackEnd.Models.versioning_db.IsImpactedBy;
+using Microsoft.Extensions.Options;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -18,12 +19,21 @@ namespace N2K_BackboneBackEnd.Services
     {
         private readonly N2KBackboneContext _dataContext;
         private readonly N2K_VersioningContext _versioningContext;
+        private readonly IOptions<ConfigSettings> _appSettings;
         private TimeLog _timeLog = new TimeLog();
 
         public HarvestedService(N2KBackboneContext dataContext,N2K_VersioningContext versioningContext)
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
+            
+        }
+        
+        public HarvestedService(N2KBackboneContext dataContext,N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app)
+        {
+            _dataContext = dataContext;
+            _versioningContext = versioningContext;
+             _appSettings = app;
         }
         public async Task<List<Harvesting>> GetHarvestedAsync()
         {
@@ -690,9 +700,8 @@ namespace N2K_BackboneBackEnd.Services
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
                     //remove version from database
-                    var param1 = new SqlParameter("@country", envelope.CountryCode);
-                    var param2 = new SqlParameter("@version", envelope.VersionId);
-                    await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spRemoveVersionFromDB  @country, @version", param1, param2);
+                    resetEnvirontment(envelope.CountryCode, envelope.VersionId);
+                    
 
                     //create a new entry in the processed envelopes table to register that a new one is being harvested
                     var envelopeToProcess = new ProcessedEnvelopes
@@ -717,7 +726,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             try
                             {
-                                _timeLog.setTime(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
+                                //_timeLog.setTimeStamp(_appSettings.Value.N2K_BackboneBackEndContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 //complete the data of the site and add it to the DB
                                 Sites bbSite = harvestSite(vSite, envelope);
                                 _dataContext.Set<Sites>().Add(bbSite);
@@ -729,7 +738,7 @@ namespace N2K_BackboneBackEnd.Services
                                 _dataContext.Set<Models.backbone_db.DetailedProtectionStatus>().AddRange(harvestDetailedProtectionStatus(vSite, bbSite.Version));
                                 _dataContext.Set<SiteLargeDescriptions>().AddRange(harvestSiteLargeDescriptions(vSite, bbSite.Version));
                                 _dataContext.Set<SiteOwnerType>().AddRange(harvestSiteOwnerType(vSite, bbSite.Version));
-                                _timeLog.setTime(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Processed");
+                                //_timeLog.setTimeStamp(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Processed");
                                 
                             }
                             catch (Exception ex)
@@ -1077,6 +1086,28 @@ namespace N2K_BackboneBackEnd.Services
             }
 
         }
+        /// <summary>
+        /// Remove the version we use in development
+        /// </summary>
+        /// <param name="pCountryCode">Code of two digits for the country</param>
+        /// <param name="pCountryVersion">Number of the version</param>
+        private async void resetEnvirontment(string pCountryCode, int pCountryVersion )
+        {
+            try
+            {
+                if (_appSettings.Value.InDevelopment)
+                {
+                    var param1 = new SqlParameter("@country", pCountryCode);
+                    var param2 = new SqlParameter("@version", pCountryVersion);
+                    await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spRemoveVersionFromDB  @country, @version", param1, param2);
+                }
+            }
+            catch (Exception ex) { 
+                
+            }
+        
+        }
+    
     }
 }
 
