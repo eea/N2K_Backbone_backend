@@ -17,14 +17,12 @@ namespace N2K_BackboneBackEnd.Services
     public class HarvestedService : IHarvestedService
     {
         private readonly N2KBackboneContext _dataContext;
-        private readonly N2KBackboneReadOnlyContext _dataReadOnlyContext;
         private readonly N2K_VersioningContext _versioningContext;
         private TimeLog _timeLog = new TimeLog();
 
-        public HarvestedService(N2KBackboneContext dataContext, N2KBackboneReadOnlyContext dataReadOnlyContext, N2K_VersioningContext versioningContext)
+        public HarvestedService(N2KBackboneContext dataContext,N2K_VersioningContext versioningContext)
         {
             _dataContext = dataContext;
-            _dataReadOnlyContext = dataReadOnlyContext;
             _versioningContext = versioningContext;
         }
         public async Task<List<Harvesting>> GetHarvestedAsync()
@@ -113,7 +111,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         if (!result.Contains(pendEnv))
                         {
-                            if (allEnvs.Where(e => e.Version == pendEnv.Id && e.Country == pendEnv.Country && e.Status == 0).ToList().Count == 0)
+                            if (allEnvs.Where(e => e.Version == pendEnv.Id && e.Country == pendEnv.Country && e.Status ==  HarvestingStatus.Harvesting).ToList().Count == 0)
                             {
                                 result.Add(
                                     new Harvesting
@@ -688,70 +686,97 @@ namespace N2K_BackboneBackEnd.Services
             List<NaturaSite> sites = null;
             try
             {
+                //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
+                    //remove version from database
+                    var param1 = new SqlParameter("@country", envelope.CountryCode);
+                    var param2 = new SqlParameter("@version", envelope.VersionId);
+                    await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spRemoveVersionFromDB  @country, @version", param1, param2);
 
+                    //create a new entry in the processed envelopes table to register that a new one is being harvested
                     var envelopeToProcess = new ProcessedEnvelopes
                     {
                         Country = envelope.CountryCode,
                         Version = envelope.VersionId,
                         ImportDate = await GetSubmissionDate(envelope.CountryCode, envelope.VersionId),
-                        Status = 0
+                        Status = HarvestingStatus.Harvesting
                     };
-                    _dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
-                    _dataContext.SaveChanges();
-
-
-                    //Obtener los sites
-                    List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
-                    List<Sites> bbSites = new List<Sites>();
-                    //Guardar los sites y su informacion relacionada con en BackBone
-                    
-                    foreach (NaturaSite vSite in vSites)
+                    try
                     {
-                        try
+                        //add the envelope to the DB
+                        _dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
+                        _dataContext.SaveChanges();
+
+
+                        //Get the sites submitted in the envelope
+                        List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
+                        List<Sites> bbSites = new List<Sites>();
+
+                        foreach (NaturaSite vSite in vSites)
                         {
-                            _timeLog.setTime(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
-                            Sites bbSite = harvestSite(vSite, envelope);
+                            try
+                            {
+                                _timeLog.setTime(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
+                                //complete the data of the site and add it to the DB
+                                Sites bbSite = harvestSite(vSite, envelope);
+                                _dataContext.Set<Sites>().Add(bbSite);
+                                //Get the data for all related tables                                
+                                _dataContext.Set<BioRegions>().AddRange(harvestBioregions(vSite, bbSite.Version));
+                                _dataContext.Set<NutsBySite>().AddRange(harvestNutsBySite(vSite, bbSite.Version));
+                                _dataContext.Set<Models.backbone_db.IsImpactedBy>().AddRange(harvestIsImpactedBy(vSite, bbSite.Version));
+                                _dataContext.Set<Models.backbone_db.HasNationalProtection>().AddRange(harvestHasNationalProtection(vSite, bbSite.Version));
+                                _dataContext.Set<Models.backbone_db.DetailedProtectionStatus>().AddRange(harvestDetailedProtectionStatus(vSite, bbSite.Version));
+                                _dataContext.Set<SiteLargeDescriptions>().AddRange(harvestSiteLargeDescriptions(vSite, bbSite.Version));
+                                _dataContext.Set<SiteOwnerType>().AddRange(harvestSiteOwnerType(vSite, bbSite.Version));
+                                _timeLog.setTime(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Processed");
+                                
+                            }
+                            catch (Exception ex)
+                            {
 
-                            //_dataContext.Set<Sites>().Add(bbSite);
-                            //Obtener los datos complementarios
-                            /*
-                            _dataContext.Set<BioRegions>().AddRange(harvestBioregions(vSite, bbSite.Version));
-                            _dataContext.Set<NutsBySite>().AddRange(harvestNutsBySite(vSite, bbSite.Version));
-                            _dataContext.Set<Models.backbone_db.IsImpactedBy>().AddRange(harvestIsImpactedBy(vSite, bbSite.Version));
-                            _dataContext.Set<Models.backbone_db.HasNationalProtection>().AddRange(harvestHasNationalProtection(vSite, bbSite.Version));
-                            _dataContext.Set<Models.backbone_db.DetailedProtectionStatus>().AddRange(harvestDetailedProtectionStatus(vSite, bbSite.Version));
-                            _dataContext.Set<SiteLargeDescriptions>().AddRange(harvestSiteLargeDescriptions(vSite, bbSite.Version));
-                            _dataContext.Set<SiteOwnerType>().AddRange(harvestSiteOwnerType(vSite, bbSite.Version));
-                            _timeLog.setTime(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Processed");
-                            */
+                            }
+                            finally
+                            {
+
+                            }
+
                         }
-                        catch (Exception ex)
-                        {
-
-                        }
-                        finally
-                        {
-
-                        }
-
+                        //set the enevelope as successfully completed
+                        envelopeToProcess.Status = HarvestingStatus.Harvested;
+                        _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
+                        result.Add(
+                            new HarvestedEnvelope
+                            {
+                                CountryCode = envelope.CountryCode,
+                                VersionId = envelope.VersionId,
+                                NumChanges = 0,
+                                Status = SiteChangeStatus.Harvested
+                            }
+                         );
                     }
-                    //_dataContext.Set<Sites>().AddRange(bbSites);
-                    envelopeToProcess.Status = 3;
-                    _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
-                    result.Add(
-                        new HarvestedEnvelope
-                        {
-                             CountryCode = envelope.CountryCode,
-                             VersionId = envelope.VersionId,
-                             NumChanges=0,
-                             Status = SiteChangeStatus.Harvested
-                        }
-                     );
+                    catch (Exception e)
+                    {   
+                        //if there is an error reject the envelope
+                        _dataContext.Set<ProcessedEnvelopes>().Remove(envelopeToProcess);
+                        result.Add(
+                            new HarvestedEnvelope
+                            {
+                                CountryCode = envelope.CountryCode,
+                                VersionId = envelope.VersionId,
+                                NumChanges = 0,
+                                Status = SiteChangeStatus.Rejected
+                            }
+                         );
+                    }
+                    finally
+                    {
+                        //save the data of the site in backbone DB
+                        _dataContext.SaveChanges();
+                    }
 
-
-                    _dataContext.SaveChanges();
+                        
+                   
 
                 }
                 return await Task.FromResult(result);

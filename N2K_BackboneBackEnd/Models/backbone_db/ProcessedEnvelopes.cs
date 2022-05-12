@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using N2K_BackboneBackEnd.Enumerations;
 using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.BackboneDB
@@ -13,7 +14,7 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
 
         public int Version { get;   set; }
 
-        public int Status { get;  set; }
+        public HarvestingStatus Status { get;  set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {

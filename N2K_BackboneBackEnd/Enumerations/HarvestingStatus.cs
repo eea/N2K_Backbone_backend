@@ -7,11 +7,16 @@ namespace N2K_BackboneBackEnd.Enumerations
     public enum HarvestingStatus
     {
         [DataMember]
-        Pending,
+        Pending=0,
         [DataMember]
-        Harvesting,
+        Accepted=1,
         [DataMember]
-        Completed
+        Rejected = 2,
+        [DataMember]
+        Harvested=3,
+        [DataMember]
+        Harvesting = 4
+
     }
 
 }

@@ -6,12 +6,13 @@ namespace N2K_BackboneBackEnd.Enumerations
     public enum SiteChangeStatus
     {
         [DataMember]
-        Accepted,
+        Pending = 0,
         [DataMember]
-        Pending,
+        Accepted=1,
         [DataMember]
-        Rejected,
+        Rejected=2,
         [DataMember]
-        Harvested
+        Harvested=3
+
     }
 }

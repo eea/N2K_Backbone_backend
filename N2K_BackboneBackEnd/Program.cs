@@ -29,11 +29,13 @@ builder.Services.AddDbContext<N2KBackboneContext>(options =>
 
 });
 
-
+/*
 builder.Services.AddDbContext<N2KBackboneReadOnlyContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
 });
+*/
+
 
 
 builder.Services.AddDbContext<N2K_VersioningContext>(options =>
