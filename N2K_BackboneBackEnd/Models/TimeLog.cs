@@ -32,7 +32,7 @@ namespace N2K_BackboneBackEnd.Models
 
         }
 
-        public void setTimeStamp(string pDataConexion, string pProcessName, string pAction)
+        public void setTimeStamp(string pProcessName, string pAction)
         {
             SqlConnection conn=null;
             SqlCommand cmd = null;
@@ -42,15 +42,16 @@ namespace N2K_BackboneBackEnd.Models
 
             try
             {
+               ;
 
-                conn = new SqlConnection(pDataConexion);
-
+                conn = new SqlConnection(WebApplication.CreateBuilder().Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
+                conn.Open();
                 cmd = conn.CreateCommand();
                 param1 = new SqlParameter("@ProcessName", pProcessName);
                 param2 = new SqlParameter("@ActionPerformed", pAction);
                 param3 = new SqlParameter("@StampTime", DateTime.Now);
 
-                cmd.CommandText = "INSERT INTO ProcessTimeLog VALUES (@ProcessName,@ActionPerformed,@StampTime)";
+                cmd.CommandText = "INSERT INTO ProcessTimeLog  (ProcessName,ActionPerformed,StampTime) VALUES (@ProcessName,@ActionPerformed,@StampTime)";
                 cmd.Parameters.Add(param1);
                 cmd.Parameters.Add(param2);
                 cmd.Parameters.Add(param3);
@@ -71,10 +72,11 @@ namespace N2K_BackboneBackEnd.Models
                 {
                     cmd.Dispose();
                 }
-                if (conn != null && conn.State != System.Data.ConnectionState.Closed) { 
-                    conn.Close();
+                if (conn != null ) { 
+                    if(conn.State != System.Data.ConnectionState.Closed) conn.Close();
+                    conn.Dispose();
                 }
-                conn = null;
+               
             }
 
         }
