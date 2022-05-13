@@ -1,4 +1,6 @@
 ﻿using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
 
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
@@ -11,13 +13,205 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         public async Task<int> Harvest(string countryCode, int versionId)
         {
+            try
+            {
+                Console.WriteLine("=>Start habitat harvest...");
+                await Task.Delay(8000);
+                var a = 1;
+                var b = 1 / (a - 1);
+                Console.WriteLine("=>End habitat harvest...");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("=>End species harvest with error...");
+                return 0;
+            }
+        }
 
-            Console.WriteLine("=>Start HarvestHabitats harvest...");
-            await Task.Delay(500);
-            Console.WriteLine("=>End HarvestHabitatsharvest...");
-            return 1;
+        public async Task<int> HarvestByCountry(string pCountryCode, int pCountryVersion, int pVersion)
+        {
+            try
+            {
+                Console.WriteLine("=>Start full habitat harvest by country...");
+                await HarvestHabitatsByCountry(pCountryCode, pCountryVersion, pVersion);
+                await HarvestDescribeSitesByCountry(pCountryCode, pCountryVersion, pVersion);
+                Console.WriteLine("=>End full habitat harvest by country...");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("=>End full habitat harvest by country with error...");
+                return 0;
+            }
+        }
 
+        public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion)
+        {
+            try
+            {
+                Console.WriteLine("=>Start full habitat harvest by site...");
+                await HarvestHabitatsBySite(pSiteCode, pSiteVersion, pVersion);
+                await HarvestDescribeSitesBySite(pSiteCode, pSiteVersion, pVersion);
+                Console.WriteLine("=>End full habitat harvest by site...");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("=>End full habitat harvest by site with error...");
+                return 0;
+            }
+        }
 
+        public async Task<int> HarvestHabitatsByCountry(string pCountryCode, int pCountryVersion, int pVersion)
+        {
+            List<ContainsHabitat> elements = null;
+            try
+            {
+                Console.WriteLine("=>Start habitat harvest by country...");
+
+                elements = _versioningContext.Set<ContainsHabitat>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToList();
+
+                foreach (ContainsHabitat element in elements)
+                {
+                    Habitats item = new Habitats();
+                    item.SiteCode = element.SITECODE;
+                    item.Version = pVersion;
+                    item.HabitatCode = element.HABITATCODE;
+                    item.CoverHA = (decimal?)element.COVER_HA;
+                    item.PriorityForm = element.PF;
+                    item.Representativity = element.REPRESENTATIVITY;
+                    item.DataQty = Convert.ToInt32(element.DATAQUALITY);
+                    //item.Conservation = element.CONSERVATION; // ??? PENDING
+                    item.GlobalAssesments = element.GLOBALASSESMENT;
+                    item.RelativeSurface = element.RELSURFACE;
+                    item.Percentage = (decimal?)element.PERCENTAGECOVER;
+                    item.ConsStatus = element.CONSSTATUS;
+                    item.Caves = Convert.ToString(element.CAVES); // ???
+                    item.PF = Convert.ToString(element.PF); // ??? PENDING The same as PriorityForm
+                    item.NonPresenciInSite = Convert.ToString(element.NONPRESENCEINSITE); // ???
+
+                    _dataContext.Set<Habitats>().Add(item);
+                }
+
+                Console.WriteLine("=>End habitat harvest by country...");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("=>End habitat harvest by country with error...");
+                return 0;
+            }
+
+        }
+
+        public async Task<int> HarvestHabitatsBySite(string pSiteCode, decimal pSiteVersion, int pVersion)
+        {
+            List<ContainsHabitat> elements = null;
+            try
+            {
+                Console.WriteLine("=>Start habitat harvest by site...");
+
+                elements = _versioningContext.Set<ContainsHabitat>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToList();
+
+                foreach (ContainsHabitat element in elements)
+                {
+                    Habitats item = new Habitats();
+                    item.SiteCode = element.SITECODE;
+                    item.Version = pVersion;
+                    item.HabitatCode = element.HABITATCODE;
+                    item.CoverHA = (decimal?)element.COVER_HA;
+                    item.PriorityForm = element.PF;
+                    item.Representativity = element.REPRESENTATIVITY;
+                    item.DataQty = Convert.ToInt32(element.DATAQUALITY);
+                    //item.Conservation = element.CONSERVATION; // ??? PENDING
+                    item.GlobalAssesments = element.GLOBALASSESMENT;
+                    item.RelativeSurface = element.RELSURFACE;
+                    item.Percentage = (decimal?)element.PERCENTAGECOVER;
+                    item.ConsStatus = element.CONSSTATUS;
+                    item.Caves = Convert.ToString(element.CAVES); // ???
+                    item.PF = Convert.ToString(element.PF); // ??? PENDING The same as PriorityForm
+                    item.NonPresenciInSite = Convert.ToString(element.NONPRESENCEINSITE); // ???
+
+                    _dataContext.Set<Habitats>().Add(item);
+                }
+
+                Console.WriteLine("=>End habitat harvest by site...");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("=>End habitat harvest by site with error...");
+                return 0;
+            }
+
+        }
+
+        public async Task<int> HarvestDescribeSitesByCountry(string pCountryCode, int pCountryVersion, int pVersion)
+        {
+            List<DescribesSites> elements = null;
+            try
+            {
+                Console.WriteLine("=>Start describeSites harvest by country...");
+
+                elements = _versioningContext.Set<DescribesSites>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToList();
+
+                foreach (DescribesSites element in elements)
+                {
+                    DescribeSites item = new DescribeSites();
+                    item.SiteCode = element.SITECODE;
+                    item.Version = pVersion;
+                    item.HabitatCode = element.HABITATCODE;
+                    item.Percentage = element.PERCENTAGECOVER;
+
+                    _dataContext.Set<DescribeSites>().Add(item);
+                }
+
+                Console.WriteLine("=>End describeSites harvest by country...");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("=>End describeSites harvest by country with error...");
+                return 0;
+            }
+        }
+
+        public async Task<int> HarvestDescribeSitesBySite(string pSiteCode, decimal pSiteVersion, int pVersion)
+        {
+            List<DescribesSites> elements = null;
+            try
+            {
+                Console.WriteLine("=>Start describeSites harvest by site...");
+
+                elements = _versioningContext.Set<DescribesSites>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToList();
+
+                foreach (DescribesSites element in elements)
+                {
+                    DescribeSites item = new DescribeSites();
+                    item.SiteCode = element.SITECODE;
+                    item.Version = pVersion;
+                    item.HabitatCode = element.HABITATCODE;
+                    item.Percentage = element.PERCENTAGECOVER;
+
+                    _dataContext.Set<DescribeSites>().Add(item);
+                }
+
+                Console.WriteLine("=>End describeSites harvest by site...");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("=>End describeSites harvest by site with error...");
+                return 0;
+            }
         }
 
         public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
@@ -26,104 +220,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             await Task.Delay(5000);
             Console.WriteLine("==>End HarvestHabitats validate...");
             return 1;
-        }
-
-        private List<Models.backbone_db.Habitats> harvestHabitats(NaturaSite pVSite, int pVersion)
-        {
-            List<Models.versioning_db.ContainsHabitat> elements = null;
-            List<Models.backbone_db.Habitats> items = new List<Models.backbone_db.Habitats>();
-            try
-            {
-                elements = _versioningContext.Set<Models.versioning_db.ContainsHabitat>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (Models.versioning_db.ContainsHabitat element in elements)
-                {
-                    Models.backbone_db.Habitats item = new Models.backbone_db.Habitats();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.HabitatCode = element.HABITATCODE;
-                    item.PriorityForm = element.PF;
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        private List<Models.backbone_db.HabitatAreas> harvestHabitatAreas(NaturaSite pVSite, int pVersion)
-        {
-            List<Models.versioning_db.ContainsHabitat> elements = null;
-            List<Models.backbone_db.HabitatAreas> items = new List<Models.backbone_db.HabitatAreas>();
-            try
-            {
-                elements = _versioningContext.Set<Models.versioning_db.ContainsHabitat>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (Models.versioning_db.ContainsHabitat element in elements)
-                {
-                    Models.backbone_db.HabitatAreas item = new Models.backbone_db.HabitatAreas();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.HabitatCode = element.HABITATCODE;
-                    item.CoverHA = Convert.ToDecimal(element.COVER_HA);
-                    item.PriorityForm = element.PF;
-                    item.Representativity = element.REPRESENTATIVITY;
-                    item.DataQty = Convert.ToInt32(element.DATAQUALITY); // ???
-                    //item.Conservation = element.CONSERVATION; // ??? PENDING
-                    item.GlobalAssesments = element.GLOBALASSESMENT;
-                    item.RelativeSurface = element.RELSURFACE;
-                    item.Percentage = Convert.ToDecimal(element.PERCENTAGECOVER);
-                    item.ConsStatus = element.CONSSTATUS;
-                    item.Caves = Convert.ToString(element.CAVES); // ???
-                    item.PF = Convert.ToString(element.PF); // ??? PENDING The same as PriorityForm
-                    item.NonPresenciInSite = Convert.ToString(element.NONPRESENCEINSITE); // ???
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        private List<Models.backbone_db.DescribeSites> harvestDescribeSites(NaturaSite pVSite, int pVersion)
-        {
-            List<Models.versioning_db.DescribesSites> elements = null;
-            List<Models.backbone_db.DescribeSites> items = new List<Models.backbone_db.DescribeSites>();
-            try
-            {
-                elements = _versioningContext.Set<Models.versioning_db.DescribesSites>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (Models.versioning_db.DescribesSites element in elements)
-                {
-                    Models.backbone_db.DescribeSites item = new Models.backbone_db.DescribeSites();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.HabitatCode = element.HABITATCODE;
-                    item.Percentage = element.PERCENTAGECOVER;
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
-            finally
-            {
-
-            }
-
         }
     }
 }
