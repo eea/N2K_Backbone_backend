@@ -728,6 +728,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 //_timeLog.setTimeStamp(_appSettings.Value.N2K_BackboneBackEndContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 //complete the data of the site and add it to the DB
+                                _timeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 Sites bbSite = harvestSite(vSite, envelope);
                                 _dataContext.Set<Sites>().Add(bbSite);
                                 //Get the data for all related tables                                
