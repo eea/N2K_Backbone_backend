@@ -91,8 +91,6 @@ namespace N2K_BackboneBackEnd.Services
             
             var kk = new List<Habitats>();
             var processed11 = await _dataContext.Set<Habitats>().ToListAsync();
-            var ll = new List<HabitatAreas>();
-            var processed12 = await _dataContext.Set<HabitatAreas>().ToListAsync();
             var mm = new List<DescribeSites>();
             var processed13 = await _dataContext.Set<DescribeSites>().ToListAsync();
 
