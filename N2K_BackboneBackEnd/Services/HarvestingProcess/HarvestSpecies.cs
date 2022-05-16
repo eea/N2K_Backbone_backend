@@ -36,7 +36,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<ContainsSpecies> elements = null;
             try
             {
-                Console.WriteLine("=>Start species harvest by country...");
+                TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
 
                 elements = _versioningContext.Set<ContainsSpecies>().Where(s=> s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToList();
 
@@ -78,14 +78,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
 
                 }
-                
-                Console.WriteLine("=>End species harvest by country...");
+
+                TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine("=>End species harvest by country with error...");
+                TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
                 return 0;
             }
 
@@ -96,6 +95,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<ContainsSpecies> elements = null;
             try
             {
+                TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processed");
                 Console.WriteLine("=>Start species by site harvest...");
                 elements = _versioningContext.Set<ContainsSpecies>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToList();
                 foreach (ContainsSpecies element in elements)
@@ -136,8 +136,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         _dataContext.Set<Species>().Add((Species)item);
                     }
                 }
-
-                Console.WriteLine("=>End species by site harvest...");
+                TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
                 return 1;
             }
             catch (Exception ex)
@@ -145,6 +144,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 Console.WriteLine(ex.Message);
                 Console.WriteLine("=>End species by site harvest with error...");
                 return 0;
+            }
+            finally {
+                TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
             }
 
         }

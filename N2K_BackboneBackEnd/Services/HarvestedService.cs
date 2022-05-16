@@ -20,7 +20,7 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2KBackboneContext _dataContext;
         private readonly N2K_VersioningContext _versioningContext;
         private readonly IOptions<ConfigSettings> _appSettings;
-        private TimeLog _timeLog = new TimeLog();
+        private bool _ThereAreChanges = false;
 
         public HarvestedService(N2KBackboneContext dataContext,N2K_VersioningContext versioningContext)
         {
@@ -714,7 +714,7 @@ namespace N2K_BackboneBackEnd.Services
                         //add the envelope to the DB
                         _dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
                         _dataContext.SaveChanges();
-
+                        
 
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
@@ -726,7 +726,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 //_timeLog.setTimeStamp(_appSettings.Value.N2K_BackboneBackEndContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 //complete the data of the site and add it to the DB
-                                _timeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
+                                TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 Sites bbSite = harvestSite(vSite, envelope);
                                 _dataContext.Set<Sites>().Add(bbSite);
                                 //Get the data for all related tables                                
@@ -737,12 +737,21 @@ namespace N2K_BackboneBackEnd.Services
                                 _dataContext.Set<Models.backbone_db.DetailedProtectionStatus>().AddRange(harvestDetailedProtectionStatus(vSite, bbSite.Version));
                                 _dataContext.Set<SiteLargeDescriptions>().AddRange(harvestSiteLargeDescriptions(vSite, bbSite.Version));
                                 _dataContext.Set<SiteOwnerType>().AddRange(harvestSiteOwnerType(vSite, bbSite.Version));
-                                //_timeLog.setTimeStamp(_dataContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Processed");
-                                
+                                TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Processed");
+
+                                //TODO: Put species on another threath 
+                                HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
+                                await species.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
+
+                                //TODO: Put habitats on another threath 
+                                HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
+                                await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
+
                             }
                             catch (Exception ex)
                             {
-
+                                rollback(envelope.CountryCode, envelope.VersionId);
+                                break;
                             }
                             finally
                             {
@@ -1106,7 +1115,55 @@ namespace N2K_BackboneBackEnd.Services
             }
         
         }
-    
+
+        /// <summary>
+        /// Delete all the changes create by the envelope
+        /// </summary>
+        /// <param name="pCountry"></param>
+        /// <param name="pVerion"></param>
+        private void rollback(string pCountry, int pVerion)
+        {
+            try
+            {
+                if (_ThereAreChanges)
+                {
+                    foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry in _dataContext.ChangeTracker.Entries().Where(x => x.State != EntityState.Unchanged).ToList())
+                    {
+                        switch (entry.State)
+                        {
+                            case EntityState.Modified:
+                                entry.CurrentValues.SetValues(entry.OriginalValues);
+                                entry.State = EntityState.Unchanged;
+                                break;
+                            case EntityState.Added:
+                                entry.State = EntityState.Detached;
+                                break;
+                            case EntityState.Deleted:
+                                entry.State = EntityState.Unchanged;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                else { 
+                    //just when there are changes commited
+                    List<Sites> toremove = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVerion).ToList();
+                    _dataContext.Set<Sites>().RemoveRange(toremove);
+                    _dataContext.SaveChanges();
+                }
+                
+            }
+            catch (Exception ex)
+            {
+
+            }
+            finally { 
+            
+            }
+
+        }
+
     }
 }
 

@@ -6,10 +6,10 @@ using Microsoft.Data.SqlClient;
 namespace N2K_BackboneBackEnd.Models
 {
     
-    public class TimeLog 
+    public static class TimeLog 
     {
 
-        public void setTime(N2KBackboneContext pDataContext, string pProcessName, string pAction) {
+        public static void setTime(N2KBackboneContext pDataContext, string pProcessName, string pAction) {
             try
             {
                 ProcessTimeLog ptl = new ProcessTimeLog();
@@ -32,7 +32,7 @@ namespace N2K_BackboneBackEnd.Models
 
         }
 
-        public void setTimeStamp(string pProcessName, string pAction)
+        public static void setTimeStamp(string pProcessName, string pAction)
         {
             SqlConnection conn=null;
             SqlCommand cmd = null;
