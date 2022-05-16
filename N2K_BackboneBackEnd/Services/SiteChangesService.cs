@@ -5,6 +5,8 @@ using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using N2K_BackboneBackEnd.Models.VersioningDB;
+using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Enumerations;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -12,13 +14,17 @@ namespace N2K_BackboneBackEnd.Services
     {
         private readonly N2KBackboneContext _dataContext;
 
+
         public SiteChangesService(N2KBackboneContext dataContext)
         {
             _dataContext = dataContext;
         }
         public async Task<List<SiteChangeDb>> GetSiteChangesAsync()
         {
-            var changes = await _dataContext.Set<SiteChangeDb>().OrderBy(s => s.SiteCode).ToListAsync();
+
+            var changes = await _dataContext.Set<SiteChangeDb>().ToListAsync();
+            changes = changes.OrderBy(s=>s.SiteCode).ThenByDescending(x => (int)(x.Level)).ToList();
+
             var result = new List<SiteChangeDb>();
             var siteCode = string.Empty;
             var siteChange = new SiteChangeDb();
@@ -28,6 +34,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     if (siteCode != String.Empty) result.Add(siteChange);
                     siteChange = new SiteChangeDb();
+                    siteChange.NumChanges = 1;
                     siteChange.ChangeId = change.ChangeId;
                     siteChange.SiteCode = change.SiteCode;
                     siteCode = change.SiteCode;
@@ -56,6 +63,7 @@ namespace N2K_BackboneBackEnd.Services
                         Status = change.Status,
                         Tags = string.Empty
                     });
+                    siteChange.NumChanges++;
                 }
                 
             }
@@ -123,6 +131,194 @@ namespace N2K_BackboneBackEnd.Services
             var result = new List<Harvesting>();
             return await _dataContext.Set<SiteChangeDb>().SingleOrDefaultAsync(s => s.ChangeId == id);
         }
+
+
+        public async Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion) {
+
+            var changeDetailVM = new SiteChangeDetailViewModel();
+            changeDetailVM.SiteCode = pSiteCode;
+            changeDetailVM.CountryVersion= pCountryVersion;
+            changeDetailVM.ChangesList = new List<ChangeDetail>();
+
+
+            var site = await _dataContext.Set<Sites>().Where(site => site.SiteCode == pSiteCode  && site.Version == pCountryVersion ).FirstOrDefaultAsync();
+            var oldSite = await _dataContext.Set<Sites>().Where(site => site.SiteCode == pSiteCode && site.Current == true).FirstOrDefaultAsync();
+
+            if (site != null)
+            {
+#pragma warning disable CS8601 // Posible asignación de referencia nula
+                changeDetailVM.Name = site.Name;
+                changeDetailVM.Status = SiteChangeStatus.Pending; //(SiteChangeStatus?) site.CurrentStatus;
+#pragma warning restore CS8601 // Posible asignación de referencia nula
+            }
+
+            var detectedChanges = await _dataContext.Set<SiteChangeDb>().Where(site => site.SiteCode == pSiteCode).ToListAsync();
+            if (detectedChanges != null)
+            {
+                foreach (var change in detectedChanges)
+                {
+                    var changeDetail = new ChangeDetail();
+                    changeDetail.ChangeId = change.ChangeId;
+                    changeDetail.Level = change.Level;
+                    changeDetail.ChangeType = change.ChangeType != null ? change.ChangeType.ToString() : String.Empty;
+                    changeDetail.ChangeCategory = change.ChangeCategory != null? change.ChangeCategory.ToString() : String.Empty;
+                    changeDetail.FieldName = String.Empty;
+                    changeDetail.ReportedValue = String.Empty;
+                    changeDetail.OlValue = String.Empty;
+                    changeDetail.Description = String.Empty;
+                    FillChangeDetail(site, oldSite, change, ref changeDetail);
+                    changeDetailVM.ChangesList.Add(changeDetail);
+                }
+            }
+            return changeDetailVM;
+
+        }
+
+
+
+        private void FillChangeDetail(Sites? site, Sites? oldSite, SiteChangeDb siteChangeDb,  ref ChangeDetail detail)
+        {
+            if (detail != null)
+            {
+                switch (detail.ChangeCategory)
+                {
+                    case "Site General Info":
+                       switch (detail.ChangeType)
+                        {
+                            case "SiteName Changed":
+                                detail.FieldName = "SiteName";
+                                detail.ReportedValue = "New name";
+                                detail.OlValue = oldSite.Name;
+                                break;
+
+                            case "SiteType Changed":
+                                detail.FieldName = "SiteType";
+                                detail.ReportedValue = "NewSiteType";
+                                detail.OlValue = oldSite.SiteType.ToString();
+                                break;
+
+                            case "Length Changed":
+                                detail.FieldName = "Length";
+                                detail.ReportedValue = "New Length";
+                                detail.OlValue = oldSite.Length.ToString();
+                                break;
+                        }
+                        break;
+
+                    case "Change of area":
+                        detail.FieldName = "Area";
+                        detail.ReportedValue = "NewSite Area";
+                        detail.OlValue = oldSite.Area.ToString();
+                        break;
+
+                    case "Site Added":
+                        detail.FieldName = "SiteCode";
+                        detail.ReportedValue = site.SiteCode;
+                        detail.OlValue = "";
+                        break;
+
+
+                    case "Site Deleted":
+                        detail.FieldName = "SiteCode";
+                        detail.ReportedValue = site.SiteCode;
+                        detail.OlValue = site.SiteCode;
+                        break;
+
+
+                    case "Species and habitats":
+                        switch (detail.ChangeType)
+                        {
+                            case "Relative surface Decrease":
+                                detail.FieldName = "RelSurface";
+                                detail.ReportedValue = "New Value";
+                                detail.OlValue = "Old Value";
+                                break;
+
+                            case "Relative surface Increase":
+                                detail.FieldName = "RelSurface";
+                                detail.ReportedValue = "New Value";
+                                detail.OlValue = "Old Value";
+                                break;
+
+                            case "Relative surface Change":
+                                detail.FieldName = "RelSurface";
+                                detail.ReportedValue = "New Value";
+                                detail.OlValue = "Old Value";
+                                break;
+
+                            case "Representativity Decrease":
+                                detail.FieldName = "Representativity";
+                                detail.ReportedValue = "New Value";
+                                detail.OlValue = "Old Value";
+                                break;
+
+                            case "Representativity Increase":
+                                detail.FieldName = "Representativity";
+                                detail.ReportedValue = "New Value";
+                                detail.OlValue = "Old Value";
+                                break;
+
+                            case "Representativity Change":
+                                detail.FieldName = "Representativity";
+                                detail.ReportedValue = "New Value";
+                                detail.OlValue = "Old Value";
+                                break;
+
+                            case "Cover_ha Decrease":
+                                detail.FieldName = "Cover_ha";
+                                detail.ReportedValue = "New Value";
+                                detail.OlValue = "Old Value";
+                                break;
+
+                            case "Cover_ha Increase":
+                                detail.FieldName = "Cover_ha";
+                                detail.ReportedValue = "New Value";
+                                detail.OlValue = "Old Value";
+                                break;
+
+                            case "Cover_ha Change":
+                                detail.FieldName = "Cover_ha";
+                                detail.ReportedValue = "New Value";
+                                detail.OlValue = "Old Value";
+                                break;
+
+
+                        }
+                        break;
+
+                    case "Species Added":
+                        detail.FieldName = "Species";
+                        detail.ReportedValue = "New Value";
+                        detail.OlValue = "";
+                        break;
+
+                    case "Species Deleted":
+                        detail.FieldName = "Species";
+                        detail.ReportedValue = "";
+                        detail.OlValue = "Deleted";
+                        break;
+
+
+                    case "Habitat Added":
+                        detail.FieldName = "Habitats";
+                        detail.ReportedValue = "New Habitat";
+                        detail.OlValue = "";
+                        break;
+
+                    case "Habitat Deleted":
+                        detail.FieldName = "Species";
+                        detail.ReportedValue = "";
+                        detail.OlValue = "Deleted";
+                        break;
+
+
+                }
+
+            }
+        }
+
+
+
 
 
     }

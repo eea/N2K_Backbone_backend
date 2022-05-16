@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using N2K_BackboneBackEnd.ServiceResponse;
 using AutoMapper;
 using N2K_BackboneBackEnd.Services;
+using N2K_BackboneBackEnd.Models.ViewModel;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
@@ -52,14 +53,19 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
 
-        [HttpGet("Get/{id}")]
-        public async Task<ActionResult<ServiceResponse<SiteChangeDb>>> Get(int id)
+        [HttpGet("GetSiteChangesDetail/siteCode={pSiteCode}&version={pCountryVersion}")            ]
+        /// <summary>
+        /// Remove the version we use in development
+        /// </summary>
+        /// <param name="pSiteCode">Code of the site</param>
+        /// <param name="pCountryVersion">Number of the version</param>
+        public async Task<ActionResult<ServiceResponse<SiteChangeDetailViewModel>>> GetSiteChangesDetail(string pSiteCode, int pCountryVersion)
         {
-            var response = new ServiceResponse<SiteChangeDb>();
+            var response = new ServiceResponse<SiteChangeDetailViewModel>();
 
             try
             {
-                var siteChange = await _siteChangesService.GetSiteChangeByIdAsync(id);
+                var siteChange = await _siteChangesService.GetSiteChangesDetail(pSiteCode, pCountryVersion);
                 response.Success = true;
                 response.Message = "";                
                 response.Data = siteChange;
@@ -74,30 +80,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
-        /*
-        [HttpGet("Get/{id}")]
-        public ActionResult<ServiceResponse<SiteChange>> Get(int id)
-        {
-            var response = new ServiceResponse<SiteChange>();
-            try
-            {
-                var siteChange =  _siteChangesService.GetSiteChangeById(id);
-                response.Success = true;
-                response.Message = "";
-                response.Data = siteChange;
-                response.Count = (siteChange == null) ? 0 : 1;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                return Ok(response);
-            }
-        }
-        */
         
 
         /*

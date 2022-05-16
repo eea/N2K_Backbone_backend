@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
@@ -21,6 +22,9 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
         public Level? Level { get; set; }
         public string? ChangeCategory { get; set; }
         public string? ChangeType { get; set; }
+
+        [NotMapped]
+        public int NumChanges { get; set; }
 
         public List<SiteChangeView> Subrows { get; set;  } = new List<SiteChangeView>();
 

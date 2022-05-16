@@ -6,9 +6,9 @@ namespace N2K_BackboneBackEnd.Enumerations
     public enum Level
     {
         [DataMember]
-        Warning,
+        Info,
         [DataMember]
-        Medium,
+        Warning,
         [DataMember]
         Critical
     }
