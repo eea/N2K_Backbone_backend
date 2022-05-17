@@ -19,14 +19,6 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2KBackboneContext _dataContext;
 
 
-        protected class FilteredSiteChanges
-        {
-            public string? SiteCode { get; set; }
-            public Level? Level { get; set; }
-            public List<SiteChangeDb>? ChangeList { get; set; }
-        }
-
-
         public SiteChangesService(N2KBackboneContext dataContext)
         {
             _dataContext = dataContext;
@@ -35,37 +27,21 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<SiteChangeDb>> GetSiteChangesAsync(SiteChangeStatus? status)
         {
-            List<FilteredSiteChanges> orderedChanges;
-            var changes = await _dataContext.Set<SiteChangeDb>().ToListAsync();
-            if (status == null)
-            {
-                //order the changes so that the first codes are the one with the hisgest Level value (1. Critical 2. Warning 3. Info)
-                orderedChanges = (from t in changes
-                                  group t by t.SiteCode
-                                  into g
-                                  select new FilteredSiteChanges
-                                  {                                          
-                                      SiteCode = g.Key,
-                                      Level = (from t2 in g select t2.Level).Max(),
-                                      //Nest all changes of each sitecode ordered by Level
-                                      ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending(x => (int)x.Level).ToList()
-                                  }).OrderByDescending(a => a.Level).ToList();
-            }
-            else
-            {
-                orderedChanges = (from t in changes
-                                  where t.Status == status
-                                  group t by t.SiteCode
-                                  into g
-                                  select new FilteredSiteChanges
-                                  {
-                                      SiteCode = g.Key,
-                                      Level = (from t2 in g select t2.Level).Max(),
-                                      //Nest all changes of each sitecode ordered by Level
-                                      ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending(x => (int)x.Level).ToList()
-                                  }).OrderByDescending(a => a.Level).ToList();
-            }
+            List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().ToListAsync();
+            if (status!= null)
+                changes = changes.Where(s=> s.Status==status).ToList();
 
+            //order the changes so that the first codes are the one with the hisgest Level value (1. Critical 2. Warning 3. Info)
+            var orderedChanges = (from t in changes
+                                group t by t.SiteCode
+                                into g
+                                select new 
+                                {                                          
+                                    SiteCode = g.Key,
+                                    Level = (from t2 in g select t2.Level).Max(),
+                                    //Nest all changes of each sitecode ordered by Level
+                                    ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending(x => (int)x.Level).ToList()
+                                }).OrderByDescending(a => a.Level).ToList();
 
             var result = new List<SiteChangeDb>();
             var siteCode = string.Empty;
