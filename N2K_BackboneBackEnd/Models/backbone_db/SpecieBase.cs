@@ -27,5 +27,63 @@
         public string? DataQuality { get; set; }
         public string? SpecieType { get; set; }
 
+        public Species getSpecies() { 
+            Species specie = new Species();
+            specie.SiteCode = this.SiteCode;
+            specie.Version = this.Version;
+            specie.SpecieCode = this.SpecieCode;
+            specie.PopulationMin = this.PopulationMin;
+            specie.PopulationMax = this.PopulationMax;
+            //item.Group = element.GROUP; // PENDING
+            specie.SensitiveInfo = this.SensitiveInfo;
+            specie.Resident = this.Resident;
+            specie.Breeding = this.Breeding;
+            specie.Winter = this.Winter;
+            specie.Staging = this.Staging;
+            //item.Path = element.PATH; // ??? PENDING
+            specie.AbundaceCategory = this.AbundaceCategory;
+            specie.Motivation = this.Motivation;
+            specie.PopulationType = this.PopulationType;
+            specie.CountingUnit = this.CountingUnit;
+            specie.Population = this.Population;
+            specie.Insolation = this.Insolation;
+            specie.Conservation = this.Conservation;
+            specie.Global = this.Global;
+            specie.NonPersistence = this.NonPersistence;
+            specie.DataQuality = this.DataQuality;
+            specie.SpecieType = this.SpecieType;
+
+            return specie;
+        }
+        public SpeciesOther getSpeciesOther()
+        {
+            SpeciesOther specie = new SpeciesOther();
+            specie.SiteCode = this.SiteCode;
+            specie.Version = this.Version;
+            specie.SpecieCode = this.SpecieCode;
+            specie.PopulationMin = this.PopulationMin;
+            specie.PopulationMax = this.PopulationMax;
+            //item.Group = element.GROUP; // PENDING
+            specie.SensitiveInfo = this.SensitiveInfo;
+            specie.Resident = this.Resident;
+            specie.Breeding = this.Breeding;
+            specie.Winter = this.Winter;
+            specie.Staging = this.Staging;
+            //item.Path = element.PATH; // ??? PENDING
+            specie.AbundaceCategory = this.AbundaceCategory;
+            specie.Motivation = this.Motivation;
+            specie.PopulationType = this.PopulationType;
+            specie.CountingUnit = this.CountingUnit;
+            specie.Population = this.Population;
+            specie.Insolation = this.Insolation;
+            specie.Conservation = this.Conservation;
+            specie.Global = this.Global;
+            specie.NonPersistence = this.NonPersistence;
+            specie.DataQuality = this.DataQuality;
+            specie.SpecieType = this.SpecieType;
+
+            return specie;
+        }
+
     }
 }

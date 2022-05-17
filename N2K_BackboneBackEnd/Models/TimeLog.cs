@@ -110,7 +110,7 @@ namespace N2K_BackboneBackEnd.Models
             SqlParameter param3 = null;
             SqlParameter param4 = null;
             SqlParameter param5 = null;
-
+            //TODO: Log level configurable on the settings
             try
             {
                ;
@@ -154,6 +154,29 @@ namespace N2K_BackboneBackEnd.Models
                     conn.Dispose();
                 }
                
+            }
+
+        }
+
+        public static void write(errorLevel pLevel, Exception pException, string pClass, string pSource)
+        {
+            //TODO: Log level configurable on the settings
+            try
+            {
+                write(pLevel, pException.Message, pClass, pSource);
+                Exception exec = pException.InnerException;
+                while (exec != null) {
+                    write(pLevel, exec.Message, pClass, pSource);
+                    exec = exec.InnerException;
+                }
+            }
+            catch (Exception ex)
+            {
+                ex = null;
+            }
+            finally
+            {
+           
             }
 
         }

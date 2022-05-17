@@ -122,7 +122,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<ContainsHabitat> elements = null;
             try
             {
-                Console.WriteLine("=>Start habitat harvest by site...");
+                TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
 
                 elements = _versioningContext.Set<ContainsHabitat>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToList();
 
@@ -135,7 +135,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.CoverHA = (decimal?)element.COVER_HA;
                     item.PriorityForm = element.PF;
                     item.Representativity = element.REPRESENTATIVITY;
-                    item.DataQty = Convert.ToInt32(element.DATAQUALITY);
+                    item.DataQty = (element.DATAQUALITY !=null)?_dataContext.Set<DataQualityTypes>().Where(d => d.HabitatCode == element.DATAQUALITY).Select(d => d.Id).FirstOrDefault():null;
                     //item.Conservation = element.CONSERVATION; // ??? PENDING
                     item.GlobalAssesments = element.GLOBALASSESMENT;
                     item.RelativeSurface = element.RELSURFACE;
@@ -148,14 +148,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     _dataContext.Set<Habitats>().Add(item);
                 }
 
-                Console.WriteLine("=>End habitat harvest by site...");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine("=>End habitat harvest by site with error...");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestHabitats - HarvestBySite", "");
                 return 0;
+            }
+            finally {
+                TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
             }
 
         }

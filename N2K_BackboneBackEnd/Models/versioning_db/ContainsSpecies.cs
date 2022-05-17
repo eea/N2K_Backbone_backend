@@ -30,7 +30,6 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         public string? UPPERBOUND { get; set; }
         public string? COUNTINGUNIT { get; set; }
         public string? ABUNDANCECATEGORY { get; set; }
-        public string? GLOBALASSESMENT { get; set; }
         public string? DATAQUALITY { get; set; }
         public string? SPTYPE { get; set; }
         public string? POPULATION_TYPE { get; set; }

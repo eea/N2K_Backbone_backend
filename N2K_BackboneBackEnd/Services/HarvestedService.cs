@@ -694,20 +694,23 @@ namespace N2K_BackboneBackEnd.Services
             List<NaturaSite> sites = null;
             try
             {
+
+                TimeLog.setTimeStamp("Harvesting process ", "Init");
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
                     //remove version from database
-                    resetEnvirontment(envelope.CountryCode, envelope.VersionId);
-                    
+                    await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
+
 
                     //create a new entry in the processed envelopes table to register that a new one is being harvested
-                    var envelopeToProcess = new ProcessedEnvelopes
+                    ProcessedEnvelopes envelopeToProcess = new ProcessedEnvelopes
                     {
-                        Country = envelope.CountryCode,
-                        Version = envelope.VersionId,
-                        ImportDate = await GetSubmissionDate(envelope.CountryCode, envelope.VersionId),
-                        Status = HarvestingStatus.Harvesting
+                        Country = envelope.CountryCode
+                        ,Version = envelope.VersionId
+                        ,ImportDate = await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
+                        ,Status = HarvestingStatus.Harvesting
+                        ,Importer="TEST"
                     };
                     try
                     {
@@ -724,11 +727,13 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             try
                             {
+                                _ThereAreChanges = true;
                                 //_timeLog.setTimeStamp(_appSettings.Value.N2K_BackboneBackEndContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 //complete the data of the site and add it to the DB
                                 TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 Sites bbSite = harvestSite(vSite, envelope);
                                 _dataContext.Set<Sites>().Add(bbSite);
+                                _dataContext.SaveChanges();
                                 //Get the data for all related tables                                
                                 _dataContext.Set<BioRegions>().AddRange(harvestBioregions(vSite, bbSite.Version));
                                 _dataContext.Set<NutsBySite>().AddRange(harvestNutsBySite(vSite, bbSite.Version));
@@ -747,9 +752,13 @@ namespace N2K_BackboneBackEnd.Services
                                 HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
                                 await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
 
+
+                                _dataContext.SaveChanges();
+                                _ThereAreChanges = false;
                             }
                             catch (Exception ex)
                             {
+                                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSites - Start - Site " + vSite.SITECODE + "/" + vSite.VERSIONID.ToString(), "");
                                 rollback(envelope.CountryCode, envelope.VersionId);
                                 break;
                             }
@@ -772,9 +781,9 @@ namespace N2K_BackboneBackEnd.Services
                             }
                          );
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
-                        SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
+                        SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                         //if there is an error reject the envelope
                         _dataContext.Set<ProcessedEnvelopes>().Remove(envelopeToProcess);
                         result.Add(
@@ -801,11 +810,12 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return await Task.FromResult(new List<HarvestedEnvelope>());
             }
             finally
             {
+                TimeLog.setTimeStamp("Harvesting process ", "End");
             }
 
 
@@ -861,7 +871,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -879,6 +889,7 @@ namespace N2K_BackboneBackEnd.Services
                 elements = _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
                 foreach (BelongsToBioRegion element in elements)
                 {
+                    //SystemLog.write(SystemLog.errorLevel.Debug, "Site/Version/BioRegion: " + pVSite.SITECODE + "-" + pVSite.VERSIONID.ToString() + "/" + pVersion.ToString() + "/"+ element.BIOREGID.ToString(), "HarvestedService - harvestBioregions", "");
                     BioRegions item = new BioRegions();
                     item.SiteCode = element.SITECODE;
                     item.Version = pVersion;
@@ -890,7 +901,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -920,7 +931,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -966,7 +977,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -996,7 +1007,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -1027,7 +1038,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -1065,7 +1076,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -1095,7 +1106,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -1109,7 +1120,7 @@ namespace N2K_BackboneBackEnd.Services
         /// </summary>
         /// <param name="pCountryCode">Code of two digits for the country</param>
         /// <param name="pCountryVersion">Number of the version</param>
-        private async void resetEnvirontment(string pCountryCode, int pCountryVersion )
+        private async Task<int> resetEnvirontment(string pCountryCode, int pCountryVersion )
         {
             try
             {
@@ -1121,9 +1132,9 @@ namespace N2K_BackboneBackEnd.Services
                 }
             }
             catch (Exception ex) {
-                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - resetEnvirontment", "");
             }
-        
+            return 1;
         }
 
         /// <summary>
@@ -1131,7 +1142,7 @@ namespace N2K_BackboneBackEnd.Services
         /// </summary>
         /// <param name="pCountry"></param>
         /// <param name="pVerion"></param>
-        private void rollback(string pCountry, int pVerion)
+        private void rollback(string pCountry, int pVersion)
         {
             try
             {
@@ -1156,17 +1167,17 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
-                else { 
-                    //just when there are changes commited
-                    List<Sites> toremove = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVerion).ToList();
-                    _dataContext.Set<Sites>().RemoveRange(toremove);
-                    _dataContext.SaveChanges();
-                }
-                
+               List<Sites> toremove = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).ToList();
+               _dataContext.Set<Sites>().RemoveRange(toremove);
+               _dataContext.SaveChanges();
+               _ThereAreChanges = false;
+
+
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error,ex.Message, "HarvestedService - rollback","");
+                SystemLog.write(SystemLog.errorLevel.Error,ex, "HarvestedService - rollback","");
+
             }
             finally { 
             

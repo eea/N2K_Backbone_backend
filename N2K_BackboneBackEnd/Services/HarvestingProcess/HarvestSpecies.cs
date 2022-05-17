@@ -69,11 +69,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                     if (element.SPECIESCODE is null || _dataContext.Set<SpeciesTypes>().Where(a => a.Code == element.SPECIESCODE).Count() < 1)
                     {
-                        _dataContext.Set<SpeciesOther>().Add((SpeciesOther)item);
+                        _dataContext.Set<SpeciesOther>().Add(item.getSpeciesOther());
                     }
                     else
                     {
-                        _dataContext.Set<Species>().Add((Species)item);
+                        _dataContext.Set<Species>().Add(item.getSpecies());
                     }
 
 
@@ -95,8 +95,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<ContainsSpecies> elements = null;
             try
             {
-                TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processed");
-                Console.WriteLine("=>Start species by site harvest...");
+                TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
                 elements = _versioningContext.Set<ContainsSpecies>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToList();
                 foreach (ContainsSpecies element in elements)
                 {
@@ -129,20 +128,20 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                     if (element.SPECIESCODE is null || _dataContext.Set<SpeciesTypes>().Where(a => a.Code == element.SPECIESCODE).Count() < 1)
                     {
-                        _dataContext.Set<SpeciesOther>().Add((SpeciesOther)item);
+                        _dataContext.Set<SpeciesOther>().Add(item.getSpeciesOther());
                     }
                     else
                     {
-                        _dataContext.Set<Species>().Add((Species)item);
+                        _dataContext.Set<Species>().Add(item.getSpecies());
                     }
                 }
-                TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
+                
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine("=>End species by site harvest with error...");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSpecies - HarvestBySite", "");
+              
                 return 0;
             }
             finally {

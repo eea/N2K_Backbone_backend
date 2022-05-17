@@ -17,8 +17,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
 		public static void OnModelCreating(ModelBuilder builder)
 		{
-			builder.Entity<SpeciesGroup>()
-				.ToTable("SpeciesGroup")
+			builder.Entity<SpeciesTypes>()
+				.ToTable("SpeciesTypes")
 				.HasKey(c => new { c.Code });
 		}
 
