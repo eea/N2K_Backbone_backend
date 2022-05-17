@@ -26,6 +26,10 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
         [NotMapped]
         public int NumChanges { get; set; }
 
+        public string ? NewValue { get; set; }
+        public string? OldValue { get; set; }
+
+
         public List<SiteChangeView> Subrows { get; set;  } = new List<SiteChangeView>();
 
 

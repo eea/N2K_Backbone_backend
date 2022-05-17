@@ -206,8 +206,8 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             case "SiteName Changed":
                                 detail.FieldName = "SiteName";
-                                detail.ReportedValue = "New name";
-                                detail.OlValue = oldSite.Name;
+                                detail.ReportedValue =siteChangeDb.NewValue;
+                                detail.OlValue = siteChangeDb.OldValue;
                                 break;
 
                             case "SiteType Changed":
@@ -332,7 +332,8 @@ namespace N2K_BackboneBackEnd.Services
 
 
                 }
-
+                detail.ReportedValue = siteChangeDb.NewValue ?? null;
+                detail.OlValue = siteChangeDb.OldValue ?? null;
             }
         }
 
