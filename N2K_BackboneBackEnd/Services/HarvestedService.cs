@@ -773,7 +773,8 @@ namespace N2K_BackboneBackEnd.Services
                          );
                     }
                     catch (Exception e)
-                    {   
+                    {
+                        SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
                         //if there is an error reject the envelope
                         _dataContext.Set<ProcessedEnvelopes>().Remove(envelopeToProcess);
                         result.Add(
@@ -800,6 +801,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
                 return await Task.FromResult(new List<HarvestedEnvelope>());
             }
             finally
@@ -859,6 +861,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -887,6 +890,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -916,6 +920,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -961,6 +966,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -990,6 +996,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -1020,6 +1027,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -1057,6 +1065,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -1086,6 +1095,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
                 return null;
             }
             finally
@@ -1110,8 +1120,8 @@ namespace N2K_BackboneBackEnd.Services
                     await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spRemoveVersionFromDB  @country, @version", param1, param2);
                 }
             }
-            catch (Exception ex) { 
-                
+            catch (Exception ex) {
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
             }
         
         }
@@ -1156,7 +1166,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-
+                SystemLog.write(SystemLog.errorLevel.Error,ex.Message, "HarvestedService - rollback","");
             }
             finally { 
             

@@ -82,4 +82,81 @@ namespace N2K_BackboneBackEnd.Models
         }
 
     }
+
+    public static class SystemLog 
+    {
+        public enum errorLevel
+        {
+            [System.Runtime.Serialization.DataMember]
+            Panic,
+            [System.Runtime.Serialization.DataMember]
+            Fatal,
+            [System.Runtime.Serialization.DataMember]
+            Error,
+            [System.Runtime.Serialization.DataMember]
+            Warning,
+            [System.Runtime.Serialization.DataMember]
+            Info,
+            [System.Runtime.Serialization.DataMember]
+            Debug
+        }
+
+        public static void write(errorLevel pLevel, string pMessage, string pClass, string pSource)
+        {
+            SqlConnection conn=null;
+            SqlCommand cmd = null;
+            SqlParameter param1 = null;
+            SqlParameter param2 = null;
+            SqlParameter param3 = null;
+            SqlParameter param4 = null;
+            SqlParameter param5 = null;
+
+            try
+            {
+               ;
+
+                conn = new SqlConnection(WebApplication.CreateBuilder().Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
+                conn.Open();
+                cmd = conn.CreateCommand();
+                param1 = new SqlParameter("@Level", pLevel);
+                param2 = new SqlParameter("@Message", pMessage);
+                param3 = new SqlParameter("@TimeStamp", DateTime.Now);
+                param4 = new SqlParameter("@Class", pClass);
+                param5 = new SqlParameter("@Source", pSource);
+
+                cmd.CommandText = "INSERT INTO SystemLog ([Level],[Message],[TimeStamp],[Class],[Source]) VALUES (@Level,@Message,@TimeStamp,@Class,@Source)";
+                cmd.Parameters.Add(param1);
+                cmd.Parameters.Add(param2);
+                cmd.Parameters.Add(param3);
+                cmd.Parameters.Add(param4);
+                cmd.Parameters.Add(param5);
+
+                cmd.ExecuteNonQuery();
+
+            }
+            catch (Exception ex)
+            {
+                ex = null;
+            }
+            finally
+            {
+                param1 = null;
+                param2 = null;
+                param3 = null;
+                param4 = null;
+                param5 = null;
+                if (cmd != null)
+                {
+                    cmd.Dispose();
+                }
+                if (conn != null ) { 
+                    if(conn.State != System.Data.ConnectionState.Closed) conn.Close();
+                    conn.Dispose();
+                }
+               
+            }
+
+        }
+
+    }
 }
