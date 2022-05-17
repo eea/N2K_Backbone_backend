@@ -34,16 +34,20 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
             try
             {
+                TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
                 Console.WriteLine("=>Start full habitat harvest by country...");
+
                 await HarvestHabitatsByCountry(pCountryCode, pCountryVersion, pVersion);
                 await HarvestDescribeSitesByCountry(pCountryCode, pCountryVersion, pVersion);
+
                 Console.WriteLine("=>End full habitat harvest by country...");
+                TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
                 Console.WriteLine("=>End full habitat harvest by country with error...");
+                TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
                 return 0;
             }
         }
@@ -52,16 +56,20 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
             try
             {
+                TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Starting");
                 Console.WriteLine("=>Start full habitat harvest by site...");
+
                 await HarvestHabitatsBySite(pSiteCode, pSiteVersion, pVersion);
                 await HarvestDescribeSitesBySite(pSiteCode, pSiteVersion, pVersion);
+
                 Console.WriteLine("=>End full habitat harvest by site...");
+                TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
                 Console.WriteLine("=>End full habitat harvest by site with error...");
+                TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
                 return 0;
             }
         }
@@ -217,7 +225,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
         {
             Console.WriteLine("==>Start HarvestHabitats validate...");
-            await Task.Delay(5000);
+            await Task.Delay(2000);
             Console.WriteLine("==>End HarvestHabitats validate...");
             return 1;
         }
