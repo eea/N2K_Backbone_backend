@@ -162,6 +162,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
                  );
                 */
+                /*
                 //Start of validation
 
                 //remove version from database
