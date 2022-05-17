@@ -10,64 +10,107 @@ using N2K_BackboneBackEnd.Enumerations;
 
 namespace N2K_BackboneBackEnd.Services
 {
+
+    
+    
+
     public class SiteChangesService : ISiteChangesService
     {
         private readonly N2KBackboneContext _dataContext;
+
+
+        protected class FilteredSiteChanges
+        {
+            public string? SiteCode { get; set; }
+            public Level? Level { get; set; }
+            public List<SiteChangeDb>? ChangeList { get; set; }
+        }
 
 
         public SiteChangesService(N2KBackboneContext dataContext)
         {
             _dataContext = dataContext;
         }
-        public async Task<List<SiteChangeDb>> GetSiteChangesAsync()
-        {
 
+
+        public async Task<List<SiteChangeDb>> GetSiteChangesAsync(SiteChangeStatus? status)
+        {
+            List<FilteredSiteChanges> orderedChanges;
             var changes = await _dataContext.Set<SiteChangeDb>().ToListAsync();
-            changes = changes.OrderBy(s=>s.SiteCode).ThenByDescending(x => (int)(x.Level)).ToList();
+            if (status == null)
+            {
+                //order the changes so that the first codes are the one with the hisgest Level value (1. Critical 2. Warning 3. Info)
+                orderedChanges = (from t in changes
+                                  group t by t.SiteCode
+                                  into g
+                                  select new FilteredSiteChanges
+                                  {                                          
+                                      SiteCode = g.Key,
+                                      Level = (from t2 in g select t2.Level).Max(),
+                                      //Nest all changes of each sitecode ordered by Level
+                                      ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending(x => (int)x.Level).ToList()
+                                  }).OrderByDescending(a => a.Level).ToList();
+            }
+            else
+            {
+                orderedChanges = (from t in changes
+                                  where t.Status == status
+                                  group t by t.SiteCode
+                                  into g
+                                  select new FilteredSiteChanges
+                                  {
+                                      SiteCode = g.Key,
+                                      Level = (from t2 in g select t2.Level).Max(),
+                                      //Nest all changes of each sitecode ordered by Level
+                                      ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending(x => (int)x.Level).ToList()
+                                  }).OrderByDescending(a => a.Level).ToList();
+            }
+
 
             var result = new List<SiteChangeDb>();
             var siteCode = string.Empty;
-            var siteChange = new SiteChangeDb();
-            foreach (var change in changes)
+            foreach (var sCode in orderedChanges)
             {
-                if (change.SiteCode != siteCode)
+                //load all the changes for each of the site codes ordered by level
+                var siteChange = new SiteChangeDb();
+                var count = 0;
+                if (sCode.ChangeList == null) continue;
+                foreach (var change in sCode.ChangeList)
                 {
-                    if (siteCode != String.Empty) result.Add(siteChange);
-                    siteChange = new SiteChangeDb();
-                    siteChange.NumChanges = 1;
-                    siteChange.ChangeId = change.ChangeId;
-                    siteChange.SiteCode = change.SiteCode;
-                    siteCode = change.SiteCode;
-                    siteChange.ChangeCategory = change.ChangeCategory;
-                    siteChange.ChangeType = change.ChangeType;
-                    siteChange.Country = change.Country;
-                    siteChange.Level = change.Level;
-                    siteChange.Status = change.Status;
-                    siteChange.Tags = change.Tags;
-                    //result.Add(siteChange);
-                    siteCode = change.SiteCode;
-
-                }
-                else
-                {
-                    if (siteChange.Subrows == null) siteChange.Subrows = new List<SiteChangeView>();
-                    siteChange.Subrows.Add(new SiteChangeView
+                    if (count==0)
+                    {                        
+                        siteChange.NumChanges = 1;
+                        siteChange.ChangeId = change.ChangeId;
+                        siteChange.SiteCode = change.SiteCode;
+                        siteCode = change.SiteCode;
+                        siteChange.ChangeCategory = change.ChangeCategory;
+                        siteChange.ChangeType = change.ChangeType;
+                        siteChange.Country = change.Country;
+                        siteChange.Level = change.Level;
+                        siteChange.Status = change.Status;
+                        siteChange.Tags = change.Tags;
+                        siteChange.Subrows = new List<SiteChangeView>();
+                    }
+                    else
                     {
-                        ChangeId = change.ChangeId,
-                        SiteCode = string.Empty,
-                        Action = string.Empty,
-                        ChangeCategory = change.ChangeCategory,
-                        ChangeType = change.ChangeType,
-                        Country = change.Country,
-                        Level = change.Level,
-                        Status = change.Status,
-                        Tags = string.Empty
-                    });
-                    siteChange.NumChanges++;
+                        siteChange.Subrows.Add(new SiteChangeView
+                        {
+                            ChangeId = change.ChangeId,
+                            SiteCode = string.Empty,
+                            Action = string.Empty,
+                            ChangeCategory = change.ChangeCategory,
+                            ChangeType = change.ChangeType,
+                            Country = change.Country,
+                            Level = change.Level,
+                            Status = change.Status,
+                            Tags = string.Empty
+                        });
+                        siteChange.NumChanges++;
+                    }
+                    count++;
                 }
-                
+                result.Add(siteChange);
             }
-            if (siteCode != String.Empty) result.Add(siteChange);
             return result;
         }
 
@@ -318,6 +361,90 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
+
+        public async Task<List<ModifiedSiteCode>> AcceptChanges(ModifiedSiteCode[] changedSiteStatus)
+        {
+
+            List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
+            try
+            {
+                foreach (var modifiedSiteCode in changedSiteStatus)
+                {
+
+                    try
+                    {
+                        var paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
+                        var paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId );
+
+                        await  _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spAcceptSiteCodeChanges @sitecode, @version",
+                                paramSiteCode,
+                                paramVersionId);
+                        modifiedSiteCode.OK = 1;
+                        modifiedSiteCode.Error = string.Empty;
+                        modifiedSiteCode.Status = SiteChangeStatus.Accepted;
+                    }
+                    catch (Exception ex)
+                    {
+                        modifiedSiteCode.OK = 0;
+                        modifiedSiteCode.Error = ex.Message;
+                    }
+                    finally
+                    {
+                        result.Add(modifiedSiteCode);
+                    }
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw ;
+            }
+
+
+        }
+
+
+        public async Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus)
+        {
+            List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
+            try
+            {
+                foreach (var modifiedSiteCode in changedSiteStatus)
+                {
+
+                    try
+                    {
+                        var paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
+                        var paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
+
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spRejectSiteCodeChanges @sitecode, @version",
+                                paramSiteCode,
+                                paramVersionId);
+                        modifiedSiteCode.OK = 1;
+                        modifiedSiteCode.Error = string.Empty;
+                        modifiedSiteCode.Status = SiteChangeStatus.Rejected;
+                    }
+                    catch (Exception ex)
+                    {
+                        modifiedSiteCode.OK = 0;
+                        modifiedSiteCode.Error = ex.Message;
+                    }
+                    finally
+                    {
+                        result.Add(modifiedSiteCode);
+                    }
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+
+        }
 
 
 
