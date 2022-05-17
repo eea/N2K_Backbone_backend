@@ -22,18 +22,18 @@ namespace N2K_BackboneBackEnd.Services
         private readonly IOptions<ConfigSettings> _appSettings;
         private bool _ThereAreChanges = false;
 
-        public HarvestedService(N2KBackboneContext dataContext,N2K_VersioningContext versioningContext)
+        public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext)
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
-            
+
         }
-        
-        public HarvestedService(N2KBackboneContext dataContext,N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app)
+
+        public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
-             _appSettings = app;
+            _appSettings = app;
         }
         public async Task<List<Harvesting>> GetHarvestedAsync()
         {
@@ -119,7 +119,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         if (!result.Contains(pendEnv))
                         {
-                            if (allEnvs.Where(e => e.Version == pendEnv.Id && e.Country == pendEnv.Country && e.Status ==  HarvestingStatus.Harvesting).ToList().Count == 0)
+                            if (allEnvs.Where(e => e.Version == pendEnv.Id && e.Country == pendEnv.Country && e.Status == HarvestingStatus.Harvesting).ToList().Count == 0)
                             {
                                 result.Add(
                                     new Harvesting
@@ -162,7 +162,8 @@ namespace N2K_BackboneBackEnd.Services
                     }
                  );
                 */
-                /*
+                //Start of validation
+
                 //remove version from database
                 var param1 = new SqlParameter("@country", envelope.CountryCode);
                 var param2 = new SqlParameter("@version", envelope.VersionId);
@@ -236,6 +237,11 @@ namespace N2K_BackboneBackEnd.Services
 
                 var sitesVersioning = await _versioningContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetNaturaSiteDataByCountryIdAndCode  @country, @version",
                                 param1, param2).ToListAsync();
+                var referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSitesByCountry  @country",
+                                param1).ToListAsync();
+
+                #region old referencedSites
+                /*
                 var referencedSites = new List<SiteToHarvest>();
                 if (lastReferenceCountryVersion != 0)
                 {
@@ -243,7 +249,8 @@ namespace N2K_BackboneBackEnd.Services
                     referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.[spGetReferenceSitesByCountryAndVersion]  @country, @version",
                                 param1, param3).ToListAsync();
                 }
-
+                */
+                #endregion
 
                 //For each site in Versioning compare it with that site in backboneDB
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
@@ -282,6 +289,7 @@ namespace N2K_BackboneBackEnd.Services
                             changes.Add(siteChange);
                             numChanges++;
                         }
+                        #region SiteType comparison (unused)
                         //if (harvestingSite.SiteType != storedSite.SiteType)
                         //{
                         //    var siteChange = new SiteChangeDb();
@@ -295,6 +303,7 @@ namespace N2K_BackboneBackEnd.Services
                         //    changes.Add(siteChange);
                         //    numChanges++;
                         //}
+                        #endregion
                         if (harvestingSite.AreaHa > storedSite.AreaHa)
                         {
                             if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
@@ -371,10 +380,21 @@ namespace N2K_BackboneBackEnd.Services
                         var param3 = new SqlParameter("@site", harvestingSite.SiteCode);
 
                         #region HabitatChecking
-                        var habitatVersioning = await _versioningContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetHabitatDataByCountryIdAndCountryCodeAndSiteCode  @country, @version, @site",
-                                        param1, param2, param3).ToListAsync();
-                        var referencedHabitats = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCode  @site",
+
+                        //To get the latest version of the Habitats
+                        var habitatsList = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCode  @site",
                                         param3).ToListAsync();
+                        var maxValueHabitat = habitatsList.Max(x => x.VersionId);
+                        var maxVersionHabitat = habitatsList.First(x => x.VersionId == maxValueHabitat);
+                        var param4 = new SqlParameter("@versionId", maxVersionHabitat.VersionId);
+                        var previousVersionHabitat = maxVersionHabitat.VersionId - 1;
+                        var param5 = new SqlParameter("@versionId", previousVersionHabitat);
+
+                        var habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+                                        param3, param4).ToListAsync();
+                        var referencedHabitats = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+                                        param3, param5).ToListAsync();
+
                         //For each habitat in Versioning compare it with that habitat in backboneDB
                         foreach (var harvestingHabitat in habitatVersioning)
                         {
@@ -581,10 +601,21 @@ namespace N2K_BackboneBackEnd.Services
                         #endregion
                         
                         #region SpeciesChecking
-                        var speciesVersioning = await _versioningContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetSpeciesDataByCountryIdAndCountryCodeAndSiteCode  @country, @version, @site",
-                                        param1, param2, param3).ToListAsync();
-                        var referencedSpecies = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCode  @site",
+
+                        //To get the latest version of the Habitats
+                        var speciesList = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCode  @site",
                                         param3).ToListAsync();
+                        var maxValueSpecies = speciesList.Max(x => x.VersionId);
+                        var maxVersionSpecies = speciesList.First(x => x.VersionId == maxValueSpecies);
+                        var param6 = new SqlParameter("@versionId", maxVersionSpecies.VersionId);
+                        var previousVersionSpecies = maxVersionSpecies.VersionId - 1;
+                        var param7 = new SqlParameter("@versionId", previousVersionHabitat);
+
+                        var speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+                                        param3, param6).ToListAsync();
+                        var referencedSpecies = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+                                        param3, param7).ToListAsync();
+
                         //For each species in Versioning compare it with that species in backboneDB
                         foreach (var harvestingSpecies in speciesVersioning)
                         {
@@ -767,7 +798,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     //remove version from database
                     resetEnvirontment(envelope.CountryCode, envelope.VersionId);
-                    
+
 
                     //create a new entry in the processed envelopes table to register that a new one is being harvested
                     var envelopeToProcess = new ProcessedEnvelopes
@@ -782,7 +813,7 @@ namespace N2K_BackboneBackEnd.Services
                         //add the envelope to the DB
                         _dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
                         _dataContext.SaveChanges();
-                        
+
 
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
@@ -861,8 +892,8 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.SaveChanges();
                     }
 
-                        
-                   
+
+
 
                 }
                 return await Task.FromResult(result);
@@ -1177,7 +1208,7 @@ namespace N2K_BackboneBackEnd.Services
         /// </summary>
         /// <param name="pCountryCode">Code of two digits for the country</param>
         /// <param name="pCountryVersion">Number of the version</param>
-        private async void resetEnvirontment(string pCountryCode, int pCountryVersion )
+        private async void resetEnvirontment(string pCountryCode, int pCountryVersion)
         {
             try
             {
@@ -1188,10 +1219,11 @@ namespace N2K_BackboneBackEnd.Services
                     await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spRemoveVersionFromDB  @country, @version", param1, param2);
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - harvestSite", "");
             }
-        
+
         }
 
         /// <summary>
@@ -1224,20 +1256,22 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
-                else { 
+                else
+                {
                     //just when there are changes commited
                     List<Sites> toremove = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVerion).ToList();
                     _dataContext.Set<Sites>().RemoveRange(toremove);
                     _dataContext.SaveChanges();
                 }
-                
+
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error,ex.Message, "HarvestedService - rollback","");
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - rollback", "");
             }
-            finally { 
-            
+            finally
+            {
+
             }
 
         }
