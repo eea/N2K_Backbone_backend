@@ -144,6 +144,7 @@ namespace N2K_BackboneBackEnd.Services
             var result = new List<HarvestedEnvelope>();
             var changes = new List<SiteChangeDb>();
             //var latestVersions = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
+            await _dataContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.test_table");
 
 
             //from the view vLatest//processedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
@@ -412,7 +413,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     var siteChange = new SiteChangeDb();
                                     siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeCategory = "Habitats";
                                     siteChange.ChangeType = "Relative surface Decrease";
                                     siteChange.Country = envelope.CountryCode;
                                     siteChange.Level = Enumerations.Level.Warning;
@@ -429,7 +430,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     var siteChange = new SiteChangeDb();
                                     siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeCategory = "Habitats";
                                     siteChange.ChangeType = "Relative surface Increase";
                                     siteChange.Country = envelope.CountryCode;
                                     siteChange.Level = Enumerations.Level.Info;
@@ -444,7 +445,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     var siteChange = new SiteChangeDb();
                                     siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeCategory = "Habitats";
                                     siteChange.ChangeType = "Relative surface Change";
                                     siteChange.Country = envelope.CountryCode;
                                     siteChange.Level = Enumerations.Level.Info;
@@ -459,7 +460,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     var siteChange = new SiteChangeDb();
                                     siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeCategory = "Habitats";
                                     siteChange.ChangeType = "Representativity Decrease";
                                     siteChange.Country = envelope.CountryCode;
                                     siteChange.Level = Enumerations.Level.Warning;
@@ -475,7 +476,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     var siteChange = new SiteChangeDb();
                                     siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeCategory = "Habitats";
                                     siteChange.ChangeType = "Representativity Increase";
                                     siteChange.Country = envelope.CountryCode;
                                     siteChange.Level = Enumerations.Level.Info;
@@ -491,7 +492,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     var siteChange = new SiteChangeDb();
                                     siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeCategory = "Habitats";
                                     siteChange.ChangeType = "Representativity Change";
                                     siteChange.Country = envelope.CountryCode;
                                     siteChange.Level = Enumerations.Level.Info;
@@ -509,7 +510,7 @@ namespace N2K_BackboneBackEnd.Services
                                     {
                                         var siteChange = new SiteChangeDb();
                                         siteChange.SiteCode = harvestingSite.SiteCode;
-                                        siteChange.ChangeCategory = "Species and habitats";
+                                        siteChange.ChangeCategory = "Habitats";
                                         siteChange.ChangeType = "Cover_ha Decrease";
                                         siteChange.Country = envelope.CountryCode;
                                         siteChange.Level = Enumerations.Level.Warning;
@@ -527,7 +528,7 @@ namespace N2K_BackboneBackEnd.Services
                                     {
                                         var siteChange = new SiteChangeDb();
                                         siteChange.SiteCode = harvestingSite.SiteCode;
-                                        siteChange.ChangeCategory = "Species and habitats";
+                                        siteChange.ChangeCategory = "Habitats";
                                         siteChange.ChangeType = "Cover_ha Increase";
                                         siteChange.Country = envelope.CountryCode;
                                         siteChange.Level = Enumerations.Level.Info;
@@ -544,7 +545,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     var siteChange = new SiteChangeDb();
                                     siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeCategory = "Habitats";
                                     siteChange.ChangeType = "Cover_ha Change";
                                     siteChange.Country = envelope.CountryCode;
                                     siteChange.Level = Enumerations.Level.Info;
@@ -618,7 +619,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     var siteChange = new SiteChangeDb();
                                     siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeCategory = "Species";
                                     siteChange.ChangeType = "Population Increase";
                                     siteChange.Country = envelope.CountryCode;
                                     siteChange.Level = Enumerations.Level.Warning;
@@ -634,7 +635,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     var siteChange = new SiteChangeDb();
                                     siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeCategory = "Species";
                                     siteChange.ChangeType = "Population Decrease";
                                     siteChange.Country = envelope.CountryCode;
                                     siteChange.Level = Enumerations.Level.Info;
@@ -650,7 +651,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     var siteChange = new SiteChangeDb();
                                     siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
+                                    siteChange.ChangeCategory = "Species";
                                     siteChange.ChangeType = "Population Change";
                                     siteChange.Country = envelope.CountryCode;
                                     siteChange.Level = Enumerations.Level.Info;
