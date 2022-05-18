@@ -143,7 +143,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             var result = new List<HarvestedEnvelope>();
             var changes = new List<SiteChangeDb>();
-            var latestVersions = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
+            //var latestVersions = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
 
 
             //from the view vLatest//processedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
@@ -151,6 +151,7 @@ namespace N2K_BackboneBackEnd.Services
             //Load all sites with the CountryVersionID-CountryCode from Versioning
             foreach (EnvelopesToProcess envelope in envelopeIDs)
             {
+                #region unused code
                 /*
                 result.Add(
                     new HarvestedEnvelope
@@ -230,13 +231,15 @@ namespace N2K_BackboneBackEnd.Services
 
                 }
                 */
+                #endregion
+
                 var lastReferenceCountryVersion = 32;
                 var numChanges = 0;
 
                 var param1 = new SqlParameter("@country", envelope.CountryCode);
                 var param2 = new SqlParameter("@version", envelope.VersionId);
 
-                var sitesVersioning = await _versioningContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetNaturaSiteDataByCountryIdAndCode  @country, @version",
+                var sitesVersioning = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSitesByCountryAndVersion  @country, @version",
                                 param1, param2).ToListAsync();
                 var referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSitesByCountry  @country",
                                 param1).ToListAsync();
@@ -379,18 +382,12 @@ namespace N2K_BackboneBackEnd.Services
                         
 
                         var param3 = new SqlParameter("@site", harvestingSite.SiteCode);
+                        var maxVersionSite = harvestingSite.VersionId;
+                        var param4 = new SqlParameter("@versionId", maxVersionSite);
+                        var previousVersionSite = storedSite.VersionId;
+                        var param5 = new SqlParameter("@versionId", previousVersionSite);
 
                         #region HabitatChecking
-
-                        //To get the latest version of the Habitats
-                        var habitatsList = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCode  @site",
-                                        param3).ToListAsync();
-                        var maxValueHabitat = habitatsList.Max(x => x.VersionId);
-                        var maxVersionHabitat = habitatsList.First(x => x.VersionId == maxValueHabitat);
-                        var param4 = new SqlParameter("@versionId", maxVersionHabitat.VersionId);
-                        var previousVersionHabitat = maxVersionHabitat.VersionId - 1;
-                        var param5 = new SqlParameter("@versionId", previousVersionHabitat);
-
                         var habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
                                         param3, param4).ToListAsync();
                         var referencedHabitats = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
@@ -600,22 +597,12 @@ namespace N2K_BackboneBackEnd.Services
                             }
                         }
                         #endregion
-                        
+
                         #region SpeciesChecking
-
-                        //To get the latest version of the Habitats
-                        var speciesList = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCode  @site",
-                                        param3).ToListAsync();
-                        var maxValueSpecies = speciesList.Max(x => x.VersionId);
-                        var maxVersionSpecies = speciesList.First(x => x.VersionId == maxValueSpecies);
-                        var param6 = new SqlParameter("@versionId", maxVersionSpecies.VersionId);
-                        var previousVersionSpecies = maxVersionSpecies.VersionId - 1;
-                        var param7 = new SqlParameter("@versionId", previousVersionHabitat);
-
                         var speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
-                                        param3, param6).ToListAsync();
+                                        param3, param4).ToListAsync();
                         var referencedSpecies = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
-                                        param3, param7).ToListAsync();
+                                        param3, param5).ToListAsync();
 
                         //For each species in Versioning compare it with that species in backboneDB
                         foreach (var harvestingSpecies in speciesVersioning)
