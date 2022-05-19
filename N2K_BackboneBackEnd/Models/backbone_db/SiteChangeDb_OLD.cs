@@ -7,13 +7,12 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 
 namespace N2K_BackboneBackEnd.Models.BackboneDB
 {
-    public class SiteChangeDb : IEntityModel, IEntityModelBackboneDB
+    public class SiteChangeDb_OLD : IEntityModel, IEntityModelBackboneDB
     {
         [Key]
         public long ChangeId { get; set; }
 
         public string? SiteCode { get; set; }
-        public int? Version { get; set; }
         public string? Country { get; set; }
 
         public SiteChangeStatus? Status { get; set; }
@@ -37,12 +36,12 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SiteChangeDb>()
-                .ToTable("Changes")
+                .ToTable("test_table")
                 .Property(e => e.Status)
                 .HasConversion(new EnumToStringConverter<Enumerations.SiteChangeStatus>());
 
             builder.Entity<SiteChangeDb>()
-                .ToTable("Changes")
+                .ToTable("test_table")
                 .Property(e => e.Level)
                 .HasConversion(new EnumToStringConverter<Enumerations.Level>());
 
