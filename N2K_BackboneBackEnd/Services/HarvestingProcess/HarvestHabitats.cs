@@ -1,4 +1,5 @@
-﻿using N2K_BackboneBackEnd.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
@@ -80,8 +81,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 Console.WriteLine("=>Start habitat harvest by country...");
-
-                elements = _versioningContext.Set<ContainsHabitat>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToList();
+                elements =await  _versioningContext.Set<ContainsHabitat>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
 
                 foreach (ContainsHabitat element in elements)
                 {
@@ -124,7 +124,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
 
-                elements = _versioningContext.Set<ContainsHabitat>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToList();
+                elements =await  _versioningContext.Set<ContainsHabitat>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
 
                 foreach (ContainsHabitat element in elements)
                 {
@@ -135,7 +135,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.CoverHA = (decimal?)element.COVER_HA;
                     item.PriorityForm = element.PF;
                     item.Representativity = element.REPRESENTATIVITY;
-                    item.DataQty = (element.DATAQUALITY !=null)?_dataContext.Set<DataQualityTypes>().Where(d => d.HabitatCode == element.DATAQUALITY).Select(d => d.Id).FirstOrDefault():null;
+                    item.DataQty = (element.DATAQUALITY != null) ? _dataContext.Set<DataQualityTypes>().Where(d => d.HabitatCode == element.DATAQUALITY).Select(d => d.Id).FirstOrDefault() : null;
                     //item.Conservation = element.CONSERVATION; // ??? PENDING
                     item.GlobalAssesments = element.GLOBALASSESMENT;
                     item.RelativeSurface = element.RELSURFACE;
@@ -155,7 +155,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestHabitats - HarvestBySite", "");
                 return 0;
             }
-            finally {
+            finally
+            {
                 TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
             }
 
@@ -168,7 +169,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 Console.WriteLine("=>Start describeSites harvest by country...");
 
-                elements = _versioningContext.Set<DescribesSites>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToList();
+                elements = await _versioningContext.Set<DescribesSites>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
 
                 foreach (DescribesSites element in elements)
                 {
@@ -199,7 +200,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 Console.WriteLine("=>Start describeSites harvest by site...");
 
-                elements = _versioningContext.Set<DescribesSites>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToList();
+                elements = await _versioningContext.Set<DescribesSites>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
 
                 foreach (DescribesSites element in elements)
                 {

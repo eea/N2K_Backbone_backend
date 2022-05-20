@@ -7,13 +7,15 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 
 namespace N2K_BackboneBackEnd.Models.BackboneDB
 {
+
     public class SiteChangeDb : IEntityModel, IEntityModelBackboneDB
     {
+      
         [Key]
         public long ChangeId { get; set; }
 
         public string? SiteCode { get; set; }
-        public int? Version { get; set; }
+        public int Version { get; set; }
         public string? Country { get; set; }
 
         public SiteChangeStatus? Status { get; set; }
@@ -27,12 +29,12 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
         [NotMapped]
         public int NumChanges { get; set; }
 
-        public string ? NewValue { get; set; }
+        public string? NewValue { get; set; }
         public string? OldValue { get; set; }
 
+        public string? Detail { get; set; }
 
-        public List<SiteChangeView> Subrows { get; set;  } = new List<SiteChangeView>();
-
+        public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
         public static void OnModelCreating(ModelBuilder builder)
         {

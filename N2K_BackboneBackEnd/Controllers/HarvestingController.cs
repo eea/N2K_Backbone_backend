@@ -134,14 +134,14 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         // POST api/<HarvestingController>
-        [Route("Harvest/Start")]
+        [Route("Harvest")]
         [HttpPost]
-        public async Task<ActionResult<List<HarvestedEnvelope>>> Start([FromBody] EnvelopesToProcess[] envelopes)
+        public async Task<ActionResult<List<HarvestedEnvelope>>> Harvest([FromBody] EnvelopesToProcess[] envelopes)
         {
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
-                var siteChanges = await _harvestedService.Start(envelopes);
+                var siteChanges = await _harvestedService.Harvest(envelopes);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -160,14 +160,15 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         // POST api/<HarvestingController>
-        [Route("Harvest/")]
+        [Route("Harvest/Validate")]
         [HttpPost]
-        public async  Task<ActionResult<List<HarvestedEnvelope>>>  Harvest([FromBody] EnvelopesToProcess[] envelopes)
+        public async  Task<ActionResult<List<HarvestedEnvelope>>> Validate([FromBody] EnvelopesToProcess[] envelopes)
         {
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
                 var siteChanges = await _harvestedService.Harvest(envelopes);
+                await _harvestedService.Validate(envelopes);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;

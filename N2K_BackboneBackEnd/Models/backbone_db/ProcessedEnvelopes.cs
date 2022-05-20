@@ -14,7 +14,7 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
 
         public int Version { get;   set; }
 
-        public string Importer { get; set; }
+        public string? Importer { get; set; }
 
         public HarvestingStatus Status { get;  set; }
 

@@ -1,4 +1,5 @@
-﻿using N2K_BackboneBackEnd.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
@@ -38,7 +39,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
 
-                elements = _versioningContext.Set<ContainsSpecies>().Where(s=> s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToList();
+                elements =await  _versioningContext.Set<ContainsSpecies>().Where(s=> s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
 
                 foreach (ContainsSpecies element in elements) {
                     
@@ -96,7 +97,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
-                elements = _versioningContext.Set<ContainsSpecies>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToList();
+                elements =await  _versioningContext.Set<ContainsSpecies>(). Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
                 foreach (ContainsSpecies element in elements)
                 {
 
