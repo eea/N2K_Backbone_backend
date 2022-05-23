@@ -105,9 +105,38 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-        
+
+        [HttpGet("GetSiteChangesDetail/siteCode={pSiteCode}&version={pCountryVersion}")]
+        /// <summary>
+        /// Remove the version we use in development
+        /// </summary>
+        /// <param name="pSiteCode">Code of the site</param>
+        /// <param name="pCountryVersion">Number of the version</param>
+        public async Task<ActionResult<ServiceResponse<SiteChangeDetailViewModel>>> GetSiteChangesDetailExtended(string pSiteCode, int pCountryVersion)
+        {
+            var response = new ServiceResponse<SiteChangeDetailViewModel>();
+
+            try
+            {
+                var siteChange = await _siteChangesService.GetSiteChangesDetailExtended(pSiteCode, pCountryVersion);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChange;
+                response.Count = (siteChange == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                return Ok(response);
+            }
+        }
 
         
+
+
         // POST api/<SiteChangesController>
         [Route("AcceptChanges/")]
         [HttpPost]

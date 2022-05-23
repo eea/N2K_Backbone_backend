@@ -28,7 +28,6 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<SiteChangeDb>> GetSiteChangesAsync(SiteChangeStatus? status)
         {
             List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().ToListAsync();
-            if (status == null) status = SiteChangeStatus.Pending;
             if (status!= null)
                 changes = changes.Where(s=> s.Status==status).ToList();
 
@@ -67,13 +66,14 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Level = null;
                         siteChange.Status = null;
                         siteChange.Tags = "";
+                        siteChange.Version = change.Version;
                         var changeView = new SiteChangeView
                         {
                              Action ="",
                              SiteCode= "",
                              ChangeCategory= change.ChangeCategory,
                              ChangeType = change.ChangeType,
-                             Country = "",
+                             Country = "",                            
                              Level = change.Level,
                              Status = change.Status,
                              Tags = change.Tags
@@ -167,10 +167,6 @@ namespace N2K_BackboneBackEnd.Services
 
 
         public async Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion) {
-
-            await GetSiteChangesDetailNew(pSiteCode, pCountryVersion);
-
-
             var changeDetailVM = new SiteChangeDetailViewModel();
             changeDetailVM.SiteCode = pSiteCode;
             changeDetailVM.CountryVersion= pCountryVersion;
@@ -213,7 +209,7 @@ namespace N2K_BackboneBackEnd.Services
         
 
 
-        public async Task<SiteChangeDetailViewModelAdvanced> GetSiteChangesDetailNew(string pSiteCode, int pCountryVersion)
+        public async Task<SiteChangeDetailViewModelAdvanced> GetSiteChangesDetailExtended(string pSiteCode, int pCountryVersion)
         {
 
             var changeDetailVM = new SiteChangeDetailViewModelAdvanced();
