@@ -112,9 +112,9 @@ namespace N2K_BackboneBackEnd.Controllers
         /// </summary>
         /// <param name="pSiteCode">Code of the site</param>
         /// <param name="pCountryVersion">Number of the version</param>
-        public async Task<ActionResult<ServiceResponse<SiteChangeDetailViewModel>>> GetSiteChangesDetailExtended(string pSiteCode, int pCountryVersion)
+        public async Task<ActionResult<ServiceResponse<SiteChangeDetailViewModelAdvanced>>> GetSiteChangesDetailExtended(string pSiteCode, int pCountryVersion)
         {
-            var response = new ServiceResponse<SiteChangeDetailViewModel>();
+            var response = new ServiceResponse<SiteChangeDetailViewModelAdvanced>();
 
             try
             {
