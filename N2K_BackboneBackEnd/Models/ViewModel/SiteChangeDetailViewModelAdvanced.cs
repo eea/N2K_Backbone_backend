@@ -21,7 +21,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public SiteChangeStatus? Status { get; set; }
 
-        public List<CriticalChangeDetail>  Critical { get; set; } = new List<CriticalChangeDetail>();
+        public CategorisedSiteChangeDetail  Critical { get; set; } = new CategorisedSiteChangeDetail();
 
         public CategorisedSiteChangeDetail Warning { get; set; } = new CategorisedSiteChangeDetail();
 
@@ -30,7 +30,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public SiteChangeDetailViewModelAdvanced()
         {
-            this.Critical = new List<CriticalChangeDetail>();
+            this.Critical = new CategorisedSiteChangeDetail();
             this.Warning = new CategorisedSiteChangeDetail();
             this.Info= new CategorisedSiteChangeDetail();
         }

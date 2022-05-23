@@ -106,7 +106,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("GetSiteChangesDetail/siteCode={pSiteCode}&version={pCountryVersion}")]
+        [HttpGet("GetSiteChangesDetailExtended/siteCode={pSiteCode}&version={pCountryVersion}")]
         /// <summary>
         /// Remove the version we use in development
         /// </summary>
