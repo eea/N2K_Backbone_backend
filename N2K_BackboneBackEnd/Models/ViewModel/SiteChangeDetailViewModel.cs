@@ -1,9 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
-using N2K_BackboneBackEnd.Models;
-using N2K_BackboneBackEnd.Models.BackboneDB;
-using N2K_BackboneBackEnd.Models.VersioningDB;
 
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
@@ -17,16 +14,22 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public string Name { get; set; } = "";
 
-        public int CountryVersion { get; set; }
+        public int Version { get; set; }
 
         public SiteChangeStatus? Status { get; set; }
 
-        public List<ChangeDetail> ChangesList { get; set; } = new List<ChangeDetail>();
+        public CategorisedSiteChangeDetail  Critical { get; set; } = new CategorisedSiteChangeDetail();
+
+        public CategorisedSiteChangeDetail Warning { get; set; } = new CategorisedSiteChangeDetail();
+
+        public CategorisedSiteChangeDetail Info { get; set; } = new CategorisedSiteChangeDetail();
 
 
         public SiteChangeDetailViewModel()
         {
-            this.ChangesList = new List<ChangeDetail>();
+            this.Critical = new CategorisedSiteChangeDetail();
+            this.Warning = new CategorisedSiteChangeDetail();
+            this.Info= new CategorisedSiteChangeDetail();
         }
 
 

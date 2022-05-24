@@ -3,16 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.ViewModel;
-using N2K_BackboneBackEnd.Models.BackboneDB;
-using N2K_BackboneBackEnd.Models.VersioningDB;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Enumerations;
+using N2K_BackboneBackEnd.Models.versioning_db;
 
 namespace N2K_BackboneBackEnd.Services
 {
 
-    
-    
 
     public class SiteChangesService : ISiteChangesService
     {
@@ -28,20 +25,20 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<SiteChangeDb>> GetSiteChangesAsync(SiteChangeStatus? status)
         {
             List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().ToListAsync();
-            if (status!= null)
-                changes = changes.Where(s=> s.Status==status).ToList();
+            if (status != null)
+                changes = changes.Where(s => s.Status == status).ToList();
 
             //order the changes so that the first codes are the one with the hisgest Level value (1. Critical 2. Warning 3. Info)
             var orderedChanges = (from t in changes
-                                group t by t.SiteCode
+                                  group t by t.SiteCode
                                 into g
-                                select new 
-                                {                                          
-                                    SiteCode = g.Key,
-                                    Level = (from t2 in g select t2.Level).Max(),
-                                    //Nest all changes of each sitecode ordered by Level
-                                    ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending(x => (int)x.Level).ToList()
-                                }).OrderByDescending(a => a.Level).ToList();
+                                  select new
+                                  {
+                                      SiteCode = g.Key,
+                                      Level = (from t2 in g select t2.Level).Max(),
+                                      //Nest all changes of each sitecode ordered by Level
+                                      ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending(x => (int)x.Level).ToList()
+                                  }).OrderByDescending(a => a.Level).ToList();
 
             var result = new List<SiteChangeDb>();
             var countries = await _dataContext.Set<Countries>().ToListAsync();
@@ -55,8 +52,8 @@ namespace N2K_BackboneBackEnd.Services
                 foreach (var change in sCode.ChangeList)
                 {
 
-                    if (count==0)
-                    {                        
+                    if (count == 0)
+                    {
                         siteChange.NumChanges = 1;
                         siteChange.ChangeId = 0;
                         siteChange.SiteCode = change.SiteCode;
@@ -66,25 +63,25 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Country = "";
                         if (change.Country != null)
                         {
-                            var countryName = countries.Where(ctry => ctry.Code.ToLower() == change.Country.ToLower()).FirstOrDefault(); 
+                            var countryName = countries.Where(ctry => ctry.Code.ToLower() == change.Country.ToLower()).FirstOrDefault();
                             siteChange.Country = countryName != null ? countryName.Country : change.Country;
-                        }                       
+                        }
                         siteChange.Level = null;
                         siteChange.Status = null;
                         siteChange.Tags = "";
                         siteChange.Version = change.Version;
                         var changeView = new SiteChangeView
                         {
-                             Action ="",
-                             SiteCode= "",
-                             ChangeCategory= change.ChangeCategory,
-                             ChangeType = change.ChangeType,
-                             Country = "",                            
-                             Level = change.Level,
-                             Status = change.Status,
-                             Tags = change.Tags
+                            Action = "",
+                            SiteCode = "",
+                            ChangeCategory = change.ChangeCategory,
+                            ChangeType = change.ChangeType,
+                            Country = "",
+                            Level = change.Level,
+                            Status = change.Status,
+                            Tags = change.Tags
                         };
-                        siteChange.subRows = new List<SiteChangeView>( );
+                        siteChange.subRows = new List<SiteChangeView>();
                         siteChange.subRows.Add(changeView);
                     }
                     else
@@ -172,50 +169,10 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion) {
-            var changeDetailVM = new SiteChangeDetailViewModel();
-            changeDetailVM.SiteCode = pSiteCode;
-            changeDetailVM.CountryVersion= pCountryVersion;
-            changeDetailVM.ChangesList = new List<ChangeDetail>();
-
-
-            var site = await _dataContext.Set<Sites>().Where(site => site.SiteCode == pSiteCode  && site.Version == pCountryVersion ).FirstOrDefaultAsync();
-            var oldSite = await _dataContext.Set<Sites>().Where(site => site.SiteCode == pSiteCode && site.Current == true).FirstOrDefaultAsync();
-
-            if (site != null)
-            {
-#pragma warning disable CS8601 // Posible asignación de referencia nula
-                changeDetailVM.Name = site.Name;
-                changeDetailVM.Status = (SiteChangeStatus?) site.CurrentStatus;
-#pragma warning restore CS8601 // Posible asignación de referencia nula
-            }
-
-            var detectedChanges = await _dataContext.Set<SiteChangeDb>().Where(site => site.SiteCode == pSiteCode  && site.Version== pCountryVersion  ).ToListAsync();
-            if (detectedChanges != null)
-            {
-                foreach (var change in detectedChanges)
-                {
-                    var changeDetail = new ChangeDetail();
-                    changeDetail.ChangeId = change.ChangeId;
-                    changeDetail.Level = change.Level;
-                    changeDetail.ChangeType = change.ChangeType != null ? change.ChangeType.ToString() : String.Empty;
-                    changeDetail.ChangeCategory = change.ChangeCategory != null? change.ChangeCategory.ToString() : String.Empty;
-                    changeDetail.FieldName = String.Empty;
-                    changeDetail.ReportedValue = String.Empty;
-                    changeDetail.OlValue = String.Empty;
-                    changeDetail.Description = String.Empty;
-                    FillChangeDetail(site, oldSite, change, ref changeDetail);
-                    changeDetailVM.ChangesList.Add(changeDetail);
-                }
-            }
-            return changeDetailVM;
-
-        }
-
-        public async Task<SiteChangeDetailViewModelAdvanced> GetSiteChangesDetailExtended(string pSiteCode, int pCountryVersion)
+        public async Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion)
         {
 
-            var changeDetailVM = new SiteChangeDetailViewModelAdvanced();
+            var changeDetailVM = new SiteChangeDetailViewModel();
             changeDetailVM.SiteCode = pSiteCode;
             changeDetailVM.Version = pCountryVersion;
             changeDetailVM.Warning = new CategorisedSiteChangeDetail();
@@ -234,16 +191,16 @@ namespace N2K_BackboneBackEnd.Services
             var changesDb = await _dataContext.Set<SiteChangeDb>().Where(site => site.SiteCode == pSiteCode).ToListAsync();
 
 
-            changeDetailVM.Critical = FillChangeDetailCategory(changesDb, pSiteCode,  pCountryVersion, Level.Critical);
+            changeDetailVM.Critical = FillChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Critical);
             changeDetailVM.Warning = FillChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Warning);
             changeDetailVM.Info = FillChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Info);
 
             return changeDetailVM;
 
         }
-            
 
-        private CategorisedSiteChangeDetail FillChangeDetailCategory(List<SiteChangeDb> changesDB, string pSiteCode, int pCountryVersion, Level level) 
+
+        private CategorisedSiteChangeDetail FillChangeDetailCategory(List<SiteChangeDb> changesDB, string pSiteCode, int pCountryVersion, Level level)
         {
 
             var changedPerCategories = new CategorisedSiteChangeDetail();
@@ -253,23 +210,23 @@ namespace N2K_BackboneBackEnd.Services
 
 
             var levelDetails = (from t in changesDB
-                                 where t.Level == level
-                                 group t by  new { t.Section, t.ChangeCategory, t.ChangeType }
+                                where t.Level == level
+                                group t by new { t.Section, t.ChangeCategory, t.ChangeType }
                                  into g
-                                 select new
-                                 {
-                                     ChangeCategory = g.Key.ChangeCategory,
-                                     ChangeType = g.Key.ChangeType,
-                                     Section = g.Key.Section,
-                                     ChangeList = g.Where(s => s.Section== g.Key.Section && s.ChangeType == g.Key.ChangeType  && s.ChangeCategory== g.Key.ChangeCategory ).ToList()
-                                 }).ToList();
+                                select new
+                                {
+                                    ChangeCategory = g.Key.ChangeCategory,
+                                    ChangeType = g.Key.ChangeType,
+                                    Section = g.Key.Section,
+                                    ChangeList = g.Where(s => s.Section == g.Key.Section && s.ChangeType == g.Key.ChangeType && s.ChangeCategory == g.Key.ChangeCategory).ToList()
+                                }).ToList();
             foreach (var changeCat in levelDetails)
             {
 
                 var changeDetail = new CategoryChangeDetail();
                 changeDetail.ChangeCategory = changeCat.ChangeCategory;
                 changeDetail.FieldName = "";
-                changeDetail.ChangeType = changeCat.ChangeType ;
+                changeDetail.ChangeType = changeCat.ChangeType;
                 changeDetail.AddedCodes = new List<CodeAddedDetail>();
                 changeDetail.ChangedCodes = new List<CodeChangeDetail>();
                 foreach (var changedItem in changeCat.ChangeList)
@@ -277,7 +234,7 @@ namespace N2K_BackboneBackEnd.Services
                     if (changeCat.ChangeType.IndexOf("Added") > -1)
                     {
                         changeDetail.AddedCodes.Add(
-                            CodeAddedDetail(changeCat.Section, changedItem.Code, changedItem.ChangeId,pSiteCode,pCountryVersion)
+                            CodeAddedDetail(changeCat.Section, changedItem.Code, changedItem.ChangeId, pSiteCode, pCountryVersion)
                         );
                     }
                     else
@@ -308,7 +265,7 @@ namespace N2K_BackboneBackEnd.Services
                     case "Habitats":
                         changedPerCategories.Habitats.Add(changeDetail);
                         break;
-                }                
+                }
             }
 
             return changedPerCategories;
@@ -316,7 +273,7 @@ namespace N2K_BackboneBackEnd.Services
 
 
 
-        private CodeAddedDetail CodeAddedDetail(string section,  string? code, long changeId, string pSiteCode, int pCountryVersion)
+        private CodeAddedDetail CodeAddedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion)
         {
             var codeValues = new Dictionary<string, string>();
             switch (section)
@@ -351,7 +308,7 @@ namespace N2K_BackboneBackEnd.Services
                         var habType = _dataContext.Set<HabitatTypes>().Where(s => s.Code.ToLower() == code.ToLower()).Select(spc => spc.Name).FirstOrDefault();
                         if (habType != null) habName = habType;
 
-                        var habDetails = _dataContext.Set<Habitats>().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion && site.HabitatCode.ToLower() == code.ToLower()  )
+                        var habDetails = _dataContext.Set<Habitats>().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion && site.HabitatCode.ToLower() == code.ToLower())
                             .Select(hab => new
                             {
                                 Population = hab.Representativity,
@@ -377,18 +334,18 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        private void FillChangeDetail(Sites? site, Sites? oldSite, SiteChangeDb siteChangeDb,  ref ChangeDetail detail)
+        private void FillChangeDetail(Sites? site, Sites? oldSite, SiteChangeDb siteChangeDb, ref ChangeDetail detail)
         {
             if (detail != null)
             {
                 switch (detail.ChangeCategory)
                 {
                     case "Site General Info":
-                       switch (detail.ChangeType)
+                        switch (detail.ChangeType)
                         {
                             case "SiteName Changed":
                                 detail.FieldName = "SiteName";
-                                detail.ReportedValue =siteChangeDb.NewValue;
+                                detail.ReportedValue = siteChangeDb.NewValue;
                                 detail.OlValue = siteChangeDb.OldValue;
                                 break;
 
@@ -533,9 +490,9 @@ namespace N2K_BackboneBackEnd.Services
                     try
                     {
                         var paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
-                        var paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId );
+                        var paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
 
-                        await  _dataContext.Database.ExecuteSqlRawAsync(
+                        await _dataContext.Database.ExecuteSqlRawAsync(
                                 "exec spAcceptSiteCodeChanges @sitecode, @version",
                                 paramSiteCode,
                                 paramVersionId);
@@ -557,7 +514,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                throw ;
+                throw;
             }
 
 

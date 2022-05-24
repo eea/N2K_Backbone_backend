@@ -2,13 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
-using N2K_BackboneBackEnd.Models.VersioningDB;
-using N2K_BackboneBackEnd.Models.BackboneDB;
+using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 
 using N2K_BackboneBackEnd.Services.HarvestingProcess;
-using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.Enumerations;
 using IsImpactedBy = N2K_BackboneBackEnd.Models.versioning_db.IsImpactedBy;
 using Microsoft.Extensions.Options;

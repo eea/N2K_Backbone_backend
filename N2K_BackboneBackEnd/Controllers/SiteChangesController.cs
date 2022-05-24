@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
-using N2K_BackboneBackEnd.Models.BackboneDB;
-using N2K_BackboneBackEnd.Models.VersioningDB;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using N2K_BackboneBackEnd.ServiceResponse;
@@ -10,6 +8,7 @@ using AutoMapper;
 using N2K_BackboneBackEnd.Services;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.Enumerations;
+using N2K_BackboneBackEnd.Models.backbone_db;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
@@ -106,35 +105,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("GetSiteChangesDetailExtended/siteCode={pSiteCode}&version={pCountryVersion}")]
-        /// <summary>
-        /// Remove the version we use in development
-        /// </summary>
-        /// <param name="pSiteCode">Code of the site</param>
-        /// <param name="pCountryVersion">Number of the version</param>
-        public async Task<ActionResult<ServiceResponse<SiteChangeDetailViewModelAdvanced>>> GetSiteChangesDetailExtended(string pSiteCode, int pCountryVersion)
-        {
-            var response = new ServiceResponse<SiteChangeDetailViewModelAdvanced>();
-
-            try
-            {
-                var siteChange = await _siteChangesService.GetSiteChangesDetailExtended(pSiteCode, pCountryVersion);
-                response.Success = true;
-                response.Message = "";
-                response.Data = siteChange;
-                response.Count = (siteChange == null) ? 0 : 1;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                return Ok(response);
-            }
-        }
-
-        
 
 
         // POST api/<SiteChangesController>
