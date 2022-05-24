@@ -254,6 +254,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = harvestingSite.SiteName;
                             siteChange.OldValue = storedSite.SiteName;
+                            siteChange.Section = "Site";
                             changes.Add(siteChange);
                             numChanges++;
                         }
@@ -280,6 +281,7 @@ namespace N2K_BackboneBackEnd.Services
                                 siteChange.SiteCode = harvestingSite.SiteCode;
                                 siteChange.ChangeCategory = "Change of area";
                                 siteChange.ChangeType = "Area Increased";
+                                siteChange.Section = "Site";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Info;
                                 siteChange.Status = Enumerations.SiteChangeStatus.Pending;
@@ -298,6 +300,7 @@ namespace N2K_BackboneBackEnd.Services
                                 siteChange.SiteCode = harvestingSite.SiteCode;
                                 siteChange.ChangeCategory = "Change of area";
                                 siteChange.ChangeType = "Area Decreased";
+                                siteChange.Section = "Site";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Warning;
                                 siteChange.Status = Enumerations.SiteChangeStatus.Pending;
@@ -315,6 +318,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.ChangeCategory = "Change of area";
                             siteChange.ChangeType = "Area Change";
+                            siteChange.Section = "Site";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
@@ -332,6 +336,7 @@ namespace N2K_BackboneBackEnd.Services
                                 siteChange.SiteCode = harvestingSite.SiteCode;
                                 siteChange.ChangeCategory = "Site General Info";
                                 siteChange.ChangeType = "Length Changed";
+                                siteChange.Section = "Site";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Info;
                                 siteChange.Status = Enumerations.SiteChangeStatus.Pending;
@@ -720,10 +725,8 @@ namespace N2K_BackboneBackEnd.Services
                 });
 
                 //for the time being do not load the changes and keep using test_table 
-
                 try
                 {
-                    var a = 1;
                     _dataContext.Set<SiteChangeDb>().AddRange(changes);
                     _dataContext.SaveChanges();
                 }
@@ -795,7 +798,6 @@ namespace N2K_BackboneBackEnd.Services
                                     //TODO: Put habitats on another threath 
                                     HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
                                     await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
-
                                 }
                                 _dataContext.SaveChanges();
                                 _ThereAreChanges = false;

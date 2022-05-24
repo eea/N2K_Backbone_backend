@@ -44,6 +44,7 @@ namespace N2K_BackboneBackEnd.Services
                                 }).OrderByDescending(a => a.Level).ToList();
 
             var result = new List<SiteChangeDb>();
+            var countries = await _dataContext.Set<Countries>().ToListAsync();
             var siteCode = string.Empty;
             foreach (var sCode in orderedChanges)
             {
@@ -62,7 +63,12 @@ namespace N2K_BackboneBackEnd.Services
                         siteCode = change.SiteCode;
                         siteChange.ChangeCategory = "";
                         siteChange.ChangeType = "";
-                        siteChange.Country = "Austria"; // change.Country;
+                        siteChange.Country = "";
+                        if (change.Country != null)
+                        {
+                            var countryName = countries.Where(ctry => ctry.Code.ToLower() == change.Country.ToLower()).FirstOrDefault(); 
+                            siteChange.Country = countryName != null ? countryName.Country : change.Country;
+                        }                       
                         siteChange.Level = null;
                         siteChange.Status = null;
                         siteChange.Tags = "";
@@ -206,15 +212,12 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
-        
-
-
         public async Task<SiteChangeDetailViewModelAdvanced> GetSiteChangesDetailExtended(string pSiteCode, int pCountryVersion)
         {
 
             var changeDetailVM = new SiteChangeDetailViewModelAdvanced();
             changeDetailVM.SiteCode = pSiteCode;
-            changeDetailVM.CountryVersion = pCountryVersion;
+            changeDetailVM.Version = pCountryVersion;
             changeDetailVM.Warning = new CategorisedSiteChangeDetail();
             changeDetailVM.Info = new CategorisedSiteChangeDetail();
             changeDetailVM.Critical = new CategorisedSiteChangeDetail();
@@ -228,188 +231,19 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetailVM.Status = (SiteChangeStatus?)site.CurrentStatus;
 #pragma warning restore CS8601 // Posible asignación de referencia nula
             }
-
             var changesDb = await _dataContext.Set<SiteChangeDb>().Where(site => site.SiteCode == pSiteCode).ToListAsync();
 
 
-            #region Critical
-            changeDetailVM.Critical = FillChangeDetailCategory(changesDb, Level.Critical);
-            changeDetailVM.Warning = FillChangeDetailCategory(changesDb, Level.Warning);
-            changeDetailVM.Info = FillChangeDetailCategory(changesDb, Level.Info);
+            changeDetailVM.Critical = FillChangeDetailCategory(changesDb, pSiteCode,  pCountryVersion, Level.Critical);
+            changeDetailVM.Warning = FillChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Warning);
+            changeDetailVM.Info = FillChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Info);
 
-
-            /*
-            var levelSites = changesDb.Where(s => s.Level == Level.Critical).ToList();
-            foreach (var levelSite in levelSites)
-            {
-                var CriticalChangeDetail = new CategorisedSiteChangeDetail
-                {
-
-                    ChangeCategory = levelSite.ChangeCategory,
-                    ChangeId = levelSite.ChangeId,
-                    ChangeType = levelSite.ChangeType,
-                    Description = "",
-                    Level = Level.Critical,
-                    ReportedValue = levelSite.NewValue ?? null,
-                    OlValue = levelSite.OldValue ?? null,
-                };
-                changeDetailVM.Critical.Add(CriticalChangeDetail);
-            }
-            */
-            #endregion
-
-            
-            #region Warning
-            /*
-            var levelSitesSiteInfo = changesDb.Where(s => s.Level == Level.Warning && 
-                (s.ChangeCategory== "Site General Info" ||  s.ChangeCategory== "Change of area" || s.ChangeCategory == "Site Added" || s.ChangeCategory =="Site Deleted" )
-            ).ToList();
-            */
-            /*
-
-
-
-            changeDetailVM.Warning.SiteInfo = new List<CategoryChangeDetail>();
-
-
-            changeDetailVM.Warning.Habitats = new List<CategoryChangeDetail>();
-            var levelHabitats = (from t in changesDb
-                                  where t.ChangeCategory == "Habitats" && t.Level == Level.Warning
-                                  group t by t.ChangeType
-                                  into g
-                                  select new
-                                  {
-                                      ChangeType = g.Key,
-                                      ChangeList = g.Where(s => s.ChangeType == g.Key).ToList()
-                                  }).ToList();
-            foreach (var changeCat in levelHabitats)
-            {
-
-                var warnHabitats = new CategoryChangeDetail();
-                warnHabitats.ChangeCategory = "Habitats";
-                warnHabitats.FieldName = "";
-                warnHabitats.ChangeType = changeCat.ChangeType;
-                warnHabitats.AddedCodes = new List<CodeAddedDetail>();
-                warnHabitats.ChangedCodes = new List<CodeChangeDetail>();
-                foreach (var changedItem in changeCat.ChangeList) {
-
-                    if (changeCat.ChangeType.IndexOf("Added") > -1)
-                    {
-                        warnHabitats.AddedCodes.Add(new CodeAddedDetail
-                        {
-                            Code = changedItem.NewValue,
-                            ChangeId = changedItem.ChangeId
-                        });    
-                    }
-                    else
-                    {
-                        warnHabitats.ChangedCodes.Add(
-                            new CodeChangeDetail
-                            {
-                                 ChangeId= changedItem.ChangeId,
-                                 OlValue=changedItem.OldValue,
-                                 ReportedValue= changedItem.NewValue
-                            }    
-                        );
-                    }
-                }
-                changeDetailVM.Warning.Habitats.Add(warnHabitats);
-            }
-
-
-
-            changeDetailVM.Warning.Species = new List<CategoryChangeDetail>();
-
-
-            */
-
-            /*
-            foreach (var levelSite in levelSitesSiteInfo)
-            {
-                var changeDetail = new CategoryChangeDetail();
-                changeDetail.ChangeType = levelSite.ChangeType;
-                changeDetail.ChangeCategory = levelSite.ChangeCategory;
-                changeDetail.FieldName = "";
-                changeDetail.AddedCodes = new List<CodeAddedDetail>();
-                changeDetail.ChangedCodes = new List<CodeChangeDetail>();
-            }
-            */
-            #endregion
-
-            /*
-
-
-            #region Info
-            levelSites = changesDb.Where(s => s.Level == Level.Info).ToList();
-            changeDetailVM.Info.Habitats = new List<CategoryChangeDetail>();
-            changeDetailVM.Info.Species = new List<CategoryChangeDetail>();
-            changeDetailVM.Info.SiteInfo = new List<CategoryChangeDetail>();
-            changeDetailVM.Warning.Habitats = new List<CategoryChangeDetail>();
-            var levelHabitats = (from t in changesDb
-                                  where t.ChangeCategory == "Habitats" && t.Level == Level.Info
-                                  group t by t.ChangeType
-                                  into g
-                                  select new
-                                  {
-                                      ChangeType = g.Key,
-                                      ChangeList = g.Where(s => s.ChangeType == g.Key).ToList()
-                                  }).ToList();
-            foreach (var changeCat in levelHabitats)
-            {
-
-                var warnHabitats = new CategoryChangeDetail();
-                warnHabitats.ChangeCategory = "Habitats";
-                warnHabitats.FieldName = "";
-                warnHabitats.ChangeType = changeCat.ChangeType;
-                warnHabitats.ChangedCodes = new List<CodeChangeDetail>();
-                if 
-
-
-                warnHabitats.ChangedCodes = new List<CodeChangeDetail>();
-
-
-
-
-
-
-                //changeDetailVM.Warning.Habitats.Add(changeCat);
-            }
-
-
-
-            #endregion
-
-
-
-
-            var oldSite = await _dataContext.Set<Sites>().Where(site => site.SiteCode == pSiteCode && site.Current == true).FirstOrDefaultAsync();
-
-
-            var detectedChanges = await _dataContext.Set<SiteChangeDb>().Where(site => site.SiteCode == pSiteCode).ToListAsync();
-            if (detectedChanges != null)
-            {
-                foreach (var change in detectedChanges)
-                {
-                    var changeDetail = new ChangeDetail();
-                    changeDetail.ChangeId = change.ChangeId;
-                    changeDetail.Level = change.Level;
-                    changeDetail.ChangeType = change.ChangeType != null ? change.ChangeType.ToString() : String.Empty;
-                    changeDetail.ChangeCategory = change.ChangeCategory != null ? change.ChangeCategory.ToString() : String.Empty;
-                    changeDetail.FieldName = String.Empty;
-                    changeDetail.ReportedValue = String.Empty;
-                    changeDetail.OlValue = String.Empty;
-                    changeDetail.Description = String.Empty;
-                    FillChangeDetail(site, oldSite, change, ref changeDetail);
-                    changeDetailVM.ChangesList.Add(changeDetail);
-                }
-            }
-            */
             return changeDetailVM;
 
         }
             
 
-        private CategorisedSiteChangeDetail FillChangeDetailCategory(List<SiteChangeDb> changesDB, Level level) 
+        private CategorisedSiteChangeDetail FillChangeDetailCategory(List<SiteChangeDb> changesDB, string pSiteCode, int pCountryVersion, Level level) 
         {
 
             var changedPerCategories = new CategorisedSiteChangeDetail();
@@ -420,39 +254,39 @@ namespace N2K_BackboneBackEnd.Services
 
             var levelDetails = (from t in changesDB
                                  where t.Level == level
-                                 group t by  new { t.ChangeCategory, t.ChangeType }
+                                 group t by  new { t.Section, t.ChangeCategory, t.ChangeType }
                                  into g
                                  select new
                                  {
                                      ChangeCategory = g.Key.ChangeCategory,
                                      ChangeType = g.Key.ChangeType,
-                                     ChangeList = g.Where(s => s.ChangeType == g.Key.ChangeType  && s.ChangeCategory== g.Key.ChangeCategory ).ToList()
+                                     Section = g.Key.Section,
+                                     ChangeList = g.Where(s => s.Section== g.Key.Section && s.ChangeType == g.Key.ChangeType  && s.ChangeCategory== g.Key.ChangeCategory ).ToList()
                                  }).ToList();
             foreach (var changeCat in levelDetails)
             {
 
-                var warnHabitats = new CategoryChangeDetail();
-                warnHabitats.ChangeCategory = changeCat.ChangeCategory;
-                warnHabitats.FieldName = "";
-                warnHabitats.ChangeType = changeCat.ChangeType ;
-                warnHabitats.AddedCodes = new List<CodeAddedDetail>();
-                warnHabitats.ChangedCodes = new List<CodeChangeDetail>();
+                var changeDetail = new CategoryChangeDetail();
+                changeDetail.ChangeCategory = changeCat.ChangeCategory;
+                changeDetail.FieldName = "";
+                changeDetail.ChangeType = changeCat.ChangeType ;
+                changeDetail.AddedCodes = new List<CodeAddedDetail>();
+                changeDetail.ChangedCodes = new List<CodeChangeDetail>();
                 foreach (var changedItem in changeCat.ChangeList)
                 {
-
                     if (changeCat.ChangeType.IndexOf("Added") > -1)
                     {
-                        warnHabitats.AddedCodes.Add(new CodeAddedDetail
-                        {
-                            Code = changedItem.NewValue,
-                            ChangeId = changedItem.ChangeId
-                        });
+                        changeDetail.AddedCodes.Add(
+                            CodeAddedDetail(changeCat.Section, changedItem.Code, changedItem.ChangeId,pSiteCode,pCountryVersion)
+                        );
                     }
                     else
                     {
-                        warnHabitats.ChangedCodes.Add(
+
+                        changeDetail.ChangedCodes.Add(
                             new CodeChangeDetail
                             {
+                                Code = changedItem.Code,
                                 ChangeId = changedItem.ChangeId,
                                 OlValue = changedItem.OldValue,
                                 ReportedValue = changedItem.NewValue
@@ -460,7 +294,21 @@ namespace N2K_BackboneBackEnd.Services
                         );
                     }
                 }
-                
+                switch (changeCat.Section)
+                {
+
+                    case "Site":
+                        changedPerCategories.SiteInfo.Add(changeDetail);
+                        break;
+
+                    case "Species":
+                        changedPerCategories.Species.Add(changeDetail);
+                        break;
+
+                    case "Habitats":
+                        changedPerCategories.Habitats.Add(changeDetail);
+                        break;
+                }                
             }
 
             return changedPerCategories;
@@ -468,6 +316,65 @@ namespace N2K_BackboneBackEnd.Services
 
 
 
+        private CodeAddedDetail CodeAddedDetail(string section,  string? code, long changeId, string pSiteCode, int pCountryVersion)
+        {
+            var codeValues = new Dictionary<string, string>();
+            switch (section)
+            {
+                case "Species":
+                    if (code != null)
+                    {
+                        var specName = "";
+                        var spectype = _dataContext.Set<SpeciesTypes>().Where(s => s.Code.ToLower() == code.ToLower()).Select(spc => spc.Name).FirstOrDefault();
+                        if (spectype != null) specName = spectype;
+
+                        var specDetails = _dataContext.Set<Species>().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion && site.SpecieCode.ToLower() == code.ToLower())
+                            .Select(spc => new
+                            {
+                                Population = spc.Population,
+                                SpecType = spc.SpecieType
+                            });
+                        if (specDetails != null && specDetails.FirstOrDefault() != null)
+                        {
+                            codeValues.Add("Name", specName);
+                            codeValues.Add("Population", specDetails.FirstOrDefault().Population);
+                            codeValues.Add("SpeciesType", specDetails.FirstOrDefault().SpecType);
+                        }
+                    }
+                    break;
+
+                case "Habitats":
+                    if (code != null)
+                    {
+
+                        var habName = "";
+                        var habType = _dataContext.Set<HabitatTypes>().Where(s => s.Code.ToLower() == code.ToLower()).Select(spc => spc.Name).FirstOrDefault();
+                        if (habType != null) habName = habType;
+
+                        var habDetails = _dataContext.Set<Habitats>().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion && site.HabitatCode.ToLower() == code.ToLower()  )
+                            .Select(hab => new
+                            {
+                                Population = hab.Representativity,
+                                RelativeSurface = hab.RelativeSurface
+                            });
+                        if (habDetails != null)
+                        {
+                            codeValues.Add("Name", habName);
+                            codeValues.Add("Population", habDetails.FirstOrDefault().Population);
+                            codeValues.Add("SpeciesType", habDetails.FirstOrDefault().RelativeSurface);
+                        }
+                    }
+                    break;
+            }
+
+            return new CodeAddedDetail
+            {
+                Code = code,
+                ChangeId = changeId,
+                CodeValues = codeValues
+            };
+
+        }
 
 
         private void FillChangeDetail(Sites? site, Sites? oldSite, SiteChangeDb siteChangeDb,  ref ChangeDetail detail)

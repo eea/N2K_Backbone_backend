@@ -17,7 +17,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public string Name { get; set; } = "";
 
-        public int CountryVersion { get; set; }
+        public int Version { get; set; }
 
         public SiteChangeStatus? Status { get; set; }
 

@@ -34,6 +34,10 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
 
         public string? Detail { get; set; }
 
+        public string? Code { get; set; }
+        public string? Section { get; set; }
+
+
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
         public static void OnModelCreating(ModelBuilder builder)
