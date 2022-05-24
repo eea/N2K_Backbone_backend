@@ -86,7 +86,6 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<ServiceResponse<SiteChangeDetailViewModel>>> GetSiteChangesDetail(string pSiteCode, int pCountryVersion)
         {
             var response = new ServiceResponse<SiteChangeDetailViewModel>();
-
             try
             {
                 var siteChange = await _siteChangesService.GetSiteChangesDetail(pSiteCode, pCountryVersion);
@@ -104,7 +103,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
 
 
         // POST api/<SiteChangesController>

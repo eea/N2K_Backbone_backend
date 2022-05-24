@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
-
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
@@ -18,10 +18,11 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public SiteChangeStatus? Status { get; set; }
 
+        [NotMapped]
         public CategorisedSiteChangeDetail  Critical { get; set; } = new CategorisedSiteChangeDetail();
-
+        [NotMapped]
         public CategorisedSiteChangeDetail Warning { get; set; } = new CategorisedSiteChangeDetail();
-
+        [NotMapped]
         public CategorisedSiteChangeDetail Info { get; set; } = new CategorisedSiteChangeDetail();
 
 
