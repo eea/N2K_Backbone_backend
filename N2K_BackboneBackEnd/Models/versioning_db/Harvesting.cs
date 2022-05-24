@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
 
 
-namespace N2K_BackboneBackEnd.Models.VersioningDB
+namespace N2K_BackboneBackEnd.Models.versioning_db
 {
     public class Harvesting : IEntityModel
     {

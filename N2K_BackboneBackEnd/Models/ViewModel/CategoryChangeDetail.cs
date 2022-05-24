@@ -2,8 +2,9 @@
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models;
-using N2K_BackboneBackEnd.Models.BackboneDB;
-using N2K_BackboneBackEnd.Models.VersioningDB;
+using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.versioning_db;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
@@ -16,7 +17,9 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public string FieldName { get; set; } = "";
 
+        [NotMapped]
         public List<CodeChangeDetail> ChangedCodes { get; set; } = new List<CodeChangeDetail>();
+        [NotMapped]
         public List<CodeAddedDetail> AddedCodes { get; set; } = new List<CodeAddedDetail>();
 
 

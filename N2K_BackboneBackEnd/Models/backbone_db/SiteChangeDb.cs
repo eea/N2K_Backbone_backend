@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.ViewModel;
 
-namespace N2K_BackboneBackEnd.Models.BackboneDB
+namespace N2K_BackboneBackEnd.Models.backbone_db
 {
 
     public class SiteChangeDb : IEntityModel, IEntityModelBackboneDB
@@ -33,6 +33,10 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
         public string? OldValue { get; set; }
 
         public string? Detail { get; set; }
+
+        public string? Code { get; set; }
+        public string? Section { get; set; }
+
 
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
