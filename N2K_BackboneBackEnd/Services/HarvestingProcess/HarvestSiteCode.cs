@@ -9,13 +9,13 @@ using N2K_BackboneBackEnd.Models.versioning_db;
 
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 {
-    public  class HarvestSiteCode : BaseHarvestingProcess, IHarvestingTables
+    public class HarvestSiteCode : BaseHarvestingProcess, IHarvestingTables
     {
         public HarvestSiteCode(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext) : base(dataContext, versioningContext)
         {
         }
 
-        public  async Task<int> Harvest(string countryCode, int versionId)
+        public async Task<int> Harvest(string countryCode, int versionId)
         {
             Console.WriteLine("=>Start Site Code harvest...");
 
@@ -28,7 +28,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         }
 
 
-        public  async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
+        public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
         {
             Console.WriteLine("==>Start Site Code validate...");
             await Task.Delay(10000);
@@ -37,27 +37,25 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         }
 
 
-        public async Task<Sites>? HarvestSite (NaturaSite pVSite, EnvelopesToProcess pEnvelope)
+        public async Task<Sites>? HarvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
         {
+            Sites? bbSite = null;
             try
             {
-                Sites? bbSite = null;
-                if (bbSite != null)
-                {
-                    bbSite = await harvestSiteCode(pVSite, pEnvelope);
-                    _dataContext.Set<Sites>().Add(bbSite);
-                    _dataContext.SaveChanges();
+                bbSite = await harvestSiteCode(pVSite, pEnvelope);
+                _dataContext.Set<Sites>().Add(bbSite);
+                _dataContext.SaveChanges();
 
-                    //Get the data for all related tables                                
-                    _dataContext.Set<BioRegions>().AddRange(await harvestBioregions(pVSite, bbSite.Version));
-                    _dataContext.Set<NutsBySite>().AddRange(await harvestNutsBySite(pVSite, bbSite.Version));
-                    _dataContext.Set<Models.backbone_db.IsImpactedBy>().AddRange(await harvestIsImpactedBy(pVSite, bbSite.Version));
-                    _dataContext.Set<Models.backbone_db.HasNationalProtection>().AddRange(await harvestHasNationalProtection(pVSite, bbSite.Version));
-                    _dataContext.Set<Models.backbone_db.DetailedProtectionStatus>().AddRange(await harvestDetailedProtectionStatus(pVSite, bbSite.Version));
-                    _dataContext.Set<SiteLargeDescriptions>().AddRange(await harvestSiteLargeDescriptions(pVSite, bbSite.Version));
-                    _dataContext.Set<SiteOwnerType>().AddRange(await harvestSiteOwnerType(pVSite, bbSite.Version));
-                    TimeLog.setTimeStamp("Site " + pVSite.SITECODE + " - " + pVSite.VERSIONID.ToString(), "Processed");
-                }
+                //Get the data for all related tables                                
+                _dataContext.Set<BioRegions>().AddRange(await harvestBioregions(pVSite, bbSite.Version));
+                _dataContext.Set<NutsBySite>().AddRange(await harvestNutsBySite(pVSite, bbSite.Version));
+                _dataContext.Set<Models.backbone_db.IsImpactedBy>().AddRange(await harvestIsImpactedBy(pVSite, bbSite.Version));
+                _dataContext.Set<Models.backbone_db.HasNationalProtection>().AddRange(await harvestHasNationalProtection(pVSite, bbSite.Version));
+                _dataContext.Set<Models.backbone_db.DetailedProtectionStatus>().AddRange(await harvestDetailedProtectionStatus(pVSite, bbSite.Version));
+                _dataContext.Set<SiteLargeDescriptions>().AddRange(await harvestSiteLargeDescriptions(pVSite, bbSite.Version));
+                _dataContext.Set<SiteOwnerType>().AddRange(await harvestSiteOwnerType(pVSite, bbSite.Version));
+                TimeLog.setTimeStamp("Site " + pVSite.SITECODE + " - " + pVSite.VERSIONID.ToString(), "Processed");
+
                 return bbSite;
 
             }
@@ -65,7 +63,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return null;
-
+            }
+            finally
+            {
+                bbSite = null;
             }
         }
 
@@ -119,7 +120,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<BioRegions> items = new List<BioRegions>();
             try
             {
-                elements =  await _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
+                elements = await _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
                 foreach (BelongsToBioRegion element in elements)
                 {
                     //SystemLog.write(SystemLog.errorLevel.Debug, "Site/Version/BioRegion: " + pVSite.SITECODE + "-" + pVSite.VERSIONID.ToString() + "/" + pVersion.ToString() + "/"+ element.BIOREGID.ToString(), "HarvestedService - harvestBioregions", "");
@@ -150,7 +151,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<NutsBySite> items = new List<NutsBySite>();
             try
             {
-                elements =await  _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
+                elements = await _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
                 foreach (NutsRegion element in elements)
                 {
                     NutsBySite item = new NutsBySite();
@@ -281,7 +282,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        private async Task< List<Models.backbone_db.SiteLargeDescriptions>>? harvestSiteLargeDescriptions(NaturaSite pVSite, int pVersion)
+        private async Task<List<Models.backbone_db.SiteLargeDescriptions>>? harvestSiteLargeDescriptions(NaturaSite pVSite, int pVersion)
         {
             List<Models.versioning_db.Description> elements = null;
             List<Models.backbone_db.SiteLargeDescriptions> items = new List<Models.backbone_db.SiteLargeDescriptions>();
