@@ -166,12 +166,11 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
-                var siteChanges = await _harvestedService.Harvest(envelopes);
-                await _harvestedService.Validate(envelopes);
+                var processedEnvelope = await _harvestedService.Validate(envelopes);
                 response.Success = true;
                 response.Message = "";
-                response.Data = siteChanges;
-                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                response.Data = processedEnvelope;
+                response.Count = (processedEnvelope == null) ? 0 : processedEnvelope.Count;
                 return Ok(response);
             }
             catch (Exception ex)
