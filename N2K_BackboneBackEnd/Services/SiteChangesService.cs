@@ -15,13 +15,12 @@ namespace N2K_BackboneBackEnd.Services
     {
         private readonly N2KBackboneContext _dataContext;
 
-
         public SiteChangesService(N2KBackboneContext dataContext)
         {
             _dataContext = dataContext;
         }
 
-
+        
         public async Task<List<SiteChangeDb>> GetSiteChangesAsync(SiteChangeStatus? status)
         {
             List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().ToListAsync();
@@ -171,7 +170,6 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion)
         {
-
             var changeDetailVM = new SiteChangeDetailViewModel();
             changeDetailVM.SiteCode = pSiteCode;
             changeDetailVM.Version = pCountryVersion;
@@ -228,14 +226,23 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetail.ChangeCategory = changeCat.ChangeCategory;
                 changeDetail.FieldName = "";
                 changeDetail.ChangeType = changeCat.ChangeType;
-                changeDetail.AddedCodes = new List<CodeAddedDetail>();
+                changeDetail.AddedCodes = new List<CodeAddedRemovedDetail>();
+                changeDetail.DeletedCodes = new List<CodeAddedRemovedDetail>();
                 changeDetail.ChangedCodes = new List<CodeChangeDetail>();
                 foreach (var changedItem in changeCat.ChangeList.OrderBy(c=> c.Code==null?"":c.Code ))
                 {
                     if (changeCat.ChangeType.IndexOf("Added") > -1)
                     {
                         changeDetail.AddedCodes.Add(
-                            CodeAddedDetail(changeCat.Section, changedItem.Code, changedItem.ChangeId, pSiteCode, pCountryVersion)
+                            CodeAddedRemovedDetail(changeCat.Section, changedItem.Code, changedItem.ChangeId, pSiteCode, pCountryVersion)
+                        );
+                    }
+                    else if (changeCat.ChangeType.IndexOf("Deleted") > -1)
+                    {
+
+                        //it needs amending to catch the record value it was deleted 
+                        changeDetail.DeletedCodes.Add(
+                            CodeAddedRemovedDetail(changeCat.Section, changedItem.Code, changedItem.ChangeId, pSiteCode, pCountryVersion)
                         );
                     }
                     else
@@ -245,11 +252,12 @@ namespace N2K_BackboneBackEnd.Services
                             new CodeChangeDetail
                             {
                                 Code = changedItem.Code,
+                                Name = GetCodeName(changedItem) ,
                                 ChangeId = changedItem.ChangeId,
                                 OlValue = changedItem.OldValue,
                                 ReportedValue = changedItem.NewValue
                             }
-                        );
+                        ) ;
                     }
                 }
                 switch (changeCat.Section)
@@ -274,7 +282,39 @@ namespace N2K_BackboneBackEnd.Services
 
 
 
-        private CodeAddedDetail CodeAddedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion)
+        private string? GetCodeName(SiteChangeDb change)
+        {
+            if (change.Code == null) return "";
+            var name = "";
+            switch (change.Section)
+            {
+                case "Site":
+                    name = "";
+                    break;
+
+                case "Species":
+                    if (_dataContext.Set<SpeciesTypes>().FirstOrDefault(sp => sp.Code.ToLower() == change.Code.ToLower()) != null)
+                    {
+                        name = _dataContext.Set<SpeciesTypes>().FirstOrDefault(sp => sp.Code.ToLower() == change.Code.ToLower()).Name;
+                    }
+                    break;
+
+                case "Habitats":
+                    if (_dataContext.Set<HabitatTypes>().FirstOrDefault(hab => hab.Code.ToLower() == change.Code.ToLower()) != null)
+                        name = _dataContext.Set<HabitatTypes>().FirstOrDefault(hab => hab.Code.ToLower() == change.Code.ToLower()).Name;
+                    break;
+
+                default:
+                    name = "";
+                    break;
+
+
+            }
+            return name;
+        }
+
+
+        private CodeAddedRemovedDetail CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion)
         {
             var codeValues = new Dictionary<string, string>();
             switch (section)
@@ -283,7 +323,7 @@ namespace N2K_BackboneBackEnd.Services
                     if (code != null)
                     {
                         var specName = "";
-                        var spectype = _dataContext.Set<SpeciesTypes>().Where(s => s.Code.ToLower() == code.ToLower()).Select(spc => spc.Name).FirstOrDefault();
+                        var spectype = _dataContext.Set<SpeciesTypes>().FirstOrDefault(s => s.Code.ToLower() == code.ToLower()).Name;
                         if (spectype != null) specName = spectype;
 
                         var specDetails = _dataContext.Set<Species>().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion && site.SpecieCode.ToLower() == code.ToLower())
@@ -312,20 +352,20 @@ namespace N2K_BackboneBackEnd.Services
                         var habDetails = _dataContext.Set<Habitats>().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion && site.HabitatCode.ToLower() == code.ToLower())
                             .Select(hab => new
                             {
-                                Population = hab.Representativity,
+                                CoverHA = hab.CoverHA.ToString(),
                                 RelativeSurface = hab.RelativeSurface
                             });
                         if (habDetails != null)
                         {
-                            codeValues.Add("Name", habName);
-                            codeValues.Add("Population", habDetails.FirstOrDefault().Population);
-                            codeValues.Add("SpeciesType", habDetails.FirstOrDefault().RelativeSurface);
+                            codeValues.Add("C", habName);
+                            codeValues.Add("RelSurface", habDetails.FirstOrDefault().RelativeSurface);
+                            codeValues.Add("Cover", habDetails.FirstOrDefault().CoverHA);
                         }
                     }
                     break;
             }
 
-            return new CodeAddedDetail
+            return new CodeAddedRemovedDetail
             {
                 Code = code,
                 ChangeId = changeId,

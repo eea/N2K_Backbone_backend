@@ -9,7 +9,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 {
 
     [Keyless]
-    public class CodeAddedDetail : IEntityModel
+    public class CodeAddedRemovedDetail : IEntityModel
     {
         public long ChangeId { get; set; }
 
@@ -20,7 +20,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<CodeAddedDetail>();
+            builder.Entity<CodeAddedRemovedDetail>();
         }
 
     }
