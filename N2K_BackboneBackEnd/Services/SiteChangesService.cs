@@ -204,6 +204,7 @@ namespace N2K_BackboneBackEnd.Services
         {
 
             var changedPerCategories = new CategorisedSiteChangeDetail();
+            changedPerCategories.Level = level;
             changedPerCategories.SiteInfo = new List<CategoryChangeDetail>();
             changedPerCategories.Species = new List<CategoryChangeDetail>();
             changedPerCategories.Habitats = new List<CategoryChangeDetail>();
@@ -229,7 +230,7 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetail.ChangeType = changeCat.ChangeType;
                 changeDetail.AddedCodes = new List<CodeAddedDetail>();
                 changeDetail.ChangedCodes = new List<CodeChangeDetail>();
-                foreach (var changedItem in changeCat.ChangeList)
+                foreach (var changedItem in changeCat.ChangeList.OrderBy(c=> c.Code==null?"":c.Code ))
                 {
                     if (changeCat.ChangeType.IndexOf("Added") > -1)
                     {
