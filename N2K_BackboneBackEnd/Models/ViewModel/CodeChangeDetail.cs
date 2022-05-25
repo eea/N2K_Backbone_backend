@@ -7,6 +7,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class CodeChangeDetail : IEntityModel
     {
         public string? Code { get; set; } = "";
+        public string? Name { get; set; } = "";
         public long ChangeId { get; set; }
         public string? ReportedValue { get; set; } = "";
         public string? OlValue { get; set; } = "";
