@@ -262,6 +262,7 @@ namespace N2K_BackboneBackEnd.Services
                                 NewValue = harvestingSite.SiteCode,
                                 OldValue = null,
                                 Tags = string.Empty,
+                                Code = harvestingSite.SiteCode,
                                 Section = "Site"
                             });
                         }
@@ -285,6 +286,7 @@ namespace N2K_BackboneBackEnd.Services
                                 Tags = string.Empty,
                                 NewValue = null,
                                 OldValue = storedSite.SiteCode,
+                                Code = storedSite.SiteCode,
                                 Section = "Site"
                             });
                         }
@@ -338,6 +340,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.Tags = string.Empty;
                     siteChange.NewValue = harvestingSite.SiteName;
                     siteChange.OldValue = storedSite.SiteName;
+                    siteChange.Code = harvestingSite.SiteCode;
                     siteChange.Section = "Site";
                     changes.Add(siteChange);
                 }
@@ -371,6 +374,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                         siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                         siteChange.Tags = string.Empty;
+                        siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
                         changes.Add(siteChange);
                     }
@@ -390,6 +394,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                         siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                         siteChange.Tags = string.Empty;
+                        siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
                         changes.Add(siteChange);
                     }
@@ -407,6 +412,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                     siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                     siteChange.Tags = string.Empty;
+                    siteChange.Code = harvestingSite.SiteCode;
                     siteChange.Section = "Site";
                     changes.Add(siteChange);
                 }
@@ -425,6 +431,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.NewValue = harvestingSite.LengthKm != -1 ? harvestingSite.LengthKm.ToString() : null;
                         siteChange.OldValue = storedSite.LengthKm != -1 ? storedSite.LengthKm.ToString() : null;
                         siteChange.Tags = string.Empty;
+                        siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
                         changes.Add(siteChange);
                     }
