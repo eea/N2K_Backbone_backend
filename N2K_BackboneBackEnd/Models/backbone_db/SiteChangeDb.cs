@@ -36,6 +36,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public string? Code { get; set; }
         public string? Section { get; set; }
+        public long? VersionReferenceId { get; set; }
+        public string? FieldName { get; set; }
 
 
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
