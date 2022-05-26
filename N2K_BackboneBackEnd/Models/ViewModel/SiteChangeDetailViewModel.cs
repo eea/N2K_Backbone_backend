@@ -19,18 +19,18 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public SiteChangeStatus? Status { get; set; }
 
         [NotMapped]
-        public CategorisedSiteChangeDetail  Critical { get; set; } = new CategorisedSiteChangeDetail();
+        public SiteChangesLevelDetail Critical { get; set; } = new SiteChangesLevelDetail();
         [NotMapped]
-        public CategorisedSiteChangeDetail Warning { get; set; } = new CategorisedSiteChangeDetail();
+        public SiteChangesLevelDetail Warning { get; set; } = new SiteChangesLevelDetail();
         [NotMapped]
-        public CategorisedSiteChangeDetail Info { get; set; } = new CategorisedSiteChangeDetail();
+        public SiteChangesLevelDetail Info { get; set; } = new SiteChangesLevelDetail();
 
 
         public SiteChangeDetailViewModel()
         {
-            this.Critical = new CategorisedSiteChangeDetail();
-            this.Warning = new CategorisedSiteChangeDetail();
-            this.Info= new CategorisedSiteChangeDetail();
+            this.Critical = new SiteChangesLevelDetail();
+            this.Warning = new SiteChangesLevelDetail();
+            this.Info= new SiteChangesLevelDetail();
         }
 
 

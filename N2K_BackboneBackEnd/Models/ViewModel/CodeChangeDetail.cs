@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
-{
+{  
     [Keyless]
     public class CodeChangeDetail : IEntityModel
     {
@@ -17,4 +17,5 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
             builder.Entity<CodeChangeDetail>();
         }
     }
+
 }

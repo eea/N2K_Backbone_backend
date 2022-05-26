@@ -6,6 +6,7 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.versioning_db;
+using System.Reflection;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -173,9 +174,9 @@ namespace N2K_BackboneBackEnd.Services
             var changeDetailVM = new SiteChangeDetailViewModel();
             changeDetailVM.SiteCode = pSiteCode;
             changeDetailVM.Version = pCountryVersion;
-            changeDetailVM.Warning = new CategorisedSiteChangeDetail();
-            changeDetailVM.Info = new CategorisedSiteChangeDetail();
-            changeDetailVM.Critical = new CategorisedSiteChangeDetail();
+            changeDetailVM.Warning = new  SiteChangesLevelDetail();
+            changeDetailVM.Info = new SiteChangesLevelDetail();
+            changeDetailVM.Critical = new SiteChangesLevelDetail();
 
 
             var site = await _dataContext.Set<Sites>().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
@@ -189,23 +190,21 @@ namespace N2K_BackboneBackEnd.Services
             var changesDb = await _dataContext.Set<SiteChangeDb>().Where(site => site.SiteCode == pSiteCode).ToListAsync();
 
 
-            changeDetailVM.Critical = FillChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Critical);
-            changeDetailVM.Warning = FillChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Warning);
-            changeDetailVM.Info = FillChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Info);
+            changeDetailVM.Critical = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Critical);
+            changeDetailVM.Warning = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Warning);
+            changeDetailVM.Info = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Info);
 
             return changeDetailVM;
 
         }
 
 
-        private CategorisedSiteChangeDetail FillChangeDetailCategory(List<SiteChangeDb> changesDB, string pSiteCode, int pCountryVersion, Level level)
+
+        private SiteChangesLevelDetail FillLevelChangeDetailCategory(List<SiteChangeDb> changesDB, string pSiteCode, int pCountryVersion, Level level)
         {
 
-            var changedPerCategories = new CategorisedSiteChangeDetail();
-            changedPerCategories.Level = level;
-            changedPerCategories.SiteInfo = new List<CategoryChangeDetail>();
-            changedPerCategories.Species = new List<CategoryChangeDetail>();
-            changedPerCategories.Habitats = new List<CategoryChangeDetail>();
+            var changesPerLevel = new SiteChangesLevelDetail();
+            changesPerLevel.Level = level;
 
 
             var levelDetails = (from t in changesDB
@@ -219,68 +218,118 @@ namespace N2K_BackboneBackEnd.Services
                                     Section = g.Key.Section,
                                     ChangeList = g.Where(s => s.Section == g.Key.Section && s.ChangeType == g.Key.ChangeType && s.ChangeCategory == g.Key.ChangeCategory).ToList()
                                 }).ToList();
-            foreach (var changeCat in levelDetails)
+            
+            foreach (var _levelDetail in levelDetails)
             {
-
-                var changeDetail = new CategoryChangeDetail();
-                changeDetail.ChangeCategory = changeCat.ChangeCategory;
-                changeDetail.FieldName = "";
-                changeDetail.ChangeType = changeCat.ChangeType;
-                changeDetail.AddedCodes = new List<CodeAddedRemovedDetail>();
-                changeDetail.DeletedCodes = new List<CodeAddedRemovedDetail>();
-                changeDetail.ChangedCodes = new List<CodeChangeDetail>();
-                foreach (var changedItem in changeCat.ChangeList.OrderBy(c=> c.Code==null?"":c.Code ))
+                switch (_levelDetail.Section)
                 {
-                    if (changeCat.ChangeType.IndexOf("Added") > -1)
-                    {
-                        changeDetail.AddedCodes.Add(
-                            CodeAddedRemovedDetail(changeCat.Section, changedItem.Code, changedItem.ChangeId, pSiteCode, pCountryVersion)
-                        );
-                    }
-                    else if (changeCat.ChangeType.IndexOf("Deleted") > -1)
-                    {
-
-                        //it needs amending to catch the record value it was deleted 
-                        changeDetail.DeletedCodes.Add(
-                            CodeAddedRemovedDetail(changeCat.Section, changedItem.Code, changedItem.ChangeId, pSiteCode, pCountryVersion)
-                        );
-                    }
-                    else
-                    {
-
-                        changeDetail.ChangedCodes.Add(
-                            new CodeChangeDetail
-                            {
-                                Code = changedItem.Code,
-                                Name = GetCodeName(changedItem) ,
-                                ChangeId = changedItem.ChangeId,
-                                OlValue = changedItem.OldValue,
-                                ReportedValue = changedItem.NewValue
-                            }
-                        ) ;
-                    }
-                }
-                switch (changeCat.Section)
-                {
-
                     case "Site":
-                        changedPerCategories.SiteInfo.Add(changeDetail);
+                        /*
+                        if (_levelDetail.ChangeType.IndexOf("Added") > -1)
+                        {
+                            if (string.IsNullOrEmpty(changesPerLevel.SiteInfo.AddedCodes.ChangeCategory)) changesPerLevel.SiteInfo.AddedCodes.ChangeCategory = "Site Added";
+                            foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
+                            {
+                                changesPerLevel.SiteInfo.AddedCodes.CodeList.Add(
+                                    new CodeAddedRemovedDetail
+                                    {
+                                        Code = changedItem.Code,
+                                        CodeValues = new Dictionary<string, string>()
+                                    }
+                                );
+                            }
+                        }
+                        else if (_levelDetail.ChangeType.IndexOf("Deleted") > -1)
+                        {
+                            if (string.IsNullOrEmpty(changesPerLevel.SiteInfo.AddedCodes.ChangeCategory)) changesPerLevel.SiteInfo.AddedCodes.ChangeCategory = "Site Deleted";
+                            foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
+                            {
+                                changesPerLevel.SiteInfo.AddedCodes.CodeList.Add(
+                                    new CodeAddedRemovedDetail
+                                    {
+                                        Code = changedItem.Code,
+                                        CodeValues = new Dictionary<string, string>()
+                                    }
+                                ); ;
+                            }
+                        }
+                        else
+                        {
+                            changesPerLevel.SiteInfo.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
+                        }
+                        */
+                        changesPerLevel.SiteInfo.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
                         break;
 
-                    case "Species":
-                        changedPerCategories.Species.Add(changeDetail);
-                        break;
+                    case "Species" or "Habitats": 
+                        Type sectionType = typeof(SiteChangesLevelDetail);                   
+                        PropertyInfo sectionPropInfo = sectionType.GetProperty(_levelDetail.Section);
+                        SectionChangeDetail _Section = (SectionChangeDetail)sectionPropInfo.GetValue(changesPerLevel, null);
 
-                    case "Habitats":
-                        changedPerCategories.Habitats.Add(changeDetail);
+                        if (_Section == null) continue;
+
+                        if (_levelDetail.ChangeType.IndexOf("Added") <= -1)
+                        {
+                            if (_levelDetail.ChangeType.IndexOf("Deleted") > -1)
+                            {
+                                if (string.IsNullOrEmpty(_Section.AddedCodes.ChangeCategory)) _Section.AddedCodes.ChangeCategory = String.Format("List of {0} Deleted", _levelDetail.Section);
+                                foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
+                                {
+                                    _Section.DeletedCodes.CodeList.Add(
+                                        CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version)
+                                    );
+                                }
+                            }
+                            else
+                            {
+                                _Section.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
+                            }
+                        }
+                        else
+                        {
+                            if (string.IsNullOrEmpty(_Section.AddedCodes.ChangeCategory)) _Section.AddedCodes.ChangeCategory = String.Format("List of {0} Added", _levelDetail.Section);
+                            foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
+                            {
+                                _Section.AddedCodes.CodeList.Add(
+                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version)
+                                );
+                            }
+                        }
                         break;
+                    
+
                 }
+
             }
 
-            return changedPerCategories;
+            return changesPerLevel;
         }
 
 
+
+
+        private CategoryChangeDetail GetChangeCategoryDetail(string changeCategory, string changeType, List<SiteChangeDb> changeList)
+        {
+            var catChange = new CategoryChangeDetail();
+            catChange.ChangeType = changeType;
+            catChange.ChangeCategory = changeCategory;
+            catChange.ChangedCodesDetail = new List<CodeChangeDetail>();
+
+            foreach (var changedItem in changeList.OrderBy(c => c.Code == null ? "" : c.Code))
+            {
+                catChange.ChangedCodesDetail.Add(
+                new CodeChangeDetail
+                {
+                    Code = changedItem.Code,
+                    Name = GetCodeName(changedItem),
+                    ChangeId = changedItem.ChangeId,
+                    OlValue = changedItem.OldValue,
+                    ReportedValue = changedItem.NewValue
+                });
+            }
+
+            return catChange;
+        }
 
         private string? GetCodeName(SiteChangeDb change)
         {
@@ -289,7 +338,9 @@ namespace N2K_BackboneBackEnd.Services
             switch (change.Section)
             {
                 case "Site":
-                    name = "";
+                    if (_dataContext.Set<Sites>().FirstOrDefault(sp => sp.SiteCode.ToLower() == change.Code.ToLower() && sp.Version == change.Version) != null) {
+                        name = _dataContext.Set<Sites>().FirstOrDefault(sp => sp.SiteCode.ToLower() == change.Code.ToLower() && sp.Version == change.Version).Name;
+                    }
                     break;
 
                 case "Species":
@@ -313,6 +364,7 @@ namespace N2K_BackboneBackEnd.Services
             return name;
         }
 
+        
 
         private CodeAddedRemovedDetail CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion)
         {
@@ -373,151 +425,7 @@ namespace N2K_BackboneBackEnd.Services
             };
 
         }
-
-
-        private void FillChangeDetail(Sites? site, Sites? oldSite, SiteChangeDb siteChangeDb, ref ChangeDetail detail)
-        {
-            if (detail != null)
-            {
-                switch (detail.ChangeCategory)
-                {
-                    case "Site General Info":
-                        switch (detail.ChangeType)
-                        {
-                            case "SiteName Changed":
-                                detail.FieldName = "SiteName";
-                                detail.ReportedValue = siteChangeDb.NewValue;
-                                detail.OlValue = siteChangeDb.OldValue;
-                                break;
-
-                            case "SiteType Changed":
-                                detail.FieldName = "SiteType";
-                                detail.ReportedValue = "NewSiteType";
-                                detail.OlValue = oldSite.SiteType.ToString();
-                                break;
-
-                            case "Length Changed":
-                                detail.FieldName = "Length";
-                                detail.ReportedValue = "New Length";
-                                detail.OlValue = oldSite.Length.ToString();
-                                break;
-                        }
-                        break;
-
-                    case "Change of area":
-                        detail.FieldName = "Area";
-                        detail.ReportedValue = "NewSite Area";
-                        detail.OlValue = oldSite.Area.ToString();
-                        break;
-
-                    case "Site Added":
-                        detail.FieldName = "SiteCode";
-                        detail.ReportedValue = siteChangeDb.SiteCode;
-                        detail.OlValue = "";
-                        break;
-
-
-                    case "Site Deleted":
-                        detail.FieldName = "SiteCode";
-                        detail.ReportedValue = site.SiteCode;
-                        detail.OlValue = site.SiteCode;
-                        break;
-
-
-                    case "Species and habitats":
-                        switch (detail.ChangeType)
-                        {
-                            case "Relative surface Decrease":
-                                detail.FieldName = "RelSurface";
-                                detail.ReportedValue = "New Value";
-                                detail.OlValue = "Old Value";
-                                break;
-
-                            case "Relative surface Increase":
-                                detail.FieldName = "RelSurface";
-                                detail.ReportedValue = "New Value";
-                                detail.OlValue = "Old Value";
-                                break;
-
-                            case "Relative surface Change":
-                                detail.FieldName = "RelSurface";
-                                detail.ReportedValue = "New Value";
-                                detail.OlValue = "Old Value";
-                                break;
-
-                            case "Representativity Decrease":
-                                detail.FieldName = "Representativity";
-                                detail.ReportedValue = "New Value";
-                                detail.OlValue = "Old Value";
-                                break;
-
-                            case "Representativity Increase":
-                                detail.FieldName = "Representativity";
-                                detail.ReportedValue = "New Value";
-                                detail.OlValue = "Old Value";
-                                break;
-
-                            case "Representativity Change":
-                                detail.FieldName = "Representativity";
-                                detail.ReportedValue = "New Value";
-                                detail.OlValue = "Old Value";
-                                break;
-
-                            case "Cover_ha Decrease":
-                                detail.FieldName = "Cover_ha";
-                                detail.ReportedValue = "New Value";
-                                detail.OlValue = "Old Value";
-                                break;
-
-                            case "Cover_ha Increase":
-                                detail.FieldName = "Cover_ha";
-                                detail.ReportedValue = "New Value";
-                                detail.OlValue = "Old Value";
-                                break;
-
-                            case "Cover_ha Change":
-                                detail.FieldName = "Cover_ha";
-                                detail.ReportedValue = "New Value";
-                                detail.OlValue = "Old Value";
-                                break;
-
-
-                        }
-                        break;
-
-                    case "Species Added":
-                        detail.FieldName = "Species";
-                        detail.ReportedValue = "New Value";
-                        detail.OlValue = "";
-                        break;
-
-                    case "Species Deleted":
-                        detail.FieldName = "Species";
-                        detail.ReportedValue = "";
-                        detail.OlValue = "Deleted";
-                        break;
-
-
-                    case "Habitat Added":
-                        detail.FieldName = "Habitats";
-                        detail.ReportedValue = "New Habitat";
-                        detail.OlValue = "";
-                        break;
-
-                    case "Habitat Deleted":
-                        detail.FieldName = "Species";
-                        detail.ReportedValue = "";
-                        detail.OlValue = "Deleted";
-                        break;
-
-
-                }
-                detail.ReportedValue = siteChangeDb.NewValue ?? null;
-                detail.OlValue = siteChangeDb.OldValue ?? null;
-            }
-        }
-
-
+       
 
         public async Task<List<ModifiedSiteCode>> AcceptChanges(ModifiedSiteCode[] changedSiteStatus)
         {
