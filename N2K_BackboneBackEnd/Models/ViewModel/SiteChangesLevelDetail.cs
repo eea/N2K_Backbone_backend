@@ -9,9 +9,6 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [Keyless]
     public class SiteChangesLevelDetail
     {
-        [NotMapped]
-        public Dictionary<string, SectionChangeDetail> SectionChanges { get; set; }= new Dictionary<string, SectionChangeDetail>();
-
 
         [NotMapped]
         public SectionChangeDetail SiteInfo { get; set; } = new SectionChangeDetail();
@@ -23,13 +20,6 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public Level? Level { get; set; } = Enumerations.Level.Info;
 
 
-        public SiteChangesLevelDetail()
-        {
-            SectionChanges.Add("SiteInfo", new SectionChangeDetail());
-            SectionChanges.Add("Species", new SectionChangeDetail());
-            SectionChanges.Add("Habitats", new SectionChangeDetail());
-
-        }
 
         public static void OnModelCreating(ModelBuilder builder)
         {

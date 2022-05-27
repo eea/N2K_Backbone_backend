@@ -273,7 +273,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     continue;
                 }
-
+                
                 if (_levelDetail.ChangeType.IndexOf("Added") <= -1)
                 {
                     if (_levelDetail.ChangeType.IndexOf("Deleted") > -1)
@@ -320,6 +320,7 @@ namespace N2K_BackboneBackEnd.Services
                         
                     }
                 }
+                
             }
 
             return changesPerLevel;
@@ -333,30 +334,24 @@ namespace N2K_BackboneBackEnd.Services
             var catChange = new CategoryChangeDetail();
             catChange.ChangeType = changeType;
             catChange.ChangeCategory = changeCategory;
-            catChange.ChangedCodesDetail = new List<CodeChangeDetail>();
 
             foreach (var changedItem in changeList.OrderBy(c => c.Code == null ? "" : c.Code))
             {
-                var valueList = new List<CodeChangeDetailedValues>();
-                valueList.Add(new CodeChangeDetailedValues
-                {
-                    Name = "Reference",
-                    Value = changedItem.OldValue
-                });
-                valueList.Add(new CodeChangeDetailedValues
-                {
-                    Name = "Reported",
-                    Value = changedItem.NewValue
-                });
+                var fields = new Dictionary<string, string>();
+                fields.Add("Reference", changedItem.OldValue);
+                fields.Add("Reported", changedItem.NewValue);
+
+
                 catChange.ChangedCodesDetail.Add(
-                    
-                new CodeChangeDetail
-                {
-                    Code = changedItem.Code,
-                    Name = GetCodeName(changedItem),
-                    ChangeId = changedItem.ChangeId,
-                    DetailedValues = valueList
-                });
+                    new CodeChangeDetail
+                    {
+                        Code = changedItem.Code,
+                        Name = GetCodeName(changedItem),
+                        ChangeId = changedItem.ChangeId,
+                        Fields = fields
+                    }
+
+                );
             }
             return catChange;
         }
@@ -396,16 +391,18 @@ namespace N2K_BackboneBackEnd.Services
 
         
 
-        private CodeChangeDetail CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion)
+        private CodeChangeDetail? CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion)
         {
-            var valueList = new List<CodeChangeDetailedValues>();
-            var name = "";
+            var fields = new Dictionary<string, string>();
             switch (section)
             {
                 case "Species":
+                    string? specName = null;
+                    string? population = null;
+                    string? specType = null;
+
                     if (code != null)
                     {
-                        var specName = "";
                         var spectype = _dataContext.Set<SpeciesTypes>().FirstOrDefault(s => s.Code.ToLower() == code.ToLower()).Name;
                         if (spectype != null) specName = spectype;
 
@@ -417,26 +414,29 @@ namespace N2K_BackboneBackEnd.Services
                             });
                         if (specDetails != null && specDetails.FirstOrDefault() != null)
                         {
-                            valueList.Add(new CodeChangeDetailedValues
-                            {
-                                Name = "Population",
-                                Value = specDetails.FirstOrDefault().Population
-                            });
-                            valueList.Add(new CodeChangeDetailedValues
-                            {
-                                Name = "SpeciesType",
-                                Value = specDetails.FirstOrDefault().SpecType
-                            });
+                            population = specDetails.FirstOrDefault().Population;
+                            specType = specDetails.FirstOrDefault().SpecType;
                         }
-                        name = specName;
                     }
-                    break;
+                    fields.Add("Population", population);
+                    fields.Add("SpeciesType", specType);
+
+                    return new CodeChangeDetail
+                    {
+                        ChangeId = changeId,
+                        Code = code,
+                        Name = specName,
+                        Fields = fields
+
+                    };
 
                 case "Habitats":
+                    string? habName = null;
+                    string? coverHa = null;
+                    string? relSurface = null;
                     if (code != null)
                     {
 
-                        var habName = "";
                         var habType = _dataContext.Set<HabitatTypes>().Where(s => s.Code.ToLower() == code.ToLower()).Select(spc => spc.Name).FirstOrDefault();
                         if (habType != null) habName = habType;
 
@@ -446,32 +446,26 @@ namespace N2K_BackboneBackEnd.Services
                                 CoverHA = hab.CoverHA.ToString(),
                                 RelativeSurface = hab.RelativeSurface
                             });
-                        if (habDetails != null)
+                        if (habDetails != null  && habDetails.FirstOrDefault()!=null)
                         {
-                            valueList.Add(new CodeChangeDetailedValues
-                            {
-                                Name = "RelSurface",
-                                Value = habDetails.FirstOrDefault().RelativeSurface
-                            });
-                            valueList.Add(new CodeChangeDetailedValues
-                            {
-                                Name = "Cover",
-                                Value = habDetails.FirstOrDefault().CoverHA
-                            });
+                            relSurface = habDetails.FirstOrDefault().RelativeSurface;
+                            coverHa = habDetails.FirstOrDefault().CoverHA;
                         }
-                        name = habName;
                     }
+                    fields.Add("CoverHa", coverHa);
+                    fields.Add("RelativeSurface", relSurface);
+
+                    return new CodeChangeDetail
+                    {
+                        ChangeId = changeId,
+                        Code = code,
+                        Name = habName,
+                        Fields= fields
+                    };
                     break;
             }
 
-            return new CodeChangeDetail
-            {
-                ChangeId= changeId,
-                 Code  =code,
-                 DetailedValues = valueList,
-                 Name = name
-            };
-
+            return null;
         }
        
 
