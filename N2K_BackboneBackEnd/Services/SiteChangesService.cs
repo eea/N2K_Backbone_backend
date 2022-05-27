@@ -221,6 +221,7 @@ namespace N2K_BackboneBackEnd.Services
             
             foreach (var _levelDetail in levelDetails)
             {
+                SectionChangeDetail _Section = null;
                 switch (_levelDetail.Section)
                 {
                     case "Site":
@@ -261,45 +262,64 @@ namespace N2K_BackboneBackEnd.Services
                         changesPerLevel.SiteInfo.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
                         break;
 
-                    case "Species" or "Habitats": 
-                        Type sectionType = typeof(SiteChangesLevelDetail);                   
-                        PropertyInfo sectionPropInfo = sectionType.GetProperty(_levelDetail.Section);
-                        SectionChangeDetail _Section = (SectionChangeDetail)sectionPropInfo.GetValue(changesPerLevel, null);
-
-                        if (_Section == null) continue;
-
-                        if (_levelDetail.ChangeType.IndexOf("Added") <= -1)
-                        {
-                            if (_levelDetail.ChangeType.IndexOf("Deleted") > -1)
-                            {
-                                if (string.IsNullOrEmpty(_Section.AddedCodes.ChangeCategory)) _Section.AddedCodes.ChangeCategory = String.Format("List of {0} Deleted", _levelDetail.Section);
-                                foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
-                                {
-                                    _Section.DeletedCodes.CodeList.Add(
-                                        CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version)
-                                    );
-                                }
-                            }
-                            else
-                            {
-                                _Section.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
-                            }
-                        }
-                        else
-                        {
-                            if (string.IsNullOrEmpty(_Section.AddedCodes.ChangeCategory)) _Section.AddedCodes.ChangeCategory = String.Format("List of {0} Added", _levelDetail.Section);
-                            foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
-                            {
-                                _Section.AddedCodes.CodeList.Add(
-                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version)
-                                );
-                            }
-                        }
+                    case "Species":
+                        _Section = changesPerLevel.Species;
                         break;
-                    
-
+                     case "Habitats":
+                        _Section = changesPerLevel.Habitats;
+                        break;
+                }
+                if (_Section == null)
+                {
+                    continue;
                 }
 
+                if (_levelDetail.ChangeType.IndexOf("Added") <= -1)
+                {
+                    if (_levelDetail.ChangeType.IndexOf("Deleted") > -1)
+                    {
+                        if (_Section.DeletedCodes.Count==0)
+                        {
+                            _Section.DeletedCodes.Add(new CategoryChangeDetail
+                            {
+                                ChangeCategory = String.Format("List of {0} Deleted", _levelDetail.Section),
+                                ChangeType = "",
+                                ChangedCodesDetail = new List<CodeChangeDetail>()
+                            }); 
+                        }
+
+                        foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
+                        {
+                            _Section.DeletedCodes.ElementAt(0).ChangedCodesDetail.Add(
+                                CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version)
+                            );
+                        }
+                    }
+                    else
+                    {
+                        _Section.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
+                    }
+                }
+                else
+                {
+                    if (_Section.AddedCodes.Count == 0)
+                    {
+                        _Section.AddedCodes.Add(new CategoryChangeDetail
+                        {
+                            ChangeCategory = String.Format("List of {0} Added", _levelDetail.Section),
+                            ChangeType = "",
+                            ChangedCodesDetail = new List<CodeChangeDetail>()
+                        });
+                    }
+
+                    foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
+                    {
+                        _Section.AddedCodes.ElementAt(0).ChangedCodesDetail.Add(
+                            CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version)
+                        );
+                        
+                    }
+                }
             }
 
             return changesPerLevel;
@@ -317,17 +337,27 @@ namespace N2K_BackboneBackEnd.Services
 
             foreach (var changedItem in changeList.OrderBy(c => c.Code == null ? "" : c.Code))
             {
+                var valueList = new List<CodeChangeDetailedValues>();
+                valueList.Add(new CodeChangeDetailedValues
+                {
+                    Name = "Reference",
+                    Value = changedItem.OldValue
+                });
+                valueList.Add(new CodeChangeDetailedValues
+                {
+                    Name = "Reported",
+                    Value = changedItem.NewValue
+                });
                 catChange.ChangedCodesDetail.Add(
+                    
                 new CodeChangeDetail
                 {
                     Code = changedItem.Code,
                     Name = GetCodeName(changedItem),
                     ChangeId = changedItem.ChangeId,
-                    OlValue = changedItem.OldValue,
-                    ReportedValue = changedItem.NewValue
+                    DetailedValues = valueList
                 });
             }
-
             return catChange;
         }
 
@@ -366,9 +396,10 @@ namespace N2K_BackboneBackEnd.Services
 
         
 
-        private CodeAddedRemovedDetail CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion)
+        private CodeChangeDetail CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion)
         {
-            var codeValues = new Dictionary<string, string>();
+            var valueList = new List<CodeChangeDetailedValues>();
+            var name = "";
             switch (section)
             {
                 case "Species":
@@ -386,10 +417,18 @@ namespace N2K_BackboneBackEnd.Services
                             });
                         if (specDetails != null && specDetails.FirstOrDefault() != null)
                         {
-                            codeValues.Add("Name", specName);
-                            codeValues.Add("Population", specDetails.FirstOrDefault().Population);
-                            codeValues.Add("SpeciesType", specDetails.FirstOrDefault().SpecType);
+                            valueList.Add(new CodeChangeDetailedValues
+                            {
+                                Name = "Population",
+                                Value = specDetails.FirstOrDefault().Population
+                            });
+                            valueList.Add(new CodeChangeDetailedValues
+                            {
+                                Name = "SpeciesType",
+                                Value = specDetails.FirstOrDefault().SpecType
+                            });
                         }
+                        name = specName;
                     }
                     break;
 
@@ -409,19 +448,28 @@ namespace N2K_BackboneBackEnd.Services
                             });
                         if (habDetails != null)
                         {
-                            codeValues.Add("C", habName);
-                            codeValues.Add("RelSurface", habDetails.FirstOrDefault().RelativeSurface);
-                            codeValues.Add("Cover", habDetails.FirstOrDefault().CoverHA);
+                            valueList.Add(new CodeChangeDetailedValues
+                            {
+                                Name = "RelSurface",
+                                Value = habDetails.FirstOrDefault().RelativeSurface
+                            });
+                            valueList.Add(new CodeChangeDetailedValues
+                            {
+                                Name = "Cover",
+                                Value = habDetails.FirstOrDefault().CoverHA
+                            });
                         }
+                        name = habName;
                     }
                     break;
             }
 
-            return new CodeAddedRemovedDetail
+            return new CodeChangeDetail
             {
-                Code = code,
-                ChangeId = changeId,
-                CodeValues = codeValues
+                ChangeId= changeId,
+                 Code  =code,
+                 DetailedValues = valueList,
+                 Name = name
             };
 
         }

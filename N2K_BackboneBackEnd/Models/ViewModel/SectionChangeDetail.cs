@@ -15,16 +15,16 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         [NotMapped]
         public List<CategoryChangeDetail> ChangesByCategory { get; set; } = new List<CategoryChangeDetail>();
         [NotMapped]
-        public AddedRemovedDetail AddedCodes { get; set; } = new AddedRemovedDetail();
+        public List<CategoryChangeDetail> AddedCodes { get; set; } = new List<CategoryChangeDetail>();
         [NotMapped]
-        public AddedRemovedDetail DeletedCodes { get; set; } = new AddedRemovedDetail();
+        public List<CategoryChangeDetail> DeletedCodes { get; set; } = new List<CategoryChangeDetail>();
 
 
         public SectionChangeDetail()
         {
             ChangesByCategory = new List<CategoryChangeDetail>();
-            AddedCodes = new AddedRemovedDetail();
-            DeletedCodes = new AddedRemovedDetail();
+            AddedCodes = new List<CategoryChangeDetail>();
+            DeletedCodes = new List<CategoryChangeDetail>();
         }
 
         public static void OnModelCreating(ModelBuilder builder)

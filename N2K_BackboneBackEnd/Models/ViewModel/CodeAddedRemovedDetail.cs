@@ -12,8 +12,10 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public long ChangeId { get; set; }
         public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
 
-        public Dictionary<string, string>? CodeValues { get; set; } = new Dictionary<string, string>();
+        [NotMapped]
+        public List<CodeChangeDetailedValues> DetailedValues { get; set; } = new List<CodeChangeDetailedValues>();
 
 
         public static void OnModelCreating(ModelBuilder builder)
