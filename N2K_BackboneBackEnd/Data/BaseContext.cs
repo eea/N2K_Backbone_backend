@@ -53,6 +53,7 @@ namespace N2K_BackboneBackEnd.Data
             {
                 if (type != null)
                 {
+                    Console.WriteLine(type.FullName);
                     MethodInfo? v = type.GetMethods().FirstOrDefault(x => x.Name == "OnModelCreating");
                     if (v != null)
                         v.Invoke(type, new object[] { modelBuilder });
