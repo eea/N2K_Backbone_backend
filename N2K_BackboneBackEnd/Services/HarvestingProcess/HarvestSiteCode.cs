@@ -9,26 +9,48 @@ using N2K_BackboneBackEnd.Models.versioning_db;
 
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 {
-    public class HarvestSiteCode : BaseHarvestingProcess, IHarvestingTables
+    /// <summary>
+    /// Class dedicated to the import of a Site and the entities that dependes directly from the Site Entity.
+    /// </summary>
+    public  class HarvestSiteCode : BaseHarvestingProcess, IHarvestingTables
     {
+        
+        /// <summary>
+        /// Constructor 
+        /// </summary>
+        /// <param name="dataContext">Context for the BackBone database</param>
+        /// <param name="versioningContext">Context for the Versioning database</param>
         public HarvestSiteCode(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext) : base(dataContext, versioningContext)
         {
         }
 
+        /// <summary>
+        /// This mehtod calls for teh process to harvest the complete data for all sites 
+        /// reported in the envelopment reported by the MS
+        /// </summary>
+        /// <param name="countryCode"></param>
+        /// <param name="versionId"></param>
+        /// <returns></returns>
+        [Obsolete("Method Harvest is deprecated, and has no code.")]
         public async Task<int> Harvest(string countryCode, int versionId)
         {
             Console.WriteLine("=>Start Site Code harvest...");
-
-
-
             await Task.Delay(5000);
             Console.WriteLine("=>End Site Code harvest...");
             return 1;
 
         }
 
-
-        public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
+        /// <summary>
+        /// This mehtod calls for teh process to harvest the complete data for all sites 
+        /// reported in the envelopment reported by the MS
+        /// </summary>
+        /// <param name="countryCode"></param>
+        /// <param name="versionId"></param>
+        /// <param name="referenceVersionID"></param>
+        /// <returns></returns>
+        [Obsolete("Method Harvest is deprecated, and has no code.")]
+        public  async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
         {
             Console.WriteLine("==>Start Site Code validate...");
             await Task.Delay(10000);
@@ -36,12 +58,20 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             return 1;
         }
 
-
-        public async Task<Sites>? HarvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
+        /// <summary>
+        /// This method retrives the complete information for a Site in Versioning and stores it in BackBone.
+        /// (Site and their dependencies but not Species and habitats)
+        /// </summary>
+        /// <param name="pVSite">The definition ogf the versioning Site</param>
+        /// <param name="pEnvelope">The envelope to process</param>
+        /// <returns>Returns a BackBone Site object</returns>
+        public async Task<Sites>? HarvestSite (NaturaSite pVSite, EnvelopesToProcess pEnvelope)
         {
             Sites? bbSite = null;
             try
             {
+                
+                
                 bbSite = await harvestSiteCode(pVSite, pEnvelope);
                 _dataContext.Set<Sites>().Add(bbSite);
                 _dataContext.SaveChanges();
@@ -55,7 +85,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 _dataContext.Set<SiteLargeDescriptions>().AddRange(await harvestSiteLargeDescriptions(pVSite, bbSite.Version));
                 _dataContext.Set<SiteOwnerType>().AddRange(await harvestSiteOwnerType(pVSite, bbSite.Version));
                 TimeLog.setTimeStamp("Site " + pVSite.SITECODE + " - " + pVSite.VERSIONID.ToString(), "Processed");
-
+                
                 return bbSite;
 
             }
@@ -68,8 +98,17 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 bbSite = null;
             }
+            
         }
 
+
+        /// <summary>
+        ///  This method retrives the complete information for a Site in Versioning and stores it in BackBone.
+        ///  (Just the Site)
+        /// </summary>
+        /// <param name="pVSite">The definition ogf the versioning Site</param>
+        /// <param name="pEnvelope">The envelope to process</param>
+        /// <returns>Returns a BackBone Site object</returns>
         private async Task<Sites>? harvestSiteCode(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
         {
             //Tomamos el valor más alto que tiene en el campo Version para ese SiteCode. Por defecto es -1 para cuando no existe 
@@ -114,6 +153,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
+        /// <summary>
+        /// Retrives the information of the BioRegions for a Site and stores them in BackBone
+        /// </summary>
+        /// <param name="pVSite">The object Versioning Site</param>
+        /// <param name="pVersion">The version in BackBone</param>
+        /// <returns>List of bioregions stored</returns>
         private async Task<List<BioRegions>> harvestBioregions(NaturaSite pVSite, int pVersion)
         {
             List<BelongsToBioRegion> elements = null;
@@ -145,6 +190,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
+        /// <summary>
+        /// Retrives the information of the NUTS for a Site and stores them in BackBone
+        /// </summary>
+        /// <param name="pVSite">The object Versioning Site</param>
+        /// <param name="pVersion">The version in BackBone</param>
+        /// <returns>List of NUTS stored</returns>
         private async Task<List<NutsBySite>>? harvestNutsBySite(NaturaSite pVSite, int pVersion)
         {
             List<NutsRegion> elements = null;
@@ -175,6 +226,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
+        /// <summary>
+        /// Retrives the information of the IsImpactedBy elements for a Site and stores them in BackBone
+        /// </summary>
+        /// <param name="pVSite">The object Versioning Site</param>
+        /// <param name="pVersion">The version in BackBone</param>
+        /// <returns>List of IsImpactedBy stored</returns>
         private async Task<List<Models.backbone_db.IsImpactedBy>>? harvestIsImpactedBy(NaturaSite pVSite, int pVersion)
         {
             List<Models.versioning_db.IsImpactedBy> elements = null;
@@ -221,6 +278,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
+        /// <summary>
+        /// Retrives the information of the HasNationalProtection elements for a Site and stores them in BackBone
+        /// </summary>
+        /// <param name="pVSite">The object Versioning Site</param>
+        /// <param name="pVersion">The version in BackBone</param>
+        /// <returns>List of HasNationalProtection stored</returns>
         private async Task<List<Models.backbone_db.HasNationalProtection>>? harvestHasNationalProtection(NaturaSite pVSite, int pVersion)
         {
             List<Models.versioning_db.HasNationalProtection> elements = null;
@@ -250,6 +313,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
 
         }
+
+        /// <summary>
+        /// Retrives the information of the DetailedProtectionStatus elements for a Site and stores them in BackBone
+        /// </summary>
+        /// <param name="pVSite">The object Versioning Site</param>
+        /// <param name="pVersion">The version in BackBone</param>
+        /// <returns>List of DetailedProtectionStatus stored</returns>
         private async Task<List<Models.backbone_db.DetailedProtectionStatus>>? harvestDetailedProtectionStatus(NaturaSite pVSite, int pVersion)
         {
             List<Models.versioning_db.DetailedProtectionStatus> elements = null;
@@ -282,7 +352,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        private async Task<List<Models.backbone_db.SiteLargeDescriptions>>? harvestSiteLargeDescriptions(NaturaSite pVSite, int pVersion)
+        /// <summary>
+        /// Retrives the information of the SiteLargeDescriptions elements for a Site and stores them in BackBone
+        /// </summary>
+        /// <param name="pVSite">The object Versioning Site</param>
+        /// <param name="pVersion">The version in BackBone</param>
+        /// <returns>List of SiteLargeDescriptions stored</returns>
+        private async Task< List<Models.backbone_db.SiteLargeDescriptions>>? harvestSiteLargeDescriptions(NaturaSite pVSite, int pVersion)
         {
             List<Models.versioning_db.Description> elements = null;
             List<Models.backbone_db.SiteLargeDescriptions> items = new List<Models.backbone_db.SiteLargeDescriptions>();
@@ -320,6 +396,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
+        /// <summary>
+        /// Retrives the information of the SiteOwnerType elements for a Site and stores them in BackBone
+        /// </summary>
+        /// <param name="pVSite">The object Versioning Site</param>
+        /// <param name="pVersion">The version in BackBone</param>
+        /// <returns>List of SiteOwnerType stored</returns>
         private async Task<List<Models.backbone_db.SiteOwnerType>>? harvestSiteOwnerType(NaturaSite pVSite, int pVersion)
         {
 
@@ -350,5 +432,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
 
         }
+    
     }
 }
