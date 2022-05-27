@@ -207,18 +207,6 @@ namespace N2K_BackboneBackEnd.Services
                     List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSitesByCountry  @country",
                                     param1).ToListAsync();
 
-                    #region old referencedSites
-                    /*
-                    var referencedSites = new List<SiteToHarvest>();
-                    if (lastReferenceCountryVersion != 0)
-                    {
-                        var param3 = new SqlParameter("@version", lastReferenceCountryVersion);
-                        referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.[spGetReferenceSitesByCountryAndVersion]  @country, @version",
-                                    param1, param3).ToListAsync();
-                    }
-                    */
-                    #endregion
-
                     //For each site in Versioning compare it with that site in backboneDB
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
                     foreach (SiteToHarvest? harvestingSite in sitesVersioning)
