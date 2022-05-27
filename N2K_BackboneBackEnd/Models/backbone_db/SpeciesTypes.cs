@@ -11,7 +11,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 		public string? NameLat { get; set; }
 		public bool? IsBird { get; set; }
 		public bool? isCodeNew { get; set; }
-		public SpeciesGroup? Group { get; set; }
+		
+		public string? Group { get; set; }
 		public string? Type { get; set; }
 
 
