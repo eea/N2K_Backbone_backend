@@ -109,6 +109,9 @@ namespace N2K_BackboneBackEnd.Services
             //var latestVersions = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
             await _dataContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.Changes");
 
+            //Get the lists of priority habitats and species
+            List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+            List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
             //from the view vLatest//processedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
 
@@ -230,10 +233,10 @@ namespace N2K_BackboneBackEnd.Services
                             SqlParameter param5 = new SqlParameter("@versionId", previousVersionSite);
 
                             //HabitatChecking
-                            changes = await ValidateHabitat(changes, envelope, harvestingSite, storedSite, param3, param4, param5, habitatCoverHaTolerance);
+                            changes = await ValidateHabitat(changes, envelope, harvestingSite, storedSite, param3, param4, param5, habitatCoverHaTolerance, habitatPriority);
 
                             //SpeciesChecking
-                            changes = await ValidateSpecies(changes, envelope, harvestingSite, storedSite, param3, param4, param5);
+                            changes = await ValidateSpecies(changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority);
 
                         }
                         else
@@ -451,7 +454,7 @@ namespace N2K_BackboneBackEnd.Services
             return changes;
         }
 
-        private async Task<List<SiteChangeDb>> ValidateHabitat(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, double habitatCoverHaTolerance)
+        private async Task<List<SiteChangeDb>> ValidateHabitat(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, double habitatCoverHaTolerance, List<HabitatPriority> habitatPriority)
         {
             try
             {
@@ -657,10 +660,8 @@ namespace N2K_BackboneBackEnd.Services
 
                         #region HabitatPriority
                         Boolean IsIncludedInSDF = false;
-                        SqlParameter param6 = new SqlParameter("@habitat", harvestingHabitat.HabitatCode);
-                        var habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitatByHabitatCode  @habitat",
-                                param6).ToListAsync();
-                        if (habitatPriority.Count > 0)
+                        HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
+                        if (priorityCount != null)
                             IsIncludedInSDF = true;
 
                         //These booleans declare whether or not each habitat is a priority
@@ -780,7 +781,7 @@ namespace N2K_BackboneBackEnd.Services
             return changes;
         }
 
-        private async Task<List<SiteChangeDb>> ValidateSpecies(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5)
+        private async Task<List<SiteChangeDb>> ValidateSpecies(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority)
         {
             try
             {
@@ -858,10 +859,8 @@ namespace N2K_BackboneBackEnd.Services
 
                         #region SpeciesPriority
                         Boolean IsIncludedInSDF = false;
-                        SqlParameter param6 = new SqlParameter("@specie", harvestingSpecies.SpeciesCode);
-                        var speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpeciesBySpeciesCode  @specie",
-                                param6).ToListAsync();
-                        if (speciesPriority.Count > 0)
+                        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+                        if (priorityCount != null)
                             IsIncludedInSDF = true;
 
                         //These booleans declare whether or not each species is a priority
