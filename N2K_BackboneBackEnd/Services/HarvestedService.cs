@@ -695,8 +695,8 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Level = Enumerations.Level.Critical;
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
-                            siteChange.NewValue = Convert.ToString(isStoredPriority);
-                            siteChange.OldValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.OldValue = Convert.ToString(isStoredPriority);
                             siteChange.Code = harvestingHabitat.HabitatCode;
                             siteChange.Section = "Habitats";
                             siteChange.VersionReferenceId = storedHabitat.VersionId;
@@ -715,8 +715,8 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
-                            siteChange.NewValue = Convert.ToString(isStoredPriority);
-                            siteChange.OldValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.OldValue = Convert.ToString(isStoredPriority);
                             siteChange.Code = harvestingHabitat.HabitatCode;
                             siteChange.Section = "Habitats";
                             siteChange.VersionReferenceId = storedHabitat.VersionId;
@@ -882,8 +882,8 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Level = Enumerations.Level.Critical;
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
-                            siteChange.NewValue = Convert.ToString(isStoredPriority);
-                            siteChange.OldValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.OldValue = Convert.ToString(isStoredPriority);
                             siteChange.Code = harvestingSpecies.SpeciesCode;
                             siteChange.Section = "Species";
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
@@ -902,8 +902,8 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                             siteChange.Tags = string.Empty;
-                            siteChange.NewValue = Convert.ToString(isStoredPriority);
-                            siteChange.OldValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.OldValue = Convert.ToString(isStoredPriority);
                             siteChange.Code = harvestingSpecies.SpeciesCode;
                             siteChange.Section = "Species";
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
