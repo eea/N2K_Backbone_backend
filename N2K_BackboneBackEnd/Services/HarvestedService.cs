@@ -19,20 +19,36 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2K_VersioningContext _versioningContext;
         private readonly IOptions<ConfigSettings> _appSettings;
         private bool _ThereAreChanges = false;
-
+        
+        /// <summary>
+        /// Constructor 
+        /// </summary>
+        /// <param name="dataContext">>Context for the BackBone database</param>
+        /// <param name="versioningContext">Context for the Versioning database</param>
         public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext)
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
 
         }
-
+        
+        /// <summary>
+        /// Constructor 
+        /// </summary>
+        /// <param name="dataContext">Context for the BackBone database</param>
+        /// <param name="versioningContext">Context for the Versioning database</param>
+        /// <param name="app">Configuration options</param>
         public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
             _appSettings = app;
         }
+        
+        /// <summary>
+        /// To define
+        /// </summary>
+        /// <returns></returns>
         public async Task<List<Harvesting>> GetHarvestedAsync()
         {
             var a = new List<Harvesting>();
@@ -40,6 +56,10 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
+        /// <summary>
+        /// To define
+        /// </summary>
+        /// <returns></returns>
         public List<Harvesting> GetHarvested()
         {
             var a = new List<Harvesting>();
@@ -48,7 +68,11 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-
+        /// <summary>
+        /// To define
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
 #pragma warning disable CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
         public async Task<Harvesting> GetHarvestedAsyncById(int id)
 #pragma warning restore CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
@@ -62,7 +86,11 @@ namespace N2K_BackboneBackEnd.Services
             });
 
         }
-
+        
+        /// <summary>
+        /// Method that returns all those Envelops not harvested by Backbone 
+        /// </summary>
+        /// <returns>List of envelops avialable to harvest</returns>
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
             var result = new List<Harvesting>();
@@ -102,6 +130,11 @@ namespace N2K_BackboneBackEnd.Services
             return await Task.FromResult(result);
         }
 
+        /// <summary>
+        /// Method to validate the quality and the main rules of the data harvested
+        /// </summary>
+        /// <param name="envelopeIDs">List of the envelops to process</param>
+        /// <returns>A list of the envelops with the result of the process</returns>
         public async Task<List<HarvestedEnvelope>> Validate(EnvelopesToProcess[] envelopeIDs)
         {
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
@@ -118,90 +151,8 @@ namespace N2K_BackboneBackEnd.Services
             //Load all sites with the CountryVersionID-CountryCode from Versioning
             foreach (EnvelopesToProcess envelope in envelopeIDs)
             {
-                try
-                {
-                    #region unused code
-                    /*
-                    result.Add(
-                        new HarvestedEnvelope
-                        {
-                            CountryCode = envelope.CountryCode,
-                            VersionId = envelope.VersionId,
-                            NumChanges = 0,
-                            Status = SiteChangeStatus.Harvested
-                        }
-                     );
-                    */
-                    /*
-                    //Start of validation
-
-                    //remove version from database
-                    var param1 = new SqlParameter("@country", envelope.CountryCode);
-                    var param2 = new SqlParameter("@version", envelope.VersionId);
-                    await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spRemoveVersionFromDB  @country, @version", param1, param2);
-
-
-                    var country = latestVersions.Where(v => v.Country == envelope.CountryCode).FirstOrDefault(); //Coger la ultima version de ese country
-                    var lastReferenceCountryVersion = 0;
-                    if (country != null) lastReferenceCountryVersion = country.Version;
-
-                    //1. Harvest SiteCodes
-                    var harvSiteCode = new HarvestSiteCode(_dataContext, _versioningContext);
-                    await harvSiteCode.Harvest(envelope.CountryCode, envelope.VersionId);
-
-                    if (lastReferenceCountryVersion != 0)
-                    {
-                        var tablesToHarvest = new Dictionary<int, IHarvestingTables>();
-
-                        var harvestingTasks = new List<Task<int>>();
-                        var validatingTasks = new List<Task<int>>();
-
-                        //2. Once SiteCodes is harvested we can run a number of task in parallel
-                        //Run the validation
-                        validatingTasks.Add(harvSiteCode.ValidateChanges(envelope.CountryCode, envelope.VersionId, lastReferenceCountryVersion));
-
-                        //harvest 
-                        var habitats = new HarvestHabitats(_dataContext, _versioningContext);
-                        var habitatsTask = habitats.Harvest(envelope.CountryCode, envelope.VersionId);
-                        tablesToHarvest.Add(habitatsTask.Id, habitats);
-                        harvestingTasks.Add(habitatsTask);
-
-                        var species = new HarvestSpecies(_dataContext, _versioningContext);
-                        var speciesTask = species.Harvest(envelope.CountryCode, envelope.VersionId);
-                        tablesToHarvest.Add(speciesTask.Id, species);
-                        harvestingTasks.Add(speciesTask);
-
-
-                        //validate when the harvesting of each one is completed
-                        while (harvestingTasks.Count > 0)
-                        {
-                            var finishedTask = await Task.WhenAny(harvestingTasks);
-                            if (finishedTask != null)
-                            {
-                                if (finishedTask.Id > 0)
-                                {
-                                    IHarvestingTables? harvest = tablesToHarvest[finishedTask.Id]; // .GetValueOrDefault();
-                                    if (harvest != null)
-                                        if (finishedTask.Result == 1)
-                                            validatingTasks.Add(harvest.ValidateChanges(envelope.CountryCode, envelope.VersionId, lastReferenceCountryVersion));
-                                }
-                                harvestingTasks.Remove(finishedTask);
-                            }
-                        }
-                        //...
-
-                        //wait until validation tasks are finished
-                        while (validatingTasks.Count > 0)
-                        {
-                            var finishedTask = await Task.WhenAny(validatingTasks);
-                            validatingTasks.Remove(finishedTask);
-                        }
-                        tablesToHarvest.Clear();
-
-                    }
-                    */
-                    #endregion
-
+                try { 
+  
                     SqlParameter param1 = new SqlParameter("@country", envelope.CountryCode);
                     SqlParameter param2 = new SqlParameter("@version", envelope.VersionId);
 
@@ -211,7 +162,6 @@ namespace N2K_BackboneBackEnd.Services
                                     param1).ToListAsync();
 
                     //For each site in Versioning compare it with that site in backboneDB
-#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
                     foreach (SiteToHarvest? harvestingSite in sitesVersioning)
                     {
                         SiteToHarvest? storedSite = referencedSites.Where(s => s.SiteCode == harvestingSite.SiteCode).FirstOrDefault();
@@ -294,6 +244,8 @@ namespace N2K_BackboneBackEnd.Services
                         NumChanges = changes.Count,
                         Status = SiteChangeStatus.Harvested
                     });
+                    var numChanges = 0;
+
 
                     //for the time being do not load the changes and keep using test_table 
 
@@ -342,22 +294,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.ReferenceSiteCode = storedSite.SiteCode;
                     changes.Add(siteChange);
                 }
-                #region SiteType comparison (unused)
-                //if (harvestingSite.SiteType != storedSite.SiteType)
-                //{
-                //    var siteChange = new SiteChangeDb();
-                //    siteChange.SiteCode = harvestingSite.SiteCode;
-                //    siteChange.ChangeCategory = "Site General Info";
-                //    siteChange.ChangeType = "SiteType Changed";
-                //    siteChange.Country = envelope.CountryCode;
-                //    siteChange.Level = Enumerations.Level.Critical;
-                //    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                //    siteChange.Tags = string.Empty;
-                //    changes.Add(siteChange);
-                //    numChanges++;
-                //}
-                #endregion
-                if (harvestingSite.AreaHa > storedSite.AreaHa)
+                  if (harvestingSite.AreaHa > storedSite.AreaHa)
                 {
                     if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
                     {
@@ -971,10 +908,15 @@ namespace N2K_BackboneBackEnd.Services
             return changes;
         }
 
+        /// <summary>
+        /// This mehtod calls for teh process to harvest the complete data for all sites 
+        /// reported in the envelopment reported by the MS
+        /// </summary>
+        /// <param name="envelopeIDs">A list of Envelops to process</param>
+        /// <returns>A list of the envelops with the result of the process</returns>
         public async Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs)
         {
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
-            List<NaturaSite> sites = null;
             try
             {
                 TimeLog.setTimeStamp("Harvesting process ", "Init");
@@ -1097,6 +1039,12 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
+        /// <summary>
+        /// Obtaints the date of the last sumbision for a Country and Version of evelope
+        /// </summary>
+        /// <param name="country"></param>
+        /// <param name="version"></param>
+        /// <returns>Date time</returns>
         private async Task<DateTime> GetSubmissionDate(string country, int version)
         {
             var param1 = new SqlParameter("@country", country);
@@ -1111,6 +1059,7 @@ namespace N2K_BackboneBackEnd.Services
             else
                 return DateTime.MinValue;
         }
+
 
         private async Task<Sites> harvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
         {
@@ -1155,9 +1104,11 @@ namespace N2K_BackboneBackEnd.Services
 
             }
         }
+
         /// <summary>
         /// Remove the version we use in development
         /// </summary>
+        /// <remarks> It works just in development environtment. In appsettings change the value of the kay "InDevelopment" to false to deactivate </remarks>
         /// <param name="pCountryCode">Code of two digits for the country</param>
         /// <param name="pCountryVersion">Number of the version</param>
         private async Task<int> resetEnvirontment(string pCountryCode, int pCountryVersion)
@@ -1180,7 +1131,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
         /// <summary>
-        /// Delete all the changes create by the envelope
+        /// Method to delete all the changes create by the envelope
         /// </summary>
         /// <param name="pCountry"></param>
         /// <param name="pVerion"></param>
