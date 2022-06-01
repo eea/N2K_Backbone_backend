@@ -912,7 +912,6 @@ namespace N2K_BackboneBackEnd.Services
         /// </summary>
         /// <param name="envelopeIDs">A list of Envelops to process</param>
         /// <returns>A list of the envelops with the result of the process</returns>
-
         public async Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs)
         {
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
