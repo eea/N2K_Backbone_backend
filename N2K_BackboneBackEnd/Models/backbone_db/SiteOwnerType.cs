@@ -12,7 +12,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SiteOwnerType>()
-                .ToView("SiteOwnerType")
+                .ToTable("SiteOwnerType")
                 .HasKey(c => new { c.SiteCode, c.Version, c.Type });
         }
     }

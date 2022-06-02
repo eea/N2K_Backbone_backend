@@ -166,9 +166,12 @@ namespace N2K_BackboneBackEnd.Models
                 write(pLevel, pException.Message, pClass, pSource);
                 Exception exec = pException.InnerException;
                 while (exec != null) {
-                    write(pLevel, exec.Message, pClass, pSource);
+                    write(pLevel, exec.Message, pClass, "InnerException");
                     exec = exec.InnerException;
                 }
+                write(pLevel, pException.StackTrace, pClass, "StackTrace");
+                
+                
             }
             catch (Exception ex)
             {
