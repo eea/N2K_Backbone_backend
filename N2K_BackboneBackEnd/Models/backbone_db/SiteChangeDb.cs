@@ -14,7 +14,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         [Key]
         public long ChangeId { get; set; }
 
-        public string? SiteCode { get; set; }
+        public string SiteCode { get; set; } = String.Empty;
         public int Version { get; set; }
         public string? Country { get; set; }
 
@@ -36,6 +36,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public string? Code { get; set; }
         public string? Section { get; set; }
+        public long VersionReferenceId { get; set; }
+        public string? FieldName { get; set; }
+        public string ReferenceSiteCode { get; set; } = String.Empty;
 
 
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
