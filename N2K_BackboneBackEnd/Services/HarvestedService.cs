@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
@@ -731,6 +732,7 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 TimeLog.setTimeStamp("Harvesting process ", "Init");
+                
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
@@ -759,6 +761,8 @@ namespace N2K_BackboneBackEnd.Services
 
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
+                        //List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.SITECODE == "DE5632303") && (v.VERSIONID == 548)).ToList();
+                        
                         List<Sites> bbSites = new List<Sites>();
 
                         foreach (NaturaSite vSite in vSites)
@@ -785,6 +789,7 @@ namespace N2K_BackboneBackEnd.Services
                                 _dataContext.SaveChanges();
                                 _ThereAreChanges = false;
                             }
+                            
                             catch (Exception ex)
                             {
                                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSites - Start - Site " + vSite.SITECODE + "/" + vSite.VERSIONID.ToString(), "");
@@ -837,6 +842,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 return await Task.FromResult(result);
             }
+            
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
@@ -849,6 +855,10 @@ namespace N2K_BackboneBackEnd.Services
 
 
         }
+
+
+        public const int SqlServerViolationOfUniqueIndex = 2601;
+        public const int SqlServerViolationOfUniqueConstraint = 2627;
 
         /// <summary>
         /// Obtaints the date of the last sumbision for a Country and Version of evelope

@@ -202,7 +202,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<NutsBySite> items = new List<NutsBySite>();
             try
             {
-                elements = await _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
+                //elements = await _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
+                elements = await _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).GroupBy(s=> new { s.SITECODE, s.VERSIONID, s.NUTSCODE })
+                    .Select(gs=>new NutsRegion() { SITECODE = gs.Key.SITECODE, VERSIONID = gs.Key.VERSIONID, NUTSCODE = gs.Key.NUTSCODE, COVER = gs.Sum(c => c.COVER) }).ToListAsync();
+                
+                
+                
                 foreach (NutsRegion element in elements)
                 {
                     NutsBySite item = new NutsBySite();
