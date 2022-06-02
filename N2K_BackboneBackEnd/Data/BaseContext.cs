@@ -10,8 +10,10 @@ namespace N2K_BackboneBackEnd.Data
 
         public BaseContext(DbContextOptions options ) : base(options)
         {
+            SaveChangesFailed += mySaveChangesFailed;
         }
 
+        
 
         public BaseContext(DbContextOptions options , string Interface ) : base(options)
         {
@@ -37,9 +39,58 @@ namespace N2K_BackboneBackEnd.Data
                     }
                 }
             }
+            SaveChangesFailed += mySaveChangesFailed;
         }
 
+        private void mySaveChangesFailed(object sender, SaveChangesFailedEventArgs e)
+        {
+            Console.WriteLine($"Save Chagnes Failed at {DateTime.Now}");
+            try
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ((DbUpdateException)e.Exception).InnerException.Message + " in following Entries:", "mySaveChangesFailed", "Entityframework");
+                foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entity in ((DbUpdateException)e.Exception).Entries)
+                {
+                    string entityName = entity.Entity.GetType().Name + "; ";
+                    foreach (System.Reflection.PropertyInfo info in entity.Entity.GetType().GetProperties())
+                    {
+                        entityName += "; " + info.Name + "=" + info.GetValue(entity.Entity).ToString();
+                    }
+                    SystemLog.write(SystemLog.errorLevel.Error, entityName, "mySaveChangesFailed", "Entityframework");
 
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+            //SystemLog.write(SystemLog.errorLevel.Error, ((DbUpdateException)e.Exception).Entries[0].Entity.GetType().Name, "", "");
+
+
+
+        }
+
+        private void myStateChanged(object sender, Microsoft.EntityFrameworkCore.ChangeTracking.EntityStateChangedEventArgs e)
+        {
+            // YOU CAN USE AN INTERFACE OR A BASE CLASS
+            // But, for this demo, we are directly typecasting to Student model
+            switch (e.Entry.State)
+            {
+                case EntityState.Deleted:
+                    Console.WriteLine($"Marked for delete: {e.Entry.Entity}");
+                    break;
+                case EntityState.Modified:
+                    Console.WriteLine($"Marked for update: {e.Entry.Entity}");
+                    break;
+                case EntityState.Added:
+                    Console.WriteLine($"Marked for insert: {e.Entry.Entity}");
+                    break;
+            }
+        }
+
+        private void myTracked(object sender, Microsoft.EntityFrameworkCore.ChangeTracking.EntityTrackedEventArgs e)
+        {
+            Console.WriteLine($"Marked for Tracking: {e.Entry.Entity}");
+        }
 
         //here define the DB<Entities> only for the existing tables in the DB
         //public DbSet<SiteChange> SiteChanges { get; set; }
