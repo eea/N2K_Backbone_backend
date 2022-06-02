@@ -341,12 +341,17 @@ namespace N2K_BackboneBackEnd.Services
                                 _dataContext.SaveChanges();
                                 _ThereAreChanges = false;
                             }
-                            
+                            catch (DbUpdateException ex) {
+
+                                RefusedSites.addAsRefused(vSite, envelope, ex);
+                            }
                             catch (Exception ex)
                             {
+
                                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSites - Start - Site " + vSite.SITECODE + "/" + vSite.VERSIONID.ToString(), "");
-                                rollback(envelope.CountryCode, envelope.VersionId);
-                                break;
+                                //RefusedSites.addAsRefused(vSite);
+                                //rollback(envelope.CountryCode, envelope.VersionId);
+                                //break;
                             }
                             finally
                             {
@@ -407,6 +412,8 @@ namespace N2K_BackboneBackEnd.Services
 
 
         }
+
+       
 
 
         public const int SqlServerViolationOfUniqueIndex = 2601;

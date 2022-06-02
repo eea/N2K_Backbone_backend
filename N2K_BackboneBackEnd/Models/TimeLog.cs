@@ -185,4 +185,95 @@ namespace N2K_BackboneBackEnd.Models
         }
 
     }
+    /// <summary>
+    /// Adds a site inte the list of the refused sites in the harvest
+    /// </summary>
+    public static class RefusedSites {
+        public static void addAsRefused(versioning_db.NaturaSite pSite, EnvelopesToProcess pEnvelope, DbUpdateException pException)
+        {
+            Exception e = null;
+            try
+            {
+                
+                string mess = pException.Message;
+                Exception e = pException.InnerException;
+                while (e!=null) {
+                    mess += " -> " + e.Message;
+                    e = e.InnerException;
+                }
+
+                write(pEnvelope.CountryCode,pEnvelope.VersionId, pSite.SITECODE, Int32.Parse(pSite.VERSIONID.ToString()), mess, "", "", "Detected");
+
+
+            }
+            catch (Exception ex)
+            {
+                ex = null;
+            }
+            finally
+            {
+                e = null;
+            }
+        }
+
+
+        public static void addAsRefused(versioning_db.NaturaSite pSite, EnvelopesToProcess pEnvelope, Exception pException, string pChildType, string pChildIdentificacion)
+        {
+            string mess = pException.Message;
+            Exception e = pException.InnerException;
+            while (e != null)
+            {
+                mess += " -> " + e.Message;
+                e = e.InnerException;
+            }
+
+            write(pEnvelope.CountryCode, pEnvelope.VersionId, pSite.SITECODE, Int32.Parse(pSite.VERSIONID.ToString()), mess, "", "", "Detected");
+        }
+
+
+        private static void write(string pCountry, int pEnvelopVErsion, string pSitecode, int pVersionId, string pCause, string pChildEntity, string pChildIdentification, string pStatus) {
+            SqlConnection conn = null;
+            SqlCommand cmd = null;
+
+            try
+            {
+                conn = new SqlConnection(WebApplication.CreateBuilder().Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
+                conn.Open();
+                cmd = conn.CreateCommand();
+                cmd.CommandText = "INSERT INTO RefusedSites ([Country],[EnvelopVersion],[SiteCode],[VersionId],[AttempDate],[Cause],[ChildEntity],[ChildIdentification],[Status]) VALUES (@Country,@EnvelopVersion,@SiteCode,@VersionId,@AttempDate,@Cause,@ChildEntity,@ChildIdentification,@Status)";
+                cmd.Parameters.Add(new SqlParameter("@Country", pCountry));
+                cmd.Parameters.Add(new SqlParameter("@EnvelopVersion", pEnvelopVErsion));
+                cmd.Parameters.Add(new SqlParameter("@SiteCode", pSitecode));
+                cmd.Parameters.Add(new SqlParameter("@VersionId", pVersionId));
+                cmd.Parameters.Add(new SqlParameter("@AttempDate", DateTime.Now));
+                cmd.Parameters.Add(new SqlParameter("@Cause", pCause));
+                cmd.Parameters.Add(new SqlParameter("@ChildEntity", pChildEntity));
+                cmd.Parameters.Add(new SqlParameter("@ChildIdentification", pChildIdentification));
+                cmd.Parameters.Add(new SqlParameter("@Status", pStatus));
+
+                cmd.ExecuteNonQuery();
+
+            }
+            catch (Exception ex)
+            {
+                ex = null;
+            }
+            finally
+            {
+                if (cmd != null)
+                {
+                    cmd.Dispose();
+                }
+                if (conn != null)
+                {
+                    if (conn.State != System.Data.ConnectionState.Closed) conn.Close();
+                    conn.Dispose();
+                }
+            }
+
+        }
+    
+    }
+
+
 }
