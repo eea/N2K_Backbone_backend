@@ -12,7 +12,7 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         public string? DESIGNATIONCODE { get; set; }
         public string? PROTECTEDSITENAME { get; set; }
         public string? OVERLAPCODE { get; set; }
-        public float? OVERLAPPERC { get; set; }
+        public decimal? OVERLAPPERC { get; set; }
         public string? CONVENTION { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
