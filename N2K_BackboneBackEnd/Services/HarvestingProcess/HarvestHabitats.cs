@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
@@ -231,5 +232,333 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             Console.WriteLine("==>End HarvestHabitats validate...");
             return 1;
         }
+
+        public async Task<List<SiteChangeDb>> ValidateHabitat(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, double habitatCoverHaTolerance, List<HabitatPriority> habitatPriority)
+        {
+            try
+            {
+                var habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+                                param3, param4).ToListAsync();
+                var referencedHabitats = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+                                param3, param5).ToListAsync();
+
+                //For each habitat in Versioning compare it with that habitat in backboneDB
+                foreach (var harvestingHabitat in habitatVersioning)
+                {
+                    var storedHabitat = referencedHabitats.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode && s.PriorityForm == harvestingHabitat.PriorityForm).FirstOrDefault();
+                    if (storedHabitat != null)
+                    {
+                        if (((storedHabitat.RelSurface.ToUpper() == "A" || storedHabitat.RelSurface.ToUpper() == "B") && harvestingHabitat.RelSurface.ToUpper() == "C")
+                            || (storedHabitat.RelSurface.ToUpper() == "A" && harvestingHabitat.RelSurface.ToUpper() == "B"))
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Relative surface Decrease";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Warning;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.RelSurface;
+                            siteChange.OldValue = storedHabitat.RelSurface;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "RelSurface";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (((storedHabitat.RelSurface.ToUpper() == "B" || storedHabitat.RelSurface.ToUpper() == "C") && harvestingHabitat.RelSurface.ToUpper() == "A")
+                            || (storedHabitat.RelSurface.ToUpper() == "C" && harvestingHabitat.RelSurface.ToUpper() == "B"))
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Relative surface Increase";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.RelSurface;
+                            siteChange.OldValue = storedHabitat.RelSurface;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "RelSurface";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (storedHabitat.RelSurface.ToUpper() != harvestingHabitat.RelSurface.ToUpper())
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Relative surface Change";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.RelSurface;
+                            siteChange.OldValue = storedHabitat.RelSurface;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "RelSurface";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        if (storedHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.Representativity.ToUpper() == "D")
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Representativity Decrease";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Warning;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.Representativity;
+                            siteChange.OldValue = storedHabitat.Representativity;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Representativity";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (storedHabitat.Representativity.ToUpper() == "D" && harvestingHabitat.Representativity.ToUpper() != "D")
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Representativity Increase";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.Representativity;
+                            siteChange.OldValue = storedHabitat.Representativity;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Representativity";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (storedHabitat.Representativity.ToUpper() != harvestingHabitat.Representativity.ToUpper())
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Representativity Change";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.Representativity;
+                            siteChange.OldValue = storedHabitat.Representativity;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Representativity";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        if (storedHabitat.Cover_ha > harvestingHabitat.Cover_ha)
+                        {
+                            if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
+                            {
+                                var siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.Version = harvestingSite.VersionId;
+                                siteChange.ChangeCategory = "Habitats";
+                                siteChange.ChangeType = "Cover_ha Decrease";
+                                siteChange.Country = envelope.CountryCode;
+                                siteChange.Level = Enumerations.Level.Warning;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
+                                siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
+                                siteChange.Tags = string.Empty;
+                                siteChange.Code = harvestingHabitat.HabitatCode;
+                                siteChange.Section = "Habitats";
+                                siteChange.VersionReferenceId = storedHabitat.VersionId;
+                                siteChange.FieldName = "Cover_ha";
+                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                changes.Add(siteChange);
+                            }
+                        }
+                        else if (storedHabitat.Cover_ha < harvestingHabitat.Cover_ha)
+                        {
+                            if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
+                            {
+                                var siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.Version = harvestingSite.VersionId;
+                                siteChange.ChangeCategory = "Habitats";
+                                siteChange.ChangeType = "Cover_ha Increase";
+                                siteChange.Country = envelope.CountryCode;
+                                siteChange.Level = Enumerations.Level.Info;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
+                                siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
+                                siteChange.Tags = string.Empty;
+                                siteChange.Code = harvestingHabitat.HabitatCode;
+                                siteChange.Section = "Habitats";
+                                siteChange.VersionReferenceId = storedHabitat.VersionId;
+                                siteChange.FieldName = "Cover_ha";
+                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                changes.Add(siteChange);
+                            }
+                        }
+                        else if (storedHabitat.Cover_ha != harvestingHabitat.Cover_ha)
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Cover_ha Change";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
+                            siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
+                            siteChange.Tags = string.Empty;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Cover_ha";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+
+                        #region HabitatPriority
+                        Boolean IsIncludedInSDF = false;
+                        HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
+                        if (priorityCount != null)
+                            IsIncludedInSDF = true;
+
+                        //These booleans declare whether or not each habitat is a priority
+                        Boolean isStoredPriority = false;
+                        Boolean isHarvestingPriority = false;
+                        if (harvestingHabitat.HabitatCode == "21A0" || harvestingHabitat.HabitatCode == "6210" || harvestingHabitat.HabitatCode == "7130" || harvestingHabitat.HabitatCode == "9430")
+                        {
+                            //If the Habitat is an exception, three conditions are checked
+                            if (storedHabitat.Representativity.ToUpper() != "D" && storedHabitat.PriorityForm == true && IsIncludedInSDF)
+                                isStoredPriority = true;
+                            if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true && IsIncludedInSDF)
+                                isHarvestingPriority = true;
+                        }
+                        else
+                        {
+                            //If there is no exception, then two conditions are checked
+                            if (storedHabitat.Representativity.ToUpper() != "D" && IsIncludedInSDF)
+                                isStoredPriority = true;
+                            if (harvestingHabitat.Representativity.ToUpper() != "D" && IsIncludedInSDF)
+                                isHarvestingPriority = true;
+                        }
+
+                        if (isStoredPriority && !isHarvestingPriority)
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Habitat Losing Priority";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Critical;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.OldValue = Convert.ToString(isStoredPriority);
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Priority";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (!isStoredPriority && isHarvestingPriority)
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Habitat Getting Priority";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.OldValue = Convert.ToString(isStoredPriority);
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Priority";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        #endregion
+                    }
+                    else
+                    {
+                        changes.Add(new SiteChangeDb
+                        {
+                            SiteCode = harvestingSite.SiteCode,
+                            Version = harvestingSite.VersionId,
+                            ChangeCategory = "Habitat Added",
+                            ChangeType = "Habitat Added",
+                            Country = envelope.CountryCode,
+                            Level = Enumerations.Level.Info,
+                            Status = Enumerations.SiteChangeStatus.Pending,
+                            NewValue = harvestingHabitat.HabitatCode,
+                            OldValue = null,
+                            Tags = string.Empty,
+                            Code = harvestingHabitat.HabitatCode,
+                            Section = "Habitats",
+                            VersionReferenceId = harvestingSite.VersionId,
+                            ReferenceSiteCode = storedSite.SiteCode
+                        });
+                    }
+                }
+
+                //For each habitat in backboneDB check if the habitat still exists in Versioning
+                foreach (var storedHabitat in referencedHabitats)
+                {
+                    var harvestingHabitat = habitatVersioning.Where(s => s.HabitatCode == storedHabitat.HabitatCode).FirstOrDefault();
+                    if (harvestingHabitat == null)
+                    {
+                        changes.Add(new SiteChangeDb
+                        {
+                            SiteCode = storedSite.SiteCode,
+                            Version = harvestingSite.VersionId,
+                            ChangeCategory = "Habitat Deleted",
+                            ChangeType = "Habitat Deleted",
+                            Country = envelope.CountryCode,
+                            Level = Enumerations.Level.Critical,
+                            Status = Enumerations.SiteChangeStatus.Pending,
+                            NewValue = null,
+                            OldValue = storedHabitat.HabitatCode,
+                            Tags = string.Empty,
+                            Code = storedHabitat.HabitatCode,
+                            Section = "Habitats",
+                            VersionReferenceId = storedHabitat.VersionId,
+                            ReferenceSiteCode = storedSite.SiteCode
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateHabitats - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+            }
+            return changes;
+        }
+
     }
 }

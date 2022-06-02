@@ -432,6 +432,127 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
 
         }
-    
+
+        public async Task<List<SiteChangeDb>> ValidateSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance)
+        {
+            try
+            {
+                if (harvestingSite.SiteName != storedSite.SiteName)
+                {
+                    SiteChangeDb siteChange = new SiteChangeDb();
+                    siteChange.SiteCode = harvestingSite.SiteCode;
+                    siteChange.Version = harvestingSite.VersionId;
+                    siteChange.ChangeCategory = "Site General Info";
+                    siteChange.ChangeType = "SiteName Changed";
+                    siteChange.Country = envelope.CountryCode;
+                    siteChange.Level = Enumerations.Level.Info;
+                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                    siteChange.Tags = string.Empty;
+                    siteChange.NewValue = harvestingSite.SiteName;
+                    siteChange.OldValue = storedSite.SiteName;
+                    siteChange.Code = harvestingSite.SiteCode;
+                    siteChange.Section = "Site";
+                    siteChange.VersionReferenceId = storedSite.VersionId;
+                    siteChange.FieldName = "SiteName";
+                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    changes.Add(siteChange);
+                }
+                if (harvestingSite.AreaHa > storedSite.AreaHa)
+                {
+                    if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Change of area";
+                        siteChange.ChangeType = "Area Increased";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Info;
+                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
+                        siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
+                        siteChange.Tags = string.Empty;
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.FieldName = "AreaHa";
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        changes.Add(siteChange);
+                    }
+                }
+                else if (harvestingSite.AreaHa < storedSite.AreaHa)
+                {
+                    if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Change of area";
+                        siteChange.ChangeType = "Area Decreased";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Warning;
+                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
+                        siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
+                        siteChange.Tags = string.Empty;
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.FieldName = "AreaHa";
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        changes.Add(siteChange);
+                    }
+                }
+                else if (harvestingSite.AreaHa != storedSite.AreaHa)
+                {
+                    SiteChangeDb siteChange = new SiteChangeDb();
+                    siteChange.SiteCode = harvestingSite.SiteCode;
+                    siteChange.Version = harvestingSite.VersionId;
+                    siteChange.ChangeCategory = "Change of area";
+                    siteChange.ChangeType = "Area Change";
+                    siteChange.Country = envelope.CountryCode;
+                    siteChange.Level = Enumerations.Level.Info;
+                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                    siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
+                    siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
+                    siteChange.Tags = string.Empty;
+                    siteChange.Code = harvestingSite.SiteCode;
+                    siteChange.Section = "Site";
+                    siteChange.VersionReferenceId = storedSite.VersionId;
+                    siteChange.FieldName = "AreaHa";
+                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    changes.Add(siteChange);
+                }
+                if (harvestingSite.LengthKm != storedSite.LengthKm)
+                {
+                    if (Math.Abs((double)(harvestingSite.LengthKm - storedSite.LengthKm)) > siteLengthKmTolerance)
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Site General Info";
+                        siteChange.ChangeType = "Length Changed";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Info;
+                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.NewValue = harvestingSite.LengthKm != -1 ? harvestingSite.LengthKm.ToString() : null;
+                        siteChange.OldValue = storedSite.LengthKm != -1 ? storedSite.LengthKm.ToString() : null;
+                        siteChange.Tags = string.Empty;
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.FieldName = "LengthKm";
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        changes.Add(siteChange);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSites - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+            }
+            return changes;
+        }
+
     }
 }
