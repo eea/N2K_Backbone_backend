@@ -196,7 +196,7 @@ namespace N2K_BackboneBackEnd.Models
             {
                 
                 string mess = pException.Message;
-                Exception e = pException.InnerException;
+                e = pException.InnerException;
                 while (e!=null) {
                     mess += " -> " + e.Message;
                     e = e.InnerException;
