@@ -172,7 +172,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //For each species in Versioning compare it with that species in backboneDB
                 foreach (var harvestingSpecies in speciesVersioning)
                 {
-                    var storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+                    var storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode && s.PopulationType == harvestingSpecies.PopulationType).FirstOrDefault();
                     if (storedSpecies != null)
                     {
                         if (storedSpecies.Population.ToUpper() != "D" && harvestingSpecies.Population.ToUpper() == "D")
