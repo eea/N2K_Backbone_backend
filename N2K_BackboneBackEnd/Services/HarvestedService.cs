@@ -95,8 +95,9 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
             var result = new List<Harvesting>();
-            var processed = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"select * from dbo.[vLatestProcessedEnvelopes]").ToListAsync();
-            var allEnvs = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
+            var countries = await _dataContext.Set<Countries>().ToListAsync();
+            var processed = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"select * from dbo.[vLatestProcessedEnvelopes]").AsNoTracking().ToListAsync();
+            var allEnvs = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().ToListAsync();
             foreach (var procCountry in processed)
             {
                 var param1 = new SqlParameter("@country", procCountry.Country);
@@ -104,7 +105,7 @@ namespace N2K_BackboneBackEnd.Services
                 var param3 = new SqlParameter("@importdate", procCountry.ImportDate);
 
                 var list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetPendingCountryVersion  @country, @version,@importdate",
-                                param1, param2, param3).ToListAsync();
+                                param1, param2, param3).AsNoTracking().ToListAsync();
                 if (list.Count > 0)
                 {
                     foreach (var pendEnv in list)
@@ -116,7 +117,7 @@ namespace N2K_BackboneBackEnd.Services
                                 result.Add(
                                     new Harvesting
                                     {
-                                        Country = pendEnv.Country,
+                                        Country = countries.Where(ct => ct.Code.ToLower() == pendEnv.Country.ToLower()).FirstOrDefault().Country,
                                         Status = pendEnv.Status,
                                         Id = pendEnv.Id,
                                         SubmissionDate = pendEnv.SubmissionDate

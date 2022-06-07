@@ -21,7 +21,6 @@ builder.Services.AddScoped<ISiteChangesService, SiteChangesService>();
 builder.Services.AddScoped<IHarvestedService, HarvestedService>();
 builder.Services.AddScoped<IEULoginService, EULoginService>();
 
-builder.Services.AddResponseCaching();
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -34,12 +33,14 @@ builder.Services.Configure<GzipCompressionProviderOptions>
     }
 );
 
+
 builder.Configuration.AddJsonFile("appsettings.json");
 
 builder.Services.AddDbContext<N2KBackboneContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
 });
+
 
 /*
 builder.Services.AddDbContext<N2KBackboneReadOnlyContext>(options =>
