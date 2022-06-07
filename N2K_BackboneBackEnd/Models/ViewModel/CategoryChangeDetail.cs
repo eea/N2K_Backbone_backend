@@ -11,7 +11,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string FieldName { get; set; } = "";
 
         [NotMapped]
-        public List<CodeChangeDetail>? ChangedCodesDetail { get; set; }
+        public List<CodeChangeDetail>? ChangedCodesDetail { get; set; } = new List<CodeChangeDetail>();
 
         public static void OnModelCreating(ModelBuilder builder)
         {
