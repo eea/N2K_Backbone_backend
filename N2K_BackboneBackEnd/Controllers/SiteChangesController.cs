@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using N2K_BackboneBackEnd.ServiceResponse;
 using AutoMapper;
 using N2K_BackboneBackEnd.Services;
@@ -29,6 +26,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("Get")]
         [HttpGet]
+
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> Get()
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();

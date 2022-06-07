@@ -21,10 +21,10 @@ namespace N2K_BackboneBackEnd.Services
             _dataContext = dataContext;
         }
 
-        
+
         public async Task<List<SiteChangeDb>> GetSiteChangesAsync(SiteChangeStatus? status)
         {
-            List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().ToListAsync();
+            List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().AsNoTracking().ToListAsync();
             if (status != null)
                 changes = changes.Where(s => s.Status == status).ToList();
 
@@ -165,7 +165,7 @@ namespace N2K_BackboneBackEnd.Services
 #pragma warning restore CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
         {
             var result = new List<Harvesting>();
-            return await _dataContext.Set<SiteChangeDb>().SingleOrDefaultAsync(s => s.ChangeId == id);
+            return await _dataContext.Set<SiteChangeDb>().AsNoTracking().SingleOrDefaultAsync(s => s.ChangeId == id);
         }
 
 
@@ -179,7 +179,7 @@ namespace N2K_BackboneBackEnd.Services
             changeDetailVM.Critical = new SiteChangesLevelDetail();
 
 
-            var site = await _dataContext.Set<Sites>().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
+            var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
             if (site != null)
             {
 #pragma warning disable CS8601 // Posible asignación de referencia nula
@@ -187,7 +187,7 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetailVM.Status = (SiteChangeStatus?)site.CurrentStatus;
 #pragma warning restore CS8601 // Posible asignación de referencia nula
             }
-            var changesDb = await _dataContext.Set<SiteChangeDb>().Where(site => site.SiteCode == pSiteCode).ToListAsync();
+            var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == pSiteCode).ToListAsync();
 
 
             changeDetailVM.Critical = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Critical);
@@ -282,8 +282,8 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             _Section.DeletedCodes.Add(new CategoryChangeDetail
                             {
-                                ChangeCategory = String.Format("List of {0} Deleted", _levelDetail.Section),
-                                ChangeType = "",
+                                ChangeCategory =  _levelDetail.Section,
+                                ChangeType = String.Format("List of {0} Deleted", _levelDetail.Section),
                                 ChangedCodesDetail = new List<CodeChangeDetail>()
                             }); 
                         }
@@ -306,8 +306,8 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         _Section.AddedCodes.Add(new CategoryChangeDetail
                         {
-                            ChangeCategory = String.Format("List of {0} Added", _levelDetail.Section),
-                            ChangeType = "",
+                            ChangeCategory =  _levelDetail.Section,
+                            ChangeType = String.Format("List of {0} Added", _levelDetail.Section),
                             ChangedCodesDetail = new List<CodeChangeDetail>()
                         });
                     }
