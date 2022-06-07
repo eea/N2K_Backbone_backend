@@ -82,7 +82,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 Console.WriteLine("=>Start habitat harvest by country...");
-                elements =await  _versioningContext.Set<ContainsHabitat>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
+                elements = await _versioningContext.Set<ContainsHabitat>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
 
                 foreach (ContainsHabitat element in elements)
                 {
@@ -125,7 +125,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
 
-                elements =await  _versioningContext.Set<ContainsHabitat>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
+                elements = await _versioningContext.Set<ContainsHabitat>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
 
                 foreach (ContainsHabitat element in elements)
                 {
@@ -438,70 +438,69 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
 
                         #region HabitatPriority
-                        Boolean IsIncludedInSDF = false;
                         HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
                         if (priorityCount != null)
-                            IsIncludedInSDF = true;
+                        {
+                            //These booleans declare whether or not each habitat is a priority
+                            Boolean isStoredPriority = false;
+                            Boolean isHarvestingPriority = false;
+                            if (harvestingHabitat.HabitatCode == "21A0" || harvestingHabitat.HabitatCode == "6210" || harvestingHabitat.HabitatCode == "7130" || harvestingHabitat.HabitatCode == "9430")
+                            {
+                                //If the Habitat is an exception, three conditions are checked
+                                if (storedHabitat.Representativity.ToUpper() != "D" && storedHabitat.PriorityForm == true)
+                                    isStoredPriority = true;
+                                if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true)
+                                    isHarvestingPriority = true;
+                            }
+                            else
+                            {
+                                //If there is no exception, then two conditions are checked
+                                if (storedHabitat.Representativity.ToUpper() != "D")
+                                    isStoredPriority = true;
+                                if (harvestingHabitat.Representativity.ToUpper() != "D")
+                                    isHarvestingPriority = true;
+                            }
 
-                        //These booleans declare whether or not each habitat is a priority
-                        Boolean isStoredPriority = false;
-                        Boolean isHarvestingPriority = false;
-                        if (harvestingHabitat.HabitatCode == "21A0" || harvestingHabitat.HabitatCode == "6210" || harvestingHabitat.HabitatCode == "7130" || harvestingHabitat.HabitatCode == "9430")
-                        {
-                            //If the Habitat is an exception, three conditions are checked
-                            if (storedHabitat.Representativity.ToUpper() != "D" && storedHabitat.PriorityForm == true && IsIncludedInSDF)
-                                isStoredPriority = true;
-                            if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true && IsIncludedInSDF)
-                                isHarvestingPriority = true;
-                        }
-                        else
-                        {
-                            //If there is no exception, then two conditions are checked
-                            if (storedHabitat.Representativity.ToUpper() != "D" && IsIncludedInSDF)
-                                isStoredPriority = true;
-                            if (harvestingHabitat.Representativity.ToUpper() != "D" && IsIncludedInSDF)
-                                isHarvestingPriority = true;
-                        }
-
-                        if (isStoredPriority && !isHarvestingPriority)
-                        {
-                            var siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Habitats";
-                            siteChange.ChangeType = "Habitat Losing Priority";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
-                            siteChange.OldValue = Convert.ToString(isStoredPriority);
-                            siteChange.Code = harvestingHabitat.HabitatCode;
-                            siteChange.Section = "Habitats";
-                            siteChange.VersionReferenceId = storedHabitat.VersionId;
-                            siteChange.FieldName = "Priority";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            changes.Add(siteChange);
-                        }
-                        else if (!isStoredPriority && isHarvestingPriority)
-                        {
-                            var siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Habitats";
-                            siteChange.ChangeType = "Habitat Getting Priority";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
-                            siteChange.OldValue = Convert.ToString(isStoredPriority);
-                            siteChange.Code = harvestingHabitat.HabitatCode;
-                            siteChange.Section = "Habitats";
-                            siteChange.VersionReferenceId = storedHabitat.VersionId;
-                            siteChange.FieldName = "Priority";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            changes.Add(siteChange);
+                            if (isStoredPriority && !isHarvestingPriority)
+                            {
+                                var siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.Version = harvestingSite.VersionId;
+                                siteChange.ChangeCategory = "Habitats";
+                                siteChange.ChangeType = "Habitat Losing Priority";
+                                siteChange.Country = envelope.CountryCode;
+                                siteChange.Level = Enumerations.Level.Critical;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Tags = string.Empty;
+                                siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                                siteChange.OldValue = Convert.ToString(isStoredPriority);
+                                siteChange.Code = harvestingHabitat.HabitatCode;
+                                siteChange.Section = "Habitats";
+                                siteChange.VersionReferenceId = storedHabitat.VersionId;
+                                siteChange.FieldName = "Priority";
+                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                changes.Add(siteChange);
+                            }
+                            else if (!isStoredPriority && isHarvestingPriority)
+                            {
+                                var siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.Version = harvestingSite.VersionId;
+                                siteChange.ChangeCategory = "Habitats";
+                                siteChange.ChangeType = "Habitat Getting Priority";
+                                siteChange.Country = envelope.CountryCode;
+                                siteChange.Level = Enumerations.Level.Info;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Tags = string.Empty;
+                                siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                                siteChange.OldValue = Convert.ToString(isStoredPriority);
+                                siteChange.Code = harvestingHabitat.HabitatCode;
+                                siteChange.Section = "Habitats";
+                                siteChange.VersionReferenceId = storedHabitat.VersionId;
+                                siteChange.FieldName = "Priority";
+                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                changes.Add(siteChange);
+                            }
                         }
                         #endregion
                     }

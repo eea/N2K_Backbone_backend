@@ -40,10 +40,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
 
-                elements =await  _versioningContext.Set<ContainsSpecies>().Where(s=> s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
+                elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
 
-                foreach (ContainsSpecies element in elements) {
-                    
+                foreach (ContainsSpecies element in elements)
+                {
+
                     SpecieBase item = new SpecieBase();
                     item.SiteCode = element.SITECODE;
                     item.Version = pVersion;
@@ -98,7 +99,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
-                elements =await  _versioningContext.Set<ContainsSpecies>(). Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
+                elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
                 foreach (ContainsSpecies element in elements)
                 {
 
@@ -137,16 +138,17 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         _dataContext.Set<Species>().Add(item.getSpecies());
                     }
                 }
-                
+
                 return 1;
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSpecies - HarvestBySite", "");
-              
+
                 return 0;
             }
-            finally {
+            finally
+            {
                 TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
             }
 
@@ -237,58 +239,57 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
 
                         #region SpeciesPriority
-                        Boolean IsIncludedInSDF = false;
                         SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                         if (priorityCount != null)
-                            IsIncludedInSDF = true;
-
-                        //These booleans declare whether or not each species is a priority
-                        Boolean isStoredPriority = false;
-                        Boolean isHarvestingPriority = false;
-                        if (storedSpecies.Population.ToUpper() != "D" && IsIncludedInSDF)
-                            isStoredPriority = true;
-                        if (harvestingSpecies.Population.ToUpper() != "D" && IsIncludedInSDF)
-                            isHarvestingPriority = true;
-
-                        if (isStoredPriority && !isHarvestingPriority)
                         {
-                            var siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Species Losing Priority";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
-                            siteChange.OldValue = Convert.ToString(isStoredPriority);
-                            siteChange.Code = harvestingSpecies.SpeciesCode;
-                            siteChange.Section = "Species";
-                            siteChange.VersionReferenceId = storedSpecies.VersionId;
-                            siteChange.FieldName = "Priority";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            changes.Add(siteChange);
-                        }
-                        else if (!isStoredPriority && isHarvestingPriority)
-                        {
-                            var siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Species Getting Priority";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
-                            siteChange.OldValue = Convert.ToString(isStoredPriority);
-                            siteChange.Code = harvestingSpecies.SpeciesCode;
-                            siteChange.Section = "Species";
-                            siteChange.VersionReferenceId = storedSpecies.VersionId;
-                            siteChange.FieldName = "Priority";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            changes.Add(siteChange);
+                            //These booleans declare whether or not each species is a priority
+                            Boolean isStoredPriority = false;
+                            Boolean isHarvestingPriority = false;
+                            if (storedSpecies.Population.ToUpper() != "D")
+                                isStoredPriority = true;
+                            if (harvestingSpecies.Population.ToUpper() != "D")
+                                isHarvestingPriority = true;
+
+                            if (isStoredPriority && !isHarvestingPriority)
+                            {
+                                var siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.Version = harvestingSite.VersionId;
+                                siteChange.ChangeCategory = "Species";
+                                siteChange.ChangeType = "Species Losing Priority";
+                                siteChange.Country = envelope.CountryCode;
+                                siteChange.Level = Enumerations.Level.Critical;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Tags = string.Empty;
+                                siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                                siteChange.OldValue = Convert.ToString(isStoredPriority);
+                                siteChange.Code = harvestingSpecies.SpeciesCode;
+                                siteChange.Section = "Species";
+                                siteChange.VersionReferenceId = storedSpecies.VersionId;
+                                siteChange.FieldName = "Priority";
+                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                changes.Add(siteChange);
+                            }
+                            else if (!isStoredPriority && isHarvestingPriority)
+                            {
+                                var siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.Version = harvestingSite.VersionId;
+                                siteChange.ChangeCategory = "Species";
+                                siteChange.ChangeType = "Species Getting Priority";
+                                siteChange.Country = envelope.CountryCode;
+                                siteChange.Level = Enumerations.Level.Info;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Tags = string.Empty;
+                                siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                                siteChange.OldValue = Convert.ToString(isStoredPriority);
+                                siteChange.Code = harvestingSpecies.SpeciesCode;
+                                siteChange.Section = "Species";
+                                siteChange.VersionReferenceId = storedSpecies.VersionId;
+                                siteChange.FieldName = "Priority";
+                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                changes.Add(siteChange);
+                            }
                         }
                         #endregion
                     }
