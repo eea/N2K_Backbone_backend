@@ -141,7 +141,7 @@ namespace N2K_BackboneBackEnd.Services
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
             List<SiteChangeDb> changes = new List<SiteChangeDb>();
             //var latestVersions = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
-            await _dataContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.Changes");
+            //await _dataContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.Changes");
 
             //Get the lists of priority habitats and species
             List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
@@ -161,6 +161,11 @@ namespace N2K_BackboneBackEnd.Services
                                     param1, param2).ToListAsync();
                     List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSitesByCountry  @country",
                                     param1).ToListAsync();
+
+                    List<SiteToHarvest>? versionToDelete = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetSitesVersionByCountryAndVersion  @country, @version",
+                                    param1, param2).ToListAsync();
+                    foreach (SiteToHarvest? deletingSite in versionToDelete)
+                        await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE Country = '" + envelope.CountryCode + "' AND Version = '" + deletingSite.VersionId + "'");
 
                     //For each site in Versioning compare it with that site in backboneDB
                     foreach (SiteToHarvest? harvestingSite in sitesVersioning)
