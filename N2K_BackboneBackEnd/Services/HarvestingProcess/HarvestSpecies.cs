@@ -300,7 +300,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             {
                                 SiteCode = harvestingSite.SiteCode,
                                 Version = harvestingSite.VersionId,
-                                ChangeCategory = "Species Added",
+                                ChangeCategory = "Species",
                                 ChangeType = "Species Added",
                                 Country = envelope.CountryCode,
                                 Level = Enumerations.Level.Info,
@@ -327,7 +327,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         {
                             SiteCode = storedSite.SiteCode,
                             Version = harvestingSite.VersionId,
-                            ChangeCategory = "Species Deleted",
+                            ChangeCategory = "Species",
                             ChangeType = "Species Deleted",
                             Country = envelope.CountryCode,
                             Level = Enumerations.Level.Critical,

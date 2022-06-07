@@ -511,7 +511,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         {
                             SiteCode = harvestingSite.SiteCode,
                             Version = harvestingSite.VersionId,
-                            ChangeCategory = "Habitat Added",
+                            ChangeCategory = "Habitats",
                             ChangeType = "Habitat Added",
                             Country = envelope.CountryCode,
                             Level = Enumerations.Level.Info,
@@ -537,7 +537,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         {
                             SiteCode = storedSite.SiteCode,
                             Version = harvestingSite.VersionId,
-                            ChangeCategory = "Habitat Deleted",
+                            ChangeCategory = "Habitats",
                             ChangeType = "Habitat Deleted",
                             Country = envelope.CountryCode,
                             Level = Enumerations.Level.Critical,
