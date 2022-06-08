@@ -321,7 +321,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //For each species in backboneDB check if the species still exists in Versioning
                 foreach (var storedSpecies in referencedSpecies)
                 {
-                    var harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode).FirstOrDefault();
+                    var harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode && s.PopulationType == storedSpecies.PopulationType).FirstOrDefault();
                     if (harvestingSpecies == null)
                     {
                         changes.Add(new SiteChangeDb
