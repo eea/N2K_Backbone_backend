@@ -562,6 +562,16 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
+        public async Task<int> MarKAsJustificationRequired(ModifiedSiteCode[] changedSiteStatus)
+        {
+            var result = 1;
+            await Task.Delay(50);
+
+            return result;
+
+        }
+
+
 
     }
 }
