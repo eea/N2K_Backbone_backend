@@ -1,19 +1,19 @@
 ﻿using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.ViewModel;
-using N2K_BackboneBackEnd.Models.BackboneDB;
-using N2K_BackboneBackEnd.Models.VersioningDB;
+using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.Enumerations;
 
 namespace N2K_BackboneBackEnd.Services
 {
     public interface ISiteChangesService
     {
-        Task<List<SiteChangeDb>> GetSiteChangesAsync(SiteChangeStatus? status=null );
+        Task<List<SiteChangeDb>> GetSiteChangesAsync(SiteChangeStatus? status, int page = 1, int pageLimit = 0);
 
         Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion);
 
-        Task<SiteChangeDetailViewModelAdvanced> GetSiteChangesDetailExtended(string pSiteCode, int pCountryVersion);
-        
+        Task<List<SiteCodeView>> GetSiteCodesByLevel(Level level, string country = "");
+
 
         Task<List<SiteChangeViewModel>> GetSiteChangesFromSP();
 

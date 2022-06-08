@@ -2,7 +2,7 @@
 using N2K_BackboneBackEnd.Enumerations;
 using System.ComponentModel.DataAnnotations;
 
-namespace N2K_BackboneBackEnd.Models.BackboneDB
+namespace N2K_BackboneBackEnd.Models.backbone_db
 {
     public class ProcessedEnvelopes : IEntityModel, IEntityModelBackboneDB
     {

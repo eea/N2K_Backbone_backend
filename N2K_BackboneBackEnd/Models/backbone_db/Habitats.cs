@@ -20,7 +20,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? ConsStatus { get; set; }
         public string? Caves { get; set; }
         public string? PF { get; set; }
-        public string? NonPresenciInSite { get; set; }
+        public int? NonPresenciInSite { get; set; }
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<Habitats>()

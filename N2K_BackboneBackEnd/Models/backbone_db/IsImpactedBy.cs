@@ -5,9 +5,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 {
     public class IsImpactedBy : IEntityModel, IEntityModelBackboneDB
     {
-        public string SiteCode { get; set; }
+        public string? SiteCode { get; set; }
         public int Version { get; set; }
-        public string ActivityCode { get; set; }
+        public string? ActivityCode { get; set; }
         public string? InOut { get; set; }
         public string? Intensity { get; set; }
         public double? PercentageAff { get; set; }

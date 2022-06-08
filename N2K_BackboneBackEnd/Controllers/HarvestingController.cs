@@ -1,8 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using N2K_BackboneBackEnd.Models;
-using N2K_BackboneBackEnd.Models.BackboneDB;
-using N2K_BackboneBackEnd.Models.VersioningDB;
+using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
 
@@ -100,7 +99,10 @@ namespace N2K_BackboneBackEnd.Controllers
             return new string[] { "value1", "value2" };
         }
 
-
+        /// <summary>
+        /// Retrives those envelopes with the status Pending
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("Pending")]
         public async Task<ActionResult<ServiceResponse<Harvesting>>> Pending()
@@ -125,7 +127,10 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
+        /// <summary>
+        /// Retrives those envelopes with the status Pending for the selected country
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("PendingByCountry/{CountryCode}")]
         public IEnumerable<string> PendingByCountry(string CountryCode)
@@ -133,6 +138,10 @@ namespace N2K_BackboneBackEnd.Controllers
             return new string[] { "value1", "value2" };
         }
 
+        /// <summary>
+        /// Executes the process of the harvesting for a selected envelop (Country and Version)
+        /// </summary>
+        /// <returns></returns>
         // POST api/<HarvestingController>
         [Route("Harvest")]
         [HttpPost]
@@ -158,7 +167,12 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
+        /// <summary>
+        /// Executes the process of the validation for a selected envelop (Country and Version).
+        /// It must be hervested yet to perform this action
+        /// </summary>
+        /// <param name="envelopes"></param>
+        /// <returns></returns>
         // POST api/<HarvestingController>
         [Route("Harvest/Validate")]
         [HttpPost]
@@ -167,12 +181,11 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
-                var siteChanges = await _harvestedService.Harvest(envelopes);
-                await _harvestedService.Validate(envelopes);
+                var processedEnvelope = await _harvestedService.Validate(envelopes);
                 response.Success = true;
                 response.Message = "";
-                response.Data = siteChanges;
-                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                response.Data = processedEnvelope;
+                response.Count = (processedEnvelope == null) ? 0 : processedEnvelope.Count;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -184,19 +197,5 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
-        /*
-        // PUT api/<HarvestingController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<HarvestingController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
-        */
     }
 }

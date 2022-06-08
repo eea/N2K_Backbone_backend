@@ -100,7 +100,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.ConsStatus = element.CONSSTATUS;
                     item.Caves = Convert.ToString(element.CAVES); // ???
                     item.PF = Convert.ToString(element.PF); // ??? PENDING The same as PriorityForm
-                    item.NonPresenciInSite = Convert.ToString(element.NONPRESENCEINSITE); // ???
+                    item.NonPresenciInSite = Convert.ToInt32(element.NONPRESENCEINSITE); // ???
 
                     _dataContext.Set<Habitats>().Add(item);
                 }
@@ -143,7 +143,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.ConsStatus = element.CONSSTATUS;
                     item.Caves = Convert.ToString(element.CAVES); // ???
                     item.PF = Convert.ToString(element.PF); // ??? PENDING The same as PriorityForm
-                    item.NonPresenciInSite = Convert.ToString(element.NONPRESENCEINSITE); // ???
+                    item.NonPresenciInSite = Convert.ToInt32(element.NONPRESENCEINSITE); // ???
 
                     _dataContext.Set<Habitats>().Add(item);
                 }

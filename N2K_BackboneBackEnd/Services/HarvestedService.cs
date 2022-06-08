@@ -1,14 +1,13 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
-using N2K_BackboneBackEnd.Models.VersioningDB;
-using N2K_BackboneBackEnd.Models.BackboneDB;
+using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 
 using N2K_BackboneBackEnd.Services.HarvestingProcess;
-using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.Enumerations;
 using IsImpactedBy = N2K_BackboneBackEnd.Models.versioning_db.IsImpactedBy;
 using Microsoft.Extensions.Options;
@@ -21,20 +20,36 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2K_VersioningContext _versioningContext;
         private readonly IOptions<ConfigSettings> _appSettings;
         private bool _ThereAreChanges = false;
-
+        
+        /// <summary>
+        /// Constructor 
+        /// </summary>
+        /// <param name="dataContext">>Context for the BackBone database</param>
+        /// <param name="versioningContext">Context for the Versioning database</param>
         public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext)
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
 
         }
-
+        
+        /// <summary>
+        /// Constructor 
+        /// </summary>
+        /// <param name="dataContext">Context for the BackBone database</param>
+        /// <param name="versioningContext">Context for the Versioning database</param>
+        /// <param name="app">Configuration options</param>
         public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
             _appSettings = app;
         }
+        
+        /// <summary>
+        /// To define
+        /// </summary>
+        /// <returns></returns>
         public async Task<List<Harvesting>> GetHarvestedAsync()
         {
             var a = new List<Harvesting>();
@@ -42,6 +57,10 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
+        /// <summary>
+        /// To define
+        /// </summary>
+        /// <returns></returns>
         public List<Harvesting> GetHarvested()
         {
             var a = new List<Harvesting>();
@@ -50,7 +69,11 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-
+        /// <summary>
+        /// To define
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
 #pragma warning disable CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
         public async Task<Harvesting> GetHarvestedAsyncById(int id)
 #pragma warning restore CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
@@ -64,13 +87,17 @@ namespace N2K_BackboneBackEnd.Services
             });
 
         }
-
+        
+        /// <summary>
+        /// Method that returns all those Envelops not harvested by Backbone 
+        /// </summary>
+        /// <returns>List of envelops avialable to harvest</returns>
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
-
             var result = new List<Harvesting>();
-            var processed = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"select * from dbo.[vLatestProcessedEnvelopes]").ToListAsync();
-            var allEnvs = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
+            var countries = await _dataContext.Set<Countries>().ToListAsync();
+            var processed = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"select * from dbo.[vLatestProcessedEnvelopes]").AsNoTracking().ToListAsync();
+            var allEnvs = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().ToListAsync();
             foreach (var procCountry in processed)
             {
                 var param1 = new SqlParameter("@country", procCountry.Country);
@@ -78,7 +105,7 @@ namespace N2K_BackboneBackEnd.Services
                 var param3 = new SqlParameter("@importdate", procCountry.ImportDate);
 
                 var list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetPendingCountryVersion  @country, @version,@importdate",
-                                param1, param2, param3).ToListAsync();
+                                param1, param2, param3).AsNoTracking().ToListAsync();
                 if (list.Count > 0)
                 {
                     foreach (var pendEnv in list)
@@ -90,7 +117,7 @@ namespace N2K_BackboneBackEnd.Services
                                 result.Add(
                                     new Harvesting
                                     {
-                                        Country = pendEnv.Country,
+                                        Country = countries.Where(ct => ct.Code.ToLower() == pendEnv.Country.ToLower()).FirstOrDefault().Country,
                                         Status = pendEnv.Status,
                                         Id = pendEnv.Id,
                                         SubmissionDate = pendEnv.SubmissionDate
@@ -105,664 +132,815 @@ namespace N2K_BackboneBackEnd.Services
             return await Task.FromResult(result);
         }
 
+        /// <summary>
+        /// Method to validate the quality and the main rules of the data harvested
+        /// </summary>
+        /// <param name="envelopeIDs">List of the envelops to process</param>
+        /// <returns>A list of the envelops with the result of the process</returns>
         public async Task<List<HarvestedEnvelope>> Validate(EnvelopesToProcess[] envelopeIDs)
         {
-            var result = new List<HarvestedEnvelope>();
-            var changes = new List<SiteChangeDb>();
+            List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
+            List<SiteChangeDb> changes = new List<SiteChangeDb>();
             //var latestVersions = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
+            await _dataContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.Changes");
 
+            //Get the lists of priority habitats and species
+            List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+            List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
             //from the view vLatest//processedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
 
             //Load all sites with the CountryVersionID-CountryCode from Versioning
             foreach (EnvelopesToProcess envelope in envelopeIDs)
             {
-                #region unused code
-                /*
-                result.Add(
-                    new HarvestedEnvelope
+                try { 
+  
+                    SqlParameter param1 = new SqlParameter("@country", envelope.CountryCode);
+                    SqlParameter param2 = new SqlParameter("@version", envelope.VersionId);
+
+                    List<SiteToHarvest>? sitesVersioning = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSitesByCountryAndVersion  @country, @version",
+                                    param1, param2).ToListAsync();
+                    List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSitesByCountry  @country",
+                                    param1).ToListAsync();
+
+                    //For each site in Versioning compare it with that site in backboneDB
+                    foreach (SiteToHarvest? harvestingSite in sitesVersioning)
+                    {
+                        SiteToHarvest? storedSite = referencedSites.Where(s => s.SiteCode == harvestingSite.SiteCode).FirstOrDefault();
+                        if (storedSite != null)
+                        {
+                            //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
+                            //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
+                            double siteAreaHaTolerance = 0.0;
+                            double siteLengthKmTolerance = 0.0;
+                            double habitatCoverHaTolerance = 0.0;
+
+                            //SiteAttributesChecking
+                            changes = await ValidateSiteAttributes(changes, envelope, harvestingSite, storedSite, siteAreaHaTolerance, siteLengthKmTolerance);
+
+                            SqlParameter param3 = new SqlParameter("@site", harvestingSite.SiteCode);
+                            int maxVersionSite = harvestingSite.VersionId;
+                            SqlParameter param4 = new SqlParameter("@versionId", maxVersionSite);
+                            int previousVersionSite = storedSite.VersionId;
+                            SqlParameter param5 = new SqlParameter("@versionId", previousVersionSite);
+
+                            //HabitatChecking
+                            changes = await ValidateHabitat(changes, envelope, harvestingSite, storedSite, param3, param4, param5, habitatCoverHaTolerance, habitatPriority);
+
+                            //SpeciesChecking
+                            changes = await ValidateSpecies(changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority);
+
+                        }
+                        else
+                        {
+                            changes.Add(new SiteChangeDb
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Network general structure",
+                                ChangeType = "Site Added",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Info,
+                                Status = Enumerations.SiteChangeStatus.Pending,
+                                NewValue = harvestingSite.SiteCode,
+                                OldValue = null,
+                                Tags = string.Empty,
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = harvestingSite.VersionId,
+                                ReferenceSiteCode = harvestingSite.SiteCode
+                            });
+                        }
+                    }
+
+                    //For each site in backboneDB check if the site still exists in Versioning
+                    foreach (SiteToHarvest? storedSite in referencedSites)
+                    {
+                        SiteToHarvest? harvestingSite = sitesVersioning.Where(s => s.SiteCode == storedSite.SiteCode).FirstOrDefault();
+                        if (harvestingSite == null)
+                        {
+                            changes.Add(new SiteChangeDb
+                            {
+                                SiteCode = storedSite.SiteCode,
+                                Version = storedSite.VersionId,
+                                ChangeCategory = "Network general structure",
+                                ChangeType = "Site Deleted",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = Enumerations.SiteChangeStatus.Pending,
+                                Tags = string.Empty,
+                                NewValue = null,
+                                OldValue = storedSite.SiteCode,
+                                Code = storedSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = storedSite.VersionId,
+                                ReferenceSiteCode = storedSite.SiteCode
+                            });
+                        }
+                    }
+
+                    result.Add(new HarvestedEnvelope
                     {
                         CountryCode = envelope.CountryCode,
                         VersionId = envelope.VersionId,
-                        NumChanges = 0,
+                        NumChanges = changes.Count,
                         Status = SiteChangeStatus.Harvested
-                    }
-                 );
-                */
-                /*
-                //Start of validation
-
-                //remove version from database
-                var param1 = new SqlParameter("@country", envelope.CountryCode);
-                var param2 = new SqlParameter("@version", envelope.VersionId);
-                await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spRemoveVersionFromDB  @country, @version", param1, param2);
+                    });
+                    var numChanges = 0;
 
 
-                var country = latestVersions.Where(v => v.Country == envelope.CountryCode).FirstOrDefault(); //Coger la ultima version de ese country
-                var lastReferenceCountryVersion = 0;
-                if (country != null) lastReferenceCountryVersion = country.Version;
+                    //for the time being do not load the changes and keep using test_table 
 
-                //1. Harvest SiteCodes
-                var harvSiteCode = new HarvestSiteCode(_dataContext, _versioningContext);
-                await harvSiteCode.Harvest(envelope.CountryCode, envelope.VersionId);
-
-                if (lastReferenceCountryVersion != 0)
-                {
-                    var tablesToHarvest = new Dictionary<int, IHarvestingTables>();
-
-                    var harvestingTasks = new List<Task<int>>();
-                    var validatingTasks = new List<Task<int>>();
-
-                    //2. Once SiteCodes is harvested we can run a number of task in parallel
-                    //Run the validation
-                    validatingTasks.Add(harvSiteCode.ValidateChanges(envelope.CountryCode, envelope.VersionId, lastReferenceCountryVersion));
-
-                    //harvest 
-                    var habitats = new HarvestHabitats(_dataContext, _versioningContext);
-                    var habitatsTask = habitats.Harvest(envelope.CountryCode, envelope.VersionId);
-                    tablesToHarvest.Add(habitatsTask.Id, habitats);
-                    harvestingTasks.Add(habitatsTask);
-
-                    var species = new HarvestSpecies(_dataContext, _versioningContext);
-                    var speciesTask = species.Harvest(envelope.CountryCode, envelope.VersionId);
-                    tablesToHarvest.Add(speciesTask.Id, species);
-                    harvestingTasks.Add(speciesTask);
-
-
-                    //validate when the harvesting of each one is completed
-                    while (harvestingTasks.Count > 0)
+                    try
                     {
-                        var finishedTask = await Task.WhenAny(harvestingTasks);
-                        if (finishedTask != null)
-                        {
-                            if (finishedTask.Id > 0)
-                            {
-                                IHarvestingTables? harvest = tablesToHarvest[finishedTask.Id]; // .GetValueOrDefault();
-                                if (harvest != null)
-                                    if (finishedTask.Result == 1)
-                                        validatingTasks.Add(harvest.ValidateChanges(envelope.CountryCode, envelope.VersionId, lastReferenceCountryVersion));
-                            }
-                            harvestingTasks.Remove(finishedTask);
-                        }
+                        _dataContext.Set<SiteChangeDb>().AddRange(changes);
+                        _dataContext.SaveChanges();
                     }
-                    //...
-
-                    //wait until validation tasks are finished
-                    while (validatingTasks.Count > 0)
+                    catch (Exception ex)
                     {
-                        var finishedTask = await Task.WhenAny(validatingTasks);
-                        validatingTasks.Remove(finishedTask);
-                    }
-                    tablesToHarvest.Clear();
-
-                }
-                */
-                #endregion
-                var numChanges = 0;
-
-                var param1 = new SqlParameter("@country", envelope.CountryCode);
-                var param2 = new SqlParameter("@version", envelope.VersionId);
-
-                var sitesVersioning = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSitesByCountryAndVersion  @country, @version",
-                                param1, param2).ToListAsync();
-                var referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSitesByCountry  @country",
-                                param1).ToListAsync();
-
-                #region old referencedSites
-                /*
-                var referencedSites = new List<SiteToHarvest>();
-                if (lastReferenceCountryVersion != 0)
-                {
-                    var param3 = new SqlParameter("@version", lastReferenceCountryVersion);
-                    referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.[spGetReferenceSitesByCountryAndVersion]  @country, @version",
-                                param1, param3).ToListAsync();
-                }
-                */
-                #endregion
-
-                //For each site in Versioning compare it with that site in backboneDB
-#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
-                foreach (var harvestingSite in sitesVersioning)
-                {
-                    var storedSite = referencedSites.Where(s => s.SiteCode == harvestingSite.SiteCode).FirstOrDefault();
-                    if (storedSite != null)
-                    {
-                        //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
-                        //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
-                        var siteAreaHaTolerance = 0.0;
-                        var siteLengthKmTolerance = 0.0;
-                        var habitatCoverHaTolerance = 0.0;
-
-                        #region SiteAttributesChecking
-                        //Null values are turned into empty strings and -1
-                        if (storedSite.SiteName == null) storedSite.SiteName = "";
-                        if (harvestingSite.SiteName == null) harvestingSite.SiteName = "";
-                        if (storedSite.AreaHa == null) storedSite.AreaHa = -1;
-                        if (harvestingSite.AreaHa == null) harvestingSite.AreaHa = -1;
-                        if (storedSite.LengthKm == null) storedSite.LengthKm = -1;
-                        if (harvestingSite.LengthKm == null) harvestingSite.LengthKm = -1;
-
-                        if (harvestingSite.SiteName != storedSite.SiteName)
-                        {
-                            var siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "Site General Info";
-                            siteChange.ChangeType = "SiteName Changed";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = harvestingSite.SiteName;
-                            siteChange.OldValue = storedSite.SiteName;
-                            changes.Add(siteChange);
-                            numChanges++;
-                        }
-                        #region SiteType comparison (unused)
-                        //if (harvestingSite.SiteType != storedSite.SiteType)
-                        //{
-                        //    var siteChange = new SiteChangeDb();
-                        //    siteChange.SiteCode = harvestingSite.SiteCode;
-                        //    siteChange.ChangeCategory = "Site General Info";
-                        //    siteChange.ChangeType = "SiteType Changed";
-                        //    siteChange.Country = envelope.CountryCode;
-                        //    siteChange.Level = Enumerations.Level.Critical;
-                        //    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                        //    siteChange.Tags = string.Empty;
-                        //    changes.Add(siteChange);
-                        //    numChanges++;
-                        //}
-                        #endregion
-                        if (harvestingSite.AreaHa > storedSite.AreaHa)
-                        {
-                            if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
-                            {
-                                var siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = harvestingSite.SiteCode;
-                                siteChange.ChangeCategory = "Change of area";
-                                siteChange.ChangeType = "Area Increased";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                siteChange.NewValue = harvestingSite.AreaHa!=-1? harvestingSite.AreaHa.ToString(): null ;
-                                siteChange.OldValue = storedSite.AreaHa !=-1? storedSite.AreaHa.ToString():null;
-                                siteChange.Tags = string.Empty;
-                                changes.Add(siteChange);
-                                numChanges++;
-                            }
-                        }
-                        else if (harvestingSite.AreaHa < storedSite.AreaHa)
-                        {
-                            if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
-                            {
-                                var siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = harvestingSite.SiteCode;
-                                siteChange.ChangeCategory = "Change of area";
-                                siteChange.ChangeType = "Area Decreased";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Warning;
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
-                                siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
-
-                                siteChange.Tags = string.Empty;
-                                changes.Add(siteChange);
-                                numChanges++;
-                            }
-                        }
-                        else if (harvestingSite.AreaHa != storedSite.AreaHa)
-                        {
-                            var siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.ChangeCategory = "Change of area";
-                            siteChange.ChangeType = "Area Change";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                            siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
-                            siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
-                            siteChange.Tags = string.Empty;
-                            changes.Add(siteChange);
-                            numChanges++;
-                        }
-                        if (harvestingSite.LengthKm != storedSite.LengthKm)
-                        {
-                            if (Math.Abs((double)(harvestingSite.LengthKm - storedSite.LengthKm)) > siteLengthKmTolerance)
-                            {
-                                var siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = harvestingSite.SiteCode;
-                                siteChange.ChangeCategory = "Site General Info";
-                                siteChange.ChangeType = "Length Changed";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                siteChange.NewValue = harvestingSite.LengthKm != -1 ? harvestingSite.LengthKm.ToString() : null;
-                                siteChange.OldValue = storedSite.LengthKm != -1 ? storedSite.LengthKm.ToString() : null;
-                                siteChange.Tags = string.Empty;
-                                changes.Add(siteChange);
-                                numChanges++;
-                            }
-                        }
-                        #endregion
-                        
-
-                        var param3 = new SqlParameter("@site", harvestingSite.SiteCode);
-                        var maxVersionSite = harvestingSite.VersionId;
-                        var param4 = new SqlParameter("@versionId", maxVersionSite);
-                        var previousVersionSite = storedSite.VersionId;
-                        var param5 = new SqlParameter("@versionId", previousVersionSite);
-
-                        #region HabitatChecking
-                        var habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
-                                        param3, param4).ToListAsync();
-                        var referencedHabitats = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
-                                        param3, param5).ToListAsync();
-
-                        //For each habitat in Versioning compare it with that habitat in backboneDB
-                        foreach (var harvestingHabitat in habitatVersioning)
-                        {
-                            var storedHabitat = referencedHabitats.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
-                            if (storedHabitat != null)
-                            {
-                                //Null values are turned into empty strings and -1
-                                if (storedHabitat.RelSurface == null) storedHabitat.RelSurface = "";
-                                if (harvestingHabitat.RelSurface == null) harvestingHabitat.RelSurface = "";
-                                if (storedHabitat.Representativity == null) storedHabitat.Representativity = "";
-                                if (harvestingHabitat.Representativity == null) harvestingHabitat.Representativity = "";
-                                if (storedHabitat.Cover_ha == null) storedHabitat.Cover_ha = -1;
-                                if (harvestingHabitat.Cover_ha == null) harvestingHabitat.Cover_ha = -1;
-
-                                if (((storedHabitat.RelSurface.ToUpper() == "A" || storedHabitat.RelSurface.ToUpper() == "B") && harvestingHabitat.RelSurface.ToUpper() == "C")
-                                    || (storedHabitat.RelSurface.ToUpper() == "A" && harvestingHabitat.RelSurface.ToUpper() == "B"))
-                                {
-                                    var siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
-                                    siteChange.ChangeType = "Relative surface Decrease";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Warning;
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.NewValue = harvestingHabitat.RelSurface;
-                                    siteChange.OldValue = storedHabitat.RelSurface;
-
-                                    changes.Add(siteChange);
-                                    numChanges++;
-                                }
-                                else if (((storedHabitat.RelSurface.ToUpper() == "B" || storedHabitat.RelSurface.ToUpper() == "C") && harvestingHabitat.RelSurface.ToUpper() == "A")
-                                    || (storedHabitat.RelSurface.ToUpper() == "C" && harvestingHabitat.RelSurface.ToUpper() == "B"))
-                                {
-                                    var siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
-                                    siteChange.ChangeType = "Relative surface Increase";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Info;
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.NewValue = harvestingHabitat.RelSurface;
-                                    siteChange.OldValue = storedHabitat.RelSurface;
-                                    changes.Add(siteChange);
-                                    numChanges++;
-                                }
-                                else if (storedHabitat.RelSurface.ToUpper() != harvestingHabitat.RelSurface.ToUpper())
-                                {
-                                    var siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
-                                    siteChange.ChangeType = "Relative surface Change";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Info;
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.NewValue = harvestingHabitat.RelSurface;
-                                    siteChange.OldValue = storedHabitat.RelSurface;
-                                    changes.Add(siteChange);
-                                    numChanges++;
-                                }
-                                if (storedHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.Representativity.ToUpper() == "D")
-                                {
-                                    var siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
-                                    siteChange.ChangeType = "Representativity Decrease";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Warning;
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.NewValue = harvestingHabitat.Representativity;
-                                    siteChange.OldValue = storedHabitat.Representativity;
-
-                                    changes.Add(siteChange);
-                                    numChanges++;
-                                }
-                                else if (storedHabitat.Representativity.ToUpper() == "D" && harvestingHabitat.Representativity.ToUpper() != "D")
-                                {
-                                    var siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
-                                    siteChange.ChangeType = "Representativity Increase";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Info;
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.NewValue = harvestingHabitat.Representativity;
-                                    siteChange.OldValue = storedHabitat.Representativity;
-
-                                    changes.Add(siteChange);
-                                    numChanges++;
-                                }
-                                else if (storedHabitat.Representativity.ToUpper() != harvestingHabitat.Representativity.ToUpper())
-                                {
-                                    var siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
-                                    siteChange.ChangeType = "Representativity Change";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Info;
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.NewValue = harvestingHabitat.Representativity;
-                                    siteChange.OldValue = storedHabitat.Representativity;
-
-                                    changes.Add(siteChange);
-                                    numChanges++;
-                                }
-                                if (storedHabitat.Cover_ha > harvestingHabitat.Cover_ha)
-                                {
-                                    if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
-                                    {
-                                        var siteChange = new SiteChangeDb();
-                                        siteChange.SiteCode = harvestingSite.SiteCode;
-                                        siteChange.ChangeCategory = "Species and habitats";
-                                        siteChange.ChangeType = "Cover_ha Decrease";
-                                        siteChange.Country = envelope.CountryCode;
-                                        siteChange.Level = Enumerations.Level.Warning;
-                                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                        siteChange.NewValue = harvestingHabitat.Cover_ha!=-1?   harvestingHabitat.Cover_ha.ToString():null;
-                                        siteChange.OldValue = storedHabitat.Cover_ha!=-1 ? storedHabitat.Cover_ha.ToString(): null;
-                                        siteChange.Tags = string.Empty;
-                                        changes.Add(siteChange);
-                                        numChanges++;
-                                    }
-                                }
-                                else if (storedHabitat.Cover_ha < harvestingHabitat.Cover_ha)
-                                {
-                                    if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
-                                    {
-                                        var siteChange = new SiteChangeDb();
-                                        siteChange.SiteCode = harvestingSite.SiteCode;
-                                        siteChange.ChangeCategory = "Species and habitats";
-                                        siteChange.ChangeType = "Cover_ha Increase";
-                                        siteChange.Country = envelope.CountryCode;
-                                        siteChange.Level = Enumerations.Level.Info;
-                                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                        siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
-                                        siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
-
-                                        siteChange.Tags = string.Empty;
-                                        changes.Add(siteChange);
-                                        numChanges++;
-                                    }
-                                }
-                                else if (storedHabitat.Cover_ha != harvestingHabitat.Cover_ha)
-                                {
-                                    var siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
-                                    siteChange.ChangeType = "Cover_ha Change";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Info;
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                    siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
-                                    siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
-
-                                    siteChange.Tags = string.Empty;
-                                    changes.Add(siteChange);
-                                    numChanges++;
-                                }
-                            }
-                            else
-                            {
-                                changes.Add(new SiteChangeDb
-                                {
-                                    SiteCode = harvestingSite.SiteCode,
-                                    ChangeCategory = "Habitat Added",
-                                    ChangeType = "Habitat Added",
-                                    Country = envelope.CountryCode,
-                                    Level = Enumerations.Level.Info,
-                                    Status = Enumerations.SiteChangeStatus.Pending,
-                                    NewValue = harvestingHabitat.HabitatCode,
-                                    OldValue = null,
-                                    Tags = string.Empty
-                                });
-                                numChanges++;
-                            }
-                        }
-
-                        //For each habitat in backboneDB check if the habitat still exists in Versioning
-                        foreach (var storedHabitat in referencedHabitats)
-                        {
-                            var harvestingHabitat = habitatVersioning.Where(s => s.HabitatCode == storedHabitat.HabitatCode).FirstOrDefault();
-                            if (harvestingHabitat == null)
-                            {
-                                changes.Add(new SiteChangeDb
-                                {
-                                    SiteCode = storedSite.SiteCode,
-                                    ChangeCategory = "Habitat Deleted",
-                                    ChangeType = "Habitat Deleted",
-                                    Country = envelope.CountryCode,
-                                    Level = Enumerations.Level.Critical,
-                                    Status = Enumerations.SiteChangeStatus.Pending,
-                                    NewValue =null,
-                                    OldValue = storedHabitat.HabitatCode,
-                                    Tags = string.Empty
-                                });
-                                numChanges++;
-                            }
-                        }
-                        #endregion
-
-                        #region SpeciesChecking
-                        var speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
-                                        param3, param4).ToListAsync();
-                        var referencedSpecies = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
-                                        param3, param5).ToListAsync();
-
-                        //For each species in Versioning compare it with that species in backboneDB
-                        foreach (var harvestingSpecies in speciesVersioning)
-                        {
-                            var storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
-                            if (storedSpecies != null)
-                            {
-                                //Null values are turned into empty strings
-                                if (storedSpecies.Population == null) storedSpecies.Population = "";
-                                if (harvestingSpecies.Population == null) harvestingSpecies.Population = "";
-
-                                if (storedSpecies.Population.ToUpper() != "D" && harvestingSpecies.Population.ToUpper() == "D")
-                                {
-                                    var siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
-                                    siteChange.ChangeType = "Population Increase";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Warning;
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
-                                    siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
-
-                                    changes.Add(siteChange);
-                                    numChanges++;
-                                }
-                                else if (storedSpecies.Population.ToUpper() == "D" && harvestingSpecies.Population.ToUpper() != "D")
-                                {
-                                    var siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
-                                    siteChange.ChangeType = "Population Decrease";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Info;
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
-                                    siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
-
-                                    changes.Add(siteChange);
-                                    numChanges++;
-                                }
-                                else if (storedSpecies.Population.ToUpper() != harvestingSpecies.Population.ToUpper())
-                                {
-                                    var siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.ChangeCategory = "Species and habitats";
-                                    siteChange.ChangeType = "Population Change";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Info;
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                                    siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
-                                    siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
-                                    siteChange.Tags = string.Empty;
-                                    changes.Add(siteChange);
-                                    numChanges++;
-                                }
-                            }
-                            else
-                            {
-                                if (harvestingSpecies.SpeciesCode != null)
-                                {
-                                    changes.Add(new SiteChangeDb
-                                    {
-                                        SiteCode = harvestingSite.SiteCode,
-                                        ChangeCategory = "Species Added",
-                                        ChangeType = "Species Added",
-                                        Country = envelope.CountryCode,
-                                        Level = Enumerations.Level.Info,
-                                        Status = Enumerations.SiteChangeStatus.Pending,
-                                        Tags = string.Empty,
-                                        NewValue = harvestingSpecies.SpeciesCode,
-                                        OldValue = null
-                                    });
-                                    numChanges++;
-                                }
-                            }
-                        }
-
-                        //For each species in backboneDB check if the species still exists in Versioning
-                        foreach (var storedSpecies in referencedSpecies)
-                        {
-                            var harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode).FirstOrDefault();
-                            if (harvestingSpecies == null)
-                            {
-                                changes.Add(new SiteChangeDb
-                                {
-                                    SiteCode = storedSite.SiteCode,
-                                    ChangeCategory = "Species Deleted",
-                                    ChangeType = "Species Deleted",
-                                    Country = envelope.CountryCode,
-                                    Level = Enumerations.Level.Critical,
-                                    Status = Enumerations.SiteChangeStatus.Pending,
-                                    Tags = string.Empty,
-                                    NewValue = null,
-                                    OldValue = storedSpecies.SpeciesCode
-                                });
-                                numChanges++;
-                            }
-                        }
-                        #endregion
-                    
-                    }
-                    else
-                    {
-                        changes.Add(new SiteChangeDb
-                        {
-                            SiteCode = harvestingSite.SiteCode,
-                            ChangeCategory = "Site Added",
-                            ChangeType = "Site Added",
-                            Country = envelope.CountryCode,
-                            Level = Enumerations.Level.Critical,
-                            Status = Enumerations.SiteChangeStatus.Pending,
-                            NewValue = harvestingSite.SiteCode,
-                            OldValue = null,
-                            Tags = string.Empty
-                        });
-                        numChanges++;
+                        SystemLog.write(SystemLog.errorLevel.Error, ex, "Save Changes", "");
+                        break;
                     }
                 }
-
-                //For each site in backboneDB check if the site still exists in Versioning
-                foreach (var storedSite in referencedSites)
+                catch (Exception ex)
                 {
-                    var harvestingSite = sitesVersioning.Where(s => s.SiteCode == storedSite.SiteCode).FirstOrDefault();
-                    if (harvestingSite == null)
-                    {
-                        changes.Add(new SiteChangeDb
-                        {
-                            SiteCode = storedSite.SiteCode,
-                            ChangeCategory = "Site Deleted",
-                            ChangeType = "Site Deleted",
-                            Country = envelope.CountryCode,
-                            Level = Enumerations.Level.Critical,
-                            Status = Enumerations.SiteChangeStatus.Pending,
-                            Tags = string.Empty,
-                            NewValue= null,
-                            OldValue = storedSite.SiteCode
-                        });
-                        numChanges++;
-                    }
-                }
-
-                result.Add(new HarvestedEnvelope
-                {
-                    CountryCode = envelope.CountryCode,
-                    VersionId = envelope.VersionId,
-                    NumChanges = numChanges,
-                    Status = SiteChangeStatus.Harvested
-                });
-
-                //for the time being do not load the changes and keep using test_table 
-
-                try
-                {
-                    var a = 1;
-                    _dataContext.Set<SiteChangeDb>().AddRange(changes);
-                    _dataContext.SaveChanges();
-                }
-                catch
-                {
-                    throw;
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "EnvelopeProcess - Start - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "");
+                    break;
                 }
             }
 
             return result;
         }
 
-
-
-        public async Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs)
+        private async Task<List<SiteChangeDb>> ValidateSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance)
         {
-
-            List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
-            List<NaturaSite> sites = null;
             try
             {
+                if (harvestingSite.SiteName != storedSite.SiteName)
+                {
+                    SiteChangeDb siteChange = new SiteChangeDb();
+                    siteChange.SiteCode = harvestingSite.SiteCode;
+                    siteChange.Version = harvestingSite.VersionId;
+                    siteChange.ChangeCategory = "Site General Info";
+                    siteChange.ChangeType = "SiteName Changed";
+                    siteChange.Country = envelope.CountryCode;
+                    siteChange.Level = Enumerations.Level.Info;
+                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                    siteChange.Tags = string.Empty;
+                    siteChange.NewValue = harvestingSite.SiteName;
+                    siteChange.OldValue = storedSite.SiteName;
+                    siteChange.Code = harvestingSite.SiteCode;
+                    siteChange.Section = "Site";
+                    siteChange.VersionReferenceId = storedSite.VersionId;
+                    siteChange.FieldName = "SiteName";
+                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    changes.Add(siteChange);
+                }
+                  if (harvestingSite.AreaHa > storedSite.AreaHa)
+                {
+                    if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Change of area";
+                        siteChange.ChangeType = "Area Increased";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Info;
+                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
+                        siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
+                        siteChange.Tags = string.Empty;
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.FieldName = "AreaHa";
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        changes.Add(siteChange);
+                    }
+                }
+                else if (harvestingSite.AreaHa < storedSite.AreaHa)
+                {
+                    if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Change of area";
+                        siteChange.ChangeType = "Area Decreased";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Warning;
+                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
+                        siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
+                        siteChange.Tags = string.Empty;
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.FieldName = "AreaHa";
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        changes.Add(siteChange);
+                    }
+                }
+                else if (harvestingSite.AreaHa != storedSite.AreaHa)
+                {
+                    SiteChangeDb siteChange = new SiteChangeDb();
+                    siteChange.SiteCode = harvestingSite.SiteCode;
+                    siteChange.Version = harvestingSite.VersionId;
+                    siteChange.ChangeCategory = "Change of area";
+                    siteChange.ChangeType = "Area Change";
+                    siteChange.Country = envelope.CountryCode;
+                    siteChange.Level = Enumerations.Level.Info;
+                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                    siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
+                    siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
+                    siteChange.Tags = string.Empty;
+                    siteChange.Code = harvestingSite.SiteCode;
+                    siteChange.Section = "Site";
+                    siteChange.VersionReferenceId = storedSite.VersionId;
+                    siteChange.FieldName = "AreaHa";
+                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    changes.Add(siteChange);
+                }
+                if (harvestingSite.LengthKm != storedSite.LengthKm)
+                {
+                    if (Math.Abs((double)(harvestingSite.LengthKm - storedSite.LengthKm)) > siteLengthKmTolerance)
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Site General Info";
+                        siteChange.ChangeType = "Length Changed";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Info;
+                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.NewValue = harvestingSite.LengthKm != -1 ? harvestingSite.LengthKm.ToString() : null;
+                        siteChange.OldValue = storedSite.LengthKm != -1 ? storedSite.LengthKm.ToString() : null;
+                        siteChange.Tags = string.Empty;
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.FieldName = "LengthKm";
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        changes.Add(siteChange);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSites - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+            }
+            return changes;
+        }
 
+        private async Task<List<SiteChangeDb>> ValidateHabitat(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, double habitatCoverHaTolerance, List<HabitatPriority> habitatPriority)
+        {
+            try
+            {
+                var habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+                                param3, param4).ToListAsync();
+                var referencedHabitats = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+                                param3, param5).ToListAsync();
+
+                //For each habitat in Versioning compare it with that habitat in backboneDB
+                foreach (var harvestingHabitat in habitatVersioning)
+                {
+                    var storedHabitat = referencedHabitats.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode && s.PriorityForm == harvestingHabitat.PriorityForm).FirstOrDefault();
+                    if (storedHabitat != null)
+                    {
+                        if (((storedHabitat.RelSurface.ToUpper() == "A" || storedHabitat.RelSurface.ToUpper() == "B") && harvestingHabitat.RelSurface.ToUpper() == "C")
+                            || (storedHabitat.RelSurface.ToUpper() == "A" && harvestingHabitat.RelSurface.ToUpper() == "B"))
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Relative surface Decrease";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Warning;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.RelSurface;
+                            siteChange.OldValue = storedHabitat.RelSurface;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "RelSurface";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (((storedHabitat.RelSurface.ToUpper() == "B" || storedHabitat.RelSurface.ToUpper() == "C") && harvestingHabitat.RelSurface.ToUpper() == "A")
+                            || (storedHabitat.RelSurface.ToUpper() == "C" && harvestingHabitat.RelSurface.ToUpper() == "B"))
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Relative surface Increase";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.RelSurface;
+                            siteChange.OldValue = storedHabitat.RelSurface;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "RelSurface";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (storedHabitat.RelSurface.ToUpper() != harvestingHabitat.RelSurface.ToUpper())
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Relative surface Change";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.RelSurface;
+                            siteChange.OldValue = storedHabitat.RelSurface;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "RelSurface";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        if (storedHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.Representativity.ToUpper() == "D")
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Representativity Decrease";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Warning;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.Representativity;
+                            siteChange.OldValue = storedHabitat.Representativity;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Representativity";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (storedHabitat.Representativity.ToUpper() == "D" && harvestingHabitat.Representativity.ToUpper() != "D")
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Representativity Increase";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.Representativity;
+                            siteChange.OldValue = storedHabitat.Representativity;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Representativity";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (storedHabitat.Representativity.ToUpper() != harvestingHabitat.Representativity.ToUpper())
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Representativity Change";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingHabitat.Representativity;
+                            siteChange.OldValue = storedHabitat.Representativity;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Representativity";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        if (storedHabitat.Cover_ha > harvestingHabitat.Cover_ha)
+                        {
+                            if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
+                            {
+                                var siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.Version = harvestingSite.VersionId;
+                                siteChange.ChangeCategory = "Habitats";
+                                siteChange.ChangeType = "Cover_ha Decrease";
+                                siteChange.Country = envelope.CountryCode;
+                                siteChange.Level = Enumerations.Level.Warning;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
+                                siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
+                                siteChange.Tags = string.Empty;
+                                siteChange.Code = harvestingHabitat.HabitatCode;
+                                siteChange.Section = "Habitats";
+                                siteChange.VersionReferenceId = storedHabitat.VersionId;
+                                siteChange.FieldName = "Cover_ha";
+                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                changes.Add(siteChange);
+                            }
+                        }
+                        else if (storedHabitat.Cover_ha < harvestingHabitat.Cover_ha)
+                        {
+                            if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
+                            {
+                                var siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.Version = harvestingSite.VersionId;
+                                siteChange.ChangeCategory = "Habitats";
+                                siteChange.ChangeType = "Cover_ha Increase";
+                                siteChange.Country = envelope.CountryCode;
+                                siteChange.Level = Enumerations.Level.Info;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
+                                siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
+                                siteChange.Tags = string.Empty;
+                                siteChange.Code = harvestingHabitat.HabitatCode;
+                                siteChange.Section = "Habitats";
+                                siteChange.VersionReferenceId = storedHabitat.VersionId;
+                                siteChange.FieldName = "Cover_ha";
+                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                changes.Add(siteChange);
+                            }
+                        }
+                        else if (storedHabitat.Cover_ha != harvestingHabitat.Cover_ha)
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Cover_ha Change";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
+                            siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
+                            siteChange.Tags = string.Empty;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Cover_ha";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+
+                        #region HabitatPriority
+                        Boolean IsIncludedInSDF = false;
+                        HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
+                        if (priorityCount != null)
+                            IsIncludedInSDF = true;
+
+                        //These booleans declare whether or not each habitat is a priority
+                        Boolean isStoredPriority = false;
+                        Boolean isHarvestingPriority = false;
+                        if (harvestingHabitat.HabitatCode == "21A0" || harvestingHabitat.HabitatCode == "6210" || harvestingHabitat.HabitatCode == "7130" || harvestingHabitat.HabitatCode == "9430")
+                        {
+                            //If the Habitat is an exception, three conditions are checked
+                            if (storedHabitat.Representativity.ToUpper() != "D" && storedHabitat.PriorityForm == true && IsIncludedInSDF)
+                                isStoredPriority = true;
+                            if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true && IsIncludedInSDF)
+                                isHarvestingPriority = true;
+                        }
+                        else
+                        {
+                            //If there is no exception, then two conditions are checked
+                            if (storedHabitat.Representativity.ToUpper() != "D" && IsIncludedInSDF)
+                                isStoredPriority = true;
+                            if (harvestingHabitat.Representativity.ToUpper() != "D" && IsIncludedInSDF)
+                                isHarvestingPriority = true;
+                        }
+
+                        if (isStoredPriority && !isHarvestingPriority)
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Habitat Losing Priority";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Critical;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.OldValue = Convert.ToString(isStoredPriority);
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Priority";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (!isStoredPriority && isHarvestingPriority)
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "Habitat Getting Priority";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.OldValue = Convert.ToString(isStoredPriority);
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "Priority";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        #endregion
+                    }
+                    else
+                    {
+                        changes.Add(new SiteChangeDb
+                        {
+                            SiteCode = harvestingSite.SiteCode,
+                            Version = harvestingSite.VersionId,
+                            ChangeCategory = "Habitat Added",
+                            ChangeType = "Habitat Added",
+                            Country = envelope.CountryCode,
+                            Level = Enumerations.Level.Info,
+                            Status = Enumerations.SiteChangeStatus.Pending,
+                            NewValue = harvestingHabitat.HabitatCode,
+                            OldValue = null,
+                            Tags = string.Empty,
+                            Code = harvestingHabitat.HabitatCode,
+                            Section = "Habitats",
+                            VersionReferenceId = harvestingSite.VersionId,
+                            ReferenceSiteCode = storedSite.SiteCode
+                        });
+                    }
+                }
+
+                //For each habitat in backboneDB check if the habitat still exists in Versioning
+                foreach (var storedHabitat in referencedHabitats)
+                {
+                    var harvestingHabitat = habitatVersioning.Where(s => s.HabitatCode == storedHabitat.HabitatCode).FirstOrDefault();
+                    if (harvestingHabitat == null)
+                    {
+                        changes.Add(new SiteChangeDb
+                        {
+                            SiteCode = storedSite.SiteCode,
+                            Version = harvestingSite.VersionId,
+                            ChangeCategory = "Habitat Deleted",
+                            ChangeType = "Habitat Deleted",
+                            Country = envelope.CountryCode,
+                            Level = Enumerations.Level.Critical,
+                            Status = Enumerations.SiteChangeStatus.Pending,
+                            NewValue = null,
+                            OldValue = storedHabitat.HabitatCode,
+                            Tags = string.Empty,
+                            Code = storedHabitat.HabitatCode,
+                            Section = "Habitats",
+                            VersionReferenceId = storedHabitat.VersionId,
+                            ReferenceSiteCode = storedSite.SiteCode
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateHabitats - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+            }
+            return changes;
+        }
+
+        private async Task<List<SiteChangeDb>> ValidateSpecies(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority)
+        {
+            try
+            {
+                var speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+                                param3, param4).ToListAsync();
+                var referencedSpecies = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+                                param3, param5).ToListAsync();
+
+                //For each species in Versioning compare it with that species in backboneDB
+                foreach (var harvestingSpecies in speciesVersioning)
+                {
+                    var storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+                    if (storedSpecies != null)
+                    {
+                        if (storedSpecies.Population.ToUpper() != "D" && harvestingSpecies.Population.ToUpper() == "D")
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Species";
+                            siteChange.ChangeType = "Population Priority Decrease";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Warning;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
+                            siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
+                            siteChange.Code = harvestingSpecies.SpeciesCode;
+                            siteChange.Section = "Species";
+                            siteChange.VersionReferenceId = storedSpecies.VersionId;
+                            siteChange.FieldName = "Population";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (storedSpecies.Population.ToUpper() == "D" && harvestingSpecies.Population.ToUpper() != "D")
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Species";
+                            siteChange.ChangeType = "Population Priority Increase";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
+                            siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
+                            siteChange.Code = harvestingSpecies.SpeciesCode;
+                            siteChange.Section = "Species";
+                            siteChange.VersionReferenceId = storedSpecies.VersionId;
+                            siteChange.FieldName = "Population";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (storedSpecies.Population.ToUpper() != harvestingSpecies.Population.ToUpper())
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Species";
+                            siteChange.ChangeType = "Population Priority Change";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
+                            siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
+                            siteChange.Tags = string.Empty;
+                            siteChange.Code = harvestingSpecies.SpeciesCode;
+                            siteChange.Section = "Species";
+                            siteChange.VersionReferenceId = storedSpecies.VersionId;
+                            siteChange.FieldName = "Population";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+
+                        #region SpeciesPriority
+                        Boolean IsIncludedInSDF = false;
+                        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+                        if (priorityCount != null)
+                            IsIncludedInSDF = true;
+
+                        //These booleans declare whether or not each species is a priority
+                        Boolean isStoredPriority = false;
+                        Boolean isHarvestingPriority = false;
+                        if (storedSpecies.Population.ToUpper() != "D" && IsIncludedInSDF)
+                            isStoredPriority = true;
+                        if (harvestingSpecies.Population.ToUpper() != "D" && IsIncludedInSDF)
+                            isHarvestingPriority = true;
+
+                        if (isStoredPriority && !isHarvestingPriority)
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Species";
+                            siteChange.ChangeType = "Species Losing Priority";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Critical;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.OldValue = Convert.ToString(isStoredPriority);
+                            siteChange.Code = harvestingSpecies.SpeciesCode;
+                            siteChange.Section = "Species";
+                            siteChange.VersionReferenceId = storedSpecies.VersionId;
+                            siteChange.FieldName = "Priority";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        else if (!isStoredPriority && isHarvestingPriority)
+                        {
+                            var siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Species";
+                            siteChange.ChangeType = "Species Getting Priority";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                            siteChange.OldValue = Convert.ToString(isStoredPriority);
+                            siteChange.Code = harvestingSpecies.SpeciesCode;
+                            siteChange.Section = "Species";
+                            siteChange.VersionReferenceId = storedSpecies.VersionId;
+                            siteChange.FieldName = "Priority";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
+                        }
+                        #endregion
+                    }
+                    else
+                    {
+                        if (harvestingSpecies.SpeciesCode != null)
+                        {
+                            changes.Add(new SiteChangeDb
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Species Added",
+                                ChangeType = "Species Added",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Info,
+                                Status = Enumerations.SiteChangeStatus.Pending,
+                                Tags = string.Empty,
+                                NewValue = harvestingSpecies.SpeciesCode,
+                                OldValue = null,
+                                Code = harvestingSpecies.SpeciesCode,
+                                Section = "Species",
+                                VersionReferenceId = harvestingSpecies.VersionId,
+                                ReferenceSiteCode = storedSite.SiteCode
+                            });
+                        }
+                    }
+                }
+
+                //For each species in backboneDB check if the species still exists in Versioning
+                foreach (var storedSpecies in referencedSpecies)
+                {
+                    var harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode).FirstOrDefault();
+                    if (harvestingSpecies == null)
+                    {
+                        changes.Add(new SiteChangeDb
+                        {
+                            SiteCode = storedSite.SiteCode,
+                            Version = harvestingSite.VersionId,
+                            ChangeCategory = "Species Deleted",
+                            ChangeType = "Species Deleted",
+                            Country = envelope.CountryCode,
+                            Level = Enumerations.Level.Critical,
+                            Status = Enumerations.SiteChangeStatus.Pending,
+                            Tags = string.Empty,
+                            NewValue = null,
+                            OldValue = storedSpecies.SpeciesCode,
+                            Code = storedSpecies.SpeciesCode,
+                            Section = "Species",
+                            VersionReferenceId = storedSpecies.VersionId,
+                            ReferenceSiteCode = storedSite.SiteCode
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSpecies - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+            }
+            return changes;
+        }
+
+        /// <summary>
+        /// This mehtod calls for teh process to harvest the complete data for all sites 
+        /// reported in the envelopment reported by the MS
+        /// </summary>
+        /// <param name="envelopeIDs">A list of Envelops to process</param>
+        /// <returns>A list of the envelops with the result of the process</returns>
+        public async Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs)
+        {
+            List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
+            try
+            {
                 TimeLog.setTimeStamp("Harvesting process ", "Init");
+                
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
                     //remove version from database
                     await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
 
-
-
                     //create a new entry in the processed envelopes table to register that a new one is being harvested
                     ProcessedEnvelopes envelopeToProcess = new ProcessedEnvelopes
                     {
                         Country = envelope.CountryCode
-                        ,Version = envelope.VersionId
-                        ,ImportDate = await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
-                        ,Status = HarvestingStatus.Harvesting
-                        ,Importer="TEST"
+                        ,
+                        Version = envelope.VersionId
+                        ,
+                        ImportDate = await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
+                        ,
+                        Status = HarvestingStatus.Harvesting
+                        ,
+                        Importer = "TEST"
                     };
                     try
                     {
@@ -773,6 +951,8 @@ namespace N2K_BackboneBackEnd.Services
 
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
+                        //List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.SITECODE == "DE5632303") && (v.VERSIONID == 548)).ToList();
+                        
                         List<Sites> bbSites = new List<Sites>();
 
                         foreach (NaturaSite vSite in vSites)
@@ -785,7 +965,7 @@ namespace N2K_BackboneBackEnd.Services
                                 TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
                                 Sites bbSite = await siteCode.HarvestSite(vSite, envelope);
-                                if (bbSite!=null)
+                                if (bbSite != null)
                                 {
 
                                     //TODO: Put species on another threath 
@@ -795,16 +975,21 @@ namespace N2K_BackboneBackEnd.Services
                                     //TODO: Put habitats on another threath 
                                     HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
                                     await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
-
                                 }
                                 _dataContext.SaveChanges();
                                 _ThereAreChanges = false;
                             }
+                            catch (DbUpdateException ex) {
+
+                                RefusedSites.addAsRefused(vSite, envelope, ex);
+                            }
                             catch (Exception ex)
                             {
+
                                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSites - Start - Site " + vSite.SITECODE + "/" + vSite.VERSIONID.ToString(), "");
-                                rollback(envelope.CountryCode, envelope.VersionId);
-                                break;
+                                //RefusedSites.addAsRefused(vSite);
+                                //rollback(envelope.CountryCode, envelope.VersionId);
+                                //break;
                             }
                             finally
                             {
@@ -852,6 +1037,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 return await Task.FromResult(result);
             }
+            
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
@@ -865,6 +1051,18 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
+       
+
+
+        public const int SqlServerViolationOfUniqueIndex = 2601;
+        public const int SqlServerViolationOfUniqueConstraint = 2627;
+
+        /// <summary>
+        /// Obtaints the date of the last sumbision for a Country and Version of evelope
+        /// </summary>
+        /// <param name="country"></param>
+        /// <param name="version"></param>
+        /// <returns>Date time</returns>
         private async Task<DateTime> GetSubmissionDate(string country, int version)
         {
             var param1 = new SqlParameter("@country", country);
@@ -880,7 +1078,6 @@ namespace N2K_BackboneBackEnd.Services
                 return DateTime.MinValue;
         }
 
-        /*
 
         private async Task<Sites> harvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
         {
@@ -891,7 +1088,7 @@ namespace N2K_BackboneBackEnd.Services
 
             try
             {
-                versionNext =await  _dataContext.Set<Sites>().Where(s => s.SiteCode == pVSite.SITECODE).OrderBy(s => s.Version).Select(s => s.Version).FirstOrDefaultAsync();
+                versionNext = await _dataContext.Set<Sites>().Where(s => s.SiteCode == pVSite.SITECODE).OrderBy(s => s.Version).Select(s => s.Version).FirstOrDefaultAsync();
                 bbSite.SiteCode = pVSite.SITECODE;
                 bbSite.Version = versionNext + 1;
                 bbSite.Current = false;
@@ -926,251 +1123,13 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        private async Task<List<BioRegions>> harvestBioregions(NaturaSite pVSite, int pVersion)
-        {
-            List<BelongsToBioRegion> elements = null;
-            List<BioRegions> items = new List<BioRegions>(); 
-            try
-            {
-                elements = await _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
-                foreach (BelongsToBioRegion element in elements)
-                {
-                    //SystemLog.write(SystemLog.errorLevel.Debug, "Site/Version/BioRegion: " + pVSite.SITECODE + "-" + pVSite.VERSIONID.ToString() + "/" + pVersion.ToString() + "/"+ element.BIOREGID.ToString(), "HarvestedService - harvestBioregions", "");
-                    BioRegions item = new BioRegions();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.BGRID = element.BIOREGID;
-                    item.Percentage = (double?)element.PERCENTAGE;
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        private async Task<List<NutsBySite>> harvestNutsBySite(NaturaSite pVSite, int pVersion)
-        {
-            List<NutsRegion> elements = null;
-            List<NutsBySite> items = new List<NutsBySite>();
-            try
-            {
-                elements = await _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
-                foreach (NutsRegion element in elements)
-                {
-                    NutsBySite item = new NutsBySite();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.NutId = element.NUTSCODE;
-                    item.CoverPercentage = (double?)element.COVER;
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        private List<Models.backbone_db.IsImpactedBy> harvestIsImpactedBy(NaturaSite pVSite, int pVersion)
-        {
-            List<Models.versioning_db.IsImpactedBy> elements = null;
-            List<Models.backbone_db.IsImpactedBy> items = new List<Models.backbone_db.IsImpactedBy>();
-            try
-            {
-                elements = _versioningContext.Set<IsImpactedBy>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (Models.versioning_db.IsImpactedBy element in elements)
-                {
-                    Models.backbone_db.IsImpactedBy item = new Models.backbone_db.IsImpactedBy();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.ActivityCode = element.ACTIVITYCODE;
-                    item.InOut = element.IN_OUT;
-                    item.Intensity = element.INTENSITY;
-                    item.PercentageAff = element.PERCENTAGEAFF;
-                    item.Influence = element.INFLUENCE;
-                    if (element.STARTDATE.HasValue)
-                    {
-                        item.StartDate = element.STARTDATE;
-                    }
-                    if (element.ENDDATE.HasValue)
-                    {
-                        item.EndDate = element.ENDDATE;
-                    }
-                    item.PollutionCode = element.POLLUTIONCODE;
-                    item.Ocurrence = element.OCCURRENCE;
-                    item.ImpactType = element.IMPACTTYPE;
-                    item.InOut = element.IN_OUT;
-                    item.InOut = element.IN_OUT;
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        private List<Models.backbone_db.HasNationalProtection> harvestHasNationalProtection(NaturaSite pVSite, int pVersion)
-        {
-            List<Models.versioning_db.HasNationalProtection> elements = null;
-            List<Models.backbone_db.HasNationalProtection> items = new List<Models.backbone_db.HasNationalProtection>();
-            try
-            {
-                elements = _versioningContext.Set<Models.versioning_db.HasNationalProtection>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (Models.versioning_db.HasNationalProtection element in elements)
-                {
-                    Models.backbone_db.HasNationalProtection item = new Models.backbone_db.HasNationalProtection();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.DesignatedCode = element.DESIGNATEDCODE;
-                    item.Percentage = (decimal?)element.PERCENTAGE;
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-        private List<Models.backbone_db.DetailedProtectionStatus> harvestDetailedProtectionStatus(NaturaSite pVSite, int pVersion)
-        {
-            List<Models.versioning_db.DetailedProtectionStatus> elements = null;
-            List<Models.backbone_db.DetailedProtectionStatus> items = new List<Models.backbone_db.DetailedProtectionStatus>();
-            try
-            {
-                elements = _versioningContext.Set<Models.versioning_db.DetailedProtectionStatus>().Where(s => s.N2K_SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (Models.versioning_db.DetailedProtectionStatus element in elements)
-                {
-                    Models.backbone_db.DetailedProtectionStatus item = new Models.backbone_db.DetailedProtectionStatus();
-                    item.SiteCode = element.N2K_SITECODE;
-                    item.Version = pVersion;
-                    item.DesignationCode = element.DESIGNATIONCODE;
-                    item.OverlapCode = element.OVERLAPCODE;
-                    item.OverlapPercentage = (decimal?)element.OVERLAPPERC;
-                    item.Convention = element.CONVENTION;
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        private List<Models.backbone_db.SiteLargeDescriptions> harvestSiteLargeDescriptions(NaturaSite pVSite, int pVersion)
-        {
-            List<Models.versioning_db.Description> elements = null;
-            List<Models.backbone_db.SiteLargeDescriptions> items = new List<Models.backbone_db.SiteLargeDescriptions>();
-            try
-            {
-                elements = _versioningContext.Set<Models.versioning_db.Description>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (Models.versioning_db.Description element in elements)
-                {
-                    Models.backbone_db.SiteLargeDescriptions item = new Models.backbone_db.SiteLargeDescriptions();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.Quality = element.QUALITY;
-                    item.Vulnarab = element.VULNARAB;
-                    item.Designation = element.DESIGNATION;
-                    item.ManagPlan = element.MANAG_PLAN;
-                    item.Documentation = element.DOCUMENTATION;
-                    item.OtherCharact = element.OTHERCHARACT;
-                    item.ManagConservMeasures = element.MANAG_CONSERV_MEASURES;
-                    item.ManagPlanUrl = element.MANAG_PLAN_URL;
-                    item.ManagStatus = element.MANAG_STATUS;
-
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        private List<Models.backbone_db.SiteOwnerType> harvestSiteOwnerType(NaturaSite pVSite, int pVersion)
-        {
-         
-            List<Models.versioning_db.OwnerType> elements = null;
-            List<Models.backbone_db.SiteOwnerType> items = new List<Models.backbone_db.SiteOwnerType>();
-            try
-            {
-                elements = _versioningContext.Set<Models.versioning_db.OwnerType>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToList();
-                foreach (Models.versioning_db.OwnerType element in elements)
-                {
-                    Models.backbone_db.SiteOwnerType item = new Models.backbone_db.SiteOwnerType();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.Type = _dataContext.Set<Models.backbone_db.OwnerShipTypes>().Where(s => s.Description == element.TYPE).Select(s => s.Id).FirstOrDefault();
-                    item.Percent = (decimal?)element.PERCENT;
-                    items.Add(item);
-                }
-                return items;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        */
-
         /// <summary>
         /// Remove the version we use in development
         /// </summary>
+        /// <remarks> It works just in development environtment. In appsettings change the value of the kay "InDevelopment" to false to deactivate </remarks>
         /// <param name="pCountryCode">Code of two digits for the country</param>
         /// <param name="pCountryVersion">Number of the version</param>
-        private async Task<int> resetEnvirontment(string pCountryCode, int pCountryVersion )
+        private async Task<int> resetEnvirontment(string pCountryCode, int pCountryVersion)
         {
             try
             {
@@ -1182,14 +1141,15 @@ namespace N2K_BackboneBackEnd.Services
                 }
             }
 
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - resetEnvirontment", "");
             }
             return 1;
         }
 
         /// <summary>
-        /// Delete all the changes create by the envelope
+        /// Method to delete all the changes create by the envelope
         /// </summary>
         /// <param name="pCountry"></param>
         /// <param name="pVerion"></param>
@@ -1218,15 +1178,15 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
-               List<Sites> toremove = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).ToList();
-               _dataContext.Set<Sites>().RemoveRange(toremove);
-               _dataContext.SaveChanges();
-               _ThereAreChanges = false;
+                List<Sites> toremove = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).ToList();
+                _dataContext.Set<Sites>().RemoveRange(toremove);
+                _dataContext.SaveChanges();
+                _ThereAreChanges = false;
 
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error,ex, "HarvestedService - rollback","");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - rollback", "");
             }
             finally
             {
@@ -1234,7 +1194,6 @@ namespace N2K_BackboneBackEnd.Services
             }
 
         }
-        
 
     }
 }
