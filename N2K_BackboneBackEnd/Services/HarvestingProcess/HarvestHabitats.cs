@@ -529,7 +529,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //For each habitat in backboneDB check if the habitat still exists in Versioning
                 foreach (var storedHabitat in referencedHabitats)
                 {
-                    var harvestingHabitat = habitatVersioning.Where(s => s.HabitatCode == storedHabitat.HabitatCode).FirstOrDefault();
+                    var harvestingHabitat = habitatVersioning.Where(s => s.HabitatCode == storedHabitat.HabitatCode && s.PriorityForm == storedHabitat.PriorityForm).FirstOrDefault();
                     if (harvestingHabitat == null)
                     {
                         changes.Add(new SiteChangeDb
