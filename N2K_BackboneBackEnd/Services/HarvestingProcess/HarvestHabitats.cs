@@ -444,7 +444,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             //These booleans declare whether or not each habitat is a priority
                             Boolean isStoredPriority = false;
                             Boolean isHarvestingPriority = false;
-                            if (harvestingHabitat.HabitatCode == "21A0" || harvestingHabitat.HabitatCode == "6210" || harvestingHabitat.HabitatCode == "7130" || harvestingHabitat.HabitatCode == "9430")
+                            //if (harvestingHabitat.HabitatCode == "21A0" || harvestingHabitat.HabitatCode == "6210" || harvestingHabitat.HabitatCode == "7130" || harvestingHabitat.HabitatCode == "9430")
+                            if (priorityCount.Priority == 2)
                             {
                                 //If the Habitat is an exception, three conditions are checked
                                 if (storedHabitat.Representativity.ToUpper() != "D" && storedHabitat.PriorityForm == true)
