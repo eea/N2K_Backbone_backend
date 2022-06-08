@@ -34,7 +34,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
-                response.Count= (siteChanges== null)?0:siteChanges.Count;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -97,7 +97,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        //public async Task<List<SiteCodeView>> GetSiteCodesByLevel(Level level, string country = "")
+
 
         [Route("GetSiteCodesByLevel/{level}")]
         [HttpGet()]
@@ -133,7 +133,9 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
 
-        [HttpGet("GetSiteChangesDetail/siteCode={pSiteCode}&version={pCountryVersion}")            ]
+        
+
+        [HttpGet("GetSiteChangesDetail/siteCode={pSiteCode}&version={pCountryVersion}")]
         /// <summary>
         /// Remove the version we use in development
         /// </summary>
@@ -146,7 +148,7 @@ namespace N2K_BackboneBackEnd.Controllers
             {
                 var siteChange = await _siteChangesService.GetSiteChangesDetail(pSiteCode, pCountryVersion);
                 response.Success = true;
-                response.Message = "";                
+                response.Message = "";
                 response.Data = siteChange;
                 response.Count = (siteChange == null) ? 0 : 1;
                 return Ok(response);
@@ -210,6 +212,32 @@ namespace N2K_BackboneBackEnd.Controllers
             }
 
         }
+
+        [Route("MarkAsJustificationRequired/")]
+        [HttpPost]
+        public async Task<ActionResult<int>> MarkAsJustificationRequired([FromBody] ModifiedSiteCode[] siteToMarkAsJustified)
+        {
+            var response = new ServiceResponse<int>();
+            try
+            {
+                var siteChanges = await _siteChangesService.MarKAsJustificationRequired(siteToMarkAsJustified);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = 0;
+                return Ok(response);
+            }
+        }
+
+
 
         /*
         // PUT api/<SiteChangesController>/5
