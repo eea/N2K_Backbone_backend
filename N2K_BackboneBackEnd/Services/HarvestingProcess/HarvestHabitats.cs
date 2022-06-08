@@ -237,21 +237,21 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
             try
             {
-                var habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+                List<HabitatToHarvest> habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
                                 param3, param4).ToListAsync();
-                var referencedHabitats = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+                List<HabitatToHarvest> referencedHabitats = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
                                 param3, param5).ToListAsync();
 
                 //For each habitat in Versioning compare it with that habitat in backboneDB
-                foreach (var harvestingHabitat in habitatVersioning)
+                foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
                 {
-                    var storedHabitat = referencedHabitats.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode && s.PriorityForm == harvestingHabitat.PriorityForm).FirstOrDefault();
+                    HabitatToHarvest storedHabitat = referencedHabitats.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode && s.PriorityForm == harvestingHabitat.PriorityForm).FirstOrDefault();
                     if (storedHabitat != null)
                     {
                         if (((storedHabitat.RelSurface.ToUpper() == "A" || storedHabitat.RelSurface.ToUpper() == "B") && harvestingHabitat.RelSurface.ToUpper() == "C")
                             || (storedHabitat.RelSurface.ToUpper() == "A" && harvestingHabitat.RelSurface.ToUpper() == "B"))
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Habitats";
@@ -272,7 +272,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         else if (((storedHabitat.RelSurface.ToUpper() == "B" || storedHabitat.RelSurface.ToUpper() == "C") && harvestingHabitat.RelSurface.ToUpper() == "A")
                             || (storedHabitat.RelSurface.ToUpper() == "C" && harvestingHabitat.RelSurface.ToUpper() == "B"))
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Habitats";
@@ -292,7 +292,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
                         else if (storedHabitat.RelSurface.ToUpper() != harvestingHabitat.RelSurface.ToUpper())
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Habitats";
@@ -312,7 +312,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
                         if (storedHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.Representativity.ToUpper() == "D")
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Habitats";
@@ -332,7 +332,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
                         else if (storedHabitat.Representativity.ToUpper() == "D" && harvestingHabitat.Representativity.ToUpper() != "D")
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Habitats";
@@ -352,7 +352,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
                         else if (storedHabitat.Representativity.ToUpper() != harvestingHabitat.Representativity.ToUpper())
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Habitats";
@@ -374,7 +374,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         {
                             if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
                             {
-                                var siteChange = new SiteChangeDb();
+                                SiteChangeDb siteChange = new SiteChangeDb();
                                 siteChange.SiteCode = harvestingSite.SiteCode;
                                 siteChange.Version = harvestingSite.VersionId;
                                 siteChange.ChangeCategory = "Habitats";
@@ -397,7 +397,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         {
                             if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
                             {
-                                var siteChange = new SiteChangeDb();
+                                SiteChangeDb siteChange = new SiteChangeDb();
                                 siteChange.SiteCode = harvestingSite.SiteCode;
                                 siteChange.Version = harvestingSite.VersionId;
                                 siteChange.ChangeCategory = "Habitats";
@@ -418,7 +418,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
                         else if (storedHabitat.Cover_ha != harvestingHabitat.Cover_ha)
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Habitats";
@@ -464,7 +464,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                             if (isStoredPriority && !isHarvestingPriority)
                             {
-                                var siteChange = new SiteChangeDb();
+                                SiteChangeDb siteChange = new SiteChangeDb();
                                 siteChange.SiteCode = harvestingSite.SiteCode;
                                 siteChange.Version = harvestingSite.VersionId;
                                 siteChange.ChangeCategory = "Habitats";
@@ -484,7 +484,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             }
                             else if (!isStoredPriority && isHarvestingPriority)
                             {
-                                var siteChange = new SiteChangeDb();
+                                SiteChangeDb siteChange = new SiteChangeDb();
                                 siteChange.SiteCode = harvestingSite.SiteCode;
                                 siteChange.Version = harvestingSite.VersionId;
                                 siteChange.ChangeCategory = "Habitats";
@@ -528,9 +528,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
 
                 //For each habitat in backboneDB check if the habitat still exists in Versioning
-                foreach (var storedHabitat in referencedHabitats)
+                foreach (HabitatToHarvest storedHabitat in referencedHabitats)
                 {
-                    var harvestingHabitat = habitatVersioning.Where(s => s.HabitatCode == storedHabitat.HabitatCode && s.PriorityForm == storedHabitat.PriorityForm).FirstOrDefault();
+                    HabitatToHarvest harvestingHabitat = habitatVersioning.Where(s => s.HabitatCode == storedHabitat.HabitatCode && s.PriorityForm == storedHabitat.PriorityForm).FirstOrDefault();
                     if (harvestingHabitat == null)
                     {
                         changes.Add(new SiteChangeDb

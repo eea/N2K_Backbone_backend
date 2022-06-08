@@ -166,20 +166,20 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
             try
             {
-                var speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+                List<SpeciesToHarvest> speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
                                 param3, param4).ToListAsync();
-                var referencedSpecies = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+                List<SpeciesToHarvest> referencedSpecies = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
                                 param3, param5).ToListAsync();
 
                 //For each species in Versioning compare it with that species in backboneDB
-                foreach (var harvestingSpecies in speciesVersioning)
+                foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
                 {
-                    var storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode && s.PopulationType == harvestingSpecies.PopulationType).FirstOrDefault();
+                    SpeciesToHarvest storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode && s.PopulationType == harvestingSpecies.PopulationType).FirstOrDefault();
                     if (storedSpecies != null)
                     {
                         if (storedSpecies.Population.ToUpper() != "D" && harvestingSpecies.Population.ToUpper() == "D")
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
@@ -199,7 +199,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
                         else if (storedSpecies.Population.ToUpper() == "D" && harvestingSpecies.Population.ToUpper() != "D")
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
@@ -219,7 +219,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
                         else if (storedSpecies.Population.ToUpper() != harvestingSpecies.Population.ToUpper())
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
@@ -252,7 +252,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                             if (isStoredPriority && !isHarvestingPriority)
                             {
-                                var siteChange = new SiteChangeDb();
+                                SiteChangeDb siteChange = new SiteChangeDb();
                                 siteChange.SiteCode = harvestingSite.SiteCode;
                                 siteChange.Version = harvestingSite.VersionId;
                                 siteChange.ChangeCategory = "Species";
@@ -272,7 +272,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             }
                             else if (!isStoredPriority && isHarvestingPriority)
                             {
-                                var siteChange = new SiteChangeDb();
+                                SiteChangeDb siteChange = new SiteChangeDb();
                                 siteChange.SiteCode = harvestingSite.SiteCode;
                                 siteChange.Version = harvestingSite.VersionId;
                                 siteChange.ChangeCategory = "Species";
@@ -319,9 +319,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
 
                 //For each species in backboneDB check if the species still exists in Versioning
-                foreach (var storedSpecies in referencedSpecies)
+                foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
                 {
-                    var harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode && s.PopulationType == storedSpecies.PopulationType).FirstOrDefault();
+                    SpeciesToHarvest harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode && s.PopulationType == storedSpecies.PopulationType).FirstOrDefault();
                     if (harvestingSpecies == null)
                     {
                         changes.Add(new SiteChangeDb
