@@ -24,15 +24,37 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [Route("Get")]
-        [HttpGet]
-
+        [HttpGet("Get")]        
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> Get()
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync();
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(null);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<SiteChangeDb>();
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("Get/page={page}&limit={limit}")]
+        //[HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetPaginated(int page, int limit)
+        {
+            var response = new ServiceResponse<List<SiteChangeDb>>();
+            try
+            {
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(null, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -74,6 +96,44 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+
+
+
+        [Route("GetSiteCodesByLevel/{level}")]
+        [HttpGet()]
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByLevel(Level level)
+        {
+            return await GetSiteCodesByLevelAndCountry(level, "");
+        }
+
+
+        [Route("GetSiteCodesByLevel/{level}/{country}")]
+        [HttpGet()]
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByLevelAndCountry(Level level, string country)
+        {
+            var response = new ServiceResponse<List<SiteCodeView>>();
+            try
+            {
+                var siteCodes = await _siteChangesService.GetSiteCodesByLevel(level, country);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteCodes;
+                response.Count = (siteCodes == null) ? 0 : siteCodes.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                return Ok(response);
+           }
+        }
+
+
+
+
+        
 
         [HttpGet("GetSiteChangesDetail/siteCode={pSiteCode}&version={pCountryVersion}")]
         /// <summary>
