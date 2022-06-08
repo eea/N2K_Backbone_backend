@@ -288,7 +288,6 @@ namespace N2K_BackboneBackEnd.Services
                     ).ToList();
                     break;
             }
-            */
             return result;
         }
 
