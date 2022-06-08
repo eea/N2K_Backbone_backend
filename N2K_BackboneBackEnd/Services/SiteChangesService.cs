@@ -10,8 +10,20 @@ using N2K_BackboneBackEnd.Models.versioning_db;
 namespace N2K_BackboneBackEnd.Services
 {
 
+
     public class SiteChangesService : ISiteChangesService
     {
+
+
+        private class OrderedChanges
+        {
+            public string SiteCode { get; set; } = "";
+            public Level? Level { get; set; }
+            public List<SiteChangeDb> ChangeList { get; set; } = new List<SiteChangeDb>();
+
+        }
+
+
         private readonly N2KBackboneContext _dataContext;
         private readonly IEnumerable<SpeciesTypes> _speciesTypes;
         private readonly IEnumerable<HabitatTypes> _habitatTypes;
@@ -26,23 +38,36 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<SiteChangeDb>> GetSiteChangesAsync(SiteChangeStatus? status)
+        public async Task<List<SiteChangeDb>> GetSiteChangesAsync( SiteChangeStatus? status, int page = 1,int pageLimit=0)
         {
-            var changes = await _dataContext.Set<SiteChangeDb>().AsNoTracking().ToListAsync();
+            var startRow = (page - 1) * pageLimit;
+            IQueryable<SiteChangeDb> changes = _dataContext.Set<SiteChangeDb>().AsNoTracking();
             if (status != null)
-                changes = changes.Where(s => s.Status == status).ToList();
+                changes = changes.Where(s => s.Status == status);
+
+            IEnumerable<OrderedChanges> orderedChanges;
 
             //order the changes so that the first codes are the one with the highest Level value (1. Critical 2. Warning 3. Info)
-            var orderedChanges = (from t in changes
-                                  group t by t.SiteCode
-                                  into g
-                                  select new
-                                  {
-                                      SiteCode = g.Key,
-                                      Level = (from t2 in g select t2.Level).Max(),
-                                      //Nest all changes of each sitecode ordered by Level
-                                      ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending (x => (int)x.Level).ToList()
-                                  }).OrderByDescending(a => a.Level).ToList();
+            IOrderedEnumerable<OrderedChanges> orderedChangesEnum = (from t in changes.ToListAsync().Result
+                                                                     group t by t.SiteCode
+                                                                     into g
+                                                                     select new OrderedChanges
+                                                                     {
+                                                                         SiteCode = g.Key,
+                                                                         Level = (from t2 in g select t2.Level).Max(),
+                                                                         //Nest all changes of each sitecode ordered by Level
+                                                                         ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending(x => (int)x.Level).ToList()
+                                                                     }).OrderByDescending(a => a.Level).ThenBy(b => b.SiteCode);
+            if (pageLimit != 0)
+            {
+                orderedChanges = orderedChangesEnum
+                        .Skip(startRow)
+                        .Take(pageLimit)
+                        .ToList();
+            }
+            else
+                orderedChanges = orderedChangesEnum.ToList();
+
 
             var result = new List<SiteChangeDb>();
             var countries = await _dataContext.Set<Countries>().ToListAsync();
@@ -206,6 +231,67 @@ namespace N2K_BackboneBackEnd.Services
 
             return changeDetailVM;
         }
+
+
+
+
+        public async Task<List<SiteCodeView>> GetSiteCodesByLevel(Level level, string country = "")
+        {
+            var result = new List<SiteCodeView>();
+            var siteChangesQuery= _dataContext.Set<SiteChangeDb>().AsNoTracking();
+
+
+            var query = from o in siteChangesQuery
+                        group o by new {o.SiteCode,o.Version } into g
+                        select new
+                        {
+                            SiteCode = g.Key.SiteCode,
+                            Version= g.Key.Version,
+                            NumInfo = g.Sum(d => d.Level == Level.Info ? (Int32?) 1 : 0),
+                            NumCritical = g.Sum(d => d.Level == Level.Critical ? (Int32?)1 : 0),
+                            NumWarning = g.Sum(d => d.Level == Level.Warning ? (Int32?)1 : 0),
+                        };
+
+            var list =await  query.ToListAsync();
+
+            switch (level)
+            {
+                case Level.Critical:
+                    
+                    return list.Where(a=> a.NumCritical> 0 ).Select(x=>
+                        new SiteCodeView
+                        {
+                            //CountryCode = .Country,
+                            SiteCode = x.SiteCode,
+                            Vesion = x.Version
+                        }
+                    ).ToList();
+
+                case Level.Warning:
+                    return list.Where(a => a.NumCritical==0 && a.NumWarning>0).Select(x =>
+                         new SiteCodeView
+                         {
+                            //CountryCode = .Country,
+                            SiteCode = x.SiteCode,
+                             Vesion = x.Version
+                         }
+                    ).ToList();
+
+                case Level.Info:
+                    return list.Where(a => a.NumCritical == 0 && a.NumWarning ==0 && a.NumInfo>0).Select(x =>
+                        new SiteCodeView
+                        {
+                        //CountryCode = .Country,
+                        SiteCode = x.SiteCode,
+                        Vesion = x.Version
+                        }
+                    ).ToList();
+                    break;
+            }
+            */
+            return result;
+        }
+
 
 
 
