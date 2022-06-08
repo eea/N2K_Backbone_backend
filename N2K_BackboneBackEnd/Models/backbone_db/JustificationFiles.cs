@@ -3,17 +3,21 @@ using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class SiteOwnerType : IEntityModel, IEntityModelBackboneDB
+    public class JustificationFiles : IEntityModel, IEntityModelBackboneDB
     {
+        [Key]
+        public int Id { get; set; }
+
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
-        public int Type { get; set; }
-        public decimal? Percent { get; set; }
+
+        public String? Path { get; set; }
+
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<SiteOwnerType>()
-                .ToTable("SiteOwnerType")
-                .HasKey(c => new { c.SiteCode, c.Version, c.Type });
+            builder.Entity<JustificationFiles>()
+                .ToTable("JustificationFiles");
+
         }
     }
 }

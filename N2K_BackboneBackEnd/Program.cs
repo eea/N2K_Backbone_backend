@@ -4,6 +4,8 @@ using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using N2K_BackboneBackEnd.Services;
 using N2K_BackboneBackEnd.Models;
+using Microsoft.AspNetCore.ResponseCompression;
+using System.IO.Compression;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,18 +18,30 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<ISiteChangesService, SiteChangesService>();
+builder.Services.AddScoped<ISiteDetailsService, SiteDetailsService>();
 builder.Services.AddScoped<IHarvestedService, HarvestedService>();
 builder.Services.AddScoped<IEULoginService, EULoginService>();
 
-builder.Services.AddCors();
-builder.Configuration.AddJsonFile("appsettings.json");
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.MimeTypes = new[] { "text/plain", "application/json", "text/json" };
+});
+builder.Services.Configure<GzipCompressionProviderOptions>
+   (opt =>
+   {
+       opt.Level = CompressionLevel.SmallestSize;
+    }
+);
 
+
+builder.Configuration.AddJsonFile("appsettings.json");
 
 builder.Services.AddDbContext<N2KBackboneContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
-
 });
+
 
 /*
 builder.Services.AddDbContext<N2KBackboneReadOnlyContext>(options =>
@@ -55,8 +69,6 @@ builder.Services.AddSwaggerGen(c => {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "N2KBacboneAPI", Version = "v1" });
 });
 
-
-
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -80,6 +92,7 @@ app.UseCors(x => x
 app.UseSwagger();
 app.UseSwaggerUI();
 //}
+app.UseResponseCompression();
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

@@ -5,6 +5,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 {
     public class Species : IEntityModel, IEntityModelBackboneDB
     {
+        [Key]
         public long id { get; set; }
         public string SiteCode { get; set; }
         public int Version { get; set; }

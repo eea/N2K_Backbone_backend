@@ -5,57 +5,41 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.ViewModel;
 
-namespace N2K_BackboneBackEnd.Models.backbone_db
+namespace N2K_BackboneBackEnd.Models.BackboneDB
 {
-
-    public class SiteChangeDb : IEntityModel, IEntityModelBackboneDB
+    /// <summary>
+    /// Class to manage the Entity Changes
+    /// </summary>
+    public class Changes : IEntityModel, IEntityModelBackboneDB
     {
-      
         [Key]
-        public long ChangeId { get; set; }
-
-        public string SiteCode { get; set; } = String.Empty;
+        public long Id { get; set; }
+        public string SiteCode { get; set; }
         public int Version { get; set; }
         public string? Country { get; set; }
-
         public SiteChangeStatus? Status { get; set; }
-
         public string? Tags { get; set; }
-
         public Level? Level { get; set; }
         public string? ChangeCategory { get; set; }
         public string? ChangeType { get; set; }
-
-        [NotMapped]
-        public int NumChanges { get; set; }
-
         public string? NewValue { get; set; }
         public string? OldValue { get; set; }
-
         public string? Detail { get; set; }
-
-        public string? Code { get; set; }
-        public string? Section { get; set; }
-        public int VersionReferenceId { get; set; }
-        public string? FieldName { get; set; }
-        public string ReferenceSiteCode { get; set; } = String.Empty;
-
-
-        public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
-
+        
+        public List<SiteChangeView> Subrows { get; set; } = new List<SiteChangeView>();
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<SiteChangeDb>()
-                .ToTable("Changes")
+            builder.Entity<Changes>()
+                .ToTable("Changes4Sites")
+                .HasKey(c => c.Id );
+            builder.Entity<Changes>()
+                .ToTable("Changes4Sites")
                 .Property(e => e.Status)
                 .HasConversion(new EnumToStringConverter<Enumerations.SiteChangeStatus>());
-
-            builder.Entity<SiteChangeDb>()
-                .ToTable("Changes")
+            builder.Entity<Changes>()
+                .ToTable("Changes4Sites")
                 .Property(e => e.Level)
                 .HasConversion(new EnumToStringConverter<Enumerations.Level>());
-
-
         }
     }
 }

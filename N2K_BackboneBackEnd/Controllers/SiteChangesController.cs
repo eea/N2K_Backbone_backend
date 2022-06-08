@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using N2K_BackboneBackEnd.ServiceResponse;
 using AutoMapper;
 using N2K_BackboneBackEnd.Services;
@@ -27,18 +24,41 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [Route("Get")]
-        [HttpGet]
+        [HttpGet("Get")]        
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> Get()
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync();
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(null);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
-                response.Count= (siteChanges== null)?0:siteChanges.Count;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<SiteChangeDb>();
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("Get/page={page}&limit={limit}")]
+        //[HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetPaginated(int page, int limit)
+        {
+            var response = new ServiceResponse<List<SiteChangeDb>>();
+            try
+            {
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(null, page, limit);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -77,7 +97,45 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("GetSiteChangesDetail/siteCode={pSiteCode}&version={pCountryVersion}")            ]
+
+
+        [Route("GetSiteCodesByLevel/{level}")]
+        [HttpGet()]
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByLevel(Level level)
+        {
+            return await GetSiteCodesByLevelAndCountry(level, "");
+        }
+
+
+        [Route("GetSiteCodesByLevel/{level}/{country}")]
+        [HttpGet()]
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByLevelAndCountry(Level level, string country)
+        {
+            var response = new ServiceResponse<List<SiteCodeView>>();
+            try
+            {
+                var siteCodes = await _siteChangesService.GetSiteCodesByLevel(level, country);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteCodes;
+                response.Count = (siteCodes == null) ? 0 : siteCodes.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                return Ok(response);
+           }
+        }
+
+
+
+
+        
+
+        [HttpGet("GetSiteChangesDetail/siteCode={pSiteCode}&version={pCountryVersion}")]
         /// <summary>
         /// Remove the version we use in development
         /// </summary>
@@ -90,7 +148,7 @@ namespace N2K_BackboneBackEnd.Controllers
             {
                 var siteChange = await _siteChangesService.GetSiteChangesDetail(pSiteCode, pCountryVersion);
                 response.Success = true;
-                response.Message = "";                
+                response.Message = "";
                 response.Data = siteChange;
                 response.Count = (siteChange == null) ? 0 : 1;
                 return Ok(response);
@@ -154,6 +212,32 @@ namespace N2K_BackboneBackEnd.Controllers
             }
 
         }
+
+        [Route("MarkAsJustificationRequired/")]
+        [HttpPost]
+        public async Task<ActionResult<int>> MarkAsJustificationRequired([FromBody] ModifiedSiteCode[] siteToMarkAsJustified)
+        {
+            var response = new ServiceResponse<int>();
+            try
+            {
+                var siteChanges = await _siteChangesService.MarKAsJustificationRequired(siteToMarkAsJustified);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = 0;
+                return Ok(response);
+            }
+        }
+
+
 
         /*
         // PUT api/<SiteChangesController>/5
