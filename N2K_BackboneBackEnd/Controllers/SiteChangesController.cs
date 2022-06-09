@@ -47,7 +47,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
         [HttpGet("Get/page={page}&limit={limit}")]
-        //[HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetPaginated(int page, int limit)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -139,7 +138,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
+        
         [HttpGet("Get/level={level}&page={page}&limit={limit}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByLevelPaginated(Level level, int page, int limit)
         {
@@ -188,7 +187,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("Get/country=country}&level={level}&page={page}&limit={limit}")]
+        [HttpGet("Get/country={country}&level={level}&page={page}&limit={limit}")]
         //[HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByLevelAndCountryPaginated(string country,Level level, int page, int limit)
         {
@@ -211,7 +210,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
 
 
         [HttpGet("Get/status={status}/")]
@@ -400,7 +398,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
 
 
         [Route("GetSiteCodes/level={level}")]
@@ -635,7 +632,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
 
 
         /*
