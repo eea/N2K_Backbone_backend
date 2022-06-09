@@ -19,7 +19,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             public string SiteCode { get; set; } = "";
             public Level? Level { get; set; }
-            public List<SiteChangeDb> ChangeList { get; set; } = new List<SiteChangeDb>();
+            public List<SiteChangeDbNumsperLevel> ChangeList { get; set; } = new List<SiteChangeDbNumsperLevel>();
 
         }
 
@@ -45,16 +45,18 @@ namespace N2K_BackboneBackEnd.Services
         {
             List<SiteCodeView> siteCodeList = await GetSiteCodesByStatusAndLevelAndCountry(country,status, level);
             var startRow = (page - 1) * pageLimit;
-            IQueryable<SiteChangeDb> changes = _dataContext.Set<SiteChangeDb>().AsNoTracking();
-            if (status.HasValue) changes = changes.Where(s => s.Status == status);
-            if (!string.IsNullOrEmpty(country)) changes = changes.Where(s => s.Country == country);
+            
+
+            SqlParameter param1 = new SqlParameter("@country", country);
+            SqlParameter param2 = new SqlParameter("@status",status.HasValue?  status.ToString():String.Empty);
+            SqlParameter param3 = new SqlParameter("@level", level.HasValue? level.ToString():String.Empty);
+
+            IQueryable<SiteChangeDbNumsperLevel> changes = _dataContext.Set<SiteChangeDbNumsperLevel>().FromSqlRaw($"exec dbo.spGetChangesByCountryAndStatusAndLevel  @country, @status, @level",
+                            param1, param2, param3);
 
             IEnumerable<OrderedChanges> orderedChanges;
-
             //order the changes so that the first codes are the one with the highest Level value (1. Critical 2. Warning 3. Info)
             IOrderedEnumerable<OrderedChanges> orderedChangesEnum = (from t in changes.ToListAsync().Result
-                                                                     join c in siteCodeList on
-                                                                        new { t.SiteCode, t.Version } equals new { c.SiteCode, c.Version }
                                                                      group t by t.SiteCode
                                                                      into g
                                                                      select new OrderedChanges

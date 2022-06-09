@@ -94,8 +94,8 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("Get/{level}")]
-        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByLevel(Level level)
+        [HttpGet("Get/{level}/")]
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByLevel(Level? level)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
@@ -192,8 +192,8 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
 
-        [HttpGet("Get/{status}")]
-        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByStatus(SiteChangeStatus status)
+        [HttpGet("Get/{status}/")]
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByStatus(SiteChangeStatus? status)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
