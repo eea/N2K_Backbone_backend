@@ -8,11 +8,11 @@ namespace N2K_BackboneBackEnd.Services
 {
     public interface ISiteChangesService
     {
-        Task<List<SiteChangeDb>> GetSiteChangesAsync(SiteChangeStatus? status, Level? level, string country = "", int page = 1, int pageLimit = 0);
+        Task<List<SiteChangeDb>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level,  int page = 1, int pageLimit = 0);
 
         Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion);
 
-        Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(SiteChangeStatus? status, Level? level, string country = "");
+        Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country,SiteChangeStatus? status, Level? level);
 
 
         Task<List<SiteChangeViewModel>> GetSiteChangesFromSP();

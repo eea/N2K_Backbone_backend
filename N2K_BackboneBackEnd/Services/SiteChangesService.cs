@@ -41,9 +41,9 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<SiteChangeDb>> GetSiteChangesAsync(SiteChangeStatus? status, Level? level, string country = "", int page = 1, int pageLimit = 0)
+        public async Task<List<SiteChangeDb>> GetSiteChangesAsync(string country ,SiteChangeStatus? status, Level? level,  int page = 1, int pageLimit = 0)
         {
-            List<SiteCodeView> siteCodeList = await GetSiteCodesByStatusAndLevelAndCountry(status, level, country);
+            List<SiteCodeView> siteCodeList = await GetSiteCodesByStatusAndLevelAndCountry(country,status, level);
             var startRow = (page - 1) * pageLimit;
             IQueryable<SiteChangeDb> changes = _dataContext.Set<SiteChangeDb>().AsNoTracking();
             if (status.HasValue) changes = changes.Where(s => s.Status == status);
@@ -238,7 +238,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(SiteChangeStatus? status, Level? level, string country = "")
+        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country,SiteChangeStatus? status, Level? level)
         {
 
             var result = new List<SiteCodeView>();
@@ -248,7 +248,7 @@ namespace N2K_BackboneBackEnd.Services
 
 
             var query = from o in siteChangesQuery
-                        group o by new { o.SiteCode, o.Version } into g
+                        group o by new { o.SiteCode, o.Version } into g                        
                         select new
                         {
                             SiteCode = g.Key.SiteCode,
@@ -258,7 +258,7 @@ namespace N2K_BackboneBackEnd.Services
                             NumWarning = g.Sum(d => d.Level == Level.Warning ? (Int32?)1 : 0),
                         };
 
-            var list = await query.ToListAsync();
+            var list = await query.OrderByDescending(a=> a.NumCritical).ThenByDescending(b=> b.NumWarning).ThenByDescending(c=> c.NumInfo).ToListAsync();
             switch (level)
             {
                 case Level.Critical:
