@@ -43,10 +43,8 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<SiteChangeDb>> GetSiteChangesAsync(string country ,SiteChangeStatus? status, Level? level,  int page = 1, int pageLimit = 0)
         {
-            List<SiteCodeView> siteCodeList = await GetSiteCodesByStatusAndLevelAndCountry(country,status, level);
             var startRow = (page - 1) * pageLimit;
             
-
             SqlParameter param1 = new SqlParameter("@country", country);
             SqlParameter param2 = new SqlParameter("@status",status.HasValue?  status.ToString():String.Empty);
             SqlParameter param3 = new SqlParameter("@level", level.HasValue? level.ToString():String.Empty);
@@ -107,6 +105,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Version = change.Version;
                         var changeView = new SiteChangeView
                         {
+                            ChangeId= change.ChangeId,
                             Action = "",
                             SiteCode = "",
                             ChangeCategory = change.ChangeCategory,
