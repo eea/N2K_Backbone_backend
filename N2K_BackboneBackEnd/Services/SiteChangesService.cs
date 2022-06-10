@@ -41,20 +41,22 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<SiteChangeDb>> GetSiteChangesAsync(string country ,SiteChangeStatus? status, Level? level,  int page = 1, int pageLimit = 0)
+        public async Task<List<SiteChangeDb>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, int page = 1, int pageLimit = 0)
         {
+            //call a stored procedure that returs the site changes that match the given criteria                        
             var startRow = (page - 1) * pageLimit;
-            
+
             SqlParameter param1 = new SqlParameter("@country", country);
-            SqlParameter param2 = new SqlParameter("@status",status.HasValue?  status.ToString():String.Empty);
-            SqlParameter param3 = new SqlParameter("@level", level.HasValue? level.ToString():String.Empty);
+            SqlParameter param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : String.Empty);
+            SqlParameter param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : String.Empty);
 
             IQueryable<SiteChangeDbNumsperLevel> changes = _dataContext.Set<SiteChangeDbNumsperLevel>().FromSqlRaw($"exec dbo.spGetChangesByCountryAndStatusAndLevel  @country, @status, @level",
                             param1, param2, param3);
 
             IEnumerable<OrderedChanges> orderedChanges;
             //order the changes so that the first codes are the one with the highest Level value (1. Critical 2. Warning 3. Info)
-            IOrderedEnumerable<OrderedChanges> orderedChangesEnum = (from t in changes.ToListAsync().Result
+            //It return an enumeration of sitecodes with a nested list of the changes for that sitecode, ordered by level
+            IOrderedEnumerable<OrderedChanges> orderedChangesEnum = (from t in await changes.ToListAsync()
                                                                      group t by t.SiteCode
                                                                      into g
                                                                      select new OrderedChanges
@@ -105,7 +107,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Version = change.Version;
                         var changeView = new SiteChangeView
                         {
-                            ChangeId= change.ChangeId,
+                            ChangeId = change.ChangeId,
                             Action = "",
                             SiteCode = "",
                             ChangeCategory = change.ChangeCategory,
@@ -239,7 +241,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country,SiteChangeStatus? status, Level? level)
+        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level)
         {
 
             var result = new List<SiteCodeView>();
@@ -249,7 +251,7 @@ namespace N2K_BackboneBackEnd.Services
 
 
             var query = from o in siteChangesQuery
-                        group o by new { o.SiteCode, o.Version } into g                        
+                        group o by new { o.SiteCode, o.Version } into g
                         select new
                         {
                             SiteCode = g.Key.SiteCode,
@@ -259,7 +261,7 @@ namespace N2K_BackboneBackEnd.Services
                             NumWarning = g.Sum(d => d.Level == Level.Warning ? (Int32?)1 : 0),
                         };
 
-            var list = await query.OrderByDescending(a=> a.NumCritical).ThenByDescending(b=> b.NumWarning).ThenByDescending(c=> c.NumInfo).ToListAsync();
+            var list = await query.OrderByDescending(a => a.NumCritical).ThenByDescending(b => b.NumWarning).ThenByDescending(c => c.NumInfo).ToListAsync();
             switch (level)
             {
                 case Level.Critical:
