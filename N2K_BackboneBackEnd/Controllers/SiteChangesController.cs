@@ -46,7 +46,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-        [HttpGet("Get/page={page}&limit={limit}")]
+        [HttpGet("Get/page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetPaginated(int page, int limit)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -69,7 +69,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("Get/country={country}")]
+        [HttpGet("Get/country={country:string}/")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountry(string country)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -93,8 +93,8 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("Get/country={country}&page={page}&limit={limit}")]        
-        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetPaginatedByCountry(string country, int page, int limit)
+        [HttpGet("Get/country={country:string}&page={page:int}&limit={limit:int}")]        
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryPaginated(string country, int page, int limit)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
@@ -139,7 +139,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
         
-        [HttpGet("Get/level={level}&page={page}&limit={limit}")]
+        [HttpGet("Get/level={level}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByLevelPaginated(Level level, int page, int limit)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -163,7 +163,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("Get/country={country}&level={level}/")]
+        [HttpGet("Get/country={country:string}&level={level:Level}/")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndLevel(string country,Level level)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -187,7 +187,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("Get/country={country}&level={level}&page={page}&limit={limit}")]
+        [HttpGet("Get/country={country:string}&level={level:Level}&page={page:int}&limit={limit:int}")]
         //[HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByLevelAndCountryPaginated(string country,Level level, int page, int limit)
         {
@@ -212,7 +212,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("Get/status={status}/")]
+        [HttpGet("Get/status={status:Status}/")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByStatus(SiteChangeStatus? status)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -236,7 +236,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("Get/status={status}&page={page}&limit={limit}")]
+        [HttpGet("Get/status={status:Status}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByStatusPaginated(SiteChangeStatus status, int page, int limit)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -259,7 +259,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("Get/country={country}&status={status}/")]
+        [HttpGet("Get/country={country:string}&status={status:Status}/")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndStatus(string country,SiteChangeStatus status)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -282,7 +282,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("Get/country={country}&status={status}&page={page}&limit={limit}")]
+        [HttpGet("Get/country={country:string}&status={status:Status}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndStatusPaginated(string country, SiteChangeStatus status, int page, int limit)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -306,7 +306,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("Get/status={status}&level={level}")]
+        [HttpGet("Get/status={status}&level={level:Level}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByStatusAndLevel(SiteChangeStatus status, Level level)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -330,7 +330,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("Get/status={status}&level={level}&page={page}&limit={limit}")]
+        [HttpGet("Get/status={status}&level={level:Level}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByStatusAndLevelPaginated(SiteChangeStatus status, Level level, int page, int limit)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -353,7 +353,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("Get/country={country}&status={status}&level={level}")]
+        [HttpGet("Get/country={country:string}&status={status:Status}&level={level:Level}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndStatusAndLevel(string country,SiteChangeStatus status, Level level)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -376,7 +376,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("Get/country={country}&status={status}&level={level}&page={page}&limit={limit}")]
+        [HttpGet("Get/country={country:string}&status={status:Status}&level={level:Level}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndStatusAndLevelPaginated(string country,SiteChangeStatus status, Level level,int page, int limit)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
@@ -408,7 +408,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [Route("GetSiteCodes/country={country}&level={level}/")]
+        [Route("GetSiteCodes/country={country:string}&level={level:Level}/")]
         [HttpGet()]
         public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByLevelAndCountry(string country,Level level)
         {
@@ -457,7 +457,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [Route("GetSiteCodes/country={country}&status={status}/")]
+        [Route("GetSiteCodes/country={country:string}&status={status:Status}/")]
         [HttpGet()]
         public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByStatus(string country,SiteChangeStatus status)
         {
@@ -480,7 +480,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("GetSiteCodes/status={status}&level={level}")]
+        [Route("GetSiteCodes/status={status}&level={level:Level}")]
         [HttpGet()]
         public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByStatusAndLevel(SiteChangeStatus status, Level level)
         {
@@ -505,7 +505,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
 
-        [Route("GetSiteCodes/country={country}&status={status}&level={level}/")]
+        [Route("GetSiteCodes/country={country:string}&status={status:Status}&level={level:Level}/")]
         [HttpGet()]
         public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByStatusAndLevelAndCountry(string country,SiteChangeStatus status, Level level)
         {
