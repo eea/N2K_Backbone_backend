@@ -169,7 +169,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country,null, null);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country,null, level);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -194,7 +194,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country,null, null,page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country,null, level,page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
