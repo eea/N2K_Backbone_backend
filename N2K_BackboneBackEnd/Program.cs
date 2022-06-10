@@ -6,6 +6,8 @@ using N2K_BackboneBackEnd.Services;
 using N2K_BackboneBackEnd.Models;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.IO.Compression;
+using N2K_BackboneBackEnd.Enumerations;
+using N2K_BackboneBackEnd.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,6 +76,13 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
+builder.Services.AddRouting(options =>
+{
+    options.ConstraintMap.Add("string", typeof(RouteAlphaNumericConstraint));
+    options.ConstraintMap.Add("Status", typeof(RouteStatusConstraint));
+    options.ConstraintMap.Add("level",  typeof(RouteLevelConstraint));
+});
+
 
 
 var app = builder.Build();
