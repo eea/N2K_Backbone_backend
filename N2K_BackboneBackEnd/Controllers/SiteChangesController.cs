@@ -611,16 +611,16 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("MarkAsJustificationRequired/")]
         [HttpPost]
-        public async Task<ActionResult<int>> MarkAsJustificationRequired([FromBody] ModifiedSiteCode[] siteToMarkAsJustified)
+        public async Task<ActionResult<List<ModifiedSiteCode>>> MarkAsJustificationRequired([FromBody] JustificationModel[] sitesToMarkAsJustified)
         {
-            var response = new ServiceResponse<int>();
+            var response = new ServiceResponse<List<ModifiedSiteCode>>();
             try
             {
-                var siteChanges = await _siteChangesService.MarKAsJustificationRequired(siteToMarkAsJustified);
+                var siteChanges = await _siteChangesService.MarKAsJustificationRequired(sitesToMarkAsJustified);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
-                response.Count = (siteChanges == null) ? 0 : 1;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -628,10 +628,36 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = 0;
+                response.Data = null;
                 return Ok(response);
             }
         }
+
+
+        [Route("ProvideJustification/")]
+        [HttpPost]
+        public async Task<ActionResult<List<ModifiedSiteCode>>> JustificationProvided([FromBody] JustificationModel[] sitesToProvideJustification)
+        {
+            var response = new ServiceResponse<List<ModifiedSiteCode>>();
+            try
+            {
+                var siteChanges = await _siteChangesService.JustificationProvided(sitesToProvideJustification);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
 
 
         /*

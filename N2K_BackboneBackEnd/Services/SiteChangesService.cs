@@ -62,7 +62,9 @@ namespace N2K_BackboneBackEnd.Services
                                                                      select new OrderedChanges
                                                                      {
                                                                          SiteCode = g.Key,
-                                                                         Level = (from t2 in g select t2.Level).Max(),
+                                                                         Level = (from t2 in g select t2.Level).Max()
+                                                                         
+                                                                         ,
                                                                          //Nest all changes of each sitecode ordered by Level
                                                                          ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending(x => (int)x.Level).ToList()
                                                                      }).OrderByDescending(a => a.Level).ThenBy(b => b.SiteCode);
@@ -96,6 +98,8 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.ChangeCategory = "";
                         siteChange.ChangeType = "";
                         siteChange.Country = "";
+                        siteChange.JustificationProvided = change.JustificationProvided;
+                        siteChange.JustificationRequired = change.JustificationRequired;
                         if (change.Country != null)
                         {
                             var countryName = _countries.Where(ctry => ctry.Code.ToLower() == change.Country.ToLower()).FirstOrDefault();
@@ -589,8 +593,8 @@ namespace N2K_BackboneBackEnd.Services
 
                     try
                     {
-                        var paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
-                        var paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
+                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
+                        SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
 
                         await _dataContext.Database.ExecuteSqlRawAsync(
                                 "exec spAcceptSiteCodeChanges @sitecode, @version",
@@ -631,8 +635,8 @@ namespace N2K_BackboneBackEnd.Services
 
                     try
                     {
-                        var paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
-                        var paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
+                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
+                        SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
 
                         await _dataContext.Database.ExecuteSqlRawAsync(
                                 "exec spRejectSiteCodeChanges @sitecode, @version",
@@ -663,16 +667,95 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<int> MarKAsJustificationRequired(ModifiedSiteCode[] changedSiteStatus)
+        public async Task<List<ModifiedSiteCode>> MarKAsJustificationRequired(JustificationModel[] justification)
         {
-            var result = 1;
-            await Task.Delay(50);
+            List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
+            try
+            {
+                foreach (var just in justification)
+                {
+                    ModifiedSiteCode modifiedSiteCode = new ModifiedSiteCode();
+                    try
+                    {
+                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", just.SiteCode);
+                        SqlParameter paramVersionId = new SqlParameter("@version", just.VersionId);
+                        SqlParameter justificationMarked = new SqlParameter("@justififcation", just.Justification);
 
-            return result;
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spMarkJustificationRequired @sitecode, @version, @justififcation",
+                                paramSiteCode,
+                                paramVersionId,
+                                justificationMarked
+                                );
+                        modifiedSiteCode.SiteCode = just.SiteCode;
+                        modifiedSiteCode.VersionId = just.VersionId;
+                        modifiedSiteCode.OK = 1;
+                        modifiedSiteCode.Error = string.Empty;
+                    }
+                    catch (Exception ex)
+                    {
+                        modifiedSiteCode.OK = 0;
+                        modifiedSiteCode.Error = ex.Message;
+                    }
+                    finally
+                    {
+                        result.Add(modifiedSiteCode);
+                    }
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
 
         }
 
 
+        public async Task<List<ModifiedSiteCode>> JustificationProvided(JustificationModel[] justification)
+        {
+            List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
+            try
+            {
+                foreach (var just in justification)
+                {
+                    ModifiedSiteCode modifiedSiteCode = new ModifiedSiteCode();
+                    try
+                    {
+                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", just.SiteCode);
+                        SqlParameter paramVersionId = new SqlParameter("@version", just.VersionId);
+                        SqlParameter justificationProvided = new SqlParameter("@justififcation", just.Justification);
+
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spJustificationProvided @sitecode, @version, @justififcation",
+                                paramSiteCode,
+                                paramVersionId,
+                                justificationProvided
+                                );
+                        modifiedSiteCode.SiteCode = just.SiteCode;
+                        modifiedSiteCode.VersionId = just.VersionId;
+                        modifiedSiteCode.OK = 1;
+                        modifiedSiteCode.Error = string.Empty;
+                    }
+                    catch (Exception ex)
+                    {
+                        modifiedSiteCode.OK = 0;
+                        modifiedSiteCode.Error = ex.Message;
+                    }
+                    finally
+                    {
+                        result.Add(modifiedSiteCode);
+                    }
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+        }
 
     }
 }

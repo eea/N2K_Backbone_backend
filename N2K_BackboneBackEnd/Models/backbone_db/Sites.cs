@@ -20,6 +20,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public int? N2KVersioningRef { get; set; }
         public double? Area { get; set; }
         public double? Length { get; set; }
+        public bool? JustificationRequired { get; set;}
+        public bool? JustificationProvided { get; set; }
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<Sites>()
