@@ -634,7 +634,6 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-<<<<<<< HEAD
         [Route("ProvideJustification/")]
         [HttpPost]
         public async Task<ActionResult<List<ModifiedSiteCode>>> JustificationProvided([FromBody] JustificationModel[] sitesToProvideJustification)
@@ -661,10 +660,6 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
 
-
-
-=======
->>>>>>> 798fdcaaeccf709c42869444a6e7e6108a14efd8
         /*
         // PUT api/<SiteChangesController>/5
         [HttpPut("{id}")]

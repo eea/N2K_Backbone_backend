@@ -62,7 +62,9 @@ namespace N2K_BackboneBackEnd.Services
                                                                      select new OrderedChanges
                                                                      {
                                                                          SiteCode = g.Key,
-                                                                         Level = (from t2 in g select t2.Level).Max(),
+                                                                         Level = (from t2 in g select t2.Level).Max()
+                                                                         
+                                                                         ,
                                                                          //Nest all changes of each sitecode ordered by Level
                                                                          ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending(x => (int)x.Level).ToList()
                                                                      }).OrderByDescending(a => a.Level).ThenBy(b => b.SiteCode);
@@ -96,6 +98,8 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.ChangeCategory = "";
                         siteChange.ChangeType = "";
                         siteChange.Country = "";
+                        siteChange.JustificationProvided = change.JustificationProvided;
+                        siteChange.JustificationRequired = change.JustificationRequired;
                         if (change.Country != null)
                         {
                             var countryName = _countries.Where(ctry => ctry.Code.ToLower() == change.Country.ToLower()).FirstOrDefault();
