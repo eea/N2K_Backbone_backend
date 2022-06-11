@@ -225,6 +225,8 @@ namespace N2K_BackboneBackEnd.Services
 #pragma warning disable CS8601 // Posible asignación de referencia nula
                 changeDetailVM.Name = site.Name;
                 changeDetailVM.Status = (SiteChangeStatus?)site.CurrentStatus;
+                changeDetailVM.JustificationProvided = site.JustificationProvided.HasValue ? site.JustificationProvided.Value : false;
+                changeDetailVM.JustificationRequired = site.JustificationRequired.HasValue ? site.JustificationRequired.Value : false;
 #pragma warning restore CS8601 // Posible asignación de referencia nula
             }
             var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == pSiteCode).ToListAsync();
@@ -667,7 +669,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<ModifiedSiteCode>> MarKAsJustificationRequired(JustificationModel[] justification)
+        public async Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification)
         {
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
             try
