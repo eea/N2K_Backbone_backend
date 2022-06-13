@@ -25,7 +25,7 @@ namespace N2K_BackboneBackEnd.Helpers
             var fullPath = Path.Combine(pathToSave, fileName);
             using (var stream = new FileStream(fullPath, FileMode.Create))
             {
-                file.File.CopyTo(stream);
+                await file.File.CopyToAsync(stream);
             }
             var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
             return string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName);
@@ -34,6 +34,7 @@ namespace N2K_BackboneBackEnd.Helpers
 
         public async Task<int> DeleteFileAsync(string fileName)
         {
+            await Task.Delay(1);
             var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
             var filesUrl = string.Format("{0}{1}/", remoteUrl, _attachedFilesConfig.JustificationFolder);
             fileName = fileName.Replace(filesUrl, "");
