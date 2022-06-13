@@ -1,38 +1,57 @@
 ﻿using Azure.Storage.Blobs;
+using N2K_BackboneBackEnd.Models;
+using System.Net.Http.Headers;
 
 namespace N2K_BackboneBackEnd.Helpers
 {
-    public class AzureBlobHandler
+    public class AzureBlobHandler : IAttachedFileHandler
     {
-        private static BlobContainerClient ConnectToAzureBlob()
+
+        private readonly AttachedFilesConfig _attachedFilesConfig;
+        public AzureBlobHandler(AttachedFilesConfig attachedFilesConfig)
         {
-            string connectionString = "DefaultEndpointsProtocol=https;AccountName=n2kbackbonesharedfiles;AccountKey=eL27qbK6uh620SFY8Z/Ij40FEnAog4NfST8r32cBhK8exsK+rAW+82KlTayk1G70RbHrlxb50Dn2+AStsBAZ3g==;EndpointSuffix=core.windows.net";
+            _attachedFilesConfig = attachedFilesConfig;
+        }
+
+
+
+        private BlobContainerClient ConnectToAzureBlob()
+        {
+            string connectionString = _attachedFilesConfig.AzureConnectionString;
 
             BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
 
             // Create the container and return a container client object
-            return  blobServiceClient.GetBlobContainerClient("justificationfiles");
-                
+            return blobServiceClient.GetBlobContainerClient(_attachedFilesConfig.JustificationFolder);
+
         }
 
 
-        public async static Task<int> UploadFileToBlob(string fullPath, string fileName)
+        public async Task<string> UploadFileAsync(AttachedFile file)
         {
+            var folderName = _attachedFilesConfig.JustificationFolder;
+            var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
 
-
+            var fileName = ContentDispositionHeaderValue.Parse(file.File.ContentDisposition).FileName.Trim('"');
+            var fullPath = Path.Combine(pathToSave, fileName);
+            using (var stream = new FileStream(fullPath, FileMode.Create))
+            {
+                file.File.CopyTo(stream);
+            }
             BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
-
-            // Upload data from the local file
             await blobClient.UploadAsync(fullPath, true);
 
-            return 1;
+            File.Delete(fullPath);
+            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/":"");
+
+            return string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName);
         }
 
 
-        public async static Task<int> DeleteFileFromBlob( string fileName)
+        public async Task<int> DeleteFileAsync(string fileName)
         {
-
-            var filesUrl = "https://n2kbackbonesharedfiles.blob.core.windows.net/justificationfiles/";
+            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+            var filesUrl = string.Format("{0}{1}", remoteUrl, _attachedFilesConfig.JustificationFolder);
             fileName = fileName.Replace(filesUrl, "");
 
             BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
