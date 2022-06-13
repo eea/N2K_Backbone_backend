@@ -148,6 +148,12 @@ namespace N2K_BackboneBackEnd.Services
             List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
             List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
+            //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
+            //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
+            double siteAreaHaTolerance = 0.0;
+            double siteLengthKmTolerance = 0.0;
+            double habitatCoverHaTolerance = 0.0;
+
             //from the view vLatest//processedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
 
             //Load all sites with the CountryVersionID-CountryCode from Versioning
@@ -174,12 +180,6 @@ namespace N2K_BackboneBackEnd.Services
                         SiteToHarvest? storedSite = referencedSites.Where(s => s.SiteCode == harvestingSite.SiteCode).FirstOrDefault();
                         if (storedSite != null)
                         {
-                            //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
-                            //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
-                            double siteAreaHaTolerance = 0.0;
-                            double siteLengthKmTolerance = 0.0;
-                            double habitatCoverHaTolerance = 0.0;
-
                             //SiteAttributesChecking
                             HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
                             changes = await siteCode.ValidateSiteAttributes(changes, envelope, harvestingSite, storedSite, siteAreaHaTolerance, siteLengthKmTolerance);
