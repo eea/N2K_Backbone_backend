@@ -8,17 +8,20 @@ using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using System.Net.Http.Headers;
 using N2K_BackboneBackEnd.Helpers;
+using Microsoft.Extensions.Options;
 
 namespace N2K_BackboneBackEnd.Services
 {
-    public class SiteDetailsService: ISiteDetailsService
+    public class SiteDetailsService : ISiteDetailsService
     {
 
         private readonly N2KBackboneContext _dataContext;
+        private readonly IOptions<ConfigSettings> _appSettings;
 
-        public SiteDetailsService(N2KBackboneContext dataContext)
+        public SiteDetailsService(N2KBackboneContext dataContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
+            _appSettings = app;
         }
 
 
@@ -80,29 +83,32 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile)
         {
-            var folderName = Path.Combine("Resources", "Images");
-            var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
-            var fileName = ContentDispositionHeaderValue.Parse(attachedFile.File.ContentDisposition).FileName.Trim('"');
-            var fullPath = Path.Combine(pathToSave, fileName);
-            var dbPath = Path.Combine(folderName, fileName);
-            using (var stream = new FileStream(fullPath, FileMode.Create))
-            {
-                attachedFile.File.CopyTo(stream);                
-            }
-            await AzureBlobHandler.UploadFileToBlob(fullPath, fileName);
-            File.Delete(fullPath);
+            List<JustificationFiles> result = new List<JustificationFiles>();
+            IAttachedFileHandler fileHandler = null;
 
-            var filesUrl ="https://n2kbackbonesharedfiles.blob.core.windows.net/justificationfiles/";
+            if (_appSettings.Value.AttachedFiles == null) return result;
+
+            if (_appSettings.Value.AttachedFiles.AzureBlob)
+            {
+                fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+            }
+            else
+            {
+                fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+            }
+            var fileUrl = await fileHandler.UploadFileAsync(attachedFile);
+
 
             JustificationFiles justFile = new JustificationFiles
             {
-                 Path= filesUrl + fileName,
-                 SiteCode= attachedFile.SiteCode,
-                 Version=attachedFile.Version
+                Path = fileUrl,
+                SiteCode = attachedFile.SiteCode,
+                Version = attachedFile.Version
             };
             await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
             await _dataContext.SaveChangesAsync();
-            List<JustificationFiles> result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(jf => jf.SiteCode == jf.SiteCode && jf.Version == justFile.Version).ToListAsync();
+
+            result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(jf => jf.SiteCode == jf.SiteCode && jf.Version == justFile.Version).ToListAsync();
             return result;
         }
 
@@ -115,7 +121,18 @@ namespace N2K_BackboneBackEnd.Services
             {
                 _dataContext.Set<JustificationFiles>().Remove(justification);
 
-                if (!string.IsNullOrEmpty(justification.Path) ) await AzureBlobHandler.DeleteFileFromBlob(justification.Path);
+                IAttachedFileHandler fileHandler = null;
+                if (_appSettings.Value.AttachedFiles == null) return 0;
+                if (_appSettings.Value.AttachedFiles.AzureBlob)
+                {
+                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                }
+                else
+                {
+                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                }
+
+                if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
                 await _dataContext.SaveChangesAsync();
                 result = 1;
             }

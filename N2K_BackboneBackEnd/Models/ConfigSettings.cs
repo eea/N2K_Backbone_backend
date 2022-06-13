@@ -1,5 +1,16 @@
 ﻿namespace N2K_BackboneBackEnd.Models
 {
+
+    public class AttachedFilesConfig
+    {
+        public bool AzureBlob { get; set; }
+        public string AzureConnectionString { get; set; } = "";
+        public string FilesRootPath { get; set; } = "";
+        public string JustificationFolder { get; set; } = "";
+
+        public string PublicFilesUrl { get; set; } = "";
+    }
+
     public class ConfigSettings
     {
         public string client_id { get; set; } = "";
@@ -18,6 +29,8 @@
         public int id_token_max_age { get; set; }
         
         public bool InDevelopment { get; set; }
+
+        public AttachedFilesConfig? AttachedFiles { get; set; }
 
     }
 }
