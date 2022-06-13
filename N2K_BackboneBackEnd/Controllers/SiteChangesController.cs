@@ -616,7 +616,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<ModifiedSiteCode>>();
             try
             {
-                var siteChanges = await _siteChangesService.MarKAsJustificationRequired(sitesToMarkAsJustified);
+                var siteChanges = await _siteChangesService.MarkAsJustificationRequired(sitesToMarkAsJustified);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;

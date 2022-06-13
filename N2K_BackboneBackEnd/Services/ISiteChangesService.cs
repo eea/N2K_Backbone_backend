@@ -22,7 +22,7 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus);
 
 
-        Task<List<ModifiedSiteCode>> MarKAsJustificationRequired(JustificationModel[] justification);
+        Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification);
 
         Task<List<ModifiedSiteCode>> JustificationProvided(JustificationModel[] justification);
 
