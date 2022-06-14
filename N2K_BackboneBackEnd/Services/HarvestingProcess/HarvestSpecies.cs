@@ -71,6 +71,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                     if (element.SPECIESCODE is null || _dataContext.Set<SpeciesTypes>().Where(a => a.Code == element.SPECIESCODE).Count() < 1)
                     {
+                        //Use the specie name as a code
+                        item.SpecieCode = element.SPECIESNAMECLEAN;
                         _dataContext.Set<SpeciesOther>().Add(item.getSpeciesOther());
                     }
                     else
@@ -128,8 +130,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.DataQuality = element.DATAQUALITY;
                     item.SpecieType = element.SPTYPE;
 
-                    if (element.SPECIESCODE is null || _dataContext.Set<SpeciesTypes>().Where(a => a.Code == element.SPECIESCODE).Count() < 1)
+                    if (element.SPECIESCODE is null || element.SPECIESCODE == "" || _dataContext.Set<SpeciesTypes>().Where(a => a.Code == element.SPECIESCODE && a.Active == true).Count() < 1)
                     {
+                        //Replace the code (which is Null or empty or no stored in the system)
+                        //item.SiteCode = element.SITECODE;
+                        item.SpecieCode = (element.SPECIESNAMECLEAN != null) ? element.SPECIESNAMECLEAN : element.SPECIESNAME;
                         _dataContext.Set<SpeciesOther>().Add(item.getSpeciesOther());
                     }
                     else
