@@ -6,6 +6,7 @@ using N2K_BackboneBackEnd.Services;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.backbone_db;
+using System.Net.Http.Headers;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
@@ -127,8 +128,6 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         #region SiteFiles
-
-
         [HttpGet("GetAttachedFiles/siteCode={pSiteCode}&version={pCountryVersion}")]
         public async Task<ActionResult<List<JustificationFiles>>> ListSiteFiles(string pSiteCode, int pCountryVersion)
         {
@@ -151,6 +150,71 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+
+        [Route("UploadAttachedFile")]
+        [HttpPost, DisableRequestSizeLimit]
+        public async Task<ActionResult<List<JustificationFiles>>> UploadFile([FromQuery] AttachedFile attachedFile)
+        {
+            var response = new ServiceResponse<List<JustificationFiles>>();
+            try
+            {
+                if (attachedFile.File == null || attachedFile.File.Length == 0)
+                {
+                    response.Success = false;
+                    response.Message = "No file selected";
+                    response.Count = 0;
+                    response.Data = null;
+                    return Ok(response);
+                }
+                //var formCollection = await Request.ReadFormAsync();
+                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFile);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteFiles;
+                response.Count = (siteFiles == null) ? 0 : siteFiles.Count;
+                return Ok(response);
+
+
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+
+        }
+
+        [Route("DeleteAttachedFile")]
+        [HttpDelete]
+        public async Task<ActionResult<int>> DeleteFile([FromQuery] long justificationId)
+        {
+
+            ServiceResponse<int> response = new ServiceResponse<int>();
+            try
+            {
+                int siteComments = await _siteDetailsService.DeleteFile(justificationId);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteComments;
+                response.Count = (siteComments == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = 0;
+                return Ok(response);
+            }
+
+
+        }
+
         #endregion
 
     }

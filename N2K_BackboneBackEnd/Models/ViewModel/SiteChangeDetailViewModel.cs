@@ -15,6 +15,9 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string Name { get; set; } = "";
 
         public int Version { get; set; }
+        public bool? JustificationRequired { get; set; }
+        public bool? JustificationProvided { get; set; }
+
 
         public SiteChangeStatus? Status { get; set; }
 

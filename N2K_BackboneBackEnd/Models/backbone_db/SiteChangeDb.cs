@@ -39,7 +39,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public int VersionReferenceId { get; set; }
         public string? FieldName { get; set; }
         public string ReferenceSiteCode { get; set; } = String.Empty;
-
+        [NotMapped]
+        public bool? JustificationRequired { get; set;  }
+        [NotMapped]
+        public bool? JustificationProvided { get; set; }
 
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
@@ -90,6 +93,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public int VersionReferenceId { get; set; }
         public string? FieldName { get; set; }
         public string ReferenceSiteCode { get; set; } = String.Empty;
+
+        public bool? JustificationRequired { get; set; }
+        public bool? JustificationProvided { get; set; }
 
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 

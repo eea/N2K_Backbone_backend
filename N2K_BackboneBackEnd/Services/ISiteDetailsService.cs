@@ -14,12 +14,18 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<StatusChanges>> AddComment(StatusChanges comment);
 
-        Task<int> DeleteComment(int CommentId);
+        Task<int> DeleteComment(long CommentId);
 
         Task<List<StatusChanges>> UpdateComment(StatusChanges comment);
 
 
         Task<List<JustificationFiles>> ListSiteFiles(string siteCode, int version);
+
+        Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile);
+
+
+        Task<int> DeleteFile(long justificationId);
+
     }
 
 
