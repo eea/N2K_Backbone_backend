@@ -126,18 +126,26 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     else
                     {
-                        siteChange.subRows.Add(new SiteChangeView
+                        if (!siteChange.subRows.Any(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType==change.ChangeType))
                         {
-                            ChangeId = change.ChangeId,
-                            SiteCode = string.Empty,
-                            Action = string.Empty,
-                            ChangeCategory = change.ChangeCategory,
-                            ChangeType = change.ChangeType,
-                            Country = "",
-                            Level = change.Level,
-                            Status = change.Status,
-                            Tags = string.Empty
-                        });
+                            siteChange.subRows.Add(new SiteChangeView
+                            {
+                                ChangeId = change.ChangeId,
+                                SiteCode = string.Empty,
+                                Action = string.Empty,
+                                ChangeCategory = change.ChangeCategory,
+                                ChangeType = change.ChangeType,
+                                Country = "",
+                                Level = change.Level,
+                                Status = change.Status,
+                                Tags = string.Empty,
+                                NumChanges=1
+                            });
+                        }
+                        else
+                        {
+                            siteChange.subRows.Where(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType).FirstOrDefault().NumChanges++;
+                        }
                         siteChange.NumChanges++;
                     }
                     count++;
