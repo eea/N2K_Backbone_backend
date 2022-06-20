@@ -4,8 +4,9 @@ using N2K_BackboneBackEnd.ServiceResponse;
 
 namespace N2K_BackboneBackEnd.Services
 {
-    public interface IControllerSiteService
+    public interface ICountryService
     {
-        Task<ActionResult<ServiceResponse<List<CountryNameCode>>>> GetCountriesWithDataAsync();
+        Task<List<Countries>> GetCountriesWithDataAsync();
+        Task<List<Countries>> GetCountriesAsync();
     }
 }
