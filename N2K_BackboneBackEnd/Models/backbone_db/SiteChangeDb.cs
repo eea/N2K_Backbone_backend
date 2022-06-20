@@ -15,6 +15,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public long ChangeId { get; set; }
 
         public string SiteCode { get; set; } = String.Empty;
+        public string SiteName { get; set; } = String.Empty;
         public int Version { get; set; }
         public string? Country { get; set; }
 
@@ -69,6 +70,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public long ChangeId { get; set; }
 
         public string SiteCode { get; set; } = String.Empty;
+        public string SiteName { get; set; } = String.Empty;
         public int Version { get; set; }
         public string? Country { get; set; }
 

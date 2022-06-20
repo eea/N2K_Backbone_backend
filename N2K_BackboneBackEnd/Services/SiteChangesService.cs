@@ -18,6 +18,7 @@ namespace N2K_BackboneBackEnd.Services
         private class OrderedChanges
         {
             public string SiteCode { get; set; } = "";
+            public string SiteName { get; set; } = "";
             public Level? Level { get; set; }
             public List<SiteChangeDbNumsperLevel> ChangeList { get; set; } = new List<SiteChangeDbNumsperLevel>();
 
@@ -57,16 +58,17 @@ namespace N2K_BackboneBackEnd.Services
             //order the changes so that the first codes are the one with the highest Level value (1. Critical 2. Warning 3. Info)
             //It return an enumeration of sitecodes with a nested list of the changes for that sitecode, ordered by level
             IOrderedEnumerable<OrderedChanges> orderedChangesEnum = (from t in await changes.ToListAsync()
-                                                                     group t by t.SiteCode
+                                                                     group t by new { t.SiteCode, t.SiteName }
                                                                      into g
                                                                      select new OrderedChanges
                                                                      {
-                                                                         SiteCode = g.Key,
+                                                                         SiteCode = g.Key.SiteCode,
+                                                                         SiteName= g.Key.SiteName,
                                                                          Level = (from t2 in g select t2.Level).Max()
                                                                          
                                                                          ,
                                                                          //Nest all changes of each sitecode ordered by Level
-                                                                         ChangeList = g.Where(s => s.SiteCode == g.Key).OrderByDescending(x => (int)x.Level).ToList()
+                                                                         ChangeList = g.Where(s => s.SiteCode.ToUpper() == g.Key.SiteCode.ToUpper()).OrderByDescending(x => (int)x.Level).ToList()
                                                                      }).OrderByDescending(a => a.Level).ThenBy(b => b.SiteCode);
             if (pageLimit != 0)
             {
@@ -93,6 +95,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         siteChange.NumChanges = 1;
                         siteChange.ChangeId = 0;
+                        siteChange.SiteName = change.SiteName;
                         siteChange.SiteCode = change.SiteCode;
                         siteCode = change.SiteCode;
                         siteChange.ChangeCategory = "";
