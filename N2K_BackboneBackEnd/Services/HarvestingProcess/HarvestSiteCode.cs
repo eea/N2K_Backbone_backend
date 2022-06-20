@@ -114,11 +114,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             //Tomamos el valor más alto que tiene en el campo Version para ese SiteCode. Por defecto es -1 para cuando no existe 
             //por que le vamos a sumar un 1 lo cual dejaría en 0
             Sites bbSite = new Sites();
-            int versionNext = 0;
+            int versionNext = -1;
 
             try
             {
-                versionNext = await _dataContext.Set<Sites>().Where(s => s.SiteCode == pVSite.SITECODE).OrderBy(s => s.Version).Select(s => s.Version).FirstOrDefaultAsync();
+                versionNext = await _dataContext.Set<Sites>().Where(s => s.SiteCode == pVSite.SITECODE).OrderBy(s => s.Version).Select(s => s.Version).LastOrDefaultAsync();
                 bbSite.SiteCode = pVSite.SITECODE;
                 bbSite.Version = versionNext + 1;
                 bbSite.Current = false;

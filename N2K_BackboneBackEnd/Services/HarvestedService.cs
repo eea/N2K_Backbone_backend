@@ -517,8 +517,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
-                        //List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.SITECODE == "DE5632303") && (v.VERSIONID == 548)).ToList();
-
+                        
                         List<Sites> bbSites = new List<Sites>();
 
                         foreach (NaturaSite vSite in vSites)
