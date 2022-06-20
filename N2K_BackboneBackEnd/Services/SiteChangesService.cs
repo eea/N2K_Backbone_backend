@@ -680,6 +680,48 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
+        public async Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus)
+        {
+
+            List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
+            try
+            {
+                foreach (var modifiedSiteCode in changedSiteStatus)
+                {
+
+                    try
+                    {
+                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
+                        SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
+
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spSiteCodeChangesToPending @sitecode, @version",
+                                paramSiteCode,
+                                paramVersionId);
+                        modifiedSiteCode.OK = 1;
+                        modifiedSiteCode.Error = string.Empty;
+                        modifiedSiteCode.Status = SiteChangeStatus.Pending;
+                    }
+                    catch (Exception ex)
+                    {
+                        modifiedSiteCode.OK = 0;
+                        modifiedSiteCode.Error = ex.Message;
+                    }
+                    finally
+                    {
+                        result.Add(modifiedSiteCode);
+                    }
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+
+        }
+
         public async Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification)
         {
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();

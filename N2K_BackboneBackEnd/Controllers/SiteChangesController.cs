@@ -608,6 +608,35 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+
+
+        // POST api/<SiteChangesController>
+        [Route("MoveToPending/")]
+        [HttpPost]
+        public async Task<ActionResult<List<ModifiedSiteCode>>> MoveToPending([FromBody] ModifiedSiteCode[] changedSiteStatus)
+        {
+            var response = new ServiceResponse<List<ModifiedSiteCode>>();
+            try
+            {
+                var siteChanges = await _siteChangesService.MoveToPending(changedSiteStatus);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<ModifiedSiteCode>();
+                return Ok(response);
+            }
+        }
+
+
+
         [Route("RejectChanges/")]
         [HttpPost]
         public async Task<ActionResult<List<ModifiedSiteCode>>> RejectChanges([FromBody] ModifiedSiteCode[] rejectedChanges)
