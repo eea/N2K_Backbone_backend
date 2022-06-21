@@ -2,7 +2,9 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.ServiceResponse;
 
 namespace N2K_BackboneBackEnd.Services
@@ -56,6 +58,21 @@ namespace N2K_BackboneBackEnd.Services
                            isEUCountry = c.isEUCountry
                            })
                 .ToListAsync();
+        }
+        
+        public async Task<List<Countries>> GetCountriesByFilterAsync(SiteChangeStatus? status, Level? level)
+        {
+            var param1 = new SqlParameter("@country", DBNull.Value);
+            var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : DBNull.Value);
+            var param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : DBNull.Value);
+
+            var countries = await _dataContext
+                .Set<Countries>()
+                .FromSqlRaw($"exec dbo.spGetCountriesByStatusAndLevel @status, @level", param2, param3)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return countries;
         }
     }
 }
