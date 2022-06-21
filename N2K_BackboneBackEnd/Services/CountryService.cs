@@ -27,7 +27,7 @@ namespace N2K_BackboneBackEnd.Services
             _countries = _dataContext.Set<Countries>().AsNoTracking().ToList();
         }
 
-        public async Task<List<Countries>> GetCountriesWithDataAsync()
+        public async Task<List<Countries>> GetWithDataAsync()
         {
 
             var changes = _dataContext.Set<SiteChangeDb>().Select(c => c.Country).Distinct();
@@ -46,7 +46,7 @@ namespace N2K_BackboneBackEnd.Services
             return aux;
         }
 
-        public async Task<List<Countries>> GetCountriesAsync()
+        public async Task<List<Countries>> GetAsync()
         {
             List<Countries> result = new List<Countries>();
 
@@ -60,7 +60,7 @@ namespace N2K_BackboneBackEnd.Services
                 .ToListAsync();
         }
         
-        public async Task<List<Countries>> GetCountriesByFilterAsync(SiteChangeStatus? status, Level? level)
+        public async Task<List<Countries>> GetWithDataAsync(SiteChangeStatus? status, Level? level)
         {
             var param1 = new SqlParameter("@country", DBNull.Value);
             var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : DBNull.Value);
@@ -74,5 +74,6 @@ namespace N2K_BackboneBackEnd.Services
 
             return countries;
         }
+
     }
 }
