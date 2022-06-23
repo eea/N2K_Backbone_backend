@@ -6,6 +6,10 @@ using N2K_BackboneBackEnd.Services;
 using N2K_BackboneBackEnd.Models;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.IO.Compression;
+using N2K_BackboneBackEnd.Enumerations;
+using N2K_BackboneBackEnd.Helpers;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +22,9 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<ISiteChangesService, SiteChangesService>();
+builder.Services.AddScoped<ISiteDetailsService, SiteDetailsService>();
 builder.Services.AddScoped<IHarvestedService, HarvestedService>();
+builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<IEULoginService, EULoginService>();
 
 builder.Services.AddResponseCompression(options =>
@@ -41,6 +47,12 @@ builder.Services.AddDbContext<N2KBackboneContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
 });
 
+builder.Services.Configure<FormOptions>(o =>
+{
+    o.ValueLengthLimit = int.MaxValue;
+    o.MultipartBodyLengthLimit = int.MaxValue;
+    o.MemoryBufferThreshold = int.MaxValue;
+});
 
 /*
 builder.Services.AddDbContext<N2KBackboneReadOnlyContext>(options =>
@@ -73,6 +85,13 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
+builder.Services.AddRouting(options =>
+{
+    options.ConstraintMap.Add("string", typeof(RouteAlphaNumericConstraint));
+    options.ConstraintMap.Add("Status", typeof(RouteStatusConstraint));
+    options.ConstraintMap.Add("level",  typeof(RouteLevelConstraint));
+});
+
 
 
 var app = builder.Build();
@@ -94,6 +113,12 @@ app.UseSwaggerUI();
 app.UseResponseCompression();
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions()
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Resources")),
+    RequestPath = new PathString("/Resources")
+});
 app.UseAuthorization();
 app.MapControllers();
 

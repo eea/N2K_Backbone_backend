@@ -40,10 +40,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
 
-                elements =await  _versioningContext.Set<ContainsSpecies>().Where(s=> s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
+                elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
 
-                foreach (ContainsSpecies element in elements) {
-                    
+                foreach (ContainsSpecies element in elements)
+                {
+
                     SpecieBase item = new SpecieBase();
                     item.SiteCode = element.SITECODE;
                     item.Version = pVersion;
@@ -100,7 +101,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
-                elements =await  _versioningContext.Set<ContainsSpecies>(). Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
+                elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
                 foreach (ContainsSpecies element in elements)
                 {
 
@@ -142,16 +143,17 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         _dataContext.Set<Species>().Add(item.getSpecies());
                     }
                 }
-                
+
                 return 1;
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSpecies - HarvestBySite", "");
-              
+
                 return 0;
             }
-            finally {
+            finally
+            {
                 TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
             }
 
@@ -169,20 +171,20 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
             try
             {
-                var speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+                List<SpeciesToHarvest> speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
                                 param3, param4).ToListAsync();
-                var referencedSpecies = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+                List<SpeciesToHarvest> referencedSpecies = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
                                 param3, param5).ToListAsync();
 
                 //For each species in Versioning compare it with that species in backboneDB
-                foreach (var harvestingSpecies in speciesVersioning)
+                foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
                 {
-                    var storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+                    SpeciesToHarvest storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode && s.PopulationType == harvestingSpecies.PopulationType).FirstOrDefault();
                     if (storedSpecies != null)
                     {
                         if (storedSpecies.Population.ToUpper() != "D" && harvestingSpecies.Population.ToUpper() == "D")
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
@@ -202,7 +204,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
                         else if (storedSpecies.Population.ToUpper() == "D" && harvestingSpecies.Population.ToUpper() != "D")
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
@@ -222,7 +224,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
                         else if (storedSpecies.Population.ToUpper() != harvestingSpecies.Population.ToUpper())
                         {
-                            var siteChange = new SiteChangeDb();
+                            SiteChangeDb siteChange = new SiteChangeDb();
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
@@ -242,58 +244,57 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
 
                         #region SpeciesPriority
-                        Boolean IsIncludedInSDF = false;
                         SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                         if (priorityCount != null)
-                            IsIncludedInSDF = true;
-
-                        //These booleans declare whether or not each species is a priority
-                        Boolean isStoredPriority = false;
-                        Boolean isHarvestingPriority = false;
-                        if (storedSpecies.Population.ToUpper() != "D" && IsIncludedInSDF)
-                            isStoredPriority = true;
-                        if (harvestingSpecies.Population.ToUpper() != "D" && IsIncludedInSDF)
-                            isHarvestingPriority = true;
-
-                        if (isStoredPriority && !isHarvestingPriority)
                         {
-                            var siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Species Losing Priority";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
-                            siteChange.OldValue = Convert.ToString(isStoredPriority);
-                            siteChange.Code = harvestingSpecies.SpeciesCode;
-                            siteChange.Section = "Species";
-                            siteChange.VersionReferenceId = storedSpecies.VersionId;
-                            siteChange.FieldName = "Priority";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            changes.Add(siteChange);
-                        }
-                        else if (!isStoredPriority && isHarvestingPriority)
-                        {
-                            var siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Species Getting Priority";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = Convert.ToString(isHarvestingPriority);
-                            siteChange.OldValue = Convert.ToString(isStoredPriority);
-                            siteChange.Code = harvestingSpecies.SpeciesCode;
-                            siteChange.Section = "Species";
-                            siteChange.VersionReferenceId = storedSpecies.VersionId;
-                            siteChange.FieldName = "Priority";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            changes.Add(siteChange);
+                            //These booleans declare whether or not each species is a priority
+                            Boolean isStoredPriority = false;
+                            Boolean isHarvestingPriority = false;
+                            if (storedSpecies.Population.ToUpper() != "D")
+                                isStoredPriority = true;
+                            if (harvestingSpecies.Population.ToUpper() != "D")
+                                isHarvestingPriority = true;
+
+                            if (isStoredPriority && !isHarvestingPriority)
+                            {
+                                SiteChangeDb siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.Version = harvestingSite.VersionId;
+                                siteChange.ChangeCategory = "Species";
+                                siteChange.ChangeType = "Species Losing Priority";
+                                siteChange.Country = envelope.CountryCode;
+                                siteChange.Level = Enumerations.Level.Critical;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Tags = string.Empty;
+                                siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                                siteChange.OldValue = Convert.ToString(isStoredPriority);
+                                siteChange.Code = harvestingSpecies.SpeciesCode;
+                                siteChange.Section = "Species";
+                                siteChange.VersionReferenceId = storedSpecies.VersionId;
+                                siteChange.FieldName = "Priority";
+                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                changes.Add(siteChange);
+                            }
+                            else if (!isStoredPriority && isHarvestingPriority)
+                            {
+                                SiteChangeDb siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = harvestingSite.SiteCode;
+                                siteChange.Version = harvestingSite.VersionId;
+                                siteChange.ChangeCategory = "Species";
+                                siteChange.ChangeType = "Species Getting Priority";
+                                siteChange.Country = envelope.CountryCode;
+                                siteChange.Level = Enumerations.Level.Info;
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Tags = string.Empty;
+                                siteChange.NewValue = Convert.ToString(isHarvestingPriority);
+                                siteChange.OldValue = Convert.ToString(isStoredPriority);
+                                siteChange.Code = harvestingSpecies.SpeciesCode;
+                                siteChange.Section = "Species";
+                                siteChange.VersionReferenceId = storedSpecies.VersionId;
+                                siteChange.FieldName = "Priority";
+                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                changes.Add(siteChange);
+                            }
                         }
                         #endregion
                     }
@@ -305,7 +306,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             {
                                 SiteCode = harvestingSite.SiteCode,
                                 Version = harvestingSite.VersionId,
-                                ChangeCategory = "Species Added",
+                                ChangeCategory = "Species",
                                 ChangeType = "Species Added",
                                 Country = envelope.CountryCode,
                                 Level = Enumerations.Level.Info,
@@ -323,16 +324,16 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
 
                 //For each species in backboneDB check if the species still exists in Versioning
-                foreach (var storedSpecies in referencedSpecies)
+                foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
                 {
-                    var harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode).FirstOrDefault();
+                    SpeciesToHarvest harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode && s.PopulationType == storedSpecies.PopulationType).FirstOrDefault();
                     if (harvestingSpecies == null)
                     {
                         changes.Add(new SiteChangeDb
                         {
                             SiteCode = storedSite.SiteCode,
                             Version = harvestingSite.VersionId,
-                            ChangeCategory = "Species Deleted",
+                            ChangeCategory = "Species",
                             ChangeType = "Species Deleted",
                             Country = envelope.CountryCode,
                             Level = Enumerations.Level.Critical,
