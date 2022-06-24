@@ -75,5 +75,16 @@ namespace N2K_BackboneBackEnd.Services
             return countries;
         }
 
+        public async Task<List<CountriesChangesView>> GetPendingLevel()
+        {
+            var param1 = new SqlParameter("@status", "Pending");
+            var param2 = new SqlParameter("@version", 1);
+            var countries = await _dataContext
+                .Set<CountriesChangesView>()
+                .FromSqlRaw($"exec dbo.spGetCountriesCountLevelByStatus @status, @version", param1, param2)
+                .AsNoTracking()
+                .ToListAsync();
+            return countries;
+        }
     }
 }

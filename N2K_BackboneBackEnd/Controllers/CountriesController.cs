@@ -68,5 +68,28 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+        [HttpGet("GetPendingLevel")]
+        public async Task<ActionResult<ServiceResponse<List<CountriesChangesView>>>> GetPendingLevel()
+        {
+            var response = new ServiceResponse<List<CountriesChangesView>>();
+            try
+            {
+                var countriesWithData = await _countryService.GetPendingLevel();
+                response.Success = true;
+                response.Message = "";
+                response.Data = countriesWithData;
+                response.Count = (countriesWithData == null) ? 0 : countriesWithData.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<CountriesChangesView>();
+                return Ok(response);
+            }
+        }
     }
 }
