@@ -52,7 +52,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty,null, null, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, null, null, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -93,13 +93,13 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("Get/country={country:string}&page={page:int}&limit={limit:int}")]        
+        [HttpGet("Get/country={country:string}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryPaginated(string country, int page, int limit)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country,null, null, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, null, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -122,7 +122,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty,null, level);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, null, level);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -138,7 +138,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-        
+
         [HttpGet("Get/level={level}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByLevelPaginated(Level level, int page, int limit)
         {
@@ -164,12 +164,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         [HttpGet("Get/country={country:string}&level={level:Level}/")]
-        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndLevel(string country,Level level)
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndLevel(string country, Level level)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country,null, level);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, level);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -189,12 +189,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [HttpGet("Get/country={country:string}&level={level:Level}&page={page:int}&limit={limit:int}")]
         //[HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
-        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByLevelAndCountryPaginated(string country,Level level, int page, int limit)
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByLevelAndCountryPaginated(string country, Level level, int page, int limit)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country,null, level,page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, level, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -218,7 +218,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty,status, null);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, status, null);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -242,7 +242,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(String.Empty,status, null,  page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(String.Empty, status, null, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -260,12 +260,12 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [HttpGet("Get/country={country:string}&status={status:Status}/")]
-        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndStatus(string country,SiteChangeStatus status)
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndStatus(string country, SiteChangeStatus status)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country,status, null);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, null);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -288,7 +288,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country,status, null, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, null, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -336,7 +336,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty,status, level,page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, status, level, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -354,12 +354,12 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [HttpGet("Get/country={country:string}&status={status:Status}&level={level:Level}")]
-        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndStatusAndLevel(string country,SiteChangeStatus status, Level level)
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndStatusAndLevel(string country, SiteChangeStatus status, Level level)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country,status, level);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, level);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -377,12 +377,12 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [HttpGet("Get/country={country:string}&status={status:Status}&level={level:Level}&page={page:int}&limit={limit:int}")]
-        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndStatusAndLevelPaginated(string country,SiteChangeStatus status, Level level,int page, int limit)
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeDb>>>> GetByCountryAndStatusAndLevelPaginated(string country, SiteChangeStatus status, Level level, int page, int limit)
         {
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country,status, level, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, level, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -398,24 +398,48 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+        [Route("GetSiteCodes/country={country:string}")]
+        [HttpGet()]
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByCountry(string country)
+        {
+            var response = new ServiceResponse<List<SiteCodeView>>();
+            try
+            {
+                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, null, null);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteCodes;
+                response.Count = (siteCodes == null) ? 0 : siteCodes.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                return Ok(response);
+            }
+        }
+
+
 
 
         [Route("GetSiteCodes/level={level}")]
         [HttpGet()]
         public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByLevel(Level level)
         {
-            return await GetSiteCodesByLevelAndCountry(string.Empty,level);
+            return await GetSiteCodesByLevelAndCountry(string.Empty, level);
         }
 
 
         [Route("GetSiteCodes/country={country:string}&level={level:Level}/")]
         [HttpGet()]
-        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByLevelAndCountry(string country,Level level)
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByLevelAndCountry(string country, Level level)
         {
             var response = new ServiceResponse<List<SiteCodeView>>();
             try
             {
-                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country,null, level);
+                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, null, level);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteCodes;
@@ -459,12 +483,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("GetSiteCodes/country={country:string}&status={status:Status}/")]
         [HttpGet()]
-        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByStatus(string country,SiteChangeStatus status)
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByStatus(string country, SiteChangeStatus status)
         {
             var response = new ServiceResponse<List<SiteCodeView>>();
             try
             {
-                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country,status, null);
+                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, status, null);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteCodes;
@@ -507,12 +531,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("GetSiteCodes/country={country:string}&status={status:Status}&level={level:Level}/")]
         [HttpGet()]
-        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByStatusAndLevelAndCountry(string country,SiteChangeStatus status, Level level)
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus status, Level level)
         {
             var response = new ServiceResponse<List<SiteCodeView>>();
             try
             {
-                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country,status, level);
+                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, status, level);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteCodes;
@@ -583,6 +607,35 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+
+
+        // POST api/<SiteChangesController>
+        [Route("MoveToPending/")]
+        [HttpPost]
+        public async Task<ActionResult<List<ModifiedSiteCode>>> MoveToPending([FromBody] ModifiedSiteCode[] changedSiteStatus)
+        {
+            var response = new ServiceResponse<List<ModifiedSiteCode>>();
+            try
+            {
+                var siteChanges = await _siteChangesService.MoveToPending(changedSiteStatus);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<ModifiedSiteCode>();
+                return Ok(response);
+            }
+        }
+
+
 
         [Route("RejectChanges/")]
         [HttpPost]
