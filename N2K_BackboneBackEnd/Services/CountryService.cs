@@ -63,8 +63,8 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<Countries>> GetWithDataAsync(SiteChangeStatus? status, Level? level)
         {
             var param1 = new SqlParameter("@country", DBNull.Value);
-            var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : DBNull.Value);
-            var param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : DBNull.Value);
+            var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : String.Empty);
+            var param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : String.Empty);
 
             var countries = await _dataContext
                 .Set<Countries>()
