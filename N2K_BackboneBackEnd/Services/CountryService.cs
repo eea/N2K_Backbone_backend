@@ -78,10 +78,9 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<CountriesChangesView>> GetPendingLevelAsync()
         {
             var param1 = new SqlParameter("@status", "Pending");
-            var param2 = new SqlParameter("@version", 1);
             var countries = await _dataContext
                 .Set<CountriesChangesView>()
-                .FromSqlRaw($"exec dbo.spGetCountriesCountLevelByStatus @status, @version", param1, param2)
+                .FromSqlRaw($"exec dbo.spGetCountriesCountLevelByStatus @status", param1)
                 .AsNoTracking()
                 .ToListAsync();
             return countries;
