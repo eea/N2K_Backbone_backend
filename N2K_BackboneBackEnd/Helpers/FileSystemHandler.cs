@@ -1,4 +1,5 @@
 ﻿using N2K_BackboneBackEnd.Models;
+using System.IO.Compression;
 using System.Net.Http.Headers;
 
 namespace N2K_BackboneBackEnd.Helpers
@@ -30,8 +31,23 @@ namespace N2K_BackboneBackEnd.Helpers
                 {
                     await f.CopyToAsync(stream);
                 }
-                var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName));
+                if (fullPath.EndsWith("zip"))
+                {
+                    using (ZipArchive archive = ZipFile.OpenRead(fullPath))
+                    {
+                        archive.ExtractToDirectory(pathToSave);
+                        foreach (ZipArchiveEntry entry in archive.Entries)
+                        {
+                            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, entry.Name));
+                        }
+                    }
+                }
+                else
+                {
+                    var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                    uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName));
+                }
             }
             return uploadedFiles;
         }

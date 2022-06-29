@@ -663,14 +663,13 @@ namespace N2K_BackboneBackEnd.Services
             {
                 foreach (var modifiedSiteCode in changedSiteStatus)
                 {
-
                     try
                     {
                         SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
                         SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
 
                         await _dataContext.Database.ExecuteSqlRawAsync(
-                                "exec spSiteCodeChangesToPending @sitecode, @version",
+                                "exec spMoveSiteCodeToPending @sitecode, @version",
                                 paramSiteCode,
                                 paramVersionId);
                         modifiedSiteCode.OK = 1;
