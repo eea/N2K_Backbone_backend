@@ -63,8 +63,8 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<Countries>> GetWithDataAsync(SiteChangeStatus? status, Level? level)
         {
             var param1 = new SqlParameter("@country", DBNull.Value);
-            var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : DBNull.Value);
-            var param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : DBNull.Value);
+            var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : String.Empty);
+            var param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : String.Empty);
 
             var countries = await _dataContext
                 .Set<Countries>()
@@ -78,10 +78,9 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<CountriesChangesView>> GetPendingLevelAsync()
         {
             var param1 = new SqlParameter("@status", "Pending");
-            var param2 = new SqlParameter("@version", 1);
             var countries = await _dataContext
                 .Set<CountriesChangesView>()
-                .FromSqlRaw($"exec dbo.spGetCountriesCountLevelByStatus @status, @version", param1, param2)
+                .FromSqlRaw($"exec dbo.spGetCountriesCountLevelByStatus @status", param1)
                 .AsNoTracking()
                 .ToListAsync();
             return countries;
