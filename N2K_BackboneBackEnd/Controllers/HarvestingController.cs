@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
@@ -126,6 +127,31 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+        [HttpGet]
+        [Route("PreHarvested")]
+        public async Task<ActionResult<ServiceResponse<EnvelopesToHarvest>>> PendingToHarvest()
+        {
+            var response = new ServiceResponse<List<EnvelopesToHarvest>>();
+            try
+            {
+                var pending = await _harvestedService.GetPreHarvestedEnvelopes();
+                response.Success = true;
+                response.Message = "";
+                response.Data = pending;
+                response.Count = (pending == null) ? 0 : pending.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<EnvelopesToHarvest>();
+                return Ok(response);
+            }
+        }
+
 
         /// <summary>
         /// Retrives those envelopes with the status Pending for the selected country

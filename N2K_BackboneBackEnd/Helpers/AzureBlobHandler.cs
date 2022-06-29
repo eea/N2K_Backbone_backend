@@ -32,7 +32,8 @@ namespace N2K_BackboneBackEnd.Helpers
         {
             var folderName = _attachedFilesConfig.JustificationFolder;
             var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
-            List<String> uploadedFiles = new List<string>();
+            var remoteUrl = "";
+            List <String> uploadedFiles = new List<string>();
 
             foreach (var f in files.Files)
             {
@@ -51,22 +52,23 @@ namespace N2K_BackboneBackEnd.Helpers
                         archive.ExtractToDirectory(pathToSave);
                         foreach (ZipArchiveEntry entry in archive.Entries)
                         {
-
-                            var aaa = 1;
                             BlobClient blobClient1 = ConnectToAzureBlob().GetBlobClient(entry.Name);
                             await blobClient1.UploadAsync(Path.Combine(pathToSave, entry.Name), true);
+                            remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, entry.Name));
+
+                            File.Delete(Path.Combine(pathToSave,entry.Name ));
                         }
                     }
-
                 }
                 else
                 {
                     BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
                     await blobClient.UploadAsync(fullPath, true);
+                    remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                    uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName));
                 }
-                //File.Delete(fullPath);
-                //var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                //uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName));
+                File.Delete(fullPath);
             }
             return uploadedFiles;
 
