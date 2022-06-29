@@ -206,7 +206,7 @@ namespace N2K_BackboneBackEnd.Services
                         CountryCode = envelope.CountryCode,
                         VersionId = envelope.VersionId,
                         NumChanges = changes.Count,
-                        Status = SiteChangeStatus.Harvested
+                        Status = SiteChangeStatus.PreHarvested
                     });
 
                     try
@@ -271,7 +271,7 @@ namespace N2K_BackboneBackEnd.Services
                     CountryCode = envelope.CountryCode,
                     VersionId = envelope.VersionId,
                     NumChanges = changes.Count,
-                    Status = SiteChangeStatus.Harvested
+                    Status = SiteChangeStatus.PreHarvested
                 });
 
                 //for the time being do not load the changes and keep using test_table 
@@ -572,7 +572,7 @@ namespace N2K_BackboneBackEnd.Services
                                 CountryCode = envelope.CountryCode,
                                 VersionId = envelope.VersionId,
                                 NumChanges = 0,
-                                Status = SiteChangeStatus.Harvested
+                                Status = SiteChangeStatus.PreHarvested
                             }
                          );
                     }

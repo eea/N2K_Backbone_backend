@@ -97,18 +97,19 @@ namespace N2K_BackboneBackEnd.Services
                 fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
             }
             var fileUrl = await fileHandler.UploadFileAsync(attachedFile);
-
-
-            JustificationFiles justFile = new JustificationFiles
+            foreach (var fUrl in fileUrl)
             {
-                Path = fileUrl,
-                SiteCode = attachedFile.SiteCode,
-                Version = attachedFile.Version
-            };
-            await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
-            await _dataContext.SaveChangesAsync();
+                JustificationFiles justFile = new JustificationFiles
+                {
+                    Path = fUrl,
+                    SiteCode = attachedFile.SiteCode,
+                    Version = attachedFile.Version
+                };
+                await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
+                await _dataContext.SaveChangesAsync();
 
-            result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(jf => jf.SiteCode == jf.SiteCode && jf.Version == justFile.Version).ToListAsync();
+                result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(jf => jf.SiteCode == attachedFile.SiteCode && jf.Version == attachedFile.Version).ToListAsync();
+            }
             return result;
         }
 
