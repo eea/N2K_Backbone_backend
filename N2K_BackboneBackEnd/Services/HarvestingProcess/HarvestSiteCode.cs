@@ -131,7 +131,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     bbSite.CompilationDate = pVSite.DATE_COMPILATION;
                 }
-                bbSite.CurrentStatus = (int?)SiteChangeStatus.Pending;
+                bbSite.CurrentStatus = (int?)SiteChangeStatus.PreHarvested;
                 bbSite.SiteType = pVSite.SITETYPE;
                 bbSite.AltitudeMin = pVSite.ALTITUDE_MIN;
                 bbSite.AltitudeMax = pVSite.ALTITUDE_MAX;
