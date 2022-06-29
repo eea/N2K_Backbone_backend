@@ -88,10 +88,13 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
-        /// <summary>
-        /// Method that returns all those Envelops not harvested by Backbone 
-        /// </summary>
-        /// <returns>List of envelops avialable to harvest</returns>
+
+        public async Task<List<EnvelopesToHarvest>> GetPreHarvestedEnvelopes()
+        {
+            IQueryable<EnvelopesToHarvest> changes = _dataContext.Set<EnvelopesToHarvest>().FromSqlRaw($"exec dbo.spGetPreHarvestedEnvelopes");
+            return await changes.ToListAsync();
+        }
+
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
             var result = new List<Harvesting>();
