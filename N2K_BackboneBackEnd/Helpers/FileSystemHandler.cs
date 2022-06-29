@@ -14,21 +14,26 @@ namespace N2K_BackboneBackEnd.Helpers
 
 
 
-        public async Task<string> UploadFileAsync(AttachedFile file)
+        public async Task<List<string>> UploadFileAsync(AttachedFile files)
         {
             var folderName = _attachedFilesConfig.JustificationFolder;
             var pathToSave = string.IsNullOrEmpty(_attachedFilesConfig.FilesRootPath) ?
                 Path.Combine(Directory.GetCurrentDirectory(), folderName) :
                 Path.Combine(_attachedFilesConfig.FilesRootPath, folderName);
+            List<String> uploadedFiles = new List<string>();
 
-            var fileName = ContentDispositionHeaderValue.Parse(file.File.ContentDisposition).FileName.Trim('"');
-            var fullPath = Path.Combine(pathToSave, fileName);
-            using (var stream = new FileStream(fullPath, FileMode.Create))
+            foreach (var f in files.Files)
             {
-                await file.File.CopyToAsync(stream);
+                var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
+                var fullPath = Path.Combine(pathToSave, fileName);
+                using (var stream = new FileStream(fullPath, FileMode.Create))
+                {
+                    await f.CopyToAsync(stream);
+                }
+                var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName));
             }
-            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-            return string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName);
+            return uploadedFiles;
         }
 
 

@@ -12,7 +12,11 @@ namespace N2K_BackboneBackEnd.Enumerations
         [DataMember]
         Rejected=2,
         [DataMember]
-        Harvested=3
+        PreHarvested = 6,
+        [DataMember]
+        Discarded = 7,
+        [DataMember]
+        Closed = 8
 
     }
 }
