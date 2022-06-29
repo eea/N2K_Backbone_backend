@@ -189,7 +189,7 @@ namespace N2K_BackboneBackEnd.Services
                                 ChangeType = "Site Deleted",
                                 Country = envelope.CountryCode,
                                 Level = Enumerations.Level.Critical,
-                                Status = Enumerations.SiteChangeStatus.Pending,
+                                Status = Enumerations.SiteChangeStatus.PreHarvested,
                                 Tags = string.Empty,
                                 NewValue = null,
                                 OldValue = storedSite.SiteCode,
@@ -422,7 +422,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.ChangeType = "Site Losing Priority";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Critical;
-                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(isHarvestingSitePriority);
                         siteChange.OldValue = Convert.ToString(isStoredSitePriority);
@@ -442,7 +442,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.ChangeType = "Site Getting Priority";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(isHarvestingSitePriority);
                         siteChange.OldValue = Convert.ToString(isStoredSitePriority);
@@ -464,7 +464,7 @@ namespace N2K_BackboneBackEnd.Services
                         ChangeType = "Site Added",
                         Country = envelope.CountryCode,
                         Level = Enumerations.Level.Info,
-                        Status = Enumerations.SiteChangeStatus.Pending,
+                        Status = Enumerations.SiteChangeStatus.PreHarvested,
                         NewValue = harvestingSite.SiteCode,
                         OldValue = null,
                         Tags = string.Empty,
