@@ -15,7 +15,15 @@ namespace N2K_BackboneBackEnd.Enumerations
         [DataMember]
         Harvested=3,
         [DataMember]
-        Harvesting = 4
+        Harvesting = 4,
+        [DataMember]
+        Queued = 5,
+        [DataMember]
+        PreHarvested = 6,
+        [DataMember]
+        Discarded = 7,
+        [DataMember]
+        Closed = 8
 
     }
 

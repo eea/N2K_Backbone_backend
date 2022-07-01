@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
@@ -127,6 +128,31 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("PreHarvested")]
+        public async Task<ActionResult<ServiceResponse<EnvelopesToHarvest>>> PendingToHarvest()
+        {
+            var response = new ServiceResponse<List<EnvelopesToHarvest>>();
+            try
+            {
+                var pending = await _harvestedService.GetPreHarvestedEnvelopes();
+                response.Success = true;
+                response.Message = "";
+                response.Data = pending;
+                response.Count = (pending == null) ? 0 : pending.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<EnvelopesToHarvest>();
+                return Ok(response);
+            }
+        }
+
+
         /// <summary>
         /// Retrives those envelopes with the status Pending for the selected country
         /// </summary>
@@ -182,6 +208,37 @@ namespace N2K_BackboneBackEnd.Controllers
             try
             {
                 var processedEnvelope = await _harvestedService.Validate(envelopes);
+                response.Success = true;
+                response.Message = "";
+                response.Data = processedEnvelope;
+                response.Count = (processedEnvelope == null) ? 0 : processedEnvelope.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<HarvestedEnvelope>();
+                return Ok(response);
+            }
+        }
+
+        /// <summary>
+        /// Executes the process of the validation for a selected site (Sitecode and Version).
+        /// It must be hervested yet to perform this action
+        /// </summary>
+        /// <param name="envelopes"></param>
+        /// <returns></returns>
+        // POST api/<HarvestingController>
+        [Route("Harvest/ValidateSingleSite")]
+        [HttpPost]
+        public async Task<ActionResult<List<HarvestedEnvelope>>> ValidateSingleSite([FromBody] string siteCode, int versionId)
+        {
+            var response = new ServiceResponse<List<HarvestedEnvelope>>();
+            try
+            {
+                var processedEnvelope = await _harvestedService.ValidateSingleSite(siteCode, versionId);
                 response.Success = true;
                 response.Message = "";
                 response.Data = processedEnvelope;

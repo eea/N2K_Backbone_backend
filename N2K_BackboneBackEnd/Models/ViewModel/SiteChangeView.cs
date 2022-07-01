@@ -1,7 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
@@ -22,6 +23,9 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? ChangeType { get; set; }
 
         public string? Action { get; set; } = string.Empty;
+
+        [NotMapped]
+        public int NumChanges { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
