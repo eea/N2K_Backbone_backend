@@ -6,6 +6,7 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.versioning_db;
+using System.Data;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -44,15 +45,32 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<SiteChangeDb>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, int page = 1, int pageLimit = 0)
         {
-            //call a stored procedure that returs the site changes that match the given criteria                        
-            var startRow = (page - 1) * pageLimit;
 
+            var startRow = (page - 1) * pageLimit;
+            var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level))
+                .Skip(startRow)
+                .Take(pageLimit)
+                .ToList();
+                
+            var sitecodesfilter = new DataTable("sitecodesfilter");
+            sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+            sitecodesfilter.Columns.Add("Version", typeof(int));
+
+            foreach (var sc in sitesList) {
+                sitecodesfilter.Rows.Add(new Object[] { sc.SiteCode, sc.Version });
+            }
+
+
+            //call a stored procedure that returs the site changes that match the given criteria                        
             SqlParameter param1 = new SqlParameter("@country", country);
             SqlParameter param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : String.Empty);
             SqlParameter param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : String.Empty);
+            SqlParameter param4 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+            param4.Value = sitecodesfilter;
+            param4.TypeName = "[dbo].[SiteCodeFilter]";
 
-            IQueryable<SiteChangeDbNumsperLevel> changes = _dataContext.Set<SiteChangeDbNumsperLevel>().FromSqlRaw($"exec dbo.spGetChangesByCountryAndStatusAndLevel  @country, @status, @level",
-                            param1, param2, param3);
+            IQueryable<SiteChangeDbNumsperLevel> changes = _dataContext.Set<SiteChangeDbNumsperLevel>().FromSqlRaw($"exec dbo.spGetChangesByCountryAndStatusAndLevel  @country, @status, @level, @siteCodes",
+                            param1, param2, param3, param4);
 
             IEnumerable<OrderedChanges> orderedChanges;
             //order the changes so that the first codes are the one with the highest Level value (1. Critical 2. Warning 3. Info)
@@ -64,12 +82,12 @@ namespace N2K_BackboneBackEnd.Services
                                                                      {
                                                                          SiteCode = g.Key.SiteCode,
                                                                          SiteName= g.Key.SiteName,
-                                                                         Level = (from t2 in g select t2.Level).Max()
-                                                                         
-                                                                         ,
+                                                                         Level = (from t2 in g select t2.Level).Max(),
                                                                          //Nest all changes of each sitecode ordered by Level
                                                                          ChangeList = g.Where(s => s.SiteCode.ToUpper() == g.Key.SiteCode.ToUpper()).OrderByDescending(x => (int)x.Level).ToList()
                                                                      }).OrderByDescending(a => a.Level).ThenBy(b => b.SiteCode);
+            
+            /*
             if (pageLimit != 0)
             {
                 orderedChanges = orderedChangesEnum
@@ -78,7 +96,8 @@ namespace N2K_BackboneBackEnd.Services
                         .ToList();
             }
             else
-                orderedChanges = orderedChangesEnum.ToList();
+            */
+            orderedChanges = orderedChangesEnum.ToList();
 
 
             var result = new List<SiteChangeDb>();
@@ -262,66 +281,22 @@ namespace N2K_BackboneBackEnd.Services
         {
 
             var result = new List<SiteCodeView>();
-            var siteChangesQuery = _dataContext.Set<SiteChangeDb>().AsNoTracking();
-            if (!string.IsNullOrEmpty(country)) siteChangesQuery = siteChangesQuery.Where(s => s.Country == country);
-            if (status.HasValue) siteChangesQuery = siteChangesQuery.Where(s => s.Status == status.Value);
 
+            SqlParameter param1 = new SqlParameter("@country", country);
+            SqlParameter param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : String.Empty);
+            SqlParameter param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : String.Empty);
 
-            var query = from o in siteChangesQuery
-                        group o by new { o.SiteCode, o.Version } into g
-                        select new
-                        {
-                            SiteCode = g.Key.SiteCode,
-                            Version = g.Key.Version,
-                            NumInfo = g.Sum(d => d.Level == Level.Info ? (Int32?)1 : 0),
-                            NumCritical = g.Sum(d => d.Level == Level.Critical ? (Int32?)1 : 0),
-                            NumWarning = g.Sum(d => d.Level == Level.Warning ? (Int32?)1 : 0),
-                        };
+            IQueryable<SiteCodeVersion> changes = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryAndStatusAndLevel]  @country, @status, @level",
+                            param1, param2, param3);
 
-            var list = await query.OrderByDescending(a => a.NumCritical).ThenByDescending(b => b.NumWarning).ThenByDescending(c => c.NumInfo).ToListAsync();
-            switch (level)
-            {
-                case Level.Critical:
+            return (await changes.ToListAsync()).Select(x =>
+                 new SiteCodeView
+                 {
+                     SiteCode = x.SiteCode,
+                     Version = x.Version
+                 }
+            ).ToList();
 
-                    return list.Where(a => a.NumCritical > 0).Select(x =>
-                         new SiteCodeView
-                         {
-                             //CountryCode = .Country,
-                             SiteCode = x.SiteCode,
-                             Version = x.Version
-                         }
-                    ).ToList();
-
-                case Level.Warning:
-                    return list.Where(a => a.NumCritical == 0 && a.NumWarning > 0).Select(x =>
-                        new SiteCodeView
-                        {
-                            //CountryCode = .Country,
-                            SiteCode = x.SiteCode,
-                            Version = x.Version
-                        }
-                    ).ToList();
-
-                case Level.Info:
-                    return list.Where(a => a.NumCritical == 0 && a.NumWarning == 0 && a.NumInfo > 0).Select(x =>
-                        new SiteCodeView
-                        {
-                            //CountryCode = .Country,
-                            SiteCode = x.SiteCode,
-                            Version = x.Version
-                        }
-                    ).ToList();
-
-                default:
-                    return list.Select(x =>
-                        new SiteCodeView
-                        {
-                            //CountryCode = .Country,
-                            SiteCode = x.SiteCode,
-                            Version = x.Version
-                        }
-                    ).ToList();
-            }
         }
 
 
@@ -688,14 +663,13 @@ namespace N2K_BackboneBackEnd.Services
             {
                 foreach (var modifiedSiteCode in changedSiteStatus)
                 {
-
                     try
                     {
                         SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
                         SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
 
                         await _dataContext.Database.ExecuteSqlRawAsync(
-                                "exec spSiteCodeChangesToPending @sitecode, @version",
+                                "exec spMoveSiteCodeToPending @sitecode, @version",
                                 paramSiteCode,
                                 paramVersionId);
                         modifiedSiteCode.OK = 1;

@@ -62,16 +62,39 @@ namespace N2K_BackboneBackEnd.Services
         
         public async Task<List<Countries>> GetWithDataAsync(SiteChangeStatus? status, Level? level)
         {
-            var param1 = new SqlParameter("@country", DBNull.Value);
-            var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : DBNull.Value);
-            var param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : DBNull.Value);
 
-            var countries = await _dataContext
+            var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : string.Empty);
+            var param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : string.Empty);
+
+
+            List<Countries> countries = await _dataContext
                 .Set<Countries>()
                 .FromSqlRaw($"exec dbo.spGetCountriesByStatusAndLevel @status, @level", param2, param3)
                 .AsNoTracking()
                 .ToListAsync();
 
+           return countries;
+        }
+
+        public async Task<List<CountriesChangesView>> GetPendingLevelAsync()
+        {
+            var param1 = new SqlParameter("@status", "Pending");
+            var countries = await _dataContext
+                .Set<CountriesChangesView>()
+                .FromSqlRaw($"exec dbo.spGetCountriesCountLevelByStatus @status", param1)
+                .AsNoTracking()
+                .ToListAsync();
+            return countries;
+        }
+
+        public async Task<List<CountriesSiteCountView>> GetSiteCountAsync()
+        {
+            var param1 = new SqlParameter("@country", DBNull.Value);
+            var countries = await _dataContext
+                .Set<CountriesSiteCountView>()
+                .FromSqlRaw($"exec dbo.spGetSiteStatusCountByCountry @country", param1)
+                .AsNoTracking()
+                .ToListAsync();
             return countries;
         }
 

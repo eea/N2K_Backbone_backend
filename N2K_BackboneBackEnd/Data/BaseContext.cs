@@ -53,7 +53,10 @@ namespace N2K_BackboneBackEnd.Data
                     string entityName = entity.Entity.GetType().Name + "; ";
                     foreach (System.Reflection.PropertyInfo info in entity.Entity.GetType().GetProperties())
                     {
-                        entityName += "; " + info.Name + "=" + info.GetValue(entity.Entity).ToString();
+                        if (info.GetValue(entity.Entity) != null)
+                        {
+                            entityName += "; " + info.Name + "=" + info.GetValue(entity.Entity).ToString();
+                        }
                     }
                     SystemLog.write(SystemLog.errorLevel.Error, entityName, "mySaveChangesFailed", "Entityframework");
 

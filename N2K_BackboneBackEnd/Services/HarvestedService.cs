@@ -88,10 +88,13 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
-        /// <summary>
-        /// Method that returns all those Envelops not harvested by Backbone 
-        /// </summary>
-        /// <returns>List of envelops avialable to harvest</returns>
+
+        public async Task<List<EnvelopesToHarvest>> GetPreHarvestedEnvelopes()
+        {
+            IQueryable<EnvelopesToHarvest> changes = _dataContext.Set<EnvelopesToHarvest>().FromSqlRaw($"exec dbo.spGetPreHarvestedEnvelopes");
+            return await changes.ToListAsync();
+        }
+
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
             var result = new List<Harvesting>();
@@ -206,7 +209,7 @@ namespace N2K_BackboneBackEnd.Services
                         CountryCode = envelope.CountryCode,
                         VersionId = envelope.VersionId,
                         NumChanges = changes.Count,
-                        Status = SiteChangeStatus.Harvested
+                        Status = SiteChangeStatus.PreHarvested
                     });
 
                     try
@@ -271,7 +274,7 @@ namespace N2K_BackboneBackEnd.Services
                     CountryCode = envelope.CountryCode,
                     VersionId = envelope.VersionId,
                     NumChanges = changes.Count,
-                    Status = SiteChangeStatus.Harvested
+                    Status = SiteChangeStatus.PreHarvested
                 });
 
                 //for the time being do not load the changes and keep using test_table 
@@ -579,7 +582,7 @@ namespace N2K_BackboneBackEnd.Services
                                 CountryCode = envelope.CountryCode,
                                 VersionId = envelope.VersionId,
                                 NumChanges = 0,
-                                Status = SiteChangeStatus.Harvested
+                                Status = SiteChangeStatus.PreHarvested
                             }
                          );
                     }
