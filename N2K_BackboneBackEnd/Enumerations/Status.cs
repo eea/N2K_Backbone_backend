@@ -8,9 +8,15 @@ namespace N2K_BackboneBackEnd.Enumerations
         [DataMember]
         Pending = 0,
         [DataMember]
-        Accepted=1,
+        Accepted = 1,
         [DataMember]
-        Rejected=2,
+        Rejected = 2,
+        [DataMember]
+        Harvested = 3,
+        [DataMember]
+        Harvesting = 4,
+        [DataMember]
+        Queued = 5,
         [DataMember]
         PreHarvested = 6,
         [DataMember]
