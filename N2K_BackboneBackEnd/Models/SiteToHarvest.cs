@@ -7,6 +7,7 @@ namespace N2K_BackboneBackEnd.Models
         public string SiteCode { get; set; } = string.Empty;
         public int VersionId { get; set; }
         public string? SiteName { get; set; }
+        public DateTime? DateSCI { get; set; }
         public double? AreaHa { get; set; }
         //public string? PriorityLevel { get; set; }
         public double? LengthKm { get; set; }

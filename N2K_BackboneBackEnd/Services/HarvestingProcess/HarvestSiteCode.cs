@@ -462,6 +462,26 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.ReferenceSiteCode = storedSite.SiteCode;
                     changes.Add(siteChange);
                 }
+                if (Convert.ToString(harvestingSite.DateSCI) != Convert.ToString(storedSite.DateSCI))
+                {
+                    SiteChangeDb siteChange = new SiteChangeDb();
+                    siteChange.SiteCode = harvestingSite.SiteCode;
+                    siteChange.Version = harvestingSite.VersionId;
+                    siteChange.ChangeCategory = "Site General Info";
+                    siteChange.ChangeType = "SCI Date Changed";
+                    siteChange.Country = envelope.CountryCode;
+                    siteChange.Level = Enumerations.Level.Critical;
+                    siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                    siteChange.Tags = string.Empty;
+                    siteChange.NewValue = Convert.ToString(harvestingSite.DateSCI);
+                    siteChange.OldValue = Convert.ToString(storedSite.DateSCI.ToString);
+                    siteChange.Code = harvestingSite.SiteCode;
+                    siteChange.Section = "Site";
+                    siteChange.VersionReferenceId = storedSite.VersionId;
+                    siteChange.FieldName = "SCI Date";
+                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    changes.Add(siteChange);
+                }
                 if (harvestingSite.AreaHa > storedSite.AreaHa)
                 {
                     if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
