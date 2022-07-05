@@ -5,7 +5,7 @@ namespace N2K_BackboneBackEnd.Helpers
     public interface IAttachedFileHandler
     {
 
-        Task<string> UploadFileAsync(AttachedFile file);
+        Task<List<string>> UploadFileAsync(AttachedFile file);
 
         Task<int> DeleteFileAsync(string fileName);
 

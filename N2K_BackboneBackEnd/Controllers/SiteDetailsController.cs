@@ -154,12 +154,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("UploadAttachedFile")]
         [HttpPost, DisableRequestSizeLimit]
-        public async Task<ActionResult<List<JustificationFiles>>> UploadFile([FromQuery] AttachedFile attachedFile)
+        public async Task<ActionResult<List<JustificationFiles>>> UploadFile([FromQuery] AttachedFile   attachedFiles)
         {
             var response = new ServiceResponse<List<JustificationFiles>>();
             try
             {
-                if (attachedFile.File == null || attachedFile.File.Length == 0)
+                if (attachedFiles.Files == null || attachedFiles.Files.Count == 0)
                 {
                     response.Success = false;
                     response.Message = "No file selected";
@@ -168,7 +168,7 @@ namespace N2K_BackboneBackEnd.Controllers
                     return Ok(response);
                 }
                 //var formCollection = await Request.ReadFormAsync();
-                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFile);
+                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteFiles;

@@ -114,11 +114,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             //Tomamos el valor más alto que tiene en el campo Version para ese SiteCode. Por defecto es -1 para cuando no existe 
             //por que le vamos a sumar un 1 lo cual dejaría en 0
             Sites bbSite = new Sites();
-            int versionNext = 0;
+            int versionNext = -1;
 
             try
             {
-                versionNext = await _dataContext.Set<Sites>().Where(s => s.SiteCode == pVSite.SITECODE).OrderBy(s => s.Version).Select(s => s.Version).FirstOrDefaultAsync();
+                versionNext = await _dataContext.Set<Sites>().Where(s => s.SiteCode == pVSite.SITECODE).OrderBy(s => s.Version).Select(s => s.Version).LastOrDefaultAsync();
                 bbSite.SiteCode = pVSite.SITECODE;
                 bbSite.Version = versionNext + 1;
                 bbSite.Current = false;
@@ -131,7 +131,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     bbSite.CompilationDate = pVSite.DATE_COMPILATION;
                 }
-                bbSite.CurrentStatus = (int?)SiteChangeStatus.Pending;
+                bbSite.CurrentStatus = (int?)SiteChangeStatus.PreHarvested;
                 bbSite.SiteType = pVSite.SITETYPE;
                 bbSite.AltitudeMin = pVSite.ALTITUDE_MIN;
                 bbSite.AltitudeMax = pVSite.ALTITUDE_MAX;
@@ -451,7 +451,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.ChangeType = "SiteName Changed";
                     siteChange.Country = envelope.CountryCode;
                     siteChange.Level = Enumerations.Level.Info;
-                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                    siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
                     siteChange.Tags = string.Empty;
                     siteChange.NewValue = harvestingSite.SiteName;
                     siteChange.OldValue = storedSite.SiteName;
@@ -459,6 +459,26 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.Section = "Site";
                     siteChange.VersionReferenceId = storedSite.VersionId;
                     siteChange.FieldName = "SiteName";
+                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    changes.Add(siteChange);
+                }
+                if (Convert.ToString(harvestingSite.DateSCI) != Convert.ToString(storedSite.DateSCI))
+                {
+                    SiteChangeDb siteChange = new SiteChangeDb();
+                    siteChange.SiteCode = harvestingSite.SiteCode;
+                    siteChange.Version = harvestingSite.VersionId;
+                    siteChange.ChangeCategory = "Site General Info";
+                    siteChange.ChangeType = "SCI Date Changed";
+                    siteChange.Country = envelope.CountryCode;
+                    siteChange.Level = Enumerations.Level.Critical;
+                    siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                    siteChange.Tags = string.Empty;
+                    siteChange.NewValue = Convert.ToString(harvestingSite.DateSCI);
+                    siteChange.OldValue = Convert.ToString(storedSite.DateSCI.ToString);
+                    siteChange.Code = harvestingSite.SiteCode;
+                    siteChange.Section = "Site";
+                    siteChange.VersionReferenceId = storedSite.VersionId;
+                    siteChange.FieldName = "SCI Date";
                     siteChange.ReferenceSiteCode = storedSite.SiteCode;
                     changes.Add(siteChange);
                 }
@@ -473,7 +493,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Area Increased";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
                         siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                         siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                         siteChange.Tags = string.Empty;
@@ -496,7 +516,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Area Decreased";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Warning;
-                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
                         siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                         siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                         siteChange.Tags = string.Empty;
@@ -517,7 +537,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.ChangeType = "Area Change";
                     siteChange.Country = envelope.CountryCode;
                     siteChange.Level = Enumerations.Level.Info;
-                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                    siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
                     siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                     siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                     siteChange.Tags = string.Empty;
@@ -539,7 +559,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Length Changed";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
                         siteChange.NewValue = harvestingSite.LengthKm != -1 ? harvestingSite.LengthKm.ToString() : null;
                         siteChange.OldValue = storedSite.LengthKm != -1 ? storedSite.LengthKm.ToString() : null;
                         siteChange.Tags = string.Empty;
