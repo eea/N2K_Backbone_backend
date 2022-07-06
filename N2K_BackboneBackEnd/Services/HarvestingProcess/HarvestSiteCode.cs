@@ -12,9 +12,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
     /// <summary>
     /// Class dedicated to the import of a Site and the entities that dependes directly from the Site Entity.
     /// </summary>
-    public  class HarvestSiteCode : BaseHarvestingProcess, IHarvestingTables
+    public class HarvestSiteCode : BaseHarvestingProcess, IHarvestingTables
     {
-        
+
         /// <summary>
         /// Constructor 
         /// </summary>
@@ -50,7 +50,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="referenceVersionID"></param>
         /// <returns></returns>
         [Obsolete("Method Harvest is deprecated, and has no code.")]
-        public  async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
+        public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
         {
             Console.WriteLine("==>Start Site Code validate...");
             await Task.Delay(10000);
@@ -65,13 +65,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The definition ogf the versioning Site</param>
         /// <param name="pEnvelope">The envelope to process</param>
         /// <returns>Returns a BackBone Site object</returns>
-        public async Task<Sites>? HarvestSite (NaturaSite pVSite, EnvelopesToProcess pEnvelope)
+        public async Task<Sites>? HarvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
         {
             Sites? bbSite = null;
             try
             {
-                
-                
+
+
                 bbSite = await harvestSiteCode(pVSite, pEnvelope);
                 _dataContext.Set<Sites>().Add(bbSite);
                 _dataContext.SaveChanges();
@@ -85,7 +85,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 _dataContext.Set<SiteLargeDescriptions>().AddRange(await harvestSiteLargeDescriptions(pVSite, bbSite.Version));
                 _dataContext.Set<SiteOwnerType>().AddRange(await harvestSiteOwnerType(pVSite, bbSite.Version));
                 TimeLog.setTimeStamp("Site " + pVSite.SITECODE + " - " + pVSite.VERSIONID.ToString(), "Processed");
-                
+
                 return bbSite;
 
             }
@@ -98,7 +98,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 bbSite = null;
             }
-            
+
         }
 
 
@@ -203,11 +203,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 //elements = await _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
-                elements = await _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).GroupBy(s=> new { s.SITECODE, s.VERSIONID, s.NUTSCODE })
-                    .Select(gs=>new NutsRegion() { SITECODE = gs.Key.SITECODE, VERSIONID = gs.Key.VERSIONID, NUTSCODE = gs.Key.NUTSCODE, COVER = gs.Sum(c => c.COVER) }).ToListAsync();
-                
-                
-                
+                elements = await _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).GroupBy(s => new { s.SITECODE, s.VERSIONID, s.NUTSCODE })
+                    .Select(gs => new NutsRegion() { SITECODE = gs.Key.SITECODE, VERSIONID = gs.Key.VERSIONID, NUTSCODE = gs.Key.NUTSCODE, COVER = gs.Sum(c => c.COVER) }).ToListAsync();
+
+
+
                 foreach (NutsRegion element in elements)
                 {
                     NutsBySite item = new NutsBySite();
@@ -363,7 +363,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The object Versioning Site</param>
         /// <param name="pVersion">The version in BackBone</param>
         /// <returns>List of SiteLargeDescriptions stored</returns>
-        private async Task< List<Models.backbone_db.SiteLargeDescriptions>>? harvestSiteLargeDescriptions(NaturaSite pVSite, int pVersion)
+        private async Task<List<Models.backbone_db.SiteLargeDescriptions>>? harvestSiteLargeDescriptions(NaturaSite pVSite, int pVersion)
         {
             List<Models.versioning_db.Description> elements = null;
             List<Models.backbone_db.SiteLargeDescriptions> items = new List<Models.backbone_db.SiteLargeDescriptions>();
@@ -462,25 +462,68 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.ReferenceSiteCode = storedSite.SiteCode;
                     changes.Add(siteChange);
                 }
-                if (Convert.ToString(harvestingSite.DateSCI) != Convert.ToString(storedSite.DateSCI))
+                if (!Convert.ToString(harvestingSite.DateConfSCI).Equals(Convert.ToString(storedSite.DateConfSCI)))
                 {
-                    SiteChangeDb siteChange = new SiteChangeDb();
-                    siteChange.SiteCode = harvestingSite.SiteCode;
-                    siteChange.Version = harvestingSite.VersionId;
-                    siteChange.ChangeCategory = "Site General Info";
-                    siteChange.ChangeType = "SCI Date Changed";
-                    siteChange.Country = envelope.CountryCode;
-                    siteChange.Level = Enumerations.Level.Critical;
-                    siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                    siteChange.Tags = string.Empty;
-                    siteChange.NewValue = Convert.ToString(harvestingSite.DateSCI);
-                    siteChange.OldValue = Convert.ToString(storedSite.DateSCI.ToString);
-                    siteChange.Code = harvestingSite.SiteCode;
-                    siteChange.Section = "Site";
-                    siteChange.VersionReferenceId = storedSite.VersionId;
-                    siteChange.FieldName = "SCI Date";
-                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                    changes.Add(siteChange);
+                    if (Convert.ToString(harvestingSite.DateConfSCI).Equals("1900-01-01") && !Convert.ToString(storedSite.DateConfSCI).Equals("1900-01-01"))
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Site General Info";
+                        siteChange.ChangeType = "Reported DateConfSCI is empty";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Info;
+                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = "NULL";
+                        siteChange.OldValue = Convert.ToString(storedSite.DateConfSCI);
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.FieldName = "DateConfSCI";
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        changes.Add(siteChange);
+                    }
+                    else if (!Convert.ToString(harvestingSite.DateConfSCI).Equals("1900-01-01") && Convert.ToString(storedSite.DateConfSCI).Equals("1900-01-01"))
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Site General Info";
+                        siteChange.ChangeType = "Reference DateConfSCI is empty and reported value is not";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Critical;
+                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = Convert.ToString(harvestingSite.DateConfSCI);
+                        siteChange.OldValue = "NULL";
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.FieldName = "DateConfSCI";
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        changes.Add(siteChange);
+                    }
+                    else
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Site General Info";
+                        siteChange.ChangeType = "Reported DateConfSCI is different";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Warning;
+                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = Convert.ToString(harvestingSite.DateConfSCI);
+                        siteChange.OldValue = Convert.ToString(storedSite.DateConfSCI);
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.FieldName = "DateConfSCI";
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        changes.Add(siteChange);
+                    }
                 }
                 if (harvestingSite.AreaHa > storedSite.AreaHa)
                 {
