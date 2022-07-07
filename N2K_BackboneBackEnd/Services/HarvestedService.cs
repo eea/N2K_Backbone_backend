@@ -151,6 +151,9 @@ namespace N2K_BackboneBackEnd.Services
             List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
             List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
+            //Temporary measure to ensure that the changes status is Pending
+            bool forcedPending = true;
+
             //from the view vLatest//processedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
 
             //Load all sites with the CountryVersionID-CountryCode from Versioning
@@ -175,7 +178,7 @@ namespace N2K_BackboneBackEnd.Services
                     //For each site in Versioning compare it with that site in backboneDB
                     foreach (SiteToHarvest? harvestingSite in sitesVersioning)
                     {
-                        changes = await SiteValidation(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority);
+                        changes = await SiteValidation(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, forcedPending);
                     }
 
                     //For each site in backboneDB check if the site still exists in Versioning
@@ -184,23 +187,24 @@ namespace N2K_BackboneBackEnd.Services
                         SiteToHarvest? harvestingSite = sitesVersioning.Where(s => s.SiteCode == storedSite.SiteCode).FirstOrDefault();
                         if (harvestingSite == null)
                         {
-                            changes.Add(new SiteChangeDb
-                            {
-                                SiteCode = storedSite.SiteCode,
-                                Version = storedSite.VersionId,
-                                ChangeCategory = "Network general structure",
-                                ChangeType = "Site Deleted",
-                                Country = envelope.CountryCode,
-                                Level = Enumerations.Level.Critical,
-                                Status = Enumerations.SiteChangeStatus.PreHarvested,
-                                Tags = string.Empty,
-                                NewValue = null,
-                                OldValue = storedSite.SiteCode,
-                                Code = storedSite.SiteCode,
-                                Section = "Site",
-                                VersionReferenceId = storedSite.VersionId,
-                                ReferenceSiteCode = storedSite.SiteCode
-                            });
+                            SiteChangeDb siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = storedSite.SiteCode;
+                            siteChange.Version = storedSite.VersionId;
+                            siteChange.ChangeCategory = "Network general structure";
+                            siteChange.ChangeType = "Site Deleted";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Critical;
+                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                            if (forcedPending)
+                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = null;
+                            siteChange.OldValue = storedSite.SiteCode;
+                            siteChange.Code = storedSite.SiteCode;
+                            siteChange.Section = "Site";
+                            siteChange.VersionReferenceId = storedSite.VersionId;
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            changes.Add(siteChange);
                         }
                     }
 
@@ -259,6 +263,9 @@ namespace N2K_BackboneBackEnd.Services
             List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
             List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
+            //Temporary measure to ensure that the changes status is Pending
+            bool forcedPending = true;
+
             try
             {
                 SqlParameter param1 = new SqlParameter("@sitecode", harvestingSite.SiteCode);
@@ -267,7 +274,7 @@ namespace N2K_BackboneBackEnd.Services
                 List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSiteBySitecode  @sitecode",
                                 param1).ToListAsync();
 
-                changes = await SiteValidation(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority);
+                changes = await SiteValidation(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, forcedPending);
 
                 result.Add(new HarvestedEnvelope
                 {
@@ -297,7 +304,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<SiteChangeDb>> SiteValidation(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority)
+        public async Task<List<SiteChangeDb>> SiteValidation(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority, bool forcedPending)
         {
             //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
             //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
@@ -316,7 +323,7 @@ namespace N2K_BackboneBackEnd.Services
 
                     //SiteAttributesChecking
                     HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
-                    changes = await siteCode.ValidateSiteAttributes(changes, envelope, harvestingSite, storedSite, siteAreaHaTolerance, siteLengthKmTolerance);
+                    changes = await siteCode.ValidateSiteAttributes(changes, envelope, harvestingSite, storedSite, siteAreaHaTolerance, siteLengthKmTolerance, forcedPending);
 
                     SqlParameter param3 = new SqlParameter("@site", harvestingSite.SiteCode);
                     int maxVersionSite = harvestingSite.VersionId;
@@ -330,7 +337,7 @@ namespace N2K_BackboneBackEnd.Services
                     List<HabitatToHarvest> referencedHabitats = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
                                     param3, param5).ToListAsync();
                     HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
-                    changes = await habitats.ValidateHabitat(habitatVersioning, referencedHabitats, changes, envelope, harvestingSite, storedSite, param3, param4, param5, habitatCoverHaTolerance, habitatPriority);
+                    changes = await habitats.ValidateHabitat(habitatVersioning, referencedHabitats, changes, envelope, harvestingSite, storedSite, param3, param4, param5, habitatCoverHaTolerance, habitatPriority, forcedPending);
 
                     //SpeciesChecking
                     List<SpeciesToHarvest> speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
@@ -338,7 +345,7 @@ namespace N2K_BackboneBackEnd.Services
                     List<SpeciesToHarvest> referencedSpecies = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
                                     param3, param5).ToListAsync();
                     HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
-                    changes = await species.ValidateSpecies(speciesVersioning, referencedSpecies, changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority);
+                    changes = await species.ValidateSpecies(speciesVersioning, referencedSpecies, changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority, forcedPending);
 
                     #region HabitatPriority
                     foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
@@ -426,6 +433,8 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Critical;
                         siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                        if (forcedPending)
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(isHarvestingSitePriority);
                         siteChange.OldValue = Convert.ToString(isStoredSitePriority);
@@ -446,6 +455,8 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
                         siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                        if (forcedPending)
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(isHarvestingSitePriority);
                         siteChange.OldValue = Convert.ToString(isStoredSitePriority);
@@ -459,23 +470,24 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else
                 {
-                    changes.Add(new SiteChangeDb
-                    {
-                        SiteCode = harvestingSite.SiteCode,
-                        Version = harvestingSite.VersionId,
-                        ChangeCategory = "Network general structure",
-                        ChangeType = "Site Added",
-                        Country = envelope.CountryCode,
-                        Level = Enumerations.Level.Info,
-                        Status = Enumerations.SiteChangeStatus.PreHarvested,
-                        NewValue = harvestingSite.SiteCode,
-                        OldValue = null,
-                        Tags = string.Empty,
-                        Code = harvestingSite.SiteCode,
-                        Section = "Site",
-                        VersionReferenceId = harvestingSite.VersionId,
-                        ReferenceSiteCode = harvestingSite.SiteCode
-                    });
+                    SiteChangeDb siteChange = new SiteChangeDb();
+                    siteChange.SiteCode = harvestingSite.SiteCode;
+                    siteChange.Version = harvestingSite.VersionId;
+                    siteChange.ChangeCategory = "Network general structure";
+                    siteChange.ChangeType = "Site Added";
+                    siteChange.Country = envelope.CountryCode;
+                    siteChange.Level = Enumerations.Level.Info;
+                    siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                    if (forcedPending)
+                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                    siteChange.Tags = string.Empty;
+                    siteChange.NewValue = harvestingSite.SiteCode;
+                    siteChange.OldValue = null;
+                    siteChange.Code = harvestingSite.SiteCode;
+                    siteChange.Section = "Site";
+                    siteChange.VersionReferenceId = harvestingSite.VersionId;
+                    siteChange.ReferenceSiteCode = harvestingSite.SiteCode;
+                    changes.Add(siteChange);
                 }
             }
             catch (Exception ex)

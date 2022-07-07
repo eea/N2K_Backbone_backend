@@ -140,6 +140,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.Length = (double?)pVSite.LENGTHKM;
                 bbSite.N2KVersioningRef = Int32.Parse(pVSite.VERSIONID.ToString());
                 bbSite.N2KVersioningVersion = pEnvelope.VersionId;
+                bbSite.DateConfSCI = pVSite.DATE_CONF_SCI;
                 return bbSite;
             }
             catch (Exception ex)
@@ -438,7 +439,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        public async Task<List<SiteChangeDb>> ValidateSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance)
+        public async Task<List<SiteChangeDb>> ValidateSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance, bool forcedPending)
         {
             try
             {
@@ -452,6 +453,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.Country = envelope.CountryCode;
                     siteChange.Level = Enumerations.Level.Info;
                     siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                    if (forcedPending)
+                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                     siteChange.Tags = string.Empty;
                     siteChange.NewValue = harvestingSite.SiteName;
                     siteChange.OldValue = storedSite.SiteName;
@@ -464,7 +467,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 if (!Convert.ToString(harvestingSite.DateConfSCI).Equals(Convert.ToString(storedSite.DateConfSCI)))
                 {
-                    if (Convert.ToString(harvestingSite.DateConfSCI).Equals("1900-01-01") && !Convert.ToString(storedSite.DateConfSCI).Equals("1900-01-01"))
+                    if (Convert.ToString(harvestingSite.DateConfSCI).Equals("01/01/1900 0:00:00") && !Convert.ToString(storedSite.DateConfSCI).Equals("01/01/1900 0:00:00"))
                     {
                         SiteChangeDb siteChange = new SiteChangeDb();
                         siteChange.SiteCode = harvestingSite.SiteCode;
@@ -474,6 +477,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
                         siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                        if (forcedPending)
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = "NULL";
                         siteChange.OldValue = Convert.ToString(storedSite.DateConfSCI);
@@ -484,7 +489,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
                         changes.Add(siteChange);
                     }
-                    else if (!Convert.ToString(harvestingSite.DateConfSCI).Equals("1900-01-01") && Convert.ToString(storedSite.DateConfSCI).Equals("1900-01-01"))
+                    else if (!Convert.ToString(harvestingSite.DateConfSCI).Equals("01/01/1900 0:00:00") && Convert.ToString(storedSite.DateConfSCI).Equals("01/01/1900 0:00:00"))
                     {
                         SiteChangeDb siteChange = new SiteChangeDb();
                         siteChange.SiteCode = harvestingSite.SiteCode;
@@ -494,6 +499,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Critical;
                         siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                        if (forcedPending)
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(harvestingSite.DateConfSCI);
                         siteChange.OldValue = "NULL";
@@ -514,6 +521,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Warning;
                         siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                        if (forcedPending)
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(harvestingSite.DateConfSCI);
                         siteChange.OldValue = Convert.ToString(storedSite.DateConfSCI);
@@ -537,6 +546,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
                         siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                        if (forcedPending)
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                         siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                         siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                         siteChange.Tags = string.Empty;
@@ -560,6 +571,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Warning;
                         siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                        if (forcedPending)
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                         siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                         siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                         siteChange.Tags = string.Empty;
@@ -581,6 +594,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.Country = envelope.CountryCode;
                     siteChange.Level = Enumerations.Level.Info;
                     siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                    if (forcedPending)
+                        siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                     siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                     siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                     siteChange.Tags = string.Empty;
@@ -603,6 +618,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
                         siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                        if (forcedPending)
+                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
                         siteChange.NewValue = harvestingSite.LengthKm != -1 ? harvestingSite.LengthKm.ToString() : null;
                         siteChange.OldValue = storedSite.LengthKm != -1 ? storedSite.LengthKm.ToString() : null;
                         siteChange.Tags = string.Empty;
