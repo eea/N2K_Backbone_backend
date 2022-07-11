@@ -170,11 +170,6 @@ namespace N2K_BackboneBackEnd.Services
                     List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSitesByCountry  @country",
                                     param1).ToListAsync();
 
-                    List<SiteToHarvest>? versionToDelete = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetSitesVersionByCountryAndVersion  @country, @version",
-                                    param1, param2).ToListAsync();
-                    foreach (SiteToHarvest? deletingSite in versionToDelete)
-                        await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE Country = '" + envelope.CountryCode + "' AND Version = '" + deletingSite.VersionId + "'");
-
                     //For each site in Versioning compare it with that site in backboneDB
                     foreach (SiteToHarvest? harvestingSite in sitesVersioning)
                     {
@@ -226,6 +221,8 @@ namespace N2K_BackboneBackEnd.Services
                         SystemLog.write(SystemLog.errorLevel.Error, ex, "Save Changes", "");
                         break;
                     }
+
+                    await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE ChangeId NOT IN (SELECT MAX(ChangeId) AS MaxRecordID FROM dbo.Changes GROUP BY SiteCode, Version, ChangeType, Code)");
                 }
                 catch (Exception ex)
                 {
@@ -295,6 +292,8 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "Save Changes", "");
                 }
+
+                await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE ChangeId NOT IN (SELECT MAX(ChangeId) AS MaxRecordID FROM dbo.Changes GROUP BY SiteCode, Version, ChangeType, Code)");
             }
             catch (Exception ex)
             {
