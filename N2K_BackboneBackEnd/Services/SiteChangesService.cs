@@ -47,11 +47,13 @@ namespace N2K_BackboneBackEnd.Services
         {
 
             var startRow = (page - 1) * pageLimit;
-            var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level))
-                .Skip(startRow)
-                .Take(pageLimit)
-                .ToList();
-                
+            var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level));
+            if (pageLimit > 0) {
+                sitesList= sitesList
+                    .Skip(startRow)
+                    .Take(pageLimit)
+                    .ToList();
+            }
             var sitecodesfilter = new DataTable("sitecodesfilter");
             sitecodesfilter.Columns.Add("SiteCode", typeof(string));
             sitecodesfilter.Columns.Add("Version", typeof(int));
@@ -122,6 +124,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Country = "";
                         siteChange.JustificationProvided = change.JustificationProvided;
                         siteChange.JustificationRequired = change.JustificationRequired;
+                        siteChange.HasGeometry = change.HasGeometry;
                         if (change.Country != null)
                         {
                             var countryName = _countries.Where(ctry => ctry.Code.ToLower() == change.Country.ToLower()).FirstOrDefault();
@@ -141,7 +144,8 @@ namespace N2K_BackboneBackEnd.Services
                             Country = "",
                             Level = change.Level,
                             Status = change.Status,
-                            Tags = change.Tags
+                            Tags = change.Tags,
+                            NumChanges=1
                         };
                         siteChange.subRows = new List<SiteChangeView>();
                         siteChange.subRows.Add(changeView);
@@ -252,6 +256,16 @@ namespace N2K_BackboneBackEnd.Services
             var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
             if (site != null)
             {
+                changeDetailVM.HasGeometry = false;
+                SqlParameter param1 = new SqlParameter("@SiteCode", site.SiteCode);
+                SqlParameter param2 = new SqlParameter("@Version", site.Version);
+
+                var geometries = await _dataContext.Set<SiteGeometry>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometry  @SiteCode, @Version",
+                                param1, param2).ToArrayAsync();
+
+                if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].GeoJson)) changeDetailVM.HasGeometry = true;
+
+
 #pragma warning disable CS8601 // Posible asignación de referencia nula
                 changeDetailVM.Name = site.Name;
                 changeDetailVM.Status = (SiteChangeStatus?)site.CurrentStatus;
@@ -259,7 +273,7 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetailVM.JustificationRequired = site.JustificationRequired.HasValue ? site.JustificationRequired.Value : false;
 #pragma warning restore CS8601 // Posible asignación de referencia nula
             }
-            var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == pSiteCode).ToListAsync();
+            var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == pSiteCode  &&  site.Version== pCountryVersion ).ToListAsync();
 
 
             _siteHabitats = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();

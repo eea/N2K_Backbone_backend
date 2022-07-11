@@ -13,6 +13,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string SiteCode { get; set; } = "";
 
         public string Name { get; set; } = "";
+        public bool? HasGeometry { get; set; } = false;
 
         public int Version { get; set; }
         public bool? JustificationRequired { get; set; }
