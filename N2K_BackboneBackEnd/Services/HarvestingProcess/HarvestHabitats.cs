@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
@@ -233,7 +234,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             return 1;
         }
 
-        public async Task<List<SiteChangeDb>> ValidateHabitat(List<HabitatToHarvest> habitatVersioning, List<HabitatToHarvest> referencedHabitats, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, double habitatCoverHaTolerance, List<HabitatPriority> habitatPriority, bool forcedPending)
+        public async Task<List<SiteChangeDb>> ValidateHabitat(List<HabitatToHarvest> habitatVersioning, List<HabitatToHarvest> referencedHabitats, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, double habitatCoverHaTolerance, List<HabitatPriority> habitatPriority, ProcessedEnvelopes? processedEnvelope)
         {
             try
             {
@@ -253,9 +254,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Relative surface Decrease";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Warning;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = harvestingHabitat.RelSurface;
                             siteChange.OldValue = storedHabitat.RelSurface;
@@ -276,9 +275,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Relative surface Increase";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = harvestingHabitat.RelSurface;
                             siteChange.OldValue = storedHabitat.RelSurface;
@@ -298,9 +295,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Relative surface Change";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = harvestingHabitat.RelSurface;
                             siteChange.OldValue = storedHabitat.RelSurface;
@@ -320,9 +315,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Representativity Decrease";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Warning;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = harvestingHabitat.Representativity;
                             siteChange.OldValue = storedHabitat.Representativity;
@@ -342,9 +335,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Representativity Increase";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = harvestingHabitat.Representativity;
                             siteChange.OldValue = storedHabitat.Representativity;
@@ -364,9 +355,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Representativity Change";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = harvestingHabitat.Representativity;
                             siteChange.OldValue = storedHabitat.Representativity;
@@ -388,9 +377,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Cover_ha Decrease";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Warning;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                                if (forcedPending)
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
                                 siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
                                 siteChange.Tags = string.Empty;
@@ -413,9 +400,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Cover_ha Increase";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                                if (forcedPending)
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
                                 siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
                                 siteChange.Tags = string.Empty;
@@ -436,9 +421,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Cover_ha Change";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
                             siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
                             siteChange.Tags = string.Empty;
@@ -484,9 +467,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Habitat Losing Priority";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Critical;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                                if (forcedPending)
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.Tags = string.Empty;
                                 siteChange.NewValue = Convert.ToString(isHarvestingPriority);
                                 siteChange.OldValue = Convert.ToString(isStoredPriority);
@@ -506,9 +487,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Habitat Getting Priority";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                                if (forcedPending)
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.Tags = string.Empty;
                                 siteChange.NewValue = Convert.ToString(isHarvestingPriority);
                                 siteChange.OldValue = Convert.ToString(isStoredPriority);
@@ -531,9 +510,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Habitat Added";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                        if (forcedPending)
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = harvestingHabitat.HabitatCode;
                         siteChange.OldValue = null;
@@ -558,9 +535,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Habitat Deleted";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Critical;
-                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                        if (forcedPending)
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = null;
                         siteChange.OldValue = storedHabitat.HabitatCode;

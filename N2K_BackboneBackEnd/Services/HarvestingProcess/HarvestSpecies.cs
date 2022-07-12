@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
@@ -167,7 +168,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             return 1;
         }
 
-        public async Task<List<SiteChangeDb>> ValidateSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority, bool forcedPending)
+        public async Task<List<SiteChangeDb>> ValidateSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope)
         {
             try
             {
@@ -191,9 +192,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Decrease";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Warning;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
@@ -213,9 +212,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Increase";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
@@ -235,9 +232,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Change";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
                             siteChange.Tags = string.Empty;
@@ -270,9 +265,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Species Losing Priority";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Critical;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                                if (forcedPending)
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.Tags = string.Empty;
                                 siteChange.NewValue = Convert.ToString(isHarvestingPriority);
                                 siteChange.OldValue = Convert.ToString(isStoredPriority);
@@ -292,9 +285,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Species Getting Priority";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                                if (forcedPending)
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.Tags = string.Empty;
                                 siteChange.NewValue = Convert.ToString(isHarvestingPriority);
                                 siteChange.OldValue = Convert.ToString(isStoredPriority);
@@ -319,9 +310,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Species Added";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = harvestingSpecies.SpeciesCode;
                             siteChange.OldValue = null;
@@ -347,9 +336,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Species Deleted";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Critical;
-                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                        if (forcedPending)
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = null;
                         siteChange.OldValue = storedSpecies.SpeciesCode;
@@ -376,9 +363,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Decrease";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
@@ -398,9 +383,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Increase";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
@@ -420,9 +403,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Change";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
                             siteChange.Tags = string.Empty;
@@ -455,9 +436,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Species Losing Priority";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                                if (forcedPending)
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.Tags = string.Empty;
                                 siteChange.NewValue = Convert.ToString(isHarvestingPriority);
                                 siteChange.OldValue = Convert.ToString(isStoredPriority);
@@ -477,9 +456,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Species Getting Priority";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                                if (forcedPending)
-                                    siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.Tags = string.Empty;
                                 siteChange.NewValue = Convert.ToString(isHarvestingPriority);
                                 siteChange.OldValue = Convert.ToString(isStoredPriority);
@@ -504,9 +481,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Species Added";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                            if (forcedPending)
-                                siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = harvestingSpecies.SpeciesCode;
                             siteChange.OldValue = null;
@@ -531,9 +506,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Species Deleted";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
-                        if (forcedPending)
-                            siteChange.Status = Enumerations.SiteChangeStatus.Pending;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = null;
                         siteChange.OldValue = storedSpecies.SpeciesCode;
