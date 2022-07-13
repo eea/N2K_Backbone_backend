@@ -190,7 +190,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.ChangeType = "Site Deleted";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = null;
                             siteChange.OldValue = storedSite.SiteCode;
@@ -435,7 +435,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.ChangeType = "Site Losing Priority";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Critical;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(isHarvestingSitePriority);
                         siteChange.OldValue = Convert.ToString(isStoredSitePriority);
@@ -455,7 +455,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.ChangeType = "Site Getting Priority";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(isHarvestingSitePriority);
                         siteChange.OldValue = Convert.ToString(isStoredSitePriority);
@@ -476,7 +476,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.ChangeType = "Site Added";
                     siteChange.Country = envelope.CountryCode;
                     siteChange.Level = Enumerations.Level.Info;
-                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                     siteChange.Tags = string.Empty;
                     siteChange.NewValue = harvestingSite.SiteCode;
                     siteChange.OldValue = null;

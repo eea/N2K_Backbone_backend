@@ -452,7 +452,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.ChangeType = "SiteName Changed";
                     siteChange.Country = envelope.CountryCode;
                     siteChange.Level = Enumerations.Level.Info;
-                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                     siteChange.Tags = string.Empty;
                     siteChange.NewValue = harvestingSite.SiteName;
                     siteChange.OldValue = storedSite.SiteName;
@@ -474,7 +474,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Reported DateConfSCI is empty";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = "NULL";
                         siteChange.OldValue = Convert.ToString(storedSite.DateConfSCI);
@@ -494,7 +494,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Reference DateConfSCI is empty and reported value is not";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Critical;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(harvestingSite.DateConfSCI);
                         siteChange.OldValue = "NULL";
@@ -514,7 +514,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Reported DateConfSCI is different";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Warning;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(harvestingSite.DateConfSCI);
                         siteChange.OldValue = Convert.ToString(storedSite.DateConfSCI);
@@ -537,7 +537,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Area Increased";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                         siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                         siteChange.Tags = string.Empty;
@@ -560,7 +560,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Area Decreased";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Warning;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                         siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                         siteChange.Tags = string.Empty;
@@ -581,7 +581,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.ChangeType = "Area Change";
                     siteChange.Country = envelope.CountryCode;
                     siteChange.Level = Enumerations.Level.Info;
-                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                     siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
                     siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
                     siteChange.Tags = string.Empty;
@@ -603,7 +603,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeType = "Length Changed";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.NewValue = harvestingSite.LengthKm != -1 ? harvestingSite.LengthKm.ToString() : null;
                         siteChange.OldValue = storedSite.LengthKm != -1 ? storedSite.LengthKm.ToString() : null;
                         siteChange.Tags = string.Empty;
