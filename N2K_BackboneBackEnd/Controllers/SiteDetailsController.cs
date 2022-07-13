@@ -26,6 +26,34 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
+        #region SiteGeometry
+        [HttpGet("GetSiteGeometry/siteCode={pSiteCode}&version={pCountryVersion}")]
+        public async Task<ActionResult<String>> GetSiteGeometry(string pSiteCode, int pCountryVersion)
+        {
+            ServiceResponse<string> response = new ServiceResponse<string>();
+            try
+            {
+                string siteGeometry = await _siteDetailsService.GetSiteGeometry(pSiteCode, pCountryVersion);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteGeometry;
+                response.Count = (siteGeometry == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+
+        #endregion
+
+
         #region SiteComments
         [HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
         public async Task<ActionResult<List<StatusChanges>>> ListSiteComments(string pSiteCode, int pCountryVersion)

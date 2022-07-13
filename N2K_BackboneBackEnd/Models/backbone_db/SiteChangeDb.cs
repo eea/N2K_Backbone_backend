@@ -28,6 +28,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? ChangeCategory { get; set; }
         public string? ChangeType { get; set; }
 
+
         [NotMapped]
         public int NumChanges { get; set; }
 
@@ -45,6 +46,11 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public bool? JustificationRequired { get; set;  }
         [NotMapped]
         public bool? JustificationProvided { get; set; }
+
+        [NotMapped]
+        public bool? HasGeometry { get; set; }
+
+
 
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
@@ -97,8 +103,12 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? FieldName { get; set; }
         public string ReferenceSiteCode { get; set; } = String.Empty;
 
+        public bool? HasGeometry { get; set; }
+
+
         public bool? JustificationRequired { get; set; }
         public bool? JustificationProvided { get; set; }
+
 
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 

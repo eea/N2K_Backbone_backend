@@ -16,11 +16,13 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public SiteChangeStatus? Status { get; set; }
 
+
         public string? Tags { get; set; }
         
         public Level? Level { get; set; }
         public string? ChangeCategory { get; set; }
         public string? ChangeType { get; set; }
+
 
         public string? Action { get; set; } = string.Empty;
 
