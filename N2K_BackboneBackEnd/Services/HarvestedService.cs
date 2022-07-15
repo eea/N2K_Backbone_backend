@@ -596,7 +596,7 @@ namespace N2K_BackboneBackEnd.Services
                         //TODO: Set as preharvested as option
 
                         //set the enevelope as successfully completed
-                        envelopeToProcess.Status = HarvestingStatus.Harvested;
+                        envelopeToProcess.Status = HarvestingStatus.PreHarvested;
                         _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
                         result.Add(
                             new HarvestedEnvelope
