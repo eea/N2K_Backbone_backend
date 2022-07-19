@@ -2,7 +2,7 @@
 {
     public class ConfigService : IConfigService
     {
-        public async Task<string> GetConfiguration()
+        public async Task<string> GetFrontEndConfiguration()
         {
             try
             {

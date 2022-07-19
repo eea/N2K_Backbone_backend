@@ -31,7 +31,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<string>();
             try
             {
-                var config = await _configService.GetConfiguration();
+                var config = await _configService.GetFrontEndConfiguration();
                 response.Success = true;
                 response.Message = "";
                 response.Data = config;
