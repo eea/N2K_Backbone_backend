@@ -23,6 +23,5 @@ namespace N2K_BackboneBackEnd.Enumerations
         Discarded = 7,
         [DataMember]
         Closed = 8
-
     }
 }

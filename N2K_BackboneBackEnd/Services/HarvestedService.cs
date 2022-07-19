@@ -97,21 +97,21 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
-            var result = new List<Harvesting>();
-            var countries = await _dataContext.Set<Countries>().ToListAsync();
-            var processed = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"select * from dbo.[vLatestProcessedEnvelopes]").AsNoTracking().ToListAsync();
-            var allEnvs = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().ToListAsync();
+            List<Harvesting> result = new List<Harvesting>();
+            List<Countries> countries = await _dataContext.Set<Countries>().ToListAsync();
+            List<ProcessedEnvelopes> processed = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"select * from dbo.[vHighVersionProcessedEnvelopes]").AsNoTracking().ToListAsync();
+            List<ProcessedEnvelopes> allEnvs = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().ToListAsync();
             foreach (var procCountry in processed)
             {
-                var param1 = new SqlParameter("@country", procCountry.Country);
-                var param2 = new SqlParameter("@version", procCountry.Version);
-                var param3 = new SqlParameter("@importdate", procCountry.ImportDate);
+                SqlParameter param1 = new SqlParameter("@country", procCountry.Country);
+                SqlParameter param2 = new SqlParameter("@version", procCountry.Version);
+                SqlParameter param3 = new SqlParameter("@importdate", procCountry.ImportDate);
 
-                var list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetPendingCountryVersion  @country, @version,@importdate",
+                List<Harvesting> list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetPendingCountryVersion  @country, @version,@importdate",
                                 param1, param2, param3).AsNoTracking().ToListAsync();
                 if (list.Count > 0)
                 {
-                    foreach (var pendEnv in list)
+                    foreach (Harvesting pendEnv in list)
                     {
                         if (!result.Contains(pendEnv))
                         {
@@ -120,7 +120,8 @@ namespace N2K_BackboneBackEnd.Services
                                 result.Add(
                                     new Harvesting
                                     {
-                                        Country = countries.Where(ct => ct.Code.ToLower() == pendEnv.Country.ToLower()).FirstOrDefault().Country,
+                                        Country = pendEnv.Country, //countries.Where(ct => ct.Code.ToLower() == pendEnv.Country.ToLower()).FirstOrDefault().Country,
+                                        Name = pendEnv.Name,
                                         Status = pendEnv.Status,
                                         Id = pendEnv.Id,
                                         SubmissionDate = pendEnv.SubmissionDate
@@ -514,6 +515,8 @@ namespace N2K_BackboneBackEnd.Services
                     //remove version from database
                     await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
 
+                    DateTime SubmissionDate = getOptimalDate(envelope);
+
                     //create a new entry in the processed envelopes table to register that a new one is being harvested
                     ProcessedEnvelopes envelopeToProcess = new ProcessedEnvelopes
                     {
@@ -521,11 +524,13 @@ namespace N2K_BackboneBackEnd.Services
                         ,
                         Version = envelope.VersionId
                         ,
-                        ImportDate = await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
+                        ImportDate = envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
                         ,
                         Status = HarvestingStatus.Harvesting
                         ,
                         Importer = "TEST"
+                        ,
+                        N2K_VersioningDate = SubmissionDate // envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
                     };
                     try
                     {
@@ -559,6 +564,12 @@ namespace N2K_BackboneBackEnd.Services
                                     //TODO: Put habitats on another threath 
                                     HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
                                     await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
+                                
+                                    //TODO:Put geodata in another threath
+
+
+
+
                                 }
                                 _dataContext.SaveChanges();
                                 _ThereAreChanges = false;
@@ -582,6 +593,8 @@ namespace N2K_BackboneBackEnd.Services
                             }
 
                         }
+                        //TODO: Set as preharvested as option
+
                         //set the enevelope as successfully completed
                         envelopeToProcess.Status = HarvestingStatus.Harvested;
                         _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
@@ -636,7 +649,156 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
+        /// <summary>
+        /// In case of development evirontment it return a proper date for the submision date
+        /// </summary>
+        /// <param name="pEnvelope"></param>
+        /// <returns></returns>
+        private DateTime getOptimalDate(EnvelopesToProcess pEnvelope)
+        {
+            DateTime returnDate = pEnvelope.SubmissionDate;
+            if (_appSettings.Value.InDevelopment)
+            {
+                try
+                {
+                    List<PackageCountrySpatial> packSpatials = _versioningContext.Set<PackageCountrySpatial>().Where(v => v.CountryCode == pEnvelope.CountryCode).OrderByDescending(v => v.CountryVersionID).ToList();
+                    foreach (PackageCountrySpatial packSpatial in packSpatials)
+                    {
+                        if (packSpatial.Importdate != null)
+                        {
+                            if (packSpatial.Importdate != pEnvelope.SubmissionDate)
+                            {
+                                returnDate = (DateTime)packSpatial.Importdate;
+                            }
+                            break;
+                        }
+                    }
+                }
+                catch (Exception ex) { }
+            }
+            return returnDate;
+        }
 
+
+        private async Task<List<HarvestedEnvelope>> HarvestSpatialData(EnvelopesToProcess[] envelopeIDs) {
+            
+            try
+            {
+                List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
+
+                //for each envelope to process
+                foreach (EnvelopesToProcess envelope in envelopeIDs)
+                {
+                    HttpClient client = new HttpClient();
+                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialload, _appSettings.Value.fme_destination_database, envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
+                    try
+                    {
+                        TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
+
+                        Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
+                        string content = await response.Result.Content.ReadAsStringAsync();
+
+                        result.Add(
+                            new HarvestedEnvelope
+                            {
+                                CountryCode = envelope.CountryCode,
+                                VersionId = envelope.VersionId,
+                                NumChanges = 0,
+                                Status = SiteChangeStatus.Harvested
+                            }
+                         );
+                    }
+                    catch (Exception ex)
+                    {
+                        SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestGeodata", "");
+                        result.Add(
+                            new HarvestedEnvelope
+                            {
+                                CountryCode = envelope.CountryCode,
+                                VersionId = envelope.VersionId,
+                                NumChanges = 0,
+                                Status = SiteChangeStatus.Rejected
+                            }
+                         );
+                        
+                    }
+                    finally
+                    {
+                        client.Dispose();
+                        client = null;
+                        TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString().ToString(), "End");
+                    }
+                
+                }
+                return await Task.FromResult(result);
+            }
+
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
+                return await Task.FromResult(new List<HarvestedEnvelope>());
+            }
+            finally
+            {
+                TimeLog.setTimeStamp("Harvesting process ", "End");
+            }
+
+
+
+        }
+
+
+        /// <summary>
+        /// In order to execute the all steps of the process of the harvest from Versioning
+        /// </summary>
+        /// <returns>A list of the evelopes processed</returns>
+        public async Task<List<HarvestedEnvelope>> FullHarvest()
+        {
+            try
+            {
+                //ask if there any harvesting process running (status of the envelope 4)
+                //Call the method to know which envelopes are availables
+                List<Harvesting> vEnvelopes = await GetPendingEnvelopes();
+                List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
+                if (vEnvelopes.Count > 0)
+                {
+                    foreach (Harvesting vEnvelope in vEnvelopes)
+                    {
+                        envelopes.Add(new EnvelopesToProcess
+                        {
+                            VersionId = Int32.Parse(vEnvelope.Id.ToString())
+                            ,
+                            CountryCode = vEnvelope.Country
+                            ,
+                            SubmissionDate= vEnvelope.SubmissionDate
+                        });
+                    }
+
+                    //Process each envelope
+                    List<HarvestedEnvelope> bbEnvelopes = await Harvest(envelopes.ToArray());
+                    
+                    List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(envelopes.ToArray());
+
+                    List<HarvestedEnvelope> bbValidations = await Validate(envelopes.ToArray());
+
+                    //Store the result of the harvest
+                    //Return a simple structure
+                    return await Task.FromResult(bbEnvelopes);
+                }
+                else {
+                    return await Task.FromResult(new List<HarvestedEnvelope>());
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - FullHarvest", "");
+                throw ex;
+            }
+            finally { 
+            
+            }
+        
+        }
 
 
         public const int SqlServerViolationOfUniqueIndex = 2601;

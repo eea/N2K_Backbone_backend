@@ -194,6 +194,36 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         /// <summary>
+        /// Execute an unattended load of the data from versioning
+        /// </summary>
+        /// <returns></returns>
+        [Route("FullHarvest")]
+        [HttpPost]
+        public async Task<ActionResult<List<HarvestedEnvelope>>> FullHarvest()
+        {
+            var response = new ServiceResponse<List<HarvestedEnvelope>>();
+            try
+            {
+                var siteChanges = await _harvestedService.FullHarvest();
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<HarvestedEnvelope>();
+                return Ok(response);
+            }
+        }
+
+
+
+        /// <summary>
         /// Executes the process of the validation for a selected envelop (Country and Version).
         /// It must be hervested yet to perform this action
         /// </summary>
