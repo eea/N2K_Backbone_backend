@@ -4,13 +4,11 @@ using System.Net.Http.Headers;
 
 namespace N2K_BackboneBackEnd.Helpers
 {
-    public class FileSystemHandler : IAttachedFileHandler
+    public class FileSystemHandler : AttachedFileHandler, IAttachedFileHandler
     {
 
-        private readonly AttachedFilesConfig _attachedFilesConfig;
-        public FileSystemHandler(AttachedFilesConfig attachedFilesConfig)
+        public FileSystemHandler(AttachedFilesConfig attachedFilesConfig) : base(attachedFilesConfig)
         {
-            _attachedFilesConfig = attachedFilesConfig;
         }
 
 
@@ -22,6 +20,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 Path.Combine(Directory.GetCurrentDirectory(), folderName) :
                 Path.Combine(_attachedFilesConfig.FilesRootPath, folderName);
             List<String> uploadedFiles = new List<string>();
+            var invalidFile = false;
 
             foreach (var f in files.Files)
             {
@@ -31,22 +30,59 @@ namespace N2K_BackboneBackEnd.Helpers
                 {
                     await f.CopyToAsync(stream);
                 }
-                if (fullPath.EndsWith("zip"))
+                if (!CheckExtensions(fileName) || invalidFile == true)
+                {
+                    invalidFile = true;
+                    File.Delete(fullPath);
+                    break;
+                }
+                if (fileName.EndsWith("zip"))
                 {
                     using (ZipArchive archive = ZipFile.OpenRead(fullPath))
                     {
                         archive.ExtractToDirectory(pathToSave);
                         foreach (ZipArchiveEntry entry in archive.Entries)
                         {
-                            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, entry.Name));
+                            if (!CheckExtensions(entry.Name))
+                            {
+                                invalidFile = true;
+                                File.Delete(Path.Combine(pathToSave, entry.Name));
+                                break;
+                            }
+                            File.Delete(Path.Combine(pathToSave, entry.Name));
                         }
                     }
                 }
-                else
+                File.Delete(fullPath);
+            }
+
+            if (!invalidFile)
+            {
+                foreach (var f in files.Files)
                 {
-                    var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                    uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName));
+                    var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
+                    var fullPath = Path.Combine(pathToSave, fileName);
+                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    {
+                        await f.CopyToAsync(stream);
+                    }
+                    if (fullPath.EndsWith("zip"))
+                    {
+                        using (ZipArchive archive = ZipFile.OpenRead(fullPath))
+                        {
+                            archive.ExtractToDirectory(pathToSave);
+                            foreach (ZipArchiveEntry entry in archive.Entries)
+                            {
+                                var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                                uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, entry.Name));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                        uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName));
+                    }
                 }
             }
             return uploadedFiles;
