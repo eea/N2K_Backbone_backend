@@ -199,6 +199,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Section = "Site";
                             siteChange.VersionReferenceId = storedSite.VersionId;
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
                     }
@@ -445,6 +446,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "Priority";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                     else if (!isStoredSitePriority && isHarvestingSitePriority)
@@ -465,6 +467,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "Priority";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }
@@ -485,6 +488,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.Section = "Site";
                     siteChange.VersionReferenceId = harvestingSite.VersionId;
                     siteChange.ReferenceSiteCode = harvestingSite.SiteCode;
+                    siteChange.N2KVersioningVersion = envelope.VersionId;
                     changes.Add(siteChange);
                 }
             }

@@ -461,6 +461,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.VersionReferenceId = storedSite.VersionId;
                     siteChange.FieldName = "SiteName";
                     siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    siteChange.N2KVersioningVersion = envelope.VersionId;
                     changes.Add(siteChange);
                 }
                 if (!Convert.ToString(harvestingSite.DateConfSCI).Equals(Convert.ToString(storedSite.DateConfSCI)))
@@ -483,6 +484,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "DateConfSCI";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                     else if (!Convert.ToString(harvestingSite.DateConfSCI).Equals("01/01/1900 0:00:00") && Convert.ToString(storedSite.DateConfSCI).Equals("01/01/1900 0:00:00"))
@@ -503,6 +505,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "DateConfSCI";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                     else
@@ -523,6 +526,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "DateConfSCI";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }
@@ -546,6 +550,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "AreaHa";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }
@@ -569,6 +574,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "AreaHa";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }
@@ -590,6 +596,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.VersionReferenceId = storedSite.VersionId;
                     siteChange.FieldName = "AreaHa";
                     siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    siteChange.N2KVersioningVersion = envelope.VersionId;
                     changes.Add(siteChange);
                 }
                 if (harvestingSite.LengthKm != storedSite.LengthKm)
@@ -612,6 +619,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "LengthKm";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }
