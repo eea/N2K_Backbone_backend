@@ -461,6 +461,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.VersionReferenceId = storedSite.VersionId;
                     siteChange.FieldName = "SiteName";
                     siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    siteChange.N2KVersioningVersion = envelope.VersionId;
                     changes.Add(siteChange);
                 }
                 if (!Convert.ToString(harvestingSite.DateConfSCI).Equals(Convert.ToString(storedSite.DateConfSCI)))
@@ -477,12 +478,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = "NULL";
-                        siteChange.OldValue = Convert.ToString(storedSite.DateConfSCI);
+                        siteChange.OldValue = storedSite.DateConfSCI.Value.ToShortDateString();
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "DateConfSCI";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                     else if (!Convert.ToString(harvestingSite.DateConfSCI).Equals("01/01/1900 0:00:00") && Convert.ToString(storedSite.DateConfSCI).Equals("01/01/1900 0:00:00"))
@@ -496,13 +498,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Level = Enumerations.Level.Critical;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
-                        siteChange.NewValue = Convert.ToString(harvestingSite.DateConfSCI);
+                        siteChange.NewValue = harvestingSite.DateConfSCI.Value.ToShortDateString();
                         siteChange.OldValue = "NULL";
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "DateConfSCI";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                     else
@@ -516,13 +519,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Level = Enumerations.Level.Warning;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
-                        siteChange.NewValue = Convert.ToString(harvestingSite.DateConfSCI);
-                        siteChange.OldValue = Convert.ToString(storedSite.DateConfSCI);
+                        siteChange.NewValue = harvestingSite.DateConfSCI.Value.ToShortDateString();
+                        siteChange.OldValue = storedSite.DateConfSCI.Value.ToShortDateString();
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "DateConfSCI";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }
@@ -546,6 +550,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "AreaHa";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }
@@ -569,6 +574,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "AreaHa";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }
@@ -590,6 +596,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.VersionReferenceId = storedSite.VersionId;
                     siteChange.FieldName = "AreaHa";
                     siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    siteChange.N2KVersioningVersion = envelope.VersionId;
                     changes.Add(siteChange);
                 }
                 if (harvestingSite.LengthKm != storedSite.LengthKm)
@@ -612,6 +619,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.FieldName = "LengthKm";
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }

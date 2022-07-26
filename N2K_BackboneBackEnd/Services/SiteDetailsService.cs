@@ -102,29 +102,36 @@ namespace N2K_BackboneBackEnd.Services
             List<JustificationFiles> result = new List<JustificationFiles>();
             IAttachedFileHandler fileHandler = null;
 
-            if (_appSettings.Value.AttachedFiles == null) return result;
+            try
+            {
+                if (_appSettings.Value.AttachedFiles == null) return result;
 
-            if (_appSettings.Value.AttachedFiles.AzureBlob)
-            {
-                fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
-            }
-            else
-            {
-                fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
-            }
-            var fileUrl = await fileHandler.UploadFileAsync(attachedFile);
-            foreach (var fUrl in fileUrl)
-            {
-                JustificationFiles justFile = new JustificationFiles
+                if (_appSettings.Value.AttachedFiles.AzureBlob)
                 {
-                    Path = fUrl,
-                    SiteCode = attachedFile.SiteCode,
-                    Version = attachedFile.Version
-                };
-                await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
-                await _dataContext.SaveChangesAsync();
+                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                }
+                else
+                {
+                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                }
+                var fileUrl = await fileHandler.UploadFileAsync(attachedFile);
+                foreach (var fUrl in fileUrl)
+                {
+                    JustificationFiles justFile = new JustificationFiles
+                    {
+                        Path = fUrl,
+                        SiteCode = attachedFile.SiteCode,
+                        Version = attachedFile.Version
+                    };
+                    await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
+                    await _dataContext.SaveChangesAsync();
 
-                result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(jf => jf.SiteCode == attachedFile.SiteCode && jf.Version == attachedFile.Version).ToListAsync();
+                    result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(jf => jf.SiteCode == attachedFile.SiteCode && jf.Version == attachedFile.Version).ToListAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "Upload File", "");
             }
             return result;
         }

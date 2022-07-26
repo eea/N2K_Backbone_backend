@@ -201,6 +201,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
                         else if (storedSpecies.Population.ToUpper() == "D" && harvestingSpecies.Population.ToUpper() != "D")
@@ -221,6 +222,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
                         else if (storedSpecies.Population.ToUpper() != harvestingSpecies.Population.ToUpper())
@@ -241,6 +243,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
 
@@ -274,6 +277,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.VersionReferenceId = storedSpecies.VersionId;
                                 siteChange.FieldName = "Priority";
                                 siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                siteChange.N2KVersioningVersion = envelope.VersionId;
                                 changes.Add(siteChange);
                             }
                             else if (!isStoredPriority && isHarvestingPriority)
@@ -294,6 +298,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.VersionReferenceId = storedSpecies.VersionId;
                                 siteChange.FieldName = "Priority";
                                 siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                siteChange.N2KVersioningVersion = envelope.VersionId;
                                 changes.Add(siteChange);
                             }
                         }
@@ -318,6 +323,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.Section = "Species";
                             siteChange.VersionReferenceId = harvestingSpecies.VersionId;
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
                     }
@@ -344,6 +350,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Section = "Species";
                         siteChange.VersionReferenceId = storedSpecies.VersionId;
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }
@@ -372,6 +379,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
                         else if (storedSpecies.Population.ToUpper() == "D" && harvestingSpecies.Population.ToUpper() != "D")
@@ -392,6 +400,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
                         else if (storedSpecies.Population.ToUpper() != harvestingSpecies.Population.ToUpper())
@@ -412,6 +421,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
 
@@ -445,6 +455,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.VersionReferenceId = storedSpecies.VersionId;
                                 siteChange.FieldName = "Priority";
                                 siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                siteChange.N2KVersioningVersion = envelope.VersionId;
                                 changes.Add(siteChange);
                             }
                             else if (!isStoredPriority && isHarvestingPriority)
@@ -465,6 +476,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.VersionReferenceId = storedSpecies.VersionId;
                                 siteChange.FieldName = "Priority";
                                 siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                siteChange.N2KVersioningVersion = envelope.VersionId;
                                 changes.Add(siteChange);
                             }
                         }
@@ -489,6 +501,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.Section = "Species";
                             siteChange.VersionReferenceId = harvestingSpecies.VersionId;
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
                     }
@@ -514,6 +527,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Section = "Species";
                         siteChange.VersionReferenceId = storedSpecies.VersionId;
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }
