@@ -136,6 +136,17 @@ namespace N2K_BackboneBackEnd.Services
             return await Task.FromResult(result);
         }
 
+
+        /// <summary>
+        /// Method to return Pending status when status is Harvested
+        /// </summary>
+        /// <param name="envelopeStatus">Status from the processed envelope</param>
+        /// <returns>The SiteChange status based on the envelope status</returns>
+        public async Task<HarvestingStatus> GetSiteChangeStatus(HarvestingStatus envelopeStatus)
+        {
+            return envelopeStatus == HarvestingStatus.Harvested ? HarvestingStatus.Pending : envelopeStatus;
+        }
+
         /// <summary>
         /// Method to validate the quality and the main rules of the data harvested
         /// </summary>
@@ -191,7 +202,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.ChangeType = "Site Deleted";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
+                            siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status);
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = null;
                             siteChange.OldValue = storedSite.SiteCode;
@@ -319,6 +330,8 @@ namespace N2K_BackboneBackEnd.Services
 
             try
             {
+                processedEnvelope.Status = await GetSiteChangeStatus(processedEnvelope.Status);
+
                 SiteToHarvest? storedSite = referencedSites.Where(s => s.SiteCode == harvestingSite.SiteCode).FirstOrDefault();
                 if (storedSite != null)
                 {
@@ -437,7 +450,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.ChangeType = "Site Losing Priority";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Critical;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(isHarvestingSitePriority);
                         siteChange.OldValue = Convert.ToString(isStoredSitePriority);
@@ -458,7 +471,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.ChangeType = "Site Getting Priority";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(isHarvestingSitePriority);
                         siteChange.OldValue = Convert.ToString(isStoredSitePriority);
@@ -480,7 +493,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.ChangeType = "Site Added";
                     siteChange.Country = envelope.CountryCode;
                     siteChange.Level = Enumerations.Level.Info;
-                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
+                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                     siteChange.Tags = string.Empty;
                     siteChange.NewValue = harvestingSite.SiteCode;
                     siteChange.OldValue = null;
