@@ -182,7 +182,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("UploadAttachedFile")]
         [HttpPost, DisableRequestSizeLimit]
-        public async Task<ActionResult<List<JustificationFiles>>> UploadFile([FromQuery] AttachedFile   attachedFiles)
+        public async Task<ActionResult<List<JustificationFiles>>> UploadFile([FromQuery] AttachedFile attachedFiles)
         {
             var response = new ServiceResponse<List<JustificationFiles>>();
             try
