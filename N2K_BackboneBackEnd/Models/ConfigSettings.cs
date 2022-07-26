@@ -7,8 +7,7 @@
         public string AzureConnectionString { get; set; } = "";
         public string FilesRootPath { get; set; } = "";
         public string JustificationFolder { get; set; } = "";
-        public List<String> ExtensionWhiteList { get; set; } = new List<string>() { "zip", "txt" };
-
+        public string ExtensionWhiteList { get; set; } = "";
         public string PublicFilesUrl { get; set; } = "";
     }
 

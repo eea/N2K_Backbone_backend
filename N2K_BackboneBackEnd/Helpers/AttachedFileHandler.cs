@@ -11,7 +11,8 @@ namespace N2K_BackboneBackEnd.Helpers
         }
         public bool CheckExtensions(string fileName)
         {
-            List<String> extensionWhiteList = _attachedFilesConfig.ExtensionWhiteList;
+            string WhiteList = _attachedFilesConfig.ExtensionWhiteList;
+            string[] extensionWhiteList = WhiteList.Split(";");
             string[] fileArray = fileName.Split(".");
             string fileExtension = fileArray[fileArray.Length-1];
             return extensionWhiteList.Any(x => x.ToLower() == fileExtension.ToLower());
