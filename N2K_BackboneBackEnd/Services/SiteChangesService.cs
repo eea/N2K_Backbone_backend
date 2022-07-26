@@ -313,6 +313,10 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
+        public async Task<int> GetPendingChangesByCountry(string? country)
+        {
+            return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null)).Count;
+        }
 
 
         private SiteChangesLevelDetail FillLevelChangeDetailCategory(List<SiteChangeDb> changesDB, string pSiteCode, int pCountryVersion, Level level)

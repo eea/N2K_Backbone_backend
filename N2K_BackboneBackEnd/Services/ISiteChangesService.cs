@@ -13,6 +13,7 @@ namespace N2K_BackboneBackEnd.Services
         Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion);
 
         Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country,SiteChangeStatus? status, Level? level);
+        Task<int> GetPendingChangesByCountry(string? country);
 
 
         Task<List<SiteChangeViewModel>> GetSiteChangesFromSP();
