@@ -38,10 +38,6 @@ namespace N2K_BackboneBackEnd.Helpers
             {
                 var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
                 var fullPath = Path.Combine(pathToSave, fileName);
-                using (var stream = new FileStream(fullPath, FileMode.Create))
-                {
-                    await f.CopyToAsync(stream);
-                }
                 if (!CheckExtensions(fileName) || invalidFile == true)
                 {
                     invalidFile = true;
@@ -50,6 +46,10 @@ namespace N2K_BackboneBackEnd.Helpers
                 }
                 if (fileName.EndsWith("zip"))
                 {
+                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    {
+                        await f.CopyToAsync(stream);
+                    }
                     using (ZipArchive archive = ZipFile.OpenRead(fullPath))
                     {
                         archive.ExtractToDirectory(pathToSave);
@@ -64,8 +64,8 @@ namespace N2K_BackboneBackEnd.Helpers
                             File.Delete(Path.Combine(pathToSave, entry.Name));
                         }
                     }
+                    File.Delete(fullPath);
                 }
-                File.Delete(fullPath);
             }
 
             if (!invalidFile)
