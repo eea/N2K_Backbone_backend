@@ -478,7 +478,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = "NULL";
-                        siteChange.OldValue = Convert.ToString(storedSite.DateConfSCI);
+                        siteChange.OldValue = storedSite.DateConfSCI.Value.ToShortDateString();
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
                         siteChange.VersionReferenceId = storedSite.VersionId;
@@ -498,7 +498,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Level = Enumerations.Level.Critical;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
-                        siteChange.NewValue = Convert.ToString(harvestingSite.DateConfSCI);
+                        siteChange.NewValue = harvestingSite.DateConfSCI.Value.ToShortDateString();
                         siteChange.OldValue = "NULL";
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
@@ -519,8 +519,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Level = Enumerations.Level.Warning;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status == SiteChangeStatus.Harvested ? SiteChangeStatus.Pending : (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
-                        siteChange.NewValue = Convert.ToString(harvestingSite.DateConfSCI);
-                        siteChange.OldValue = Convert.ToString(storedSite.DateConfSCI);
+                        siteChange.NewValue = harvestingSite.DateConfSCI.Value.ToShortDateString();
+                        siteChange.OldValue = storedSite.DateConfSCI.Value.ToShortDateString();
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
                         siteChange.VersionReferenceId = storedSite.VersionId;
