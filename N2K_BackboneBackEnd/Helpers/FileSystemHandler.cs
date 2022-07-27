@@ -56,33 +56,33 @@ namespace N2K_BackboneBackEnd.Helpers
                 }
             }
 
-            if (!invalidFile)
+            if (invalidFile)
+                throw new Exception("some of the file(s) attached has invalid extension");
+
+            foreach (var f in files.Files)
             {
-                foreach (var f in files.Files)
+                var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
+                var fullPath = Path.Combine(pathToSave, fileName);
+                using (var stream = new FileStream(fullPath, FileMode.Create))
                 {
-                    var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
-                    var fullPath = Path.Combine(pathToSave, fileName);
-                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    await f.CopyToAsync(stream);
+                }
+                if (fullPath.EndsWith("zip"))
+                {
+                    using (ZipArchive archive = ZipFile.OpenRead(fullPath))
                     {
-                        await f.CopyToAsync(stream);
-                    }
-                    if (fullPath.EndsWith("zip"))
-                    {
-                        using (ZipArchive archive = ZipFile.OpenRead(fullPath))
+                        archive.ExtractToDirectory(pathToSave);
+                        foreach (ZipArchiveEntry entry in archive.Entries)
                         {
-                            archive.ExtractToDirectory(pathToSave);
-                            foreach (ZipArchiveEntry entry in archive.Entries)
-                            {
-                                var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                                uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, entry.Name));
-                            }
+                            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, entry.Name));
                         }
                     }
-                    else
-                    {
-                        var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                        uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName));
-                    }
+                }
+                else
+                {
+                    var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                    uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName));
                 }
             }
             return uploadedFiles;

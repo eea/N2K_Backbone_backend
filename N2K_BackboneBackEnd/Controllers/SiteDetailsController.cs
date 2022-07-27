@@ -197,22 +197,11 @@ namespace N2K_BackboneBackEnd.Controllers
                 }
                 //var formCollection = await Request.ReadFormAsync();
                 List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles);
-                if (siteFiles.Count == 0)
-                {
-                    response.Success = false;
-                    response.Message = "some of the file(s) attached has invalid extension";
-                    response.Count = 0;
-                    response.Data = null;
-                    return Ok(response);
-                }
-                else
-                {
-                    response.Success = true;
-                    response.Message = "";
-                    response.Data = siteFiles;
-                    response.Count = (siteFiles == null) ? 0 : siteFiles.Count;
-                    return Ok(response);
-                }
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteFiles;
+                response.Count = (siteFiles == null) ? 0 : siteFiles.Count;
+                return Ok(response);
 
 
             }
