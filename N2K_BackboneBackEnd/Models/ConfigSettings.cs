@@ -8,6 +8,7 @@
         public string FilesRootPath { get; set; } = "";
         public string JustificationFolder { get; set; } = "";
         public List<String> ExtensionWhiteList { get; set; } = new List<string>();
+        public List<String> CompressionFormats { get; set; } = new List<string>();
         public string PublicFilesUrl { get; set; } = "";
     }
 
