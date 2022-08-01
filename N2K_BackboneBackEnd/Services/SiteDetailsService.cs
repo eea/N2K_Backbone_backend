@@ -34,7 +34,7 @@ namespace N2K_BackboneBackEnd.Services
             var geometries = await _dataContext.Set<SiteGeometry>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometry  @SiteCode, @Version",
                             param1, param2).ToArrayAsync();
 
-            if (geometries.Length > 0  && !string.IsNullOrEmpty(geometries[0].GeoJson)) return geometries[0].GeoJson;
+            if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].GeoJson)) return geometries[0].GeoJson;
             return result;
         }
         #endregion 
@@ -102,36 +102,29 @@ namespace N2K_BackboneBackEnd.Services
             List<JustificationFiles> result = new List<JustificationFiles>();
             IAttachedFileHandler fileHandler = null;
 
-            try
+            if (_appSettings.Value.AttachedFiles == null) return result;
+
+            if (_appSettings.Value.AttachedFiles.AzureBlob)
             {
-                if (_appSettings.Value.AttachedFiles == null) return result;
-
-                if (_appSettings.Value.AttachedFiles.AzureBlob)
-                {
-                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
-                }
-                else
-                {
-                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
-                }
-                var fileUrl = await fileHandler.UploadFileAsync(attachedFile);
-                foreach (var fUrl in fileUrl)
-                {
-                    JustificationFiles justFile = new JustificationFiles
-                    {
-                        Path = fUrl,
-                        SiteCode = attachedFile.SiteCode,
-                        Version = attachedFile.Version
-                    };
-                    await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
-                    await _dataContext.SaveChangesAsync();
-
-                    result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(jf => jf.SiteCode == attachedFile.SiteCode && jf.Version == attachedFile.Version).ToListAsync();
-                }
+                fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
             }
-            catch (Exception ex)
+            else
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Upload File", "");
+                fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+            }
+            var fileUrl = await fileHandler.UploadFileAsync(attachedFile);
+            foreach (var fUrl in fileUrl)
+            {
+                JustificationFiles justFile = new JustificationFiles
+                {
+                    Path = fUrl,
+                    SiteCode = attachedFile.SiteCode,
+                    Version = attachedFile.Version
+                };
+                await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
+                await _dataContext.SaveChangesAsync();
+
+                result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(jf => jf.SiteCode == attachedFile.SiteCode && jf.Version == attachedFile.Version).ToListAsync();
             }
             return result;
         }
