@@ -32,7 +32,7 @@ namespace N2K_BackboneBackEnd.Helpers
                     File.Delete(fullPath);
                     break;
                 }
-                if (fileName.EndsWith("zip"))
+                if (CheckCompressionFormats(fileName))
                 {
                     using (var stream = new FileStream(fullPath, FileMode.Create))
                     {
@@ -67,7 +67,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 {
                     await f.CopyToAsync(stream);
                 }
-                if (fullPath.EndsWith("zip"))
+                if (CheckCompressionFormats(fileName))
                 {
                     using (ZipArchive archive = ZipFile.OpenRead(fullPath))
                     {
