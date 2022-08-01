@@ -42,7 +42,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public int VersionReferenceId { get; set; }
         public string? FieldName { get; set; }
         public string ReferenceSiteCode { get; set; } = String.Empty;
+
         public int? N2KVersioningVersion { get; set; }
+
         [NotMapped]
         public bool? JustificationRequired { get; set;  }
         [NotMapped]

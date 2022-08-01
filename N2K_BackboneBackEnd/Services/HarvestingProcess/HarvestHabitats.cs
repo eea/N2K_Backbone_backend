@@ -155,7 +155,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestHabitats - HarvestBySite", "");
-                return 0;
+                throw ex;
             }
             finally
             {

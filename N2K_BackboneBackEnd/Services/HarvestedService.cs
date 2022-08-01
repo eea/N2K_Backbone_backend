@@ -11,6 +11,7 @@ using N2K_BackboneBackEnd.Services.HarvestingProcess;
 using N2K_BackboneBackEnd.Enumerations;
 using IsImpactedBy = N2K_BackboneBackEnd.Models.versioning_db.IsImpactedBy;
 using Microsoft.Extensions.Options;
+using N2K_BackboneBackEnd.Models.BackboneDB;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -521,6 +522,11 @@ namespace N2K_BackboneBackEnd.Services
         /// <returns>A list of the envelops with the result of the process</returns>
         public async Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs)
         {
+            return await _Harvest(envelopeIDs, HarvestingStatus.PreHarvested);
+        }
+
+        private async Task<List<HarvestedEnvelope>> _Harvest(EnvelopesToProcess[] envelopeIDs, HarvestingStatus finalStatus)
+        {
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
             try
             {
@@ -532,7 +538,7 @@ namespace N2K_BackboneBackEnd.Services
                     //remove version from database
                     await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
 
-                    DateTime SubmissionDate = getOptimalDate(envelope);
+                    DateTime SubmissionDate = envelope.SubmissionDate; //getOptimalDate(envelope);
 
                     //create a new entry in the processed envelopes table to register that a new one is being harvested
                     ProcessedEnvelopes envelopeToProcess = new ProcessedEnvelopes
@@ -566,39 +572,27 @@ namespace N2K_BackboneBackEnd.Services
                             try
                             {
                                 _ThereAreChanges = true;
-                                //_timeLog.setTimeStamp(_appSettings.Value.N2K_BackboneBackEndContext, "Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 //complete the data of the site and add it to the DB
                                 TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
                                 Sites bbSite = await siteCode.HarvestSite(vSite, envelope);
                                 if (bbSite != null)
                                 {
-
-                                    //TODO: Put species on another threath 
                                     HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
                                     await species.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
 
-                                    //TODO: Put habitats on another threath 
                                     HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
                                     await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
-                                
-                                    //TODO:Put geodata in another threath
-
-
-
-
                                 }
                                 _dataContext.SaveChanges();
                                 _ThereAreChanges = false;
                             }
                             catch (DbUpdateException ex)
                             {
-
                                 RefusedSites.addAsRefused(vSite, envelope, ex);
                             }
                             catch (Exception ex)
                             {
-
                                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSites - Start - Site " + vSite.SITECODE + "/" + vSite.VERSIONID.ToString(), "");
                                 //RefusedSites.addAsRefused(vSite);
                                 //rollback(envelope.CountryCode, envelope.VersionId);
@@ -610,10 +604,8 @@ namespace N2K_BackboneBackEnd.Services
                             }
 
                         }
-                        //TODO: Set as preharvested as option
-
                         //set the enevelope as successfully completed
-                        envelopeToProcess.Status = HarvestingStatus.PreHarvested;
+                        envelopeToProcess.Status = finalStatus;
                         _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
                         result.Add(
                             new HarvestedEnvelope
@@ -621,7 +613,7 @@ namespace N2K_BackboneBackEnd.Services
                                 CountryCode = envelope.CountryCode,
                                 VersionId = envelope.VersionId,
                                 NumChanges = 0,
-                                Status = SiteChangeStatus.PreHarvested
+                                Status = (SiteChangeStatus)finalStatus
                             }
                          );
                     }
@@ -665,6 +657,7 @@ namespace N2K_BackboneBackEnd.Services
 
 
         }
+
 
         /// <summary>
         /// In case of development evirontment it return a proper date for the submision date
@@ -777,6 +770,8 @@ namespace N2K_BackboneBackEnd.Services
                 //Call the method to know which envelopes are availables
                 List<Harvesting> vEnvelopes = await GetPendingEnvelopes();
                 List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
+
+               
                 if (vEnvelopes.Count > 0)
                 {
                     foreach (Harvesting vEnvelope in vEnvelopes)
@@ -815,6 +810,134 @@ namespace N2K_BackboneBackEnd.Services
             
             }
         
+        }
+
+
+
+        private HarvestingStatus getStatus(int pStatus) { 
+            switch(pStatus){
+                case 0:
+                    return HarvestingStatus.Pending;
+                    break;
+                case 1:
+                    return HarvestingStatus.Accepted;
+                    break;
+                case 2:
+                     return HarvestingStatus.Rejected;
+                    break;
+                case 3:
+                    return HarvestingStatus.Harvested;
+                    break;
+                case 4:
+                    return HarvestingStatus.Harvesting;
+                    break;
+                case 5:
+                     return HarvestingStatus.Queued;
+                    break;
+                case 6:
+                    return HarvestingStatus.PreHarvested;
+                    break;
+                case 7:
+                     return HarvestingStatus.Discarded;
+                    break;
+                case 8:
+                    return HarvestingStatus.Closed;
+                    break;
+                default:
+                    throw new Exception("No statuts definition found");
+            }
+
+         
+        }
+
+        /// <summary>
+        /// Set the new status from the current
+        /// </summary>
+        /// <param name="pCountry"></param>
+        /// <param name="pVarsion"></param>
+        /// <param name="pToStatus"></param>
+        /// <returns></returns>
+        public async Task<ProcessedEnvelopes> ChangeStatus(string pCountry, int pVersion, int pToStatus)
+        {
+            string sqlToExecute = "exec dbo.";
+            try
+            { 
+                HarvestingStatus toStatus = getStatus(pToStatus);
+                ProcessedEnvelopes envelope = _dataContext.Set<ProcessedEnvelopes>().Where(e=> e.Country == pCountry && e.Version == pVersion).FirstOrDefault();
+                if (envelope != null)
+                {
+                    //Get the version for the Sites 
+                    //List<Sites> sites = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).Select(s=> s.Version).First();
+                    //Sites site = sites.First();
+                    int _version = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).Select(s => s.Version).First();
+                    if (toStatus != envelope.Status)
+                    {
+                        SqlParameter param1 = new SqlParameter("@country", pCountry);
+                        SqlParameter param2 = new SqlParameter("@version", pVersion);
+
+                        if (toStatus == HarvestingStatus.Harvested)
+                        {
+                            sqlToExecute = "exec dbo.setStatusToEnvelopeHarvested  @country, @version;";
+                        }
+                        else if (toStatus == HarvestingStatus.Discarded)
+                        {
+                            sqlToExecute = "exec dbo.setStatusToEnvelopeDiscarded  @country, @version;";
+                        }
+                        else if (toStatus == HarvestingStatus.PreHarvested)
+                        {
+                            sqlToExecute = "exec dbo.setStatusToEnvelopePreHarvested  @country, @version;";
+                        }
+                        else if (toStatus == HarvestingStatus.Closed)
+                        {
+                            sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @country, @version;";
+                        }
+                        else if (toStatus == HarvestingStatus.Pending)
+                        {
+                            sqlToExecute = "exec dbo.setStatusToEnvelopePending  @country, @version;";
+                        }
+
+                        _dataContext.Database.ExecuteSqlRawAsync(sqlToExecute, param1, param2);
+                    }
+                    else
+                    {
+                        throw new Exception("Currently the package (" + pCountry + " - " + pVersion + ") has already the selected status.");
+                    }
+                }
+                else {
+                    //Manual harvest?
+                    
+                    PackageCountry package = _versioningContext.Set<PackageCountry>().Where(e => e.CountryCode == pCountry && e.CountryVersionID == pVersion).FirstOrDefault();
+
+                    if (package != null)
+                    {
+                        EnvelopesToProcess newEnvelope = new EnvelopesToProcess();
+                        newEnvelope.CountryCode = pCountry;
+                        newEnvelope.VersionId = pVersion;
+                        newEnvelope.SubmissionDate = (DateTime)package.Importdate;
+
+                        List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
+                        envelopes.Add(newEnvelope);
+                        
+                        await Harvest(envelopes.ToArray<EnvelopesToProcess>());
+
+
+                    }
+                    else
+                    {
+                        throw new Exception("The package doesn't exist on source database (" + pCountry + " - " + pVersion + ")");
+                    }
+
+
+                    
+                }
+                return await Task.FromResult(envelope);
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - changeStatus", "");
+                //return await Task.FromResult(new ProcessedEnvelopes());
+                throw ex;
+            }
         }
 
 

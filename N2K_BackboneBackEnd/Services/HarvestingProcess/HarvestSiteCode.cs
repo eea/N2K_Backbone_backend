@@ -415,12 +415,21 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<Models.backbone_db.SiteOwnerType> items = new List<Models.backbone_db.SiteOwnerType>();
             try
             {
-                elements = await _versioningContext.Set<Models.versioning_db.OwnerType>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
-                foreach (Models.versioning_db.OwnerType element in elements)
+                elements = await _versioningContext.Set<Models.versioning_db.OwnerType>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).GroupBy(s => s.TYPE).Select(cl => new OwnerType
+                {
+                    COUNTRYCODE = cl.First().COUNTRYCODE,
+                    VERSIONID = cl.First().VERSIONID,
+                    COUNTRYVERSIONID= cl.First().COUNTRYVERSIONID,
+                    SITECODE=cl.First().SITECODE,
+                    TYPE=cl.First().TYPE,
+                    PERCENT=cl.Sum(c=> c.PERCENT),
+                }).ToListAsync();
+                foreach (OwnerType element in elements)
                 {
                     Models.backbone_db.SiteOwnerType item = new Models.backbone_db.SiteOwnerType();
                     item.SiteCode = element.SITECODE;
                     item.Version = pVersion;
+                    //6-Unknown for those types not found in the reference OwnerShipTypes
                     item.Type = _dataContext.Set<Models.backbone_db.OwnerShipTypes>().Where(s => s.Description == element.TYPE).Select(s => s.Id).FirstOrDefault();
                     item.Percent = (decimal?)element.PERCENT;
                     items.Add(item);

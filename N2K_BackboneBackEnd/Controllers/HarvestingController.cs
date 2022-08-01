@@ -222,6 +222,36 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
+        /// <summary>
+        /// Changes te status of a envelope
+        /// </summary>
+        /// <returns></returns>
+        [Route("ChangeStatus")]
+        [HttpPost]
+        public async Task<ActionResult<ProcessedEnvelopes>> ChangeStatus(string pCountry, int pVersion, int pToStatus)
+        {
+            var response = new ServiceResponse<ProcessedEnvelopes>();
+            try
+            {
+                var siteChanges = await _harvestedService.ChangeStatus(pCountry, pVersion, pToStatus);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new ProcessedEnvelopes();
+                return  Ok(response);
+            }
+        }
+
+
+
 
         /// <summary>
         /// Executes the process of the validation for a selected envelop (Country and Version).
