@@ -1,0 +1,25 @@
+{
+  "SERVER_API_ENDPOINT": "https://n2kbackboneback-dev.azurewebsites.net/",
+  "SITECHANGES_GET": "https://n2kbackboneback-dev.azurewebsites.net/api/sitechanges/get/",
+  "SITECODES_GET": "https://n2kbackboneback-dev.azurewebsites.net/api/sitechanges/GetSiteCodes/",
+  "SITECHANGES_DETAIL": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteChanges/GetSiteChangesDetail/",
+  "COUNTRIES_WITH_DATA": "https://n2kbackboneback-dev.azurewebsites.net/api/Countries/GetWithData",
+  "MOVE_TO_PENDING": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteChanges/MoveToPending",
+  "ACCEPT_CHANGES": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteChanges/AcceptChanges",
+  "MARK_AS_JUSTIFICATION_REQUIRED": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteChanges/MarkAsJustificationRequired",
+  "REJECT_CHANGES": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteChanges/RejectChanges",
+  "GET_SITE_COMMENTS": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteDetails/GetSiteComments/",
+  "ADD_COMMENT": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteDetails/SiteComments/Add",
+  "UPDATE_COMMENT": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteDetails/SiteComments/Update",
+  "DELETE_COMMENT": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteDetails/SiteComments/Delete",
+  "HARVESTING_PRE_HARVESTED": "https://n2kbackboneback-dev.azurewebsites.net/api/Harvesting/PreHarvested",
+  "HARVESTING_HARVEST": "https://n2kbackboneback-dev.azurewebsites.net/api/Harvesting/Harvest",
+  "HARVESTING_DISCARD": "https://n2kbackboneback-dev.azurewebsites.net/api/Harvesting/Discard",
+  "GET_ATTACHED_FILES": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteDetails/GetAttachedFiles",
+  "UPLOAD_ATTACHED_FILE": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteDetails/UploadAttachedFile",
+  "DELETE_ATTACHED_FILE": "https://n2kbackboneback-dev.azurewebsites.net/api/SiteDetails/DeleteAttachedFile",
+  "THEME_COLORS": {
+    "PRIMARY": "#007bff",
+    "SECONDARY": "#fc3"
+  }
+}

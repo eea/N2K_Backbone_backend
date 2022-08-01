@@ -34,7 +34,7 @@ namespace N2K_BackboneBackEnd.Services
             var geometries = await _dataContext.Set<SiteGeometry>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometry  @SiteCode, @Version",
                             param1, param2).ToArrayAsync();
 
-            if (geometries.Length > 0  && !string.IsNullOrEmpty(geometries[0].GeoJson)) return geometries[0].GeoJson;
+            if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].GeoJson)) return geometries[0].GeoJson;
             return result;
         }
         #endregion 
