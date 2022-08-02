@@ -22,6 +22,9 @@ namespace N2K_BackboneBackEnd.Enumerations
         [DataMember]
         Discarded = 7,
         [DataMember]
-        Closed = 8
+        Closed = 8,
+        [DataMember]
+        DataLoaded = 9
+
     }
 }
