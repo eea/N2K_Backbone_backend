@@ -1,4 +1,5 @@
 ﻿using N2K_BackboneBackEnd.Models;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.Http.Headers;
 
@@ -38,18 +39,38 @@ namespace N2K_BackboneBackEnd.Helpers
                     {
                         await f.CopyToAsync(stream);
                     }
-                    using (ZipArchive archive = ZipFile.OpenRead(fullPath))
+                    if (fileName.EndsWith("zip"))
                     {
-                        archive.ExtractToDirectory(pathToSave);
-                        foreach (ZipArchiveEntry entry in archive.Entries)
+                        using (ZipArchive archive = ZipFile.OpenRead(fullPath))
                         {
-                            if (!CheckExtensions(entry.Name))
+                            archive.ExtractToDirectory(pathToSave);
+                            foreach (ZipArchiveEntry entry in archive.Entries)
+                            {
+                                if (!CheckExtensions(entry.Name) && !invalidFile)
+                                {
+                                    invalidFile = true;
+                                }
+                                File.Delete(Path.Combine(pathToSave, entry.Name));
+                            }
+                        }
+                    }
+                    else if (fileName.EndsWith("7z"))
+                    {
+                        ProcessStartInfo p = new ProcessStartInfo();
+                        p.FileName = "7za.exe";
+                        p.Arguments = "x \"" + fullPath + "\" -o\"" + pathToSave + "\"";
+                        p.WindowStyle = ProcessWindowStyle.Hidden;
+                        Process x = Process.Start(p);
+                        x.WaitForExit();
+
+                        System.IO.DirectoryInfo di = new DirectoryInfo(pathToSave);
+                        foreach (FileInfo file in di.EnumerateFiles())
+                        {
+                            if (!CheckExtensions(file.Name) && !invalidFile)
                             {
                                 invalidFile = true;
-                                File.Delete(Path.Combine(pathToSave, entry.Name));
-                                break;
                             }
-                            File.Delete(Path.Combine(pathToSave, entry.Name));
+                            file.Delete();
                         }
                     }
                     File.Delete(fullPath);
@@ -69,13 +90,32 @@ namespace N2K_BackboneBackEnd.Helpers
                 }
                 if (CheckCompressionFormats(fileName))
                 {
-                    using (ZipArchive archive = ZipFile.OpenRead(fullPath))
+                    if (fileName.EndsWith("zip"))
                     {
-                        archive.ExtractToDirectory(pathToSave);
-                        foreach (ZipArchiveEntry entry in archive.Entries)
+                        using (ZipArchive archive = ZipFile.OpenRead(fullPath))
+                        {
+                            archive.ExtractToDirectory(pathToSave);
+                            foreach (ZipArchiveEntry entry in archive.Entries)
+                            {
+                                var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                                uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, entry.Name));
+                            }
+                        }
+                    }
+                    else if (fileName.EndsWith("7z"))
+                    {
+                        ProcessStartInfo p = new ProcessStartInfo();
+                        p.FileName = "7za.exe";
+                        p.Arguments = "x \"" + fullPath + "\" -o\"" + pathToSave + "\"";
+                        p.WindowStyle = ProcessWindowStyle.Hidden;
+                        Process x = Process.Start(p);
+                        x.WaitForExit();
+
+                        System.IO.DirectoryInfo di = new DirectoryInfo(pathToSave);
+                        foreach (FileInfo file in di.EnumerateFiles())
                         {
                             var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, entry.Name));
+                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, file.Name));
                         }
                     }
                 }
