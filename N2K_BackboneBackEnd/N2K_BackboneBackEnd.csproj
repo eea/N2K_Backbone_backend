@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -6,6 +6,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>14a0bffb-9c73-49a5-a3a8-6a26c5ccb24a</UserSecretsId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="bin\Release\net6.0\x64\**" />
+    <Compile Remove="bin\Release\net6.0\x86\**" />
+    <Content Remove="bin\Release\net6.0\x64\**" />
+    <Content Remove="bin\Release\net6.0\x86\**" />
+    <EmbeddedResource Remove="bin\Release\net6.0\x64\**" />
+    <EmbeddedResource Remove="bin\Release\net6.0\x86\**" />
+    <None Remove="bin\Release\net6.0\x64\**" />
+    <None Remove="bin\Release\net6.0\x86\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="11.0.1" />
@@ -26,6 +37,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.2" />
+    <PackageReference Include="SevenZipSharp.Interop" Version="19.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.0" />
   </ItemGroup>
 
@@ -34,6 +46,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="bin\Release\net6.0\" />
     <Folder Include="Resources\Images\" />
   </ItemGroup>
 

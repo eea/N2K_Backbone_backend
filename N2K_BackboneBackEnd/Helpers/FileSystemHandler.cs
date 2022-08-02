@@ -9,81 +9,41 @@ namespace N2K_BackboneBackEnd.Helpers
 
         public FileSystemHandler(AttachedFilesConfig attachedFilesConfig) : base(attachedFilesConfig)
         {
+            _pathToSave = string.IsNullOrEmpty(_attachedFilesConfig.FilesRootPath) ?
+                Path.Combine(Directory.GetCurrentDirectory(), _folderName) :
+                Path.Combine(_attachedFilesConfig.FilesRootPath, _folderName);
         }
-
 
 
         public async Task<List<string>> UploadFileAsync(AttachedFile files)
         {
-            var folderName = _attachedFilesConfig.JustificationFolder;
-            var pathToSave = string.IsNullOrEmpty(_attachedFilesConfig.FilesRootPath) ?
-                Path.Combine(Directory.GetCurrentDirectory(), folderName) :
-                Path.Combine(_attachedFilesConfig.FilesRootPath, folderName);
             List<String> uploadedFiles = new List<string>();
-            var invalidFile = false;
+            var invalidFile =await AllFilesValid(files);
 
             foreach (var f in files.Files)
             {
                 var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
-                var fullPath = Path.Combine(pathToSave, fileName);
-                if (!CheckExtensions(fileName) || invalidFile == true)
-                {
-                    invalidFile = true;
-                    File.Delete(fullPath);
-                    break;
-                }
+                var fullPath = Path.Combine(_pathToSave, fileName);
+
+
                 if (CheckCompressionFormats(fileName))
                 {
-                    using (var stream = new FileStream(fullPath, FileMode.Create))
+
+                    //if the file is compressed(extract all the content)
+                    List<string> uncompressed = ExtractCompressedFiles(fullPath);
+                    foreach (var uncompressedFile in uncompressed)
                     {
-                        await f.CopyToAsync(stream);
-                    }
-                    using (ZipArchive archive = ZipFile.OpenRead(fullPath))
-                    {
-                        archive.ExtractToDirectory(pathToSave);
-                        foreach (ZipArchiveEntry entry in archive.Entries)
-                        {
-                            if (!CheckExtensions(entry.Name))
-                            {
-                                invalidFile = true;
-                                File.Delete(Path.Combine(pathToSave, entry.Name));
-                                break;
-                            }
-                            File.Delete(Path.Combine(pathToSave, entry.Name));
-                        }
+                        var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                        uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, uncompressedFile));
                     }
                     File.Delete(fullPath);
-                }
-            }
-
-            if (invalidFile)
-                throw new Exception("some of the file(s) attached has invalid extension");
-
-            foreach (var f in files.Files)
-            {
-                var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
-                var fullPath = Path.Combine(pathToSave, fileName);
-                using (var stream = new FileStream(fullPath, FileMode.Create))
-                {
-                    await f.CopyToAsync(stream);
-                }
-                if (CheckCompressionFormats(fileName))
-                {
-                    using (ZipArchive archive = ZipFile.OpenRead(fullPath))
-                    {
-                        archive.ExtractToDirectory(pathToSave);
-                        foreach (ZipArchiveEntry entry in archive.Entries)
-                        {
-                            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, entry.Name));
-                        }
-                    }
                 }
                 else
                 {
                     var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                    uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName));
+                    uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
                 }
+
             }
             return uploadedFiles;
         }
@@ -96,12 +56,7 @@ namespace N2K_BackboneBackEnd.Helpers
             var filesUrl = string.Format("{0}{1}/", remoteUrl, _attachedFilesConfig.JustificationFolder);
             fileName = fileName.Replace(filesUrl, "");
 
-            var folderName = _attachedFilesConfig.JustificationFolder;
-            var pathToSave = string.IsNullOrEmpty(_attachedFilesConfig.FilesRootPath) ?
-                Path.Combine(Directory.GetCurrentDirectory(), folderName) :
-                Path.Combine(_attachedFilesConfig.FilesRootPath, folderName);
-
-            var fullPath = Path.Combine(pathToSave, fileName);
+            var fullPath = Path.Combine(_pathToSave, fileName);
             File.Delete(fullPath);
             return 1;
 
