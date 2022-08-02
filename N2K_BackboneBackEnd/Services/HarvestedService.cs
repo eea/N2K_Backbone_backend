@@ -778,10 +778,8 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         envelopes.Add(new EnvelopesToProcess
                         {
-                            VersionId = Int32.Parse(vEnvelope.Id.ToString())
-                            ,
-                            CountryCode = vEnvelope.Country
-                            ,
+                            VersionId = Int32.Parse(vEnvelope.Id.ToString()),
+                            CountryCode = vEnvelope.Country,
                             SubmissionDate= vEnvelope.SubmissionDate
                         });
                     }
@@ -789,9 +787,12 @@ namespace N2K_BackboneBackEnd.Services
                     //Process each envelope
                     List<HarvestedEnvelope> bbEnvelopes = await Harvest(envelopes.ToArray());
                     
-                    List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(envelopes.ToArray());
-
+                    
                     List<HarvestedEnvelope> bbValidations = await Validate(envelopes.ToArray());
+
+                    List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(envelopes.ToArray());
+                    //List<HarvestedEnvelope> bbGeoData = await ValidateSpatialData(envelopes.ToArray());
+
 
                     //Store the result of the harvest
                     //Return a simple structure
@@ -853,66 +854,64 @@ namespace N2K_BackboneBackEnd.Services
         /// <summary>
         /// Set the new status from the current
         /// </summary>
-        /// <param name="pCountry"></param>
-        /// <param name="pVarsion"></param>
-        /// <param name="pToStatus"></param>
+        /// <param name="country"></param>
+        /// <param name="version"></param>
+        /// <param name="toStatus"></param>
         /// <returns></returns>
-        public async Task<ProcessedEnvelopes> ChangeStatus(string pCountry, int pVersion, int pToStatus)
+        public async Task<ProcessedEnvelopes> ChangeStatus(string country, int version, HarvestingStatus toStatus)
         {
             string sqlToExecute = "exec dbo.";
             try
             { 
-                HarvestingStatus toStatus = getStatus(pToStatus);
-                ProcessedEnvelopes envelope = _dataContext.Set<ProcessedEnvelopes>().Where(e=> e.Country == pCountry && e.Version == pVersion).FirstOrDefault();
+                ProcessedEnvelopes envelope = _dataContext.Set<ProcessedEnvelopes>().Where(e=> e.Country == country && e.Version == version).FirstOrDefault();
                 if (envelope != null)
                 {
                     //Get the version for the Sites 
                     //List<Sites> sites = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).Select(s=> s.Version).First();
                     //Sites site = sites.First();
-                    int _version = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).Select(s => s.Version).First();
+                    int _version = _dataContext.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).First();
                     if (toStatus != envelope.Status)
                     {
-                        SqlParameter param1 = new SqlParameter("@country", pCountry);
-                        SqlParameter param2 = new SqlParameter("@version", pVersion);
+                        SqlParameter param1 = new SqlParameter("@country", country);
+                        SqlParameter param2 = new SqlParameter("@version", version);
+                        switch (toStatus)
+                        {
+                            case HarvestingStatus.Harvested:
+                                sqlToExecute = "exec dbo.setStatusToEnvelopeHarvested  @country, @version;";
+                                break;
+                            case HarvestingStatus.Discarded:
+                                sqlToExecute = "exec dbo.setStatusToEnvelopeDiscarded  @country, @version;";
+                                break;
+                            case HarvestingStatus.PreHarvested:
+                                sqlToExecute = "exec dbo.setStatusToEnvelopePreHarvested  @country, @version;";
+                                break;
+                            case HarvestingStatus.Closed:
+                                sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @country, @version;";
+                                break;
 
-                        if (toStatus == HarvestingStatus.Harvested)
-                        {
-                            sqlToExecute = "exec dbo.setStatusToEnvelopeHarvested  @country, @version;";
+                            case HarvestingStatus.Pending:
+                                sqlToExecute = "exec dbo.setStatusToEnvelopePending  @country, @version;";
+                                break;
+                            default:
+                                break;
                         }
-                        else if (toStatus == HarvestingStatus.Discarded)
-                        {
-                            sqlToExecute = "exec dbo.setStatusToEnvelopeDiscarded  @country, @version;";
-                        }
-                        else if (toStatus == HarvestingStatus.PreHarvested)
-                        {
-                            sqlToExecute = "exec dbo.setStatusToEnvelopePreHarvested  @country, @version;";
-                        }
-                        else if (toStatus == HarvestingStatus.Closed)
-                        {
-                            sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @country, @version;";
-                        }
-                        else if (toStatus == HarvestingStatus.Pending)
-                        {
-                            sqlToExecute = "exec dbo.setStatusToEnvelopePending  @country, @version;";
-                        }
-
-                        _dataContext.Database.ExecuteSqlRawAsync(sqlToExecute, param1, param2);
+                        await _dataContext.Database.ExecuteSqlRawAsync(sqlToExecute, param1, param2);
                     }
                     else
                     {
-                        throw new Exception("Currently the package (" + pCountry + " - " + pVersion + ") has already the selected status.");
+                        throw new Exception("Currently the package (" + country + " - " + version + ") has already the selected status.");
                     }
                 }
                 else {
                     //Manual harvest?
                     
-                    PackageCountry package = _versioningContext.Set<PackageCountry>().Where(e => e.CountryCode == pCountry && e.CountryVersionID == pVersion).FirstOrDefault();
+                    PackageCountry package = _versioningContext.Set<PackageCountry>().Where(e => e.CountryCode == country && e.CountryVersionID == version).FirstOrDefault();
 
                     if (package != null)
                     {
                         EnvelopesToProcess newEnvelope = new EnvelopesToProcess();
-                        newEnvelope.CountryCode = pCountry;
-                        newEnvelope.VersionId = pVersion;
+                        newEnvelope.CountryCode = country;
+                        newEnvelope.VersionId = version;
                         newEnvelope.SubmissionDate = (DateTime)package.Importdate;
 
                         List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
@@ -924,13 +923,13 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     else
                     {
-                        throw new Exception("The package doesn't exist on source database (" + pCountry + " - " + pVersion + ")");
+                        throw new Exception("The package doesn't exist on source database (" + country + " - " + version + ")");
                     }
 
 
                     
                 }
-                return await Task.FromResult(envelope);
+                return envelope;
             }
             catch (Exception ex)
             {

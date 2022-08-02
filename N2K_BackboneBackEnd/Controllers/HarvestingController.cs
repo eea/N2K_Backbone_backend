@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
@@ -228,12 +229,12 @@ namespace N2K_BackboneBackEnd.Controllers
         /// <returns></returns>
         [Route("ChangeStatus")]
         [HttpPost]
-        public async Task<ActionResult<ProcessedEnvelopes>> ChangeStatus(string pCountry, int pVersion, int pToStatus)
+        public async Task<ActionResult<ProcessedEnvelopes>> ChangeStatus(string country, int version, HarvestingStatus toStatus)
         {
             var response = new ServiceResponse<ProcessedEnvelopes>();
             try
             {
-                var siteChanges = await _harvestedService.ChangeStatus(pCountry, pVersion, pToStatus);
+                var siteChanges = await _harvestedService.ChangeStatus(country, version, toStatus);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
