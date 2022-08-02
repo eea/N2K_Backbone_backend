@@ -5,13 +5,11 @@ using System.Net.Http.Headers;
 
 namespace N2K_BackboneBackEnd.Helpers
 {
-    public class AzureBlobHandler : IAttachedFileHandler
+    public class AzureBlobHandler : AttachedFileHandler, IAttachedFileHandler
     {
 
-        private readonly AttachedFilesConfig _attachedFilesConfig;
-        public AzureBlobHandler(AttachedFilesConfig attachedFilesConfig)
+        public AzureBlobHandler(AttachedFilesConfig attachedFilesConfig) : base(attachedFilesConfig)
         {
-            _attachedFilesConfig = attachedFilesConfig;
         }
 
 
@@ -33,7 +31,45 @@ namespace N2K_BackboneBackEnd.Helpers
             var folderName = _attachedFilesConfig.JustificationFolder;
             var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
             var remoteUrl = "";
-            List <String> uploadedFiles = new List<string>();
+            List<String> uploadedFiles = new List<string>();
+            var invalidFile = false;
+
+            foreach (var f in files.Files)
+            {
+                var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
+                var fullPath = Path.Combine(pathToSave, fileName);
+                if (!CheckExtensions(fileName) || invalidFile == true)
+                {
+                    invalidFile = true;
+                    File.Delete(fullPath);
+                    break;
+                }
+                if (CheckCompressionFormats(fileName))
+                {
+                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    {
+                        await f.CopyToAsync(stream);
+                    }
+                    using (ZipArchive archive = ZipFile.OpenRead(fullPath))
+                    {
+                        archive.ExtractToDirectory(pathToSave);
+                        foreach (ZipArchiveEntry entry in archive.Entries)
+                        {
+                            if (!CheckExtensions(entry.Name))
+                            {
+                                invalidFile = true;
+                                File.Delete(Path.Combine(pathToSave, entry.Name));
+                                break;
+                            }
+                            File.Delete(Path.Combine(pathToSave, entry.Name));
+                        }
+                    }
+                    File.Delete(fullPath);
+                }
+            }
+
+            if (invalidFile)
+                throw new Exception("some of the file(s) attached has invalid extension");
 
             foreach (var f in files.Files)
             {
@@ -45,7 +81,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 }
 
                 //if the file is compressed (extract all the content)
-                if (fullPath.EndsWith("zip"))
+                if (CheckCompressionFormats(fileName))
                 {
                     using (ZipArchive archive = ZipFile.OpenRead(fullPath))
                     {
@@ -57,7 +93,7 @@ namespace N2K_BackboneBackEnd.Helpers
                             remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
                             uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, entry.Name));
 
-                            File.Delete(Path.Combine(pathToSave,entry.Name ));
+                            File.Delete(Path.Combine(pathToSave, entry.Name));
                         }
                     }
                 }

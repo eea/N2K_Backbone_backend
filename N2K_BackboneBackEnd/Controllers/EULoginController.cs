@@ -28,11 +28,11 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpGet("GetLoginUrl/redirectionUrl={redirectionUrl}")]
         public async Task<ActionResult<ServiceResponse<string>>> GetLoginUrl (string redirectionUrl)
         {
-            redirectionUrl = Uri.UnescapeDataString(redirectionUrl);
+            var stringUrl = redirectionUrl.Replace("##", "/");
             var response = new ServiceResponse<string>();
             try
             {              
-                var url = await _euLoginService.GetLoginUrl(redirectionUrl);
+                var url = await _euLoginService.GetLoginUrl(stringUrl);
                 response.Success = true;
                 response.Message = "";
                 response.Data = url;
@@ -59,11 +59,11 @@ namespace N2K_BackboneBackEnd.Controllers
 
         public async Task<ActionResult<ServiceResponse<string>>> GetLoginUrl(string redirectionUrl,string code_challenge)
         {
-            redirectionUrl = Uri.UnescapeDataString(redirectionUrl);
+            var stringUrl = redirectionUrl.Replace("##", "/");
             var response = new ServiceResponse<string>();
             try
             {
-                var url = await _euLoginService.GetLoginUrl(redirectionUrl, code_challenge);
+                var url = await _euLoginService.GetLoginUrl(stringUrl, code_challenge);
                 response.Success = true;
                 response.Message = "";
                 response.Data = url;
@@ -78,7 +78,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = "";
                 return Ok(response);
             }
-
         }
 
 
@@ -86,10 +85,10 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<ServiceResponse<string>>> GetToken(string redirectionUrl, string code, string code_verifier)
         {            
             var response = new ServiceResponse<string>();
-            redirectionUrl = Uri.UnescapeDataString(redirectionUrl);
+            var stringUrl = redirectionUrl.Replace("##", "/");
             try
             {
-                var url = await _euLoginService.GetToken(redirectionUrl, code, code_verifier);
+                var url = await _euLoginService.GetToken(stringUrl, code, code_verifier);
                 response.Success = true;
                 response.Message = "";
                 response.Data = url;

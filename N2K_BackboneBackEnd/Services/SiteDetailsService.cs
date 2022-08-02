@@ -24,6 +24,22 @@ namespace N2K_BackboneBackEnd.Services
             _appSettings = app;
         }
 
+        #region SiteGeometry
+        public async Task<string> GetSiteGeometry(string siteCode, int version)
+        {
+            string result = "";
+            SqlParameter param1 = new SqlParameter("@SiteCode", siteCode);
+            SqlParameter param2 = new SqlParameter("@Version", version);
+
+            var geometries = await _dataContext.Set<SiteGeometry>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometry  @SiteCode, @Version",
+                            param1, param2).ToArrayAsync();
+
+            if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].GeoJson)) return geometries[0].GeoJson;
+            return result;
+        }
+        #endregion 
+
+
 
         #region SiteComments
 

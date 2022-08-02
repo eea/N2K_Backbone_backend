@@ -7,7 +7,8 @@
         public string AzureConnectionString { get; set; } = "";
         public string FilesRootPath { get; set; } = "";
         public string JustificationFolder { get; set; } = "";
-
+        public List<String> ExtensionWhiteList { get; set; } = new List<string>();
+        public List<String> CompressionFormats { get; set; } = new List<string>();
         public string PublicFilesUrl { get; set; } = "";
     }
 
@@ -31,6 +32,10 @@
         public bool InDevelopment { get; set; }
 
         public AttachedFilesConfig? AttachedFiles { get; set; }
+
+        public string fme_destination_database { get; set; } = "";
+        public string fme_security_token { get; set; } = "";
+        public string fme_service_spatialload { get; set; } = "";
 
     }
 }

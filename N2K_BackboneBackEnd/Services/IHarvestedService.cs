@@ -1,4 +1,5 @@
-﻿using N2K_BackboneBackEnd.Models;
+﻿using N2K_BackboneBackEnd.Enumerations;
+using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
 
@@ -23,6 +24,9 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<HarvestedEnvelope>> ValidateSingleSiteObject(SiteToHarvest harvestingSite);
 
         Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs);
+
+        Task<List<HarvestedEnvelope>> FullHarvest();
+        Task<ProcessedEnvelopes> ChangeStatus(string country, int version, HarvestingStatus toStatus);
 
     }
 }

@@ -4,5 +4,7 @@
     {
         public int VersionId { get; set; }
         public string CountryCode { get; set; } = "";
+
+        public DateTime SubmissionDate { get; set; }
     }
 }

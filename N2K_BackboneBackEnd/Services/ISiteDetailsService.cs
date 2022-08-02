@@ -10,6 +10,8 @@ namespace N2K_BackboneBackEnd.Services
 {
     public interface ISiteDetailsService
     {
+        Task<string> GetSiteGeometry(string siteCode, int version);
+
         Task<List<StatusChanges>> ListSiteComments(string siteCode, int version);
 
         Task<List<StatusChanges>> AddComment(StatusChanges comment);

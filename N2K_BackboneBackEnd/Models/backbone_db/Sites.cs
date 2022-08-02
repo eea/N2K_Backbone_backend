@@ -22,6 +22,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public double? Length { get; set; }
         public Boolean? JustificationRequired { get; set;}
         public Boolean? JustificationProvided { get; set; }
+        public DateTime? DateConfSCI { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
