@@ -7,7 +7,6 @@ namespace N2K_BackboneBackEnd.Data
     public class BaseContext : DbContext
     {
 
-
         public BaseContext(DbContextOptions options ) : base(options)
         {
             SaveChangesFailed += mySaveChangesFailed;
