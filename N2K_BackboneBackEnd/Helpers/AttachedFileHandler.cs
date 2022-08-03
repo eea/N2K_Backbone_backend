@@ -56,7 +56,9 @@ namespace N2K_BackboneBackEnd.Helpers
 
         private string returnSevenZipDllPath()
         {
+#pragma warning disable CS8604 // Posible argumento de referencia nulo
             return  Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Environment.Is64BitProcess ? "x64" : "x86", "7z.dll");
+#pragma warning restore CS8604 // Posible argumento de referencia nulo
         }
 
 
@@ -163,10 +165,13 @@ namespace N2K_BackboneBackEnd.Helpers
 
         protected async Task<bool> AllFilesValid(AttachedFile files)
         {
+            if (files == null || files.Files ==null) return true;
             var invalidFile = false;
             foreach (var f in files.Files)
             {
-                var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
+#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
+                string? fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
+#pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
                 var fullPath = Path.Combine(_pathToSave, fileName);
                 if (!CheckExtensions(fileName) || invalidFile == true)
                 {
