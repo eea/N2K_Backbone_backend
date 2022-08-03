@@ -56,9 +56,7 @@ namespace N2K_BackboneBackEnd.Helpers
 
         private string returnSevenZipDllPath()
         {
-#pragma warning disable CS8604 // Posible argumento de referencia nulo
             return  Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Environment.Is64BitProcess ? "x64" : "x86", "7z.dll");
-#pragma warning restore CS8604 // Posible argumento de referencia nulo
         }
 
 
@@ -173,6 +171,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 string? fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
                 var fullPath = Path.Combine(_pathToSave, fileName);
+                bool res = await CopyCompressedFileToTempFolder(f, fullPath);
                 if (!CheckExtensions(fileName) || invalidFile == true)
                 {
                     if (!invalidFile) invalidFile = true;
@@ -180,8 +179,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 }
                 if (CheckCompressionFormats(fileName))
                 {
-                    //copy file to temp repository
-                    bool res= await CopyCompressedFileToTempFolder(f, fullPath);
+                    //copy file to temp repository                    
                     //check compressed files types
                     if (!invalidFile && CheckCompressedFiles(fullPath)) invalidFile = true;
                 }
