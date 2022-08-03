@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-	  <!--
+
     <Compile Remove="bin\Release\net6.0\x64\**" />
     <Compile Remove="bin\Release\net6.0\x86\**" />
     <Content Remove="bin\Release\net6.0\x64\**" />
@@ -18,7 +18,7 @@
     <EmbeddedResource Remove="bin\Release\net6.0\x86\**" />
     <None Remove="bin\Release\net6.0\x64\**" />
     <None Remove="bin\Release\net6.0\x86\**" />
-	-->
+
   </ItemGroup>
 
   <ItemGroup>
@@ -26,7 +26,6 @@
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.13.0" />
     <PackageReference Include="DotNetZip" Version="1.16.0" />
-    <PackageReference Include="Microsoft.AspNet.Mvc" Version="5.2.9" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="5.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.ResponseCompression" Version="2.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.7">
