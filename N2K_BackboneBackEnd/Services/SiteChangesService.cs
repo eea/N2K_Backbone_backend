@@ -307,7 +307,8 @@ namespace N2K_BackboneBackEnd.Services
                  new SiteCodeView
                  {
                      SiteCode = x.SiteCode,
-                     Version = x.Version
+                     Version = x.Version,
+                     Name= x.Name
                  }
             ).ToList();
 

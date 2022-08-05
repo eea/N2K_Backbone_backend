@@ -34,7 +34,9 @@ namespace N2K_BackboneBackEnd.Services
             var geometries = await _dataContext.Set<SiteGeometry>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometry  @SiteCode, @Version",
                             param1, param2).ToArrayAsync();
 
+#pragma warning disable CS8603 // Posible tipo de valor devuelto de referencia nulo
             if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].GeoJson)) return geometries[0].GeoJson;
+#pragma warning restore CS8603 // Posible tipo de valor devuelto de referencia nulo
             return result;
         }
         #endregion 
@@ -100,7 +102,7 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile)
         {
             List<JustificationFiles> result = new List<JustificationFiles>();
-            IAttachedFileHandler fileHandler = null;
+            IAttachedFileHandler? fileHandler = null;
 
             if (_appSettings.Value.AttachedFiles == null) return result;
 
@@ -138,7 +140,7 @@ namespace N2K_BackboneBackEnd.Services
             {
                 _dataContext.Set<JustificationFiles>().Remove(justification);
 
-                IAttachedFileHandler fileHandler = null;
+                IAttachedFileHandler? fileHandler = null;
                 if (_appSettings.Value.AttachedFiles == null) return 0;
                 if (_appSettings.Value.AttachedFiles.AzureBlob)
                 {

@@ -1,7 +1,7 @@
 ﻿using Azure.Storage.Blobs;
 using N2K_BackboneBackEnd.Models;
-using System.IO.Compression;
 using System.Net.Http.Headers;
+
 
 namespace N2K_BackboneBackEnd.Helpers
 {
@@ -11,7 +11,6 @@ namespace N2K_BackboneBackEnd.Helpers
         public AzureBlobHandler(AttachedFilesConfig attachedFilesConfig) : base(attachedFilesConfig)
         {
         }
-
 
 
         private BlobContainerClient ConnectToAzureBlob()
@@ -28,73 +27,33 @@ namespace N2K_BackboneBackEnd.Helpers
 
         public async Task<List<string>> UploadFileAsync(AttachedFile files)
         {
-            var folderName = _attachedFilesConfig.JustificationFolder;
-            var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
+
             var remoteUrl = "";
             List<String> uploadedFiles = new List<string>();
-            var invalidFile = false;
+            if (files == null || files.Files == null) return uploadedFiles;
 
+            var invalidFile =await AllFilesValid(files);
+                       
             foreach (var f in files.Files)
             {
+#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
                 var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
-                var fullPath = Path.Combine(pathToSave, fileName);
-                if (!CheckExtensions(fileName) || invalidFile == true)
-                {
-                    invalidFile = true;
-                    File.Delete(fullPath);
-                    break;
-                }
-                if (CheckCompressionFormats(fileName))
-                {
-                    using (var stream = new FileStream(fullPath, FileMode.Create))
-                    {
-                        await f.CopyToAsync(stream);
-                    }
-                    using (ZipArchive archive = ZipFile.OpenRead(fullPath))
-                    {
-                        archive.ExtractToDirectory(pathToSave);
-                        foreach (ZipArchiveEntry entry in archive.Entries)
-                        {
-                            if (!CheckExtensions(entry.Name))
-                            {
-                                invalidFile = true;
-                                File.Delete(Path.Combine(pathToSave, entry.Name));
-                                break;
-                            }
-                            File.Delete(Path.Combine(pathToSave, entry.Name));
-                        }
-                    }
-                    File.Delete(fullPath);
-                }
-            }
+#pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
+                var fullPath = Path.Combine(_pathToSave, fileName);
 
-            if (invalidFile)
-                throw new Exception("some of the file(s) attached has invalid extension");
-
-            foreach (var f in files.Files)
-            {
-                var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
-                var fullPath = Path.Combine(pathToSave, fileName);
-                using (var stream = new FileStream(fullPath, FileMode.Create))
-                {
-                    f.CopyTo(stream);
-                }
 
                 //if the file is compressed (extract all the content)
                 if (CheckCompressionFormats(fileName))
                 {
-                    using (ZipArchive archive = ZipFile.OpenRead(fullPath))
+                    List<string> uncompressedFiles = ExtractCompressedFiles(fullPath);
+                    foreach (var uncompressed in uncompressedFiles)
                     {
-                        archive.ExtractToDirectory(pathToSave);
-                        foreach (ZipArchiveEntry entry in archive.Entries)
-                        {
-                            BlobClient blobClient1 = ConnectToAzureBlob().GetBlobClient(entry.Name);
-                            await blobClient1.UploadAsync(Path.Combine(pathToSave, entry.Name), true);
-                            remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, entry.Name));
+                        BlobClient blobClient1 = ConnectToAzureBlob().GetBlobClient(uncompressed);
+                        await blobClient1.UploadAsync(Path.Combine(_pathToSave, uncompressed), true);
+                        remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                        uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, uncompressed));
 
-                            File.Delete(Path.Combine(pathToSave, entry.Name));
-                        }
+                        File.Delete(Path.Combine(_pathToSave, uncompressed));
                     }
                 }
                 else
@@ -102,7 +61,7 @@ namespace N2K_BackboneBackEnd.Helpers
                     BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
                     await blobClient.UploadAsync(fullPath, true);
                     remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                    uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, folderName, fileName));
+                    uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
                 }
                 File.Delete(fullPath);
             }

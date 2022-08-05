@@ -902,6 +902,15 @@ namespace N2K_BackboneBackEnd.Services
                     int _version = _dataContext.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).First();
                     if (toStatus != envelope.Status)
                     {
+                        if (envelope.Status == HarvestingStatus.DataLoaded)
+                        {
+                            await Validate(new EnvelopesToProcess[] { new EnvelopesToProcess
+                            {
+                                CountryCode = country,
+                                VersionId = version
+                            } });
+                        }
+
                         SqlParameter param1 = new SqlParameter("@country", country);
                         SqlParameter param2 = new SqlParameter("@version", version);
                         switch (toStatus)
@@ -926,6 +935,9 @@ namespace N2K_BackboneBackEnd.Services
                                 break;
                         }
                         await _dataContext.Database.ExecuteSqlRawAsync(sqlToExecute, param1, param2);
+
+                        envelope.Status = toStatus;
+                        return envelope;
                     }
                     else
                     {
