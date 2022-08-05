@@ -134,7 +134,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
             }
 
-            return await Task.FromResult(result);
+            return result;
         }
 
 
@@ -605,7 +605,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         }
                         //set the enevelope as successfully completed
-                        envelopeToProcess.Status = finalStatus;
+                        envelopeToProcess.Status = HarvestingStatus.DataLoaded;
                         _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
                         result.Add(
                             new HarvestedEnvelope
@@ -613,7 +613,7 @@ namespace N2K_BackboneBackEnd.Services
                                 CountryCode = envelope.CountryCode,
                                 VersionId = envelope.VersionId,
                                 NumChanges = 0,
-                                Status = (SiteChangeStatus)finalStatus
+                                Status = SiteChangeStatus.DataLoaded
                             }
                          );
                     }
@@ -642,7 +642,7 @@ namespace N2K_BackboneBackEnd.Services
 
 
                 }
-                return await Task.FromResult(result);
+                return result;
             }
 
             catch (Exception ex)
@@ -690,8 +690,9 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        private async Task<List<HarvestedEnvelope>> HarvestSpatialData(EnvelopesToProcess[] envelopeIDs) {
-            
+        private async Task<List<HarvestedEnvelope>> HarvestSpatialData(EnvelopesToProcess[] envelopeIDs)
+        {
+
             try
             {
                 List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
@@ -730,7 +731,7 @@ namespace N2K_BackboneBackEnd.Services
                                 Status = SiteChangeStatus.Rejected
                             }
                          );
-                        
+
                     }
                     finally
                     {
@@ -738,7 +739,7 @@ namespace N2K_BackboneBackEnd.Services
                         client = null;
                         TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString().ToString(), "End");
                     }
-                
+
                 }
                 return await Task.FromResult(result);
             }
@@ -770,8 +771,9 @@ namespace N2K_BackboneBackEnd.Services
                 //Call the method to know which envelopes are availables
                 List<Harvesting> vEnvelopes = await GetPendingEnvelopes();
                 List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
+                List<ProcessedEnvelopes> pEnvelopes = new List<ProcessedEnvelopes>();
 
-               
+
                 if (vEnvelopes.Count > 0)
                 {
                     foreach (Harvesting vEnvelope in vEnvelopes)
@@ -780,25 +782,50 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             VersionId = Int32.Parse(vEnvelope.Id.ToString()),
                             CountryCode = vEnvelope.Country,
-                            SubmissionDate= vEnvelope.SubmissionDate
+                            SubmissionDate = vEnvelope.SubmissionDate
+                        });
+                        pEnvelopes.Add(new ProcessedEnvelopes
+                        {
+                            Country = vEnvelope.Country,
+                            Version = Int32.Parse(vEnvelope.Id.ToString()),
+                            ImportDate = vEnvelope.SubmissionDate,
+                            Status = HarvestingStatus.Queued,
+                            Importer = "Automatic",
+                            N2K_VersioningDate = vEnvelope.SubmissionDate
                         });
                     }
+                    _dataContext.Set<ProcessedEnvelopes>().AddRange(pEnvelopes);
+                    _dataContext.SaveChanges();
 
                     //Process each envelope
-                    List<HarvestedEnvelope> bbEnvelopes = await Harvest(envelopes.ToArray());
-                    
-                    
-                    List<HarvestedEnvelope> bbValidations = await Validate(envelopes.ToArray());
+                    List<HarvestedEnvelope> bbEnvelopes = new List<HarvestedEnvelope>();
+                    foreach (EnvelopesToProcess envelope in envelopes)
+                    {
+                        var bbEnvelope = await Harvest(envelopes.ToArray());
+                        List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(envelopes.ToArray());
 
-                    List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(envelopes.ToArray());
-                    //List<HarvestedEnvelope> bbGeoData = await ValidateSpatialData(envelopes.ToArray());
+                        if (bbEnvelope.Count > 0)
+                        {
+                            if (true) //todo: Check if there are any other envelope versions of the country in PreHarvested
+                            {
+                                List<HarvestedEnvelope> bbValidations = await Validate(envelopes.ToArray());
 
+                                //List<HarvestedEnvelope> bbGeoData = await ValidateSpatialData(envelopes.ToArray());
+
+                                await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested);
+
+                                bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
+                            }
+                            bbEnvelopes.Add(bbEnvelope[0]);
+                        }
+                    }
 
                     //Store the result of the harvest
                     //Return a simple structure
-                    return await Task.FromResult(bbEnvelopes);
+                    return bbEnvelopes;
                 }
-                else {
+                else
+                {
                     return await Task.FromResult(new List<HarvestedEnvelope>());
                 }
             }
@@ -807,16 +834,19 @@ namespace N2K_BackboneBackEnd.Services
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - FullHarvest", "");
                 throw ex;
             }
-            finally { 
-            
+            finally
+            {
+
             }
-        
+
         }
 
 
 
-        private HarvestingStatus getStatus(int pStatus) { 
-            switch(pStatus){
+        private HarvestingStatus getStatus(int pStatus)
+        {
+            switch (pStatus)
+            {
                 case 0:
                     return HarvestingStatus.Pending;
                     break;
@@ -824,7 +854,7 @@ namespace N2K_BackboneBackEnd.Services
                     return HarvestingStatus.Accepted;
                     break;
                 case 2:
-                     return HarvestingStatus.Rejected;
+                    return HarvestingStatus.Rejected;
                     break;
                 case 3:
                     return HarvestingStatus.Harvested;
@@ -833,13 +863,13 @@ namespace N2K_BackboneBackEnd.Services
                     return HarvestingStatus.Harvesting;
                     break;
                 case 5:
-                     return HarvestingStatus.Queued;
+                    return HarvestingStatus.Queued;
                     break;
                 case 6:
                     return HarvestingStatus.PreHarvested;
                     break;
                 case 7:
-                     return HarvestingStatus.Discarded;
+                    return HarvestingStatus.Discarded;
                     break;
                 case 8:
                     return HarvestingStatus.Closed;
@@ -848,7 +878,7 @@ namespace N2K_BackboneBackEnd.Services
                     throw new Exception("No statuts definition found");
             }
 
-         
+
         }
 
         /// <summary>
@@ -862,8 +892,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             string sqlToExecute = "exec dbo.";
             try
-            { 
-                ProcessedEnvelopes envelope = _dataContext.Set<ProcessedEnvelopes>().Where(e=> e.Country == country && e.Version == version).FirstOrDefault();
+            {
+                ProcessedEnvelopes envelope = _dataContext.Set<ProcessedEnvelopes>().Where(e => e.Country == country && e.Version == version).FirstOrDefault();
                 if (envelope != null)
                 {
                     //Get the version for the Sites 
@@ -914,9 +944,10 @@ namespace N2K_BackboneBackEnd.Services
                         throw new Exception("Currently the package (" + country + " - " + version + ") has already the selected status.");
                     }
                 }
-                else {
+                else
+                {
                     //Manual harvest?
-                    
+
                     PackageCountry package = _versioningContext.Set<PackageCountry>().Where(e => e.CountryCode == country && e.CountryVersionID == version).FirstOrDefault();
 
                     if (package != null)
@@ -928,7 +959,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
                         envelopes.Add(newEnvelope);
-                        
+
                         await Harvest(envelopes.ToArray<EnvelopesToProcess>());
 
 
@@ -939,7 +970,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
 
 
-                    
+
                 }
                 return envelope;
             }
@@ -998,7 +1029,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     bbSite.CompilationDate = pVSite.DATE_COMPILATION;
                 }
-                bbSite.CurrentStatus = (int?)SiteChangeStatus.PreHarvested;
+                bbSite.CurrentStatus = (int?)SiteChangeStatus.DataLoaded;
                 bbSite.SiteType = pVSite.SITETYPE;
                 bbSite.AltitudeMin = pVSite.ALTITUDE_MIN;
                 bbSite.AltitudeMax = pVSite.ALTITUDE_MAX;
