@@ -27,6 +27,7 @@ builder.Services.AddScoped<IHarvestedService, HarvestedService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<IEULoginService, EULoginService>();
 builder.Services.AddScoped<IConfigService, ConfigService>();
+builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 
 builder.Services.AddResponseCompression(options =>
 {
