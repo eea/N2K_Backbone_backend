@@ -25,17 +25,20 @@ namespace N2K_BackboneBackEnd.Services
         }
 
         #region SiteGeometry
-        public async Task<string> GetSiteGeometry(string siteCode, int version)
+        public async Task<SiteGeometryDetailed> GetSiteGeometry(string siteCode, int version)
         {
-            string result = "";
+            SiteGeometryDetailed result = new SiteGeometryDetailed();
             SqlParameter param1 = new SqlParameter("@SiteCode", siteCode);
             SqlParameter param2 = new SqlParameter("@Version", version);
 
-            var geometries = await _dataContext.Set<SiteGeometry>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometry  @SiteCode, @Version",
+            var geometries = await _dataContext.Set<SiteGeometryDetailed>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometryDetailed  @SiteCode, @Version",
                             param1, param2).ToArrayAsync();
 
+
 #pragma warning disable CS8603 // Posible tipo de valor devuelto de referencia nulo
-            if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].GeoJson)) return geometries[0].GeoJson;
+            if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].SiteCode))
+                return geometries[0];
+
 #pragma warning restore CS8603 // Posible tipo de valor devuelto de referencia nulo
             return result;
         }

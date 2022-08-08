@@ -246,6 +246,52 @@ namespace N2K_BackboneBackEnd.Services
 
             return result;
         }
+
+
+        public async Task<List<HarvestedEnvelope>> ValidateSpatialData(EnvelopesToProcess[] envelopeIDs)
+        {
+            try
+            {
+                List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
+
+                //for each envelope to process
+                foreach (EnvelopesToProcess envelope in envelopeIDs)
+                {
+                    HttpClient client = new HttpClient();
+                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialchanges,  envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
+                    try
+                    {
+                        TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
+
+                        Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
+                        string content = await response.Result.Content.ReadAsStringAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        SystemLog.write(SystemLog.errorLevel.Error, ex, "Geospatial changes", "");
+                    }
+                    finally
+                    {
+                        client.Dispose();
+                        TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString().ToString(), "End");
+                    }
+
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - validate spatial changes", "");
+                return new List<HarvestedEnvelope>();
+            }
+            finally
+            {
+                TimeLog.setTimeStamp("validate spatial changes ", "End");
+            }
+
+        }
+
+
         public async Task<List<HarvestedEnvelope>> ValidateSingleSite(string siteCode, int versionId)
         {
             SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
@@ -692,7 +738,6 @@ namespace N2K_BackboneBackEnd.Services
 
         private async Task<List<HarvestedEnvelope>> HarvestSpatialData(EnvelopesToProcess[] envelopeIDs)
         {
-
             try
             {
                 List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
@@ -701,14 +746,14 @@ namespace N2K_BackboneBackEnd.Services
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
                     HttpClient client = new HttpClient();
-                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialload, _appSettings.Value.fme_destination_database, envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
+                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialload,envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
                     try
                     {
                         TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
 
                         Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                         string content = await response.Result.Content.ReadAsStringAsync();
-
+                        /*
                         result.Add(
                             new HarvestedEnvelope
                             {
@@ -718,10 +763,12 @@ namespace N2K_BackboneBackEnd.Services
                                 Status = SiteChangeStatus.Harvested
                             }
                          );
+                        */
                     }
                     catch (Exception ex)
                     {
                         SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestGeodata", "");
+                        /*
                         result.Add(
                             new HarvestedEnvelope
                             {
@@ -731,7 +778,7 @@ namespace N2K_BackboneBackEnd.Services
                                 Status = SiteChangeStatus.Rejected
                             }
                          );
-
+                        */
                     }
                     finally
                     {
@@ -741,13 +788,13 @@ namespace N2K_BackboneBackEnd.Services
                     }
 
                 }
-                return await Task.FromResult(result);
+                return result;
             }
 
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return await Task.FromResult(new List<HarvestedEnvelope>());
+                return new List<HarvestedEnvelope>();
             }
             finally
             {
@@ -808,12 +855,14 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (true) //todo: Check if there are any other envelope versions of the country in PreHarvested
                             {
-                                List<HarvestedEnvelope> bbValidations = await Validate(envelopes.ToArray());
+                                //these two processes can be executed in parallel
+                                Task tabValidationTask = Validate(envelopes.ToArray());
+                                Task spatialValidationTask = ValidateSpatialData(envelopes.ToArray());
 
-                                //List<HarvestedEnvelope> bbGeoData = await ValidateSpatialData(envelopes.ToArray());
-
+                                //make sure they are all finished
+                                await Task.WhenAll(tabValidationTask, spatialValidationTask);
+                                //change the status of the whole process to PreHarvested
                                 await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested);
-
                                 bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
                             }
                             bbEnvelopes.Add(bbEnvelope[0]);
@@ -826,7 +875,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else
                 {
-                    return await Task.FromResult(new List<HarvestedEnvelope>());
+                    return new List<HarvestedEnvelope>();
                 }
             }
             catch (Exception ex)

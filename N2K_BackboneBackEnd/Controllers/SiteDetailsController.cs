@@ -28,12 +28,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
         #region SiteGeometry
         [HttpGet("GetSiteGeometry/siteCode={pSiteCode}&version={pCountryVersion}")]
-        public async Task<ActionResult<String>> GetSiteGeometry(string pSiteCode, int pCountryVersion)
+        public async Task<ActionResult<SiteGeometryDetailed>> GetSiteGeometry(string pSiteCode, int pCountryVersion)
         {
-            ServiceResponse<string> response = new ServiceResponse<string>();
+            ServiceResponse<SiteGeometryDetailed> response = new ServiceResponse<SiteGeometryDetailed>();
             try
             {
-                string siteGeometry = await _siteDetailsService.GetSiteGeometry(pSiteCode, pCountryVersion);
+                SiteGeometryDetailed siteGeometry = await _siteDetailsService.GetSiteGeometry(pSiteCode, pCountryVersion);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteGeometry;
