@@ -646,6 +646,31 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
+        [Route("SaveSiteChangeEdition/")]
+        [HttpPost]
+        public async Task<ActionResult<string>> SaveSiteChangeEdition(string sitecode, string sitename, string sitetype, string[] biogeographicRegion, float area, float length, float centreX, float centreY)
+        {
+            var response = new ServiceResponse<List<ModifiedSiteCode>>();
+            try
+            {
+                var siteChanges = await _siteChangesService.SaveSiteChangeEdition(sitecode, sitename, sitetype, biogeographicRegion, area, length, centreX, centreY);
+                response.Success = true;
+                response.Message = "";
+                response.Data = null;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+
 
         /*
         // PUT api/<SiteChangesController>/5
