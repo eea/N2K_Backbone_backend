@@ -245,5 +245,29 @@ namespace N2K_BackboneBackEnd.Controllers
 
         #endregion
 
+
+        [Route("SaveEdition/")]
+        [HttpPost]
+        public async Task<ActionResult<string>> SaveEdition([FromBody] ChangeEdition changeEdition)
+        {
+            var response = new ServiceResponse<string>();
+            try
+            {
+                var siteChanges = await _siteDetailsService.SaveEdition(changeEdition);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
     }
 }

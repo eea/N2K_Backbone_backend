@@ -164,5 +164,10 @@ namespace N2K_BackboneBackEnd.Services
 
 
         #endregion
+
+        public async Task<string> SaveEdition(ChangeEdition changeEdition)
+        {
+            return await Task.FromResult("OK");
+        }
     }
 }
