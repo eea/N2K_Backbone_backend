@@ -48,8 +48,9 @@ namespace N2K_BackboneBackEnd.Services
 
             var startRow = (page - 1) * pageLimit;
             var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level));
-            if (pageLimit > 0) {
-                sitesList= sitesList
+            if (pageLimit > 0)
+            {
+                sitesList = sitesList
                     .Skip(startRow)
                     .Take(pageLimit)
                     .ToList();
@@ -58,7 +59,8 @@ namespace N2K_BackboneBackEnd.Services
             sitecodesfilter.Columns.Add("SiteCode", typeof(string));
             sitecodesfilter.Columns.Add("Version", typeof(int));
 
-            foreach (var sc in sitesList) {
+            foreach (var sc in sitesList)
+            {
                 sitecodesfilter.Rows.Add(new Object[] { sc.SiteCode, sc.Version });
             }
 
@@ -83,12 +85,12 @@ namespace N2K_BackboneBackEnd.Services
                                                                      select new OrderedChanges
                                                                      {
                                                                          SiteCode = g.Key.SiteCode,
-                                                                         SiteName= g.Key.SiteName,
+                                                                         SiteName = g.Key.SiteName,
                                                                          Level = (from t2 in g select t2.Level).Max(),
                                                                          //Nest all changes of each sitecode ordered by Level
                                                                          ChangeList = g.Where(s => s.SiteCode.ToUpper() == g.Key.SiteCode.ToUpper()).OrderByDescending(x => (int)x.Level).ToList()
                                                                      }).OrderByDescending(a => a.Level).ThenBy(b => b.SiteCode);
-            
+
             /*
             if (pageLimit != 0)
             {
@@ -145,14 +147,14 @@ namespace N2K_BackboneBackEnd.Services
                             Level = change.Level,
                             Status = change.Status,
                             Tags = change.Tags,
-                            NumChanges=1
+                            NumChanges = 1
                         };
                         siteChange.subRows = new List<SiteChangeView>();
                         siteChange.subRows.Add(changeView);
                     }
                     else
                     {
-                        if (!siteChange.subRows.Any(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType==change.ChangeType))
+                        if (!siteChange.subRows.Any(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType))
                         {
                             siteChange.subRows.Add(new SiteChangeView
                             {
@@ -165,7 +167,7 @@ namespace N2K_BackboneBackEnd.Services
                                 Level = change.Level,
                                 Status = change.Status,
                                 Tags = string.Empty,
-                                NumChanges=1
+                                NumChanges = 1
                             });
                         }
                         else
@@ -273,7 +275,7 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetailVM.JustificationRequired = site.JustificationRequired.HasValue ? site.JustificationRequired.Value : false;
 #pragma warning restore CS8601 // Posible asignación de referencia nula
             }
-            var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == pSiteCode  &&  site.Version== pCountryVersion ).ToListAsync();
+            var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
 
 
             _siteHabitats = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
@@ -308,7 +310,7 @@ namespace N2K_BackboneBackEnd.Services
                  {
                      SiteCode = x.SiteCode,
                      Version = x.Version,
-                     Name= x.Name
+                     Name = x.Name
                  }
             ).ToList();
 
@@ -803,6 +805,11 @@ namespace N2K_BackboneBackEnd.Services
                 throw;
             }
 
+        }
+
+        public async Task<string> SaveSiteChangeEdition(string sitecode, string sitename, string sitetype, string[] biogeographicRegion, float area, float length, float centreX, float centreY)
+        {
+            return "ok";
         }
 
     }

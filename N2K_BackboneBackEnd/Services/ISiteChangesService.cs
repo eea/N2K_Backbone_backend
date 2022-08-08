@@ -28,6 +28,6 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification);
 
         Task<List<ModifiedSiteCode>> JustificationProvided(JustificationModel[] justification);
-
+        Task<string> SaveSiteChangeEdition(string sitecode, string sitename, string sitetype, string[] biogeographicRegion, float area, float length, float centreX, float centreY);
     }
 }
