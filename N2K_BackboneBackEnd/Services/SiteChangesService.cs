@@ -807,9 +807,9 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
-        public async Task<string> SaveSiteChangeEdition(string sitecode, string sitename, string sitetype, string[] biogeographicRegion, float area, float length, float centreX, float centreY)
+        public async Task<string> SaveSiteChangeEdition(ChangeEdition changeEdition)
         {
-            return "ok";
+            return await Task.FromResult("OK");            
         }
 
     }
