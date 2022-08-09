@@ -248,7 +248,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("SaveEdition/")]
         [HttpPost]
-        public async Task<ActionResult<string>> SaveEdition([FromBody] ChangeEdition changeEdition)
+        public async Task<ActionResult<string>> SaveEdition([FromBody] ChangeEditionDb changeEdition)
         {
             var response = new ServiceResponse<string>();
             try
@@ -258,6 +258,30 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Message = "";
                 response.Data = siteChanges;
                 response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("GetReferenceEditInfo/")]
+        [HttpGet]
+        public async Task<ActionResult<ChangeEditionViewModel>> GetReferenceEditInfo(string siteCode)
+        {
+            var response = new ServiceResponse<ChangeEditionViewModel>();
+            try
+            {
+                var siteChange = await _siteDetailsService.GetReferenceEditInfo(siteCode);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChange;
+                response.Count = siteChange == null ? 1 : 0;
                 return Ok(response);
             }
             catch (Exception ex)
