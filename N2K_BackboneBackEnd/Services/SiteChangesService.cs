@@ -525,8 +525,8 @@ namespace N2K_BackboneBackEnd.Services
 
                     if (code != null)
                     {
-                        var spectype = _speciesTypes.FirstOrDefault(s => s.Code.ToLower() == code.ToLower()).Name;
-                        if (spectype != null) specName = spectype;
+                        SpeciesTypes? _spectype = _speciesTypes.FirstOrDefault(s => s.Code.ToLower() == code.ToLower());
+                        if (_spectype != null) specName = _spectype.Name;
 
                         var specDetails = _siteSpecies.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
                             .Select(spc => new
