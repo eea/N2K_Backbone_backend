@@ -27,6 +27,8 @@ namespace N2K_BackboneBackEnd.Services
 
 
         Task<int> DeleteFile(long justificationId);
+        Task<string> SaveEdition(ChangeEditionDb changeEdition);
+        Task<ChangeEditionViewModel?> GetReferenceEditInfo(string siteCode);
 
     }
 

@@ -164,5 +164,37 @@ namespace N2K_BackboneBackEnd.Services
 
 
         #endregion
+
+        public async Task<string> SaveEdition(ChangeEditionDb changeEdition)
+        {
+            return await Task.FromResult("OK");
+        }
+
+        public async Task<ChangeEditionViewModel?> GetReferenceEditInfo(string siteCode)
+        {
+            SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
+            List<ChangeEditionDb> list = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.spGetReferenceEditInfo  @sitecode",
+                                param1).ToListAsync();
+            ChangeEditionDb changeEdition = list.FirstOrDefault();
+            if (changeEdition == null)
+            {
+                return null;
+            }
+            else
+            {
+                return new ChangeEditionViewModel
+                {
+                    Area = changeEdition.Area,
+                    BioRegion = !string.IsNullOrEmpty(changeEdition.spBiogeographicRegion) ? changeEdition.spBiogeographicRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>(),
+                    CentreX = changeEdition.CentreX,
+                    CentreY = changeEdition.CentreY,
+                    Length = changeEdition.Length,
+                    Sitecode = changeEdition.Sitecode,
+                    SiteName = changeEdition.SiteName,
+                    SiteType = changeEdition.SiteType,
+                    Version = changeEdition.Version
+                };
+            }
+        }
     }
 }

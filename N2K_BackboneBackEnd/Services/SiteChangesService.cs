@@ -807,10 +807,5 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
-        public async Task<string> SaveSiteChangeEdition(ChangeEdition changeEdition)
-        {
-            return await Task.FromResult("OK");            
-        }
-
     }
 }
