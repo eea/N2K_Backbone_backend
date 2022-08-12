@@ -189,7 +189,7 @@ namespace N2K_BackboneBackEnd.Services
                     CentreX = changeEdition.CentreX,
                     CentreY = changeEdition.CentreY,
                     Length = changeEdition.Length,
-                    Sitecode = changeEdition.Sitecode,
+                    SiteCode = changeEdition.SiteCode,
                     SiteName = changeEdition.SiteName,
                     SiteType = changeEdition.SiteType,
                     Version = changeEdition.Version

@@ -6,7 +6,7 @@ namespace N2K_BackboneBackEnd.Models
     [Keyless]
     public class ChangeEdition : IEntityModel, IEntityModelBackboneDB
     {
-        public string Sitecode { get; set; } = ""; 
+        public string SiteCode { get; set; } = ""; 
         public int Version { get; set; }
         public string? SiteName { get; set; }
         public string? SiteType { get; set; }

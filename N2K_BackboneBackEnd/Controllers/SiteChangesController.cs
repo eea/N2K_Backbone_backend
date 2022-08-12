@@ -400,16 +400,27 @@ namespace N2K_BackboneBackEnd.Controllers
         }
         [Route("GetSiteCodes/country={country:string}")]
         [HttpGet()]
-        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByCountry(string country)
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByCountry(string country, bool reference = false)
         {
             var response = new ServiceResponse<List<SiteCodeView>>();
             try
             {
-                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, null, null);
-                response.Success = true;
-                response.Message = "";
-                response.Data = siteCodes;
-                response.Count = await _siteChangesService.GetPendingChangesByCountry(country);
+                if (reference)
+                {
+                    var siteCodes = await _siteChangesService.GetReferenceSiteCodes(country);
+                    response.Success = true;
+                    response.Message = "";
+                    response.Data = siteCodes;
+                    response.Count = siteCodes.Count();
+                }
+                else
+                {
+                    var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, null, null);
+                    response.Success = true;
+                    response.Message = "";
+                    response.Data = siteCodes;
+                    response.Count = await _siteChangesService.GetPendingChangesByCountry(country);
+                }
                 return Ok(response);
             }
             catch (Exception ex)

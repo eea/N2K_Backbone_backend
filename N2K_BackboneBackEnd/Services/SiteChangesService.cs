@@ -7,6 +7,7 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using System.Data;
+using N2K_BackboneBackEnd.Models.BackboneDB;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -292,9 +293,24 @@ namespace N2K_BackboneBackEnd.Services
             return changeDetailVM;
         }
 
+        public async Task<List<SiteCodeView>> GetReferenceSiteCodes(string country)
+        {
+            return (await _dataContext.Set<Sites>().AsNoTracking().Where(s => s.CountryCode == country && s.Current == true).ToListAsync()).Select(x =>
+                 new SiteCodeView
+                 {
+                     SiteCode = x.SiteCode,
+                     Version = x.Version,
+                     Name = x.Name
+                 }
+            ).ToList();
+        }
+
+
 
         public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level)
         {
+
+            
 
             var result = new List<SiteCodeView>();
 
