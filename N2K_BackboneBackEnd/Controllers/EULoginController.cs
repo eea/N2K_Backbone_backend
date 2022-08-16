@@ -4,10 +4,11 @@ using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
-
+using Microsoft.AspNetCore.Authorization;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
+    [System.Web.Http.AllowAnonymous]
     [Route("api/[controller]")]
     [ApiController]
     public class EULoginController : ControllerBase
@@ -25,9 +26,11 @@ namespace N2K_BackboneBackEnd.Controllers
             _mapper= mapper;
         }
 
+        [System.Web.Http.AllowAnonymous]
         [HttpGet("GetLoginUrl/redirectionUrl={redirectionUrl}")]
         public async Task<ActionResult<ServiceResponse<string>>> GetLoginUrl (string redirectionUrl)
         {
+
             var stringUrl = redirectionUrl.Replace("##", "/");
             var response = new ServiceResponse<string>();
             try
@@ -55,8 +58,8 @@ namespace N2K_BackboneBackEnd.Controllers
         /// </summary>
         /// <param name="redirectionUrl">The url to be redirected to</param>
         /// <param name="code_challenge">A code challenge generated in javascript via base64URL(CryptoJS.SHA256(code_verifier)))</param>
+        [System.Web.Http.AllowAnonymous]
         [HttpGet("GetLoginUrlByCodeChallenge/redirectionUrl={redirectionUrl}&code_challenge={code_challenge}")]
-
         public async Task<ActionResult<ServiceResponse<string>>> GetLoginUrl(string redirectionUrl,string code_challenge)
         {
             var stringUrl = redirectionUrl.Replace("##", "/");
@@ -81,6 +84,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
+        [System.Web.Http.AllowAnonymous]
         [HttpGet("GetToken/redirectionUrl={redirectionUrl}&code={code}&code_verifier={code_verifier}")]
         public async Task<ActionResult<ServiceResponse<string>>> GetToken(string redirectionUrl, string code, string code_verifier)
         {            
@@ -106,7 +110,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         }
 
-
+        [System.Web.Http.AllowAnonymous]
         [HttpGet("GetUsername/token={token}")]
         public async Task<ActionResult<ServiceResponse<string>>> GetUsername(string token)
         {

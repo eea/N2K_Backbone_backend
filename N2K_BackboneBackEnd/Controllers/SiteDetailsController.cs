@@ -7,9 +7,14 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Authorization;
+using Azure.Core;
+using NuGet.Common;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
+    [Authorize(AuthenticationSchemes = "EULoginSchema")]
     [Route("api/[controller]")]
     [ApiController]
     public class SiteDetailsController : ControllerBase
@@ -54,9 +59,11 @@ namespace N2K_BackboneBackEnd.Controllers
         #endregion
 
 
-        #region SiteComments
-        [HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
+        #region SiteComments        
+        [HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]        
         public async Task<ActionResult<List<StatusChanges>>> ListSiteComments(string pSiteCode, int pCountryVersion)
+            
+            //, [FromHeader]  BearerHeader header)
         {
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
             try
