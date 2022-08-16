@@ -185,7 +185,7 @@ namespace N2K_BackboneBackEnd.Services
                 return new ChangeEditionViewModel
                 {
                     Area = changeEdition.Area,
-                    BioRegion = !string.IsNullOrEmpty(changeEdition.spBiogeographicRegion) ? changeEdition.spBiogeographicRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>(),
+                    BioRegion = !string.IsNullOrEmpty(changeEdition.BioRegion) ? changeEdition.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>(),
                     CentreX = changeEdition.CentreX,
                     CentreY = changeEdition.CentreY,
                     Length = changeEdition.Length,
