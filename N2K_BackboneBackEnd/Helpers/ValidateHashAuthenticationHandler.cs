@@ -1,17 +1,8 @@
-﻿using Azure.Core;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
-using System.ComponentModel.DataAnnotations;
 using System.Text.Encodings.Web;
-using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Principal;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System.Net.Http.Headers;
 
 namespace N2K_BackboneBackEnd.Helpers
 {
