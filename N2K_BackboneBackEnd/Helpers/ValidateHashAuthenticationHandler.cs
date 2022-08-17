@@ -44,6 +44,7 @@ namespace N2K_BackboneBackEnd.Helpers
             token = token.Replace("Bearer ", "").Trim();
             try
             {
+                /*
                 //Check if the token is active
                 var appSettings = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -71,6 +72,7 @@ namespace N2K_BackboneBackEnd.Helpers
                     //JObject jResponse = JObject.Parse(json);
                     //var requestUri = "";
                 }
+                */
 
                 //Check if the token is valid
                 var tokenHandler = new JwtSecurityTokenHandler();                                
@@ -92,7 +94,6 @@ namespace N2K_BackboneBackEnd.Helpers
                 Console.WriteLine("Exception Occured while Deserializing: " + ex);
                 return Task.FromResult(AuthenticateResult.Fail("TokenParseException"));
             }
-
         }
 
         public static string Base64Encode(string plainText)
