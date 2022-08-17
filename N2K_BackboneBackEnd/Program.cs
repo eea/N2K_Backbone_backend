@@ -62,23 +62,12 @@ builder.Services.Configure<FormOptions>(o =>
     o.MemoryBufferThreshold = int.MaxValue;
 });
 
-/*
-builder.Services.AddDbContext<N2KBackboneReadOnlyContext>(options =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
-});
-*/
-
-
-
 builder.Services.AddDbContext<N2K_VersioningContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_VersioningBackEndContext"));
 });
 
 
-
-//builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddControllersWithViews();
 builder.Services.Configure<ConfigSettings>(builder.Configuration.GetSection("GeneralSettings"));
 

@@ -18,7 +18,6 @@ namespace N2K_BackboneBackEnd.Controllers
         private readonly IMapper _mapper;
 
 
-
         public EULoginController(IOptions<ConfigSettings> app, IEULoginService euLoginService, IMapper mapper )
         {
             _appSettings = app;

@@ -1,17 +1,27 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Options;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Encodings.Web;
+using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Principal;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.Net.Http.Headers;
 
 namespace N2K_BackboneBackEnd.Helpers
 {
+
     public class ValidateHashAuthenticationSchemeOptions : AuthenticationSchemeOptions
     {
 
     }
 
-    public class ValidateHashAuthenticationHandler : AuthenticationHandler<ValidateHashAuthenticationSchemeOptions>
+    public class ValidateHashAuthenticationHandler: AuthenticationHandler<ValidateHashAuthenticationSchemeOptions>
     {
         public ValidateHashAuthenticationHandler(
             IOptionsMonitor<ValidateHashAuthenticationSchemeOptions> options,
@@ -22,7 +32,7 @@ namespace N2K_BackboneBackEnd.Helpers
         {
         }
 
-
+     
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             // validation comes in here
@@ -34,9 +44,36 @@ namespace N2K_BackboneBackEnd.Helpers
             token = token.Replace("Bearer ", "").Trim();
             try
             {
-                //Check if the token is valid
+                //Check if the token is active
+                var appSettings = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
-                var tokenHandler = new JwtSecurityTokenHandler();
+                using (var client = new HttpClient())
+                {
+                    var acc = Base64Encode(String.Format("{0}:{1}",
+                            appSettings.GetValue<string>("GeneralSettings:client_id"),
+                            appSettings.GetValue<string>("GeneralSettings:client_secret")
+                    ));
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", acc);
+                    //client.DefaultRequestHeaders.Accept
+                    //    .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));//ACCEPT header
+
+
+                    var values = new Dictionary<string, string>
+                    {
+                            {"token", token},
+                            {"token_type_hint", "id_token" }
+                    };
+                    var content = new FormUrlEncodedContent(values);
+                    var uri = "https://ecas.acceptance.ec.europa.eu/cas/oauth2/introspect";
+                    var res = client.PostAsync(uri, content).Result;
+                    var a = 1;
+                    //var json = res.Result.ReadAsString();
+                    //JObject jResponse = JObject.Parse(json);
+                    //var requestUri = "";
+                }
+
+                //Check if the token is valid
+                var tokenHandler = new JwtSecurityTokenHandler();                                
                 var jwtSecurityToken = tokenHandler.ReadJwtToken(token);
 
                 var claimsIdentity = new ClaimsIdentity(jwtSecurityToken.Claims,
@@ -56,8 +93,12 @@ namespace N2K_BackboneBackEnd.Helpers
                 return Task.FromResult(AuthenticateResult.Fail("TokenParseException"));
             }
 
-            //return Task.FromResult(AuthenticateResult.Fail("TokenParseException"));
         }
 
+        public static string Base64Encode(string plainText)
+        {
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return System.Convert.ToBase64String(plainTextBytes);
+        }
     }
 }

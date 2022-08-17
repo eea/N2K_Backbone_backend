@@ -13,6 +13,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public String? Path { get; set; }
 
+        public DateTime? ImportDate { get; set; }
+
+        public string? Username { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
