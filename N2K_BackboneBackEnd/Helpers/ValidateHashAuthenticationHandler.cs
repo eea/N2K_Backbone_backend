@@ -3,6 +3,8 @@ using Microsoft.Extensions.Options;
 using System.Text.Encodings.Web;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Net.Http.Headers;
+using Newtonsoft.Json.Linq;
 
 namespace N2K_BackboneBackEnd.Helpers
 {
@@ -35,10 +37,10 @@ namespace N2K_BackboneBackEnd.Helpers
             token = token.Replace("Bearer ", "").Trim();
             try
             {
+                
                 /*
                 //Check if the token is active
                 var appSettings = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-
                 using (var client = new HttpClient())
                 {
                     var acc = Base64Encode(String.Format("{0}:{1}",
@@ -46,24 +48,28 @@ namespace N2K_BackboneBackEnd.Helpers
                             appSettings.GetValue<string>("GeneralSettings:client_secret")
                     ));
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", acc);
-                    //client.DefaultRequestHeaders.Accept
-                    //    .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));//ACCEPT header
+                    client.DefaultRequestHeaders.Accept
+                        .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));//ACCEPT header
 
 
                     var values = new Dictionary<string, string>
                     {
                             {"token", token},
-                            {"token_type_hint", "id_token" }
+                            {"token_type_hint", "access_token" }
                     };
                     var content = new FormUrlEncodedContent(values);
-                    var uri = "https://ecas.acceptance.ec.europa.eu/cas/oauth2/introspect";
+                    var uri = "https://ecas.acceptance.ec.europa.eu/cas/oauth2/token/introspect";
                     var res = client.PostAsync(uri, content).Result;
-                    var a = 1;
-                    //var json = res.Result.ReadAsString();
-                    //JObject jResponse = JObject.Parse(json);
-                    //var requestUri = "";
+                    var json = res.Content.ReadAsStringAsync().Result;
+                    
+                    JObject jResponse = JObject.Parse(json);
+                    var active = false;
+                    if (jResponse.ContainsKey("active")) {
+                        active = bool.Parse(jResponse.GetValue("active").ToString());
+                    }
                 }
                 */
+
 
                 //Check if the token is valid
                 var tokenHandler = new JwtSecurityTokenHandler();                                
