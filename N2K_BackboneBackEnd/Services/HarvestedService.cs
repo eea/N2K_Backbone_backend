@@ -258,7 +258,7 @@ namespace N2K_BackboneBackEnd.Services
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
                     HttpClient client = new HttpClient();
-                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialchanges,  envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
+                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialchanges, envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
                     try
                     {
                         TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
@@ -289,6 +289,33 @@ namespace N2K_BackboneBackEnd.Services
                 TimeLog.setTimeStamp("validate spatial changes ", "End");
             }
 
+        }
+
+
+        public async Task<int> ValidateSingleSiteSpatialData(string siteCode, int versionId)
+        {
+            int result = 0;
+
+            HttpClient client = new HttpClient();
+            String serverUrl = String.Format(_appSettings.Value.fme_service_singlesite_spatialchanges, siteCode, versionId.ToString(), _appSettings.Value.fme_security_token);
+            try
+            {
+                TimeLog.setTimeStamp("Spatial validation for site " + siteCode + " - " + versionId.ToString(), "Starting");
+                Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
+                string content = await response.Result.Content.ReadAsStringAsync();
+                result = 1;
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSingleSiteGeodata", "");
+            }
+            finally
+            {
+                client.Dispose();
+                client = null;
+                TimeLog.setTimeStamp("Validate spatial site " + siteCode + " - " + versionId.ToString().ToString(), "End");
+            }
+            return result;
         }
 
 
@@ -746,7 +773,7 @@ namespace N2K_BackboneBackEnd.Services
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
                     HttpClient client = new HttpClient();
-                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialload,envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
+                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialload, envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
                     try
                     {
                         TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
@@ -1078,7 +1105,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     bbSite.CompilationDate = pVSite.DATE_COMPILATION;
                 }
-                bbSite.CurrentStatus = (int?)SiteChangeStatus.DataLoaded;
+                bbSite.CurrentStatus = SiteChangeStatus.DataLoaded;
                 bbSite.SiteType = pVSite.SITETYPE;
                 bbSite.AltitudeMin = pVSite.ALTITUDE_MIN;
                 bbSite.AltitudeMax = pVSite.ALTITUDE_MAX;

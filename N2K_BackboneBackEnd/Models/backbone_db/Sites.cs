@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using N2K_BackboneBackEnd.Enumerations;
 using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
@@ -11,7 +12,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? Name { get; set; }
         public DateTime? CompilationDate { get; set; }
         public DateTime? ModifyTS { get; set; }
-        public int? CurrentStatus { get; set; }
+        public SiteChangeStatus? CurrentStatus { get; set; }
         public string? CountryCode { get; set; }
         public string? SiteType { get; set; }
         public double? AltitudeMin { get; set; }
