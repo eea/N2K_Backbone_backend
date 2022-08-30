@@ -7,6 +7,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class SitesWithChangesView : IEntityModel
     {
         [Key]
+        public string Code { get; set; }
         public string Country { get; set; }
         public int ModifiedSites { get; set; }
         public string Level { get; set; }
