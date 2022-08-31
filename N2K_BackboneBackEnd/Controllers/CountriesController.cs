@@ -115,13 +115,13 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("GetPendingSiteLevel")]
-        public async Task<ActionResult<ServiceResponse<List<SitesWithChangesView>>>> GetPendingSiteLevel()
+        [HttpGet("GetSiteLevel")]
+        public async Task<ActionResult<ServiceResponse<List<SitesWithChangesView>>>> GetSiteLevel(SiteChangeStatus? status)
         {
             var response = new ServiceResponse<List<SitesWithChangesView>>();
             try
             {
-                var countriesWithData = await _countryService.GetPendingSiteLevelAsync();
+                var countriesWithData = await _countryService.GetSiteLevelAsync(status);
                 response.Success = true;
                 response.Message = "";
                 response.Data = countriesWithData;
