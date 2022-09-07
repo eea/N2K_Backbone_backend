@@ -13,11 +13,13 @@ namespace N2K_BackboneBackEnd.Services
     {
 
         private readonly N2KBackboneContext _dataContext;
+        private readonly N2K_VersioningContext _versioningContext;
         private readonly IOptions<ConfigSettings> _appSettings;
 
-        public SiteDetailsService(N2KBackboneContext dataContext, IOptions<ConfigSettings> app)
+        public SiteDetailsService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
+            _versioningContext = versioningContext;
             _appSettings = app;
         }
 
@@ -165,10 +167,75 @@ namespace N2K_BackboneBackEnd.Services
         }
         #endregion
 
+
         #region SiteEdition
         public async Task<string> SaveEdition(ChangeEditionDb changeEdition, string username = "")
         {
-            return await Task.FromResult("OK");
+            try
+            {
+                SqlParameter param1 = new SqlParameter("@sitecode", changeEdition.SiteCode);
+                SqlParameter param2 = new SqlParameter("@version", changeEdition.Version);
+                SqlParameter param3 = new SqlParameter("@clonebioregion", false);
+                await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSitesAndRelatedBySitecodeAndVersion  @sitecode, @version, @clonebioregion", param1, param2, param3);
+
+                Sites site = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefault();
+                if (site != null)
+                {
+                    if (changeEdition.SiteName != "string")
+                        site.Name = changeEdition.SiteName;
+                    if (changeEdition.SiteType != "string")
+                        site.SiteType = changeEdition.SiteType;
+                    if (changeEdition.Area != 0)
+                        site.Area = changeEdition.Area;
+                    if (changeEdition.Length != 0)
+                        site.Length = changeEdition.Length;
+
+                    _dataContext.Set<Sites>().Update(site);
+                }
+                if (changeEdition.BioRegion != "string")
+                {
+                    var bioregions = changeEdition.BioRegion.Split(",");
+                    if (bioregions.Length > 0)
+                    {
+                        foreach (var bioregion in bioregions)
+                        {
+                            BioRegions bioreg = new BioRegions
+                            {
+                                SiteCode = changeEdition.SiteCode,
+                                Version = site.Version,
+                                BGRID = int.Parse(bioregion),
+                                Percentage = 100 / bioregions.Length // NEEDS TO BE CHANGED - PENDING
+                            };
+                            _dataContext.Set<BioRegions>().Add(bioreg);
+                        }
+                    }
+                }
+                if (changeEdition.CentreX != 0 || changeEdition.CentreY != 0)
+                {
+                    SqlParameter param4 = new SqlParameter("@version", site.Version);
+                    SqlParameter param5 = new SqlParameter("@centroidX", changeEdition.CentreX);
+                    SqlParameter param6 = new SqlParameter("@centroidY", changeEdition.CentreY);
+                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.setEditedSiteSpatial  @sitecode, @version, @centroidX, @centroidY", param1, param4, param5, param6);
+                }
+
+                _dataContext.SaveChanges();
+
+                Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && (e.CurrentStatus == SiteChangeStatus.Harvested || e.CurrentStatus == SiteChangeStatus.PreHarvested)).FirstOrDefault();
+                if (siteReported != null)
+                {
+                    await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE SiteCode = '" + siteReported.SiteCode + "' AND N2KVersioningVersion = " + siteReported.N2KVersioningVersion);
+
+                    HarvestedService harvestedService = new HarvestedService(_dataContext, _versioningContext, _appSettings);
+                    await harvestedService.ValidateSingleSite(siteReported.SiteCode, siteReported.Version);
+                    await harvestedService.ValidateSingleSiteSpatialData(siteReported.SiteCode, siteReported.Version);
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SaveEdition", "");
+            }
+
+            return "OK";
         }
 
         public async Task<ChangeEditionViewModel?> GetReferenceEditInfo(string siteCode)

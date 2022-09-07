@@ -36,6 +36,7 @@
         public string fme_security_token { get; set; } = "";
         public string fme_service_spatialload { get; set; } = "";
         public string fme_service_spatialchanges { get; set; } = "";
+        public string fme_service_singlesite_spatialchanges { get; set; } = "";
 
     }
 }
