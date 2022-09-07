@@ -6,9 +6,11 @@ using N2K_BackboneBackEnd.Services;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.backbone_db;
+using Microsoft.AspNetCore.Authorization;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
+    [Authorize(AuthenticationSchemes = "EULoginSchema")]
     [Route("api/[controller]")]
     [ApiController]
     public class CountriesController : ControllerBase
@@ -111,6 +113,29 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Message = ex.Message;
                 response.Count = 0;
                 response.Data = new List<CountriesSiteCountView>();
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("GetSiteLevel")]
+        public async Task<ActionResult<ServiceResponse<List<SitesWithChangesView>>>> GetSiteLevel(SiteChangeStatus? status)
+        {
+            var response = new ServiceResponse<List<SitesWithChangesView>>();
+            try
+            {
+                var countriesWithData = await _countryService.GetSiteLevelAsync(status);
+                response.Success = true;
+                response.Message = "";
+                response.Data = countriesWithData;
+                response.Count = (countriesWithData == null) ? 0 : countriesWithData.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<SitesWithChangesView>();
                 return Ok(response);
             }
         }

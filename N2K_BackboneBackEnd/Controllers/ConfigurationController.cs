@@ -5,10 +5,11 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
-
+    [Authorize(AuthenticationSchemes = "EULoginSchema")]
     [Route("api/[controller]")]
     [ApiController]
     public class ConfigurationController : ControllerBase
