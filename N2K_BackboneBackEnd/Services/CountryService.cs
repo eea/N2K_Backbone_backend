@@ -87,6 +87,17 @@ namespace N2K_BackboneBackEnd.Services
             return countries;
         }
 
+        public async Task<List<SitesWithChangesView>> GetSiteLevelAsync(SiteChangeStatus? status)
+        {
+            var param1 = new SqlParameter("@status", status.HasValue ? status.ToString() : string.Empty);
+            var countries = await _dataContext
+                .Set<SitesWithChangesView>()
+                .FromSqlRaw($"exec dbo.spGetSiteCountLevelByStatus @status", param1)
+                .AsNoTracking()
+                .ToListAsync();
+            return countries;
+        }
+
         public async Task<List<CountriesSiteCountView>> GetSiteCountAsync()
         {
             var param1 = new SqlParameter("@country", DBNull.Value);
