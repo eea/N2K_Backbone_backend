@@ -8,6 +8,13 @@
       "resourceId": null,
       "type": "mssql.onprem",
       "connectionId": "ConnectionStrings:N2K_BackboneBackEndContext"
+    },
+    "mssql2": {
+      "secretStore": "LocalSecretsFile",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/backbonedb/databases/n2k_versioning",
+      "type": "mssql.azure",
+      "connectionId": "ConnectionStrings:N2K_VersioningBackEndContext",
+      "dynamicId": null
     }
   }
 }
