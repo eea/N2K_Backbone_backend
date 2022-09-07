@@ -8,8 +8,10 @@ using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json.Linq;
 
+
 namespace N2K_BackboneBackEnd.Services
 {
+
     public class EULoginService : IEULoginService
     {
 
@@ -68,6 +70,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<string> GetLoginUrl(string redirectionUrl,string code_challenge)
         {
+
             /*** GENERATE THE JWT token object */
             string key = _appSettings.Value.client_secret;
             // Create Security key  using private key above:

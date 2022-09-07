@@ -7,9 +7,16 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Authorization;
+using Azure.Core;
+using NuGet.Common;
+using System.IdentityModel.Tokens.Jwt;
+using Newtonsoft.Json.Linq;
+using N2K_BackboneBackEnd.Helpers;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
+    [Authorize(AuthenticationSchemes = "EULoginSchema")]
     [Route("api/[controller]")]
     [ApiController]
     public class SiteDetailsController : ControllerBase
@@ -17,6 +24,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         private readonly ISiteDetailsService _siteDetailsService;
         private readonly IMapper _mapper;
+
 
 
         public SiteDetailsController(ISiteDetailsService siteDetailsService, IMapper mapper)
@@ -54,9 +62,9 @@ namespace N2K_BackboneBackEnd.Controllers
         #endregion
 
 
-        #region SiteComments
-        [HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
-        public async Task<ActionResult<List<StatusChanges>>> ListSiteComments(string pSiteCode, int pCountryVersion)
+        #region SiteComments        
+        [HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]        
+        public async Task<ActionResult<List<StatusChanges>>> ListSiteComments(string pSiteCode, int pCountryVersion)            
         {
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
             try
@@ -83,10 +91,12 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpPost]
         public async Task<ActionResult<List<StatusChanges>>> AddComment([FromBody] StatusChanges comment)
         {
+
+            string username = HeaderHelpers.GetUsername(Request.Headers);
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
             try
             {
-                List<StatusChanges> siteComments = await _siteDetailsService.AddComment(comment);
+                List<StatusChanges> siteComments = await _siteDetailsService.AddComment(comment, username);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -134,9 +144,10 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<List<StatusChanges>>> UpdateComment([FromBody] StatusChanges comment)
         {
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
+            string username = HeaderHelpers.GetUsername(Request.Headers);
             try
             {
-                List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment);
+                List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment,username);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -185,6 +196,7 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<List<JustificationFiles>>> UploadFile([FromQuery] AttachedFile attachedFiles)
         {
             var response = new ServiceResponse<List<JustificationFiles>>();
+            string username = HeaderHelpers.GetUsername(Request.Headers);
             try
             {
                 if (attachedFiles.Files == null || attachedFiles.Files.Count == 0)
@@ -196,7 +208,7 @@ namespace N2K_BackboneBackEnd.Controllers
                     return Ok(response);
                 }
                 //var formCollection = await Request.ReadFormAsync();
-                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles);
+                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles, username);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteFiles;
@@ -251,9 +263,10 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<string>> SaveEdition([FromBody] ChangeEditionDb changeEdition)
         {
             var response = new ServiceResponse<string>();
+            string username = HeaderHelpers.GetUsername(Request.Headers);
             try
             {
-                var siteChanges = await _siteDetailsService.SaveEdition(changeEdition);
+                var siteChanges = await _siteDetailsService.SaveEdition(changeEdition, username);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;

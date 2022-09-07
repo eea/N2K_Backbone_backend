@@ -1,14 +1,11 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using N2K_BackboneBackEnd.Data;
-using N2K_BackboneBackEnd.Models;
-using N2K_BackboneBackEnd.Models.ViewModel;
-using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Enumerations;
-using N2K_BackboneBackEnd.Models.versioning_db;
-using System.Net.Http.Headers;
-using N2K_BackboneBackEnd.Helpers;
 using Microsoft.Extensions.Options;
+using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Helpers;
+using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.ViewModel;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -55,10 +52,11 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<StatusChanges>> AddComment(StatusChanges comment)
+        public async Task<List<StatusChanges>> AddComment(StatusChanges comment,string  username ="")
         {
 
             comment.Date = DateTime.Now;
+            comment.Owner = username;
             await _dataContext.Set<StatusChanges>().AddAsync(comment);
             await _dataContext.SaveChangesAsync();
 
@@ -80,8 +78,10 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<StatusChanges>> UpdateComment(StatusChanges comment)
+        public async Task<List<StatusChanges>> UpdateComment(StatusChanges comment, string username = "")
         {
+            comment.Date= DateTime.Now;
+            comment.Owner = username;
             _dataContext.Set<StatusChanges>().Update(comment);
             await _dataContext.SaveChangesAsync();
 
@@ -102,7 +102,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile)
+        public async Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile, string username = "")
         {
             List<JustificationFiles> result = new List<JustificationFiles>();
             IAttachedFileHandler? fileHandler = null;
@@ -124,7 +124,9 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     Path = fUrl,
                     SiteCode = attachedFile.SiteCode,
-                    Version = attachedFile.Version
+                    Version = attachedFile.Version,
+                    ImportDate = DateTime.Now,
+                    Username= username
                 };
                 await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
                 await _dataContext.SaveChangesAsync();
@@ -161,11 +163,10 @@ namespace N2K_BackboneBackEnd.Services
             return result;
 
         }
-
-
         #endregion
 
-        public async Task<string> SaveEdition(ChangeEditionDb changeEdition)
+        #region SiteEdition
+        public async Task<string> SaveEdition(ChangeEditionDb changeEdition, string username = "")
         {
             return await Task.FromResult("OK");
         }
@@ -196,5 +197,7 @@ namespace N2K_BackboneBackEnd.Services
                 };
             }
         }
+
+        #endregion
     }
 }
