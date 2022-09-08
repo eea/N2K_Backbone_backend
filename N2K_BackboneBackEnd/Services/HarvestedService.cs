@@ -844,60 +844,54 @@ namespace N2K_BackboneBackEnd.Services
                 //ask if there any harvesting process running (status of the envelope 4)
                 //Call the method to know which envelopes are availables
                 List<Harvesting> vEnvelopes = await GetPendingEnvelopes();
-                List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
-                List<ProcessedEnvelopes> pEnvelopes = new List<ProcessedEnvelopes>();
+                //List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
+                //List<ProcessedEnvelopes> pEnvelopes = new List<ProcessedEnvelopes>();
 
+                List<HarvestedEnvelope> bbEnvelopes = new List<HarvestedEnvelope>();
 
                 if (vEnvelopes.Count > 0)
                 {
                     foreach (Harvesting vEnvelope in vEnvelopes)
                     {
-                        envelopes.Add(new EnvelopesToProcess
-                        {
-                            VersionId = Int32.Parse(vEnvelope.Id.ToString()),
-                            CountryCode = vEnvelope.Country,
-                            SubmissionDate = vEnvelope.SubmissionDate
-                        });
-                        pEnvelopes.Add(new ProcessedEnvelopes
-                        {
-                            Country = vEnvelope.Country,
-                            Version = Int32.Parse(vEnvelope.Id.ToString()),
-                            ImportDate = vEnvelope.SubmissionDate,
-                            Status = HarvestingStatus.Queued,
-                            Importer = "Automatic",
-                            N2K_VersioningDate = vEnvelope.SubmissionDate
-                        });
-                    }
-                    _dataContext.Set<ProcessedEnvelopes>().AddRange(pEnvelopes);
-                    _dataContext.SaveChanges();
+                        EnvelopesToProcess envelope = new EnvelopesToProcess
+                            {
+                                VersionId = Int32.Parse(vEnvelope.Id.ToString()),
+                                CountryCode = vEnvelope.Country,
+                                SubmissionDate = vEnvelope.SubmissionDate
+                            };
 
-                    //Process each envelope
-                    List<HarvestedEnvelope> bbEnvelopes = new List<HarvestedEnvelope>();
-                    foreach (EnvelopesToProcess envelope in envelopes)
-                    {
-                        var bbEnvelope = await Harvest(envelopes.ToArray());
-                        List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(envelopes.ToArray());
+                        ProcessedEnvelopes process = new ProcessedEnvelopes
+                            {
+                                Country = vEnvelope.Country,
+                                Version = Int32.Parse(vEnvelope.Id.ToString()),
+                                ImportDate = vEnvelope.SubmissionDate,
+                                Status = HarvestingStatus.Queued,
+                                Importer = "Automatic",
+                                N2K_VersioningDate = vEnvelope.SubmissionDate
+                            };
+
+                        _dataContext.Set<ProcessedEnvelopes>().Add(process);
+                        _dataContext.SaveChanges();
+                        
+                        EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { envelope };
+                        List<HarvestedEnvelope> bbEnvelope = await Harvest(_tempEnvelope);
+                        List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(_tempEnvelope);
 
                         if (bbEnvelope.Count > 0)
                         {
-                            if (true) //todo: Check if there are any other envelope versions of the country in PreHarvested
-                            {
-                                //these two processes can be executed in parallel
-                                Task tabValidationTask = Validate(envelopes.ToArray());
-                                Task spatialValidationTask = ValidateSpatialData(envelopes.ToArray());
+                            Task tabValidationTask = Validate(_tempEnvelope);
+                            Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
+                            //make sure they are all finished
+                            await Task.WhenAll(tabValidationTask, spatialValidationTask);
+                            //change the status of the whole process to PreHarvested
+                            await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested);
+                            bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
 
-                                //make sure they are all finished
-                                await Task.WhenAll(tabValidationTask, spatialValidationTask);
-                                //change the status of the whole process to PreHarvested
-                                await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested);
-                                bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
-                            }
-                            bbEnvelopes.Add(bbEnvelope[0]);
+                            
                         }
+                        bbEnvelopes.Add(bbEnvelope[0]);
                     }
-
-                    //Store the result of the harvest
-                    //Return a simple structure
+                    
                     return bbEnvelopes;
                 }
                 else
