@@ -81,6 +81,34 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        /// <summary>
+        /// Retrives those envelopes with the input status
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetEnvelopesByStatus")]
+        public async Task<ActionResult<ServiceResponse<Harvesting>>> GetEnvelopesByStatus(HarvestingStatus status)
+        {
+            var response = new ServiceResponse<List<Harvesting>>();
+            try
+            {
+                var envelopes = await _harvestedService.GetEnvelopesByStatus(status);
+                response.Success = true;
+                response.Message = "";
+                response.Data = envelopes;
+                response.Count = (envelopes == null) ? 0 : envelopes.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<Harvesting>();
+                return Ok(response);
+            }
+        }
+
 
         [HttpGet]
         [Route("Harvested")]
@@ -88,8 +116,8 @@ namespace N2K_BackboneBackEnd.Controllers
         {
             return new string[] { "value1", "value2" };
         }
-        
-        
+
+
         [HttpGet("Harvested/{fromDate}")]
         public IEnumerable<string> Harvested(DateTime? fromDate)
         {
