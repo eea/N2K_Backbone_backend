@@ -49,9 +49,9 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [HttpGet("GetWithData")]
-        public async Task<ActionResult<ServiceResponse<List<Countries>>>> GetWithData(SiteChangeStatus? status, Level? level)
+        public async Task<ActionResult<ServiceResponse<List<CountriesWithDataView>>>> GetWithData(SiteChangeStatus? status, Level? level)
         {
-            var response = new ServiceResponse<List<Countries>>();
+            var response = new ServiceResponse<List<CountriesWithDataView>>();
             try
             {
                 var countriesWithData = await _countryService.GetWithDataAsync(status, level);
@@ -66,7 +66,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<Countries>();
+                response.Data = new List<CountriesWithDataView>();
                 return Ok(response);
             }
         }
