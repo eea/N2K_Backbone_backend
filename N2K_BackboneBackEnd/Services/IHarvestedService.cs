@@ -15,6 +15,8 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<Harvesting>> GetPendingEnvelopes();
 
+        Task<List<Harvesting>> GetEnvelopesByStatus(HarvestingStatus status);
+
         Task<List<EnvelopesToHarvest>> GetPreHarvestedEnvelopes();
 
         Task<List<HarvestedEnvelope>> Validate(EnvelopesToProcess[] envelopeIDs);
@@ -27,6 +29,5 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<HarvestedEnvelope>> FullHarvest();
         Task<ProcessedEnvelopes> ChangeStatus(string country, int version, HarvestingStatus toStatus);
-
     }
 }
