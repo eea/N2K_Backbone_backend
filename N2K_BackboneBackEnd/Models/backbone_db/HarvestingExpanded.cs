@@ -18,6 +18,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public HarvestingStatus Status { get; set; } = HarvestingStatus.Pending;
         public int Version { get; set; }
+        public int ChangesTotal { get; set; }
+        public int ChangesAccepted { get; set; }
+        public int ChangesPending { get; set; }
+        public int ChangesRejected { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
