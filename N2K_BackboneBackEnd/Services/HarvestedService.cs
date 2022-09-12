@@ -89,11 +89,11 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
-        public async Task<List<Harvesting>> GetEnvelopesByStatus(HarvestingStatus status)
+        public async Task<List<HarvestingExpanded>> GetEnvelopesByStatus(HarvestingStatus status)
         {
             SqlParameter param1 = new SqlParameter("@status", (int)status);
 
-            List<Harvesting> result = await _dataContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetEnvelopesByStatus  @status",
+            List<HarvestingExpanded> result = await _dataContext.Set<HarvestingExpanded>().FromSqlRaw($"exec dbo.spGetEnvelopesByStatus  @status",
                             param1).AsNoTracking().ToListAsync();
 
             return result;
