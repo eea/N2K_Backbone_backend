@@ -309,20 +309,20 @@ namespace N2K_BackboneBackEnd.Services
             String serverUrl = String.Format(_appSettings.Value.fme_service_singlesite_spatialchanges, siteCode, versionId.ToString(), _appSettings.Value.fme_security_token);
             try
             {
-                TimeLog.setTimeStamp("Spatial validation for site " + siteCode + " - " + versionId.ToString(), "Starting");
+                //TimeLog.setTimeStamp("Spatial validation for site " + siteCode + " - " + versionId.ToString(), "Starting");
                 Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                 string content = await response.Result.Content.ReadAsStringAsync();
                 result = 1;
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSingleSiteGeodata", "");
+                //SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSingleSiteGeodata", "");
             }
             finally
             {
                 client.Dispose();
                 client = null;
-                TimeLog.setTimeStamp("Validate spatial site " + siteCode + " - " + versionId.ToString().ToString(), "End");
+                //TimeLog.setTimeStamp("Validate spatial site " + siteCode + " - " + versionId.ToString().ToString(), "End");
             }
             return result;
         }

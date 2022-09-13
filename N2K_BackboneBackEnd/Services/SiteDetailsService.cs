@@ -193,6 +193,7 @@ namespace N2K_BackboneBackEnd.Services
 
                     _dataContext.Set<Sites>().Update(site);
                 }
+                
                 if (changeEdition.BioRegion != "string")
                 {
                     var bioregions = changeEdition.BioRegion.Split(",");
@@ -211,6 +212,8 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
+                
+                
                 if (changeEdition.CentreX != 0 || changeEdition.CentreY != 0)
                 {
                     SqlParameter param4 = new SqlParameter("@version", site.Version);
@@ -218,9 +221,9 @@ namespace N2K_BackboneBackEnd.Services
                     SqlParameter param6 = new SqlParameter("@centroidY", changeEdition.CentreY);
                     await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.setEditedSiteSpatial  @sitecode, @version, @centroidX, @centroidY", param1, param4, param5, param6);
                 }
-
-                _dataContext.SaveChanges();
-
+                
+                await _dataContext.SaveChangesAsync();
+                
                 Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && (e.CurrentStatus == SiteChangeStatus.Harvested || e.CurrentStatus == SiteChangeStatus.PreHarvested)).FirstOrDefault();
                 if (siteReported != null)
                 {
@@ -230,6 +233,7 @@ namespace N2K_BackboneBackEnd.Services
                     await harvestedService.ValidateSingleSite(siteReported.SiteCode, siteReported.Version);
                     await harvestedService.ValidateSingleSiteSpatialData(siteReported.SiteCode, siteReported.Version);
                 }
+                
             }
             catch (Exception ex)
             {
