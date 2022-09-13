@@ -518,7 +518,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ChangeCategory = "Species";
                         siteChange.ChangeType = "Species Deleted";
                         siteChange.Country = envelope.CountryCode;
-                        siteChange.Level = Enumerations.Level.Info;
+                        siteChange.Level = Enumerations.Level.Warning;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = null;
