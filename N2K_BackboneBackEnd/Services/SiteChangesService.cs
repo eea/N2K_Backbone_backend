@@ -479,20 +479,36 @@ namespace N2K_BackboneBackEnd.Services
             foreach (var changedItem in changeList.OrderBy(c => c.Code == null ? "" : c.Code))
             {
                 var fields = new Dictionary<string, string>();
-                fields.Add("Reference", changedItem.OldValue);
-                fields.Add("Reported", changedItem.NewValue);
+                string nullCase = "";
+                if (changedItem.OldValue != null && changedItem.OldValue.ToUpper() != "NULL")
+                {
+                    fields.Add("Reference", changedItem.OldValue);
+                }
+                else
+                {
+                    fields.Add("Reference", nullCase);
+                }
+
+                if (changedItem.NewValue != null && changedItem.NewValue.ToUpper() != "NULL")
+                {
+                    fields.Add("Reported", changedItem.NewValue);
+                }
+                else
+                {
+                    fields.Add("Reported", nullCase);
+                }
 
 
                 catChange.ChangedCodesDetail.Add(
-                    new CodeChangeDetail
-                    {
-                        Code = changedItem.Code,
-                        Name = GetCodeName(changedItem),
-                        ChangeId = changedItem.ChangeId,
-                        Fields = fields
-                    }
+                        new CodeChangeDetail
+                        {
+                            Code = changedItem.Code,
+                            Name = GetCodeName(changedItem),
+                            ChangeId = changedItem.ChangeId,
+                            Fields = fields
+                        }
 
-                );
+                    );
             }
             return catChange;
         }
