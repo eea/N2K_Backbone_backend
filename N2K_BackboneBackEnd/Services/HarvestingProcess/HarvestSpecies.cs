@@ -39,7 +39,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<ContainsSpecies> elements = null;
             try
             {
-                TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
+                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
 
                 elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
 
@@ -85,12 +85,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 }
 
-                TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
+                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
                 return 1;
             }
             catch (Exception ex)
             {
-                TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
+                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
                 return 0;
             }
 
@@ -101,7 +101,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<ContainsSpecies> elements = null;
             try
             {
-                TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
+                //TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
                 elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
                 foreach (ContainsSpecies element in elements)
                 {
@@ -155,7 +155,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             finally
             {
-                TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
+                //TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
             }
 
         }
