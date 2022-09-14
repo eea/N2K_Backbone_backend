@@ -37,20 +37,20 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
             try
             {
-                TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
+                //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
                 Console.WriteLine("=>Start full habitat harvest by country...");
 
                 await HarvestHabitatsByCountry(pCountryCode, pCountryVersion, pVersion);
                 await HarvestDescribeSitesByCountry(pCountryCode, pCountryVersion, pVersion);
 
                 Console.WriteLine("=>End full habitat harvest by country...");
-                TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
+                //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
                 return 1;
             }
             catch (Exception ex)
             {
                 Console.WriteLine("=>End full habitat harvest by country with error...");
-                TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
+                //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
                 return 0;
             }
         }
@@ -59,20 +59,20 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
             try
             {
-                TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Starting");
+                //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Starting");
                 Console.WriteLine("=>Start full habitat harvest by site...");
 
                 await HarvestHabitatsBySite(pSiteCode, pSiteVersion, pVersion);
                 await HarvestDescribeSitesBySite(pSiteCode, pSiteVersion, pVersion);
 
                 Console.WriteLine("=>End full habitat harvest by site...");
-                TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
+                //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
                 return 1;
             }
             catch (Exception ex)
             {
                 Console.WriteLine("=>End full habitat harvest by site with error...");
-                TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
+                //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
                 return 0;
             }
         }
@@ -124,7 +124,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<ContainsHabitat> elements = null;
             try
             {
-                TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
+                //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
 
                 elements = await _versioningContext.Set<ContainsHabitat>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
 
@@ -159,7 +159,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             finally
             {
-                TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
+                //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
             }
 
         }

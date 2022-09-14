@@ -270,7 +270,7 @@ namespace N2K_BackboneBackEnd.Services
                     String serverUrl = String.Format(_appSettings.Value.fme_service_spatialchanges, envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
                     try
                     {
-                        TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
+                        //TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
 
                         Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                         string content = await response.Result.Content.ReadAsStringAsync();
@@ -282,7 +282,7 @@ namespace N2K_BackboneBackEnd.Services
                     finally
                     {
                         client.Dispose();
-                        TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString().ToString(), "End");
+                        //TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString().ToString(), "End");
                     }
 
                 }
@@ -295,7 +295,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             finally
             {
-                TimeLog.setTimeStamp("validate spatial changes ", "End");
+                //TimeLog.setTimeStamp("validate spatial changes ", "End");
             }
 
         }
@@ -431,6 +431,13 @@ namespace N2K_BackboneBackEnd.Services
                     SqlParameter param4 = new SqlParameter("@versionId", maxVersionSite);
                     int previousVersionSite = storedSite.VersionId;
                     SqlParameter param5 = new SqlParameter("@versionId", previousVersionSite);
+
+                    //BioRegionChecking
+                    List<BioRegions> bioRegionsVersioning = await _dataContext.Set<BioRegions>().FromSqlRaw($"exec dbo.spGetReferenceBioRegionsBySiteCodeAndVersion  @site, @versionId",
+                                    param3, param4).ToListAsync();
+                    List<BioRegions> referencedBioRegions = await _dataContext.Set<BioRegions>().FromSqlRaw($"exec dbo.spGetReferenceBioRegionsBySiteCodeAndVersion  @site, @versionId",
+                                    param3, param5).ToListAsync();
+                    changes = await siteCode.ValidateBioRegions(bioRegionsVersioning, referencedBioRegions, changes, envelope, harvestingSite, storedSite, param3, param4, param5, processedEnvelope);
 
                     //HabitatChecking
                     List<HabitatToHarvest> habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
@@ -612,7 +619,7 @@ namespace N2K_BackboneBackEnd.Services
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
             try
             {
-                TimeLog.setTimeStamp("Harvesting process ", "Init");
+                //TimeLog.setTimeStamp("Harvesting process ", "Init");
 
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
@@ -655,7 +662,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 _ThereAreChanges = true;
                                 //complete the data of the site and add it to the DB
-                                TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
+                                //TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
                                 Sites bbSite = await siteCode.HarvestSite(vSite, envelope);
                                 if (bbSite != null)
@@ -734,7 +741,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             finally
             {
-                TimeLog.setTimeStamp("Harvesting process ", "End");
+                //TimeLog.setTimeStamp("Harvesting process ", "End");
             }
 
 
@@ -785,7 +792,7 @@ namespace N2K_BackboneBackEnd.Services
                     String serverUrl = String.Format(_appSettings.Value.fme_service_spatialload, envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
                     try
                     {
-                        TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
+                        //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
 
                         Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                         string content = await response.Result.Content.ReadAsStringAsync();
@@ -820,7 +827,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         client.Dispose();
                         client = null;
-                        TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString().ToString(), "End");
+                        //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString().ToString(), "End");
                     }
 
                 }
@@ -834,7 +841,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             finally
             {
-                TimeLog.setTimeStamp("Harvesting process ", "End");
+                //TimeLog.setTimeStamp("Harvesting process ", "End");
             }
 
 
