@@ -89,11 +89,11 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
-        public async Task<List<Harvesting>> GetEnvelopesByStatus(HarvestingStatus status)
+        public async Task<List<HarvestingExpanded>> GetEnvelopesByStatus(HarvestingStatus status)
         {
             SqlParameter param1 = new SqlParameter("@status", (int)status);
 
-            List<Harvesting> result = await _dataContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetEnvelopesByStatus  @status",
+            List<HarvestingExpanded> result = await _dataContext.Set<HarvestingExpanded>().FromSqlRaw($"exec dbo.spGetEnvelopesByStatus  @status",
                             param1).AsNoTracking().ToListAsync();
 
             return result;
@@ -309,20 +309,20 @@ namespace N2K_BackboneBackEnd.Services
             String serverUrl = String.Format(_appSettings.Value.fme_service_singlesite_spatialchanges, siteCode, versionId.ToString(), _appSettings.Value.fme_security_token);
             try
             {
-                TimeLog.setTimeStamp("Spatial validation for site " + siteCode + " - " + versionId.ToString(), "Starting");
+                //TimeLog.setTimeStamp("Spatial validation for site " + siteCode + " - " + versionId.ToString(), "Starting");
                 Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                 string content = await response.Result.Content.ReadAsStringAsync();
                 result = 1;
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSingleSiteGeodata", "");
+                //SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSingleSiteGeodata", "");
             }
             finally
             {
                 client.Dispose();
                 client = null;
-                TimeLog.setTimeStamp("Validate spatial site " + siteCode + " - " + versionId.ToString().ToString(), "End");
+                //TimeLog.setTimeStamp("Validate spatial site " + siteCode + " - " + versionId.ToString().ToString(), "End");
             }
             return result;
         }

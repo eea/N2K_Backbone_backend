@@ -263,7 +263,8 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<string>> SaveEdition([FromBody] ChangeEditionDb changeEdition)
         {
             var response = new ServiceResponse<string>();
-            string username = HeaderHelpers.GetUsername(Request.Headers);
+
+            string username = HeaderHelpers.GetUsername(Request.Headers);           
             try
             {
                 var siteChanges = await _siteDetailsService.SaveEdition(changeEdition, username);

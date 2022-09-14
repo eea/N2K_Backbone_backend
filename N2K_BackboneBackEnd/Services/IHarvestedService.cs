@@ -15,7 +15,7 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<Harvesting>> GetPendingEnvelopes();
 
-        Task<List<Harvesting>> GetEnvelopesByStatus(HarvestingStatus status);
+        Task<List<HarvestingExpanded>> GetEnvelopesByStatus(HarvestingStatus status);
 
         Task<List<EnvelopesToHarvest>> GetPreHarvestedEnvelopes();
 

@@ -87,9 +87,9 @@ namespace N2K_BackboneBackEnd.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("GetEnvelopesByStatus")]
-        public async Task<ActionResult<ServiceResponse<Harvesting>>> GetEnvelopesByStatus(HarvestingStatus status)
+        public async Task<ActionResult<ServiceResponse<HarvestingExpanded>>> GetEnvelopesByStatus(HarvestingStatus status)
         {
-            var response = new ServiceResponse<List<Harvesting>>();
+            var response = new ServiceResponse<List<HarvestingExpanded>>();
             try
             {
                 var envelopes = await _harvestedService.GetEnvelopesByStatus(status);
@@ -104,7 +104,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<Harvesting>();
+                response.Data = new List<HarvestingExpanded>();
                 return Ok(response);
             }
         }
