@@ -34,6 +34,7 @@ namespace N2K_BackboneBackEnd.Models
 
         public static void setTimeStamp(string pProcessName, string pAction)
         {
+            return;
             SqlConnection conn=null;
             SqlCommand cmd = null;
             SqlParameter param1 = null;

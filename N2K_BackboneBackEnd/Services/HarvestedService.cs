@@ -378,14 +378,16 @@ namespace N2K_BackboneBackEnd.Services
                     CountryCode = envelope.CountryCode,
                     VersionId = envelope.VersionId,
                     NumChanges = changes.Count,
-                    Status = SiteChangeStatus.PreHarvested
+                    Status = SiteChangeStatus.Harvested
                 });
 
                 //for the time being do not load the changes and keep using test_table 
 
                 try
                 {
+                    processedEnvelope.Status = HarvestingStatus.Harvested;
                     _dataContext.Set<SiteChangeDb>().AddRange(changes);
+                    _dataContext.Update<ProcessedEnvelopes>(processedEnvelope);
                     _dataContext.SaveChanges();
                 }
                 catch (Exception ex)
