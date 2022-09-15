@@ -366,6 +366,7 @@ namespace N2K_BackboneBackEnd.Services
                 switch (_levelDetail.Section)
                 {
                     case "Site":
+                    case "BioRegions":
                         /*
                         if (_levelDetail.ChangeType.IndexOf("Added") > -1)
                         {
