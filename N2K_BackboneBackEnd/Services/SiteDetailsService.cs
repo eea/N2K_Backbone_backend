@@ -223,8 +223,10 @@ namespace N2K_BackboneBackEnd.Services
                 
                 await _dataContext.SaveChangesAsync();
 
+                var processingVersion = _dataContext.Set<ProcessedEnvelopes>().Where(e => e.Status == HarvestingStatus.Harvested && e.Country == site.CountryCode).FirstOrDefault();
+
                 //Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && (e.CurrentStatus == SiteChangeStatus.Harvested || e.CurrentStatus == SiteChangeStatus.PreHarvested)).FirstOrDefault();
-                Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version== changeEdition.Version ).FirstOrDefault();
+                Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.N2KVersioningVersion== processingVersion.Version).FirstOrDefault();                                
                 if (siteReported != null)
                 {
                     await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE SiteCode = '" + siteReported.SiteCode + "' AND N2KVersioningVersion = " + siteReported.N2KVersioningVersion);
