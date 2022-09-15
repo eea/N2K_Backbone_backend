@@ -385,9 +385,9 @@ namespace N2K_BackboneBackEnd.Services
 
                 try
                 {
-                    processedEnvelope.Status = HarvestingStatus.Harvested;
+                    //processedEnvelope.Status = HarvestingStatus.Harvested;
                     _dataContext.Set<SiteChangeDb>().AddRange(changes);
-                    _dataContext.Update<ProcessedEnvelopes>(processedEnvelope);
+                    //_dataContext.Update<ProcessedEnvelopes>(processedEnvelope);
                     _dataContext.SaveChanges();
                 }
                 catch (Exception ex)
