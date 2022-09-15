@@ -175,9 +175,8 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 SqlParameter param1 = new SqlParameter("@sitecode", changeEdition.SiteCode);
-                SqlParameter param2 = new SqlParameter("@version", changeEdition.Version);
-                SqlParameter param3 = new SqlParameter("@clonebioregion", false);
-                await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSitesAndRelatedBySitecodeAndVersion  @sitecode, @version, @clonebioregion", param1, param2, param3);
+                SqlParameter param2 = new SqlParameter("@clonebioregion", false);
+                await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSitesAndRelatedBySitecodeAndVersion  @sitecode, @clonebioregion", param1, param2);
 
                 Sites site = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefault();
                 if (site != null)
