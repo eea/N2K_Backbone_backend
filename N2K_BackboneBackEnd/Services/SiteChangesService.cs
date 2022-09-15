@@ -33,6 +33,7 @@ namespace N2K_BackboneBackEnd.Services
         private readonly IEnumerable<Countries> _countries;
         private IEnumerable<Habitats>? _siteHabitats;
         private IEnumerable<Species>? _siteSpecies;
+        private IEnumerable<SpeciesOther>? _siteSpeciesOther;
 
 
         public SiteChangesService(N2KBackboneContext dataContext)
@@ -281,6 +282,7 @@ namespace N2K_BackboneBackEnd.Services
 
             _siteHabitats = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
             _siteSpecies = await _dataContext.Set<Species>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
+            _siteSpeciesOther = await _dataContext.Set<SpeciesOther>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion && site.SpecieCode != null).ToListAsync();
 
             changeDetailVM.Critical = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Critical);
             changeDetailVM.Warning = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Warning);
@@ -289,6 +291,7 @@ namespace N2K_BackboneBackEnd.Services
 
             _siteHabitats = null;
             _siteSpecies = null;
+            _siteSpeciesOther = null;
 
             return changeDetailVM;
         }
@@ -310,7 +313,7 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level)
         {
 
-            
+
 
             var result = new List<SiteCodeView>();
 
@@ -363,6 +366,7 @@ namespace N2K_BackboneBackEnd.Services
                 switch (_levelDetail.Section)
                 {
                     case "Site":
+                    case "BioRegions":
                         /*
                         if (_levelDetail.ChangeType.IndexOf("Added") > -1)
                         {
@@ -476,20 +480,36 @@ namespace N2K_BackboneBackEnd.Services
             foreach (var changedItem in changeList.OrderBy(c => c.Code == null ? "" : c.Code))
             {
                 var fields = new Dictionary<string, string>();
-                fields.Add("Reference", changedItem.OldValue);
-                fields.Add("Reported", changedItem.NewValue);
+                string nullCase = "";
+                if (changedItem.OldValue != null && changedItem.OldValue.ToUpper() != "NULL")
+                {
+                    fields.Add("Reference", changedItem.OldValue);
+                }
+                else
+                {
+                    fields.Add("Reference", nullCase);
+                }
+
+                if (changedItem.NewValue != null && changedItem.NewValue.ToUpper() != "NULL")
+                {
+                    fields.Add("Reported", changedItem.NewValue);
+                }
+                else
+                {
+                    fields.Add("Reported", nullCase);
+                }
 
 
                 catChange.ChangedCodesDetail.Add(
-                    new CodeChangeDetail
-                    {
-                        Code = changedItem.Code,
-                        Name = GetCodeName(changedItem),
-                        ChangeId = changedItem.ChangeId,
-                        Fields = fields
-                    }
+                        new CodeChangeDetail
+                        {
+                            Code = changedItem.Code,
+                            Name = GetCodeName(changedItem),
+                            ChangeId = changedItem.ChangeId,
+                            Fields = fields
+                        }
 
-                );
+                    );
             }
             return catChange;
         }
@@ -550,6 +570,15 @@ namespace N2K_BackboneBackEnd.Services
                                 Population = spc.Population,
                                 SpecType = spc.SpecieType
                             }).FirstOrDefault();
+                        if (specDetails == null)
+                        {
+                            specDetails = _siteSpeciesOther.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
+                            .Select(spc => new
+                            {
+                                Population = spc.Population,
+                                SpecType = spc.SpecieType
+                            }).FirstOrDefault();
+                        }
                         if (specDetails != null)
                         {
                             population = specDetails.Population;

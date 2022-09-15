@@ -7,6 +7,7 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
+using N2K_BackboneBackEnd.Models.ViewModel;
 
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 {
@@ -645,10 +646,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
             try
             {
+                //Get the lists of bioregion types
+                List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().FromSqlRaw($"exec dbo.spGetBioRegionTypes").ToListAsync();
+
                 //For each BioRegion in Versioning compare it with that BioRegion in backboneDB
                 foreach (BioRegions harvestingBioRegions in bioRegionsVersioning)
                 {
                     BioRegions storedBioRegions = referencedBioRegions.Where(s => s.BGRID == harvestingBioRegions.BGRID).FirstOrDefault();
+                    BioRegionTypes bioRegionType = bioRegionTypes.Where(s => s.Code == harvestingBioRegions.BGRID).FirstOrDefault();
                     if (storedBioRegions == null)
                     {
                         SiteChangeDb siteChange = new SiteChangeDb();
@@ -660,7 +665,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Level = Enumerations.Level.Critical;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
-                        siteChange.NewValue = Convert.ToString(harvestingBioRegions.BGRID);
+                        siteChange.NewValue = bioRegionType.RefBioGeoName;
                         siteChange.OldValue = null;
                         siteChange.Code = Convert.ToString(harvestingBioRegions.BGRID);
                         siteChange.Section = "BioRegions";
@@ -675,6 +680,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 foreach (BioRegions storedBioRegions in referencedBioRegions)
                 {
                     BioRegions harvestingBioRegions = bioRegionsVersioning.Where(s => s.BGRID == storedBioRegions.BGRID).FirstOrDefault();
+                    BioRegionTypes bioRegionType = bioRegionTypes.Where(s => s.Code == storedBioRegions.BGRID).FirstOrDefault();
                     if (harvestingBioRegions == null)
                     {
                         SiteChangeDb siteChange = new SiteChangeDb();
@@ -687,7 +693,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = null;
-                        siteChange.OldValue = Convert.ToString(storedBioRegions.BGRID);
+                        siteChange.OldValue = bioRegionType.RefBioGeoName;
                         siteChange.Code = Convert.ToString(storedBioRegions.BGRID);
                         siteChange.Section = "BioRegions";
                         siteChange.VersionReferenceId = storedBioRegions.Version;
