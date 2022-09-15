@@ -521,6 +521,7 @@ namespace N2K_BackboneBackEnd.Services
             switch (change.Section)
             {
                 case "Site":
+                case "BioRegions":
                     if (_dataContext.Set<Sites>().FirstOrDefault(sp => sp.SiteCode.ToLower() == change.Code.ToLower() && sp.Version == change.Version) != null)
                     {
                         name = _dataContext.Set<Sites>().FirstOrDefault(sp => sp.SiteCode.ToLower() == change.Code.ToLower() && sp.Version == change.Version).Name;

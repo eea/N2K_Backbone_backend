@@ -667,7 +667,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = bioRegionType.RefBioGeoName;
                         siteChange.OldValue = null;
-                        siteChange.Code = Convert.ToString(harvestingBioRegions.BGRID);
+                        siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "BioRegions";
                         siteChange.VersionReferenceId = harvestingSite.VersionId;
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
@@ -694,7 +694,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = null;
                         siteChange.OldValue = bioRegionType.RefBioGeoName;
-                        siteChange.Code = Convert.ToString(storedBioRegions.BGRID);
+                        siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "BioRegions";
                         siteChange.VersionReferenceId = storedBioRegions.Version;
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
