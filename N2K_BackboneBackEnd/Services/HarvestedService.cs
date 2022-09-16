@@ -371,8 +371,8 @@ namespace N2K_BackboneBackEnd.Services
                 List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSiteBySitecode  @sitecode",
                                 param1).ToListAsync();
 
-                changes = await SiteValidation(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope);
-
+                changes = await SiteValidation(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, true);
+                processedEnvelope.Status = HarvestingStatus.Harvested;
                 result.Add(new HarvestedEnvelope
                 {
                     CountryCode = envelope.CountryCode,
@@ -388,7 +388,7 @@ namespace N2K_BackboneBackEnd.Services
                     //processedEnvelope.Status = HarvestingStatus.Harvested;
                     _dataContext.Set<SiteChangeDb>().AddRange(changes);
                     //_dataContext.Update<ProcessedEnvelopes>(processedEnvelope);
-                    _dataContext.SaveChanges();
+                    await _dataContext.SaveChangesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -405,7 +405,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<SiteChangeDb>> SiteValidation(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope)
+        public async Task<List<SiteChangeDb>> SiteValidation(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, bool manualEdition = false)
         {
             //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
             //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
@@ -416,7 +416,6 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 processedEnvelope.Status = await GetSiteChangeStatus(processedEnvelope.Status);
-
                 SiteToHarvest? storedSite = referencedSites.Where(s => s.SiteCode == harvestingSite.SiteCode).FirstOrDefault();
                 if (storedSite != null)
                 {
