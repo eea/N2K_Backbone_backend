@@ -34,6 +34,9 @@ namespace N2K_BackboneBackEnd.Services
         private IEnumerable<Habitats>? _siteHabitats;
         private IEnumerable<Species>? _siteSpecies;
         private IEnumerable<SpeciesOther>? _siteSpeciesOther;
+        private IEnumerable<Habitats>? _siteHabitatsReference;
+        private IEnumerable<Species>? _siteSpeciesReference;
+        private IEnumerable<SpeciesOther>? _siteSpeciesOtherReference;
 
 
         public SiteChangesService(N2KBackboneContext dataContext)
@@ -283,6 +286,9 @@ namespace N2K_BackboneBackEnd.Services
             _siteHabitats = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
             _siteSpecies = await _dataContext.Set<Species>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
             _siteSpeciesOther = await _dataContext.Set<SpeciesOther>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion && site.SpecieCode != null).ToListAsync();
+            _siteHabitatsReference = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion).ToListAsync();
+            _siteSpeciesReference = await _dataContext.Set<Species>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion).ToListAsync();
+            _siteSpeciesOtherReference = await _dataContext.Set<SpeciesOther>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion && site.SpecieCode != null).ToListAsync();
 
             changeDetailVM.Critical = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Critical);
             changeDetailVM.Warning = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Warning);
@@ -433,7 +439,7 @@ namespace N2K_BackboneBackEnd.Services
                         foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
                         {
                             _Section.DeletedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                                CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version)
+                                CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
                             );
                         }
                     }
@@ -457,7 +463,7 @@ namespace N2K_BackboneBackEnd.Services
                     foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
                     {
                         _Section.AddedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                            CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version)
+                            CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
                         );
 
                     }
@@ -550,7 +556,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        private CodeChangeDetail? CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion)
+        private CodeChangeDetail? CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion, int versionReferenceId)
         {
             var fields = new Dictionary<string, string>();
             switch (section)
@@ -574,6 +580,24 @@ namespace N2K_BackboneBackEnd.Services
                         if (specDetails == null)
                         {
                             specDetails = _siteSpeciesOther.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
+                            .Select(spc => new
+                            {
+                                Population = spc.Population,
+                                SpecType = spc.SpecieType
+                            }).FirstOrDefault();
+                        }
+                        if (specDetails == null)
+                        {
+                            specDetails = _siteSpeciesReference.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == versionReferenceId)
+                            .Select(spc => new
+                            {
+                                Population = spc.Population,
+                                SpecType = spc.SpecieType
+                            }).FirstOrDefault();
+                        }
+                        if (specDetails == null)
+                        {
+                            specDetails = _siteSpeciesOtherReference.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == versionReferenceId)
                             .Select(spc => new
                             {
                                 Population = spc.Population,
@@ -614,6 +638,16 @@ namespace N2K_BackboneBackEnd.Services
                                 CoverHA = hab.CoverHA.ToString(),
                                 RelativeSurface = hab.RelativeSurface
                             }).FirstOrDefault();
+
+                        if (habDetails == null)
+                        {
+                            habDetails = _siteHabitatsReference.Where(sh => sh.HabitatCode.ToLower() == code.ToLower() && sh.Version == versionReferenceId)
+                            .Select(hab => new
+                            {
+                                CoverHA = hab.CoverHA.ToString(),
+                                RelativeSurface = hab.RelativeSurface
+                            }).FirstOrDefault();
+                        }
                         if (habDetails != null)
                         {
                             relSurface = habDetails.RelativeSurface;

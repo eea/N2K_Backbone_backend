@@ -488,7 +488,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Level = Enumerations.Level.Info;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
-                        siteChange.NewValue = "NULL";
+                        siteChange.NewValue = null;
                         siteChange.OldValue = storedSite.DateConfSCI.Value.ToShortDateString();
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
@@ -510,7 +510,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = harvestingSite.DateConfSCI.Value.ToShortDateString();
-                        siteChange.OldValue = "NULL";
+                        siteChange.OldValue = null;
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
                         siteChange.VersionReferenceId = storedSite.VersionId;
