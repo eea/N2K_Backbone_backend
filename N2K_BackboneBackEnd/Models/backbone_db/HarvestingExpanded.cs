@@ -22,6 +22,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public int ChangesAccepted { get; set; }
         public int ChangesPending { get; set; }
         public int ChangesRejected { get; set; }
+        public int SitesTotal { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
