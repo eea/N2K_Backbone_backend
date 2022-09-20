@@ -70,13 +70,17 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         public async Task<Sites>? HarvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
         {
             Sites? bbSite = null;
+            
             try
             {
 
 
                 bbSite = await harvestSiteCode(pVSite, pEnvelope);
                 _dataContext.Set<Sites>().Add(bbSite);
-                _dataContext.SaveChanges();
+                //To await the site be stored in the table before use it
+                //Some traces show errors about conflicted with the FOREIGN KEY constraint and the table dbo.Sites.
+                await _dataContext.SaveChangesAsync();
+
 
                 //Get the data for all related tables                                
                 _dataContext.Set<BioRegions>().AddRange(await harvestBioregions(pVSite, bbSite.Version));

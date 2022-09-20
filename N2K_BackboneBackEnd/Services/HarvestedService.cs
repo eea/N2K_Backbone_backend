@@ -673,9 +673,11 @@ namespace N2K_BackboneBackEnd.Services
 
                                     HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
                                     await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
+                                    
+                                    _dataContext.SaveChanges();
+                                    _ThereAreChanges = false;
                                 }
-                                _dataContext.SaveChanges();
-                                _ThereAreChanges = false;
+                                
                             }
                             catch (DbUpdateException ex)
                             {
