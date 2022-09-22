@@ -11,6 +11,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string Country { get; set; }
         public int ModifiedSites { get; set; }
         public string Level { get; set; }
+        public int AffectedSites { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
