@@ -15,7 +15,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<BioRegionTypes>> GetBioRegionTypes()
         {
-            return await _dataContext.Set<BioRegionTypes>().FromSqlRaw($"exec dbo.spGetBioRegionTypes").ToListAsync();
+            return await _dataContext.Set<BioRegionTypes>().AsNoTracking().ToListAsync();
         }
 
         public async Task<List<SiteTypes>> GetSiteTypes()

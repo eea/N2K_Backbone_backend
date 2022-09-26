@@ -651,7 +651,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 //Get the lists of bioregion types
-                List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().FromSqlRaw($"exec dbo.spGetBioRegionTypes").ToListAsync();
+                List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().AsNoTracking().ToListAsync();
 
                 //For each BioRegion in Versioning compare it with that BioRegion in backboneDB
                 foreach (BioRegions harvestingBioRegions in bioRegionsVersioning)
