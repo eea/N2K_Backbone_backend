@@ -34,6 +34,7 @@ builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<IEULoginService, EULoginService>();
 builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<IMasterDataService, MasterDataService>();
+builder.Services.AddScoped<IUnionListService, UnionListService>();
 
 builder.Services.AddResponseCompression(options =>
 {
