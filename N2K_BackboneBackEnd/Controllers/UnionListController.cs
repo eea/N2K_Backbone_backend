@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
@@ -41,6 +42,30 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Message = ex.Message;
                 response.Count = 0;
                 response.Data = new List<BioRegionTypes>();
+                return Ok(response);
+            }
+        }
+
+        [Route("UnionList/GetUnionListHeadersByBioRegion")]
+        [HttpGet]
+        public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion(string bioRegionShortCode)
+        {
+            var response = new ServiceResponse<List<UnionListHeader>>();
+            try
+            {
+                var unionListHeader = await _unionListService.GetUnionListHeadersByBioRegion(bioRegionShortCode);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListHeader;
+                response.Count = (unionListHeader == null) ? 0 : unionListHeader.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListHeader>();
                 return Ok(response);
             }
         }
