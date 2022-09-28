@@ -48,7 +48,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("UnionList/GetUnionListHeadersByBioRegion")]
         [HttpGet]
-        public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion(string bioRegionShortCode)
+        public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion(string? bioRegionShortCode)
         {
             var response = new ServiceResponse<List<UnionListHeader>>();
             try
