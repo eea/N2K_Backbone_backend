@@ -29,5 +29,15 @@ namespace N2K_BackboneBackEnd.Services
 
             return unionListHeaders;
         }
+
+        public async Task<List<UnionListDetail>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode)
+        {
+            SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
+
+            List<UnionListDetail> unionListDetails = await _dataContext.Set<UnionListDetail>().FromSqlRaw($"exec dbo.spGetCurrentSitesUnionListDetailByBioRegion  @bioregion",
+                            param1).AsNoTracking().ToListAsync();
+
+            return unionListDetails;
+        }
     }
 }

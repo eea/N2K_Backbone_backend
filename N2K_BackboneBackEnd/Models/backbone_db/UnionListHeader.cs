@@ -5,7 +5,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     public class UnionListHeader : IEntityModel, IEntityModelBackboneDB
     {
         public long idULHeader { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public DateTime? Date { get; set; }
         public string? CreatedBy { get; set; }
 

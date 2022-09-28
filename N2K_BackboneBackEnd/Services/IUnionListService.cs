@@ -7,5 +7,6 @@ namespace N2K_BackboneBackEnd.Services
     {
         Task<List<BioRegionTypes>> GetUnionBioRegionTypes();
         Task<List<UnionListHeader>> GetUnionListHeadersByBioRegion(string bioRegionShortCode);
+        Task<List<UnionListDetail>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode);
     }
 }

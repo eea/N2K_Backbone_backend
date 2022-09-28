@@ -69,5 +69,29 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+        [Route("UnionList/GetCurrentSitesUnionListDetailByBioRegion")]
+        [HttpGet]
+        public async Task<ActionResult<ServiceResponse<List<UnionListDetail>>>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode)
+        {
+            var response = new ServiceResponse<List<UnionListDetail>>();
+            try
+            {
+                var unionListDetail = await _unionListService.GetCurrentSitesUnionListDetailByBioRegion(bioRegionShortCode);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListDetail;
+                response.Count = (unionListDetail == null) ? 0 : unionListDetail.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListDetail>();
+                return Ok(response);
+            }
+        }
     }
 }
