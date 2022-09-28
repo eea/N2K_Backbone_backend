@@ -8,6 +8,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string Name { get; set; } = string.Empty;
         public DateTime? Date { get; set; }
         public string? CreatedBy { get; set; }
+        public Boolean? Final { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
