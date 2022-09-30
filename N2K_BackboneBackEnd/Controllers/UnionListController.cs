@@ -22,7 +22,7 @@ namespace N2K_BackboneBackEnd.Controllers
             _mapper = mapper;
         }
 
-        [Route("UnionList/GetUnionBioRegionTypes")]
+        [Route("UnionList/GetBioRegionTypes")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<BioRegionTypes>>>> GetUnionBioRegionTypes()
         {
@@ -46,7 +46,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetUnionListHeadersByBioRegion")]
+        [Route("UnionList/GetUnionLists")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion(string? bioRegionShortCode)
         {
@@ -70,7 +70,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetCurrentSitesUnionListDetailByBioRegion")]
+        [Route("UnionList/GetCurrentListDetailed")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListDetail>>>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode)
         {
