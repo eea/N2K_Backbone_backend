@@ -58,8 +58,10 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<StatusChanges>> AddComment(StatusChanges comment,string  username ="")
         {
 
+            
+
             comment.Date = DateTime.Now;
-            comment.Owner = username;
+            comment.Owner = GlobalData.Username;
             await _dataContext.Set<StatusChanges>().AddAsync(comment);
             await _dataContext.SaveChangesAsync();
 

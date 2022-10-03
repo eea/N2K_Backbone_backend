@@ -5,6 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
+using N2K_BackboneBackEnd.Models;
 
 namespace N2K_BackboneBackEnd.Helpers
 {
@@ -28,10 +29,6 @@ namespace N2K_BackboneBackEnd.Helpers
      
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-
-
-
-
 
             // validation comes in here
             /*
@@ -90,6 +87,8 @@ namespace N2K_BackboneBackEnd.Helpers
                 // and current authentication scheme
                 var ticket = new AuthenticationTicket(
                     new ClaimsPrincipal(claimsIdentity), this.Scheme.Name);
+
+                GlobalData.Username = jwtSecurityToken.Claims.First(claim => claim.Type == "email").Value;
 
                 // pass on the ticket to the middleware
                 return Task.FromResult(AuthenticateResult.Success(ticket));
