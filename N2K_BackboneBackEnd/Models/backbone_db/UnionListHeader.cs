@@ -9,6 +9,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public DateTime? Date { get; set; }
         public string? CreatedBy { get; set; }
         public Boolean? Final { get; set; }
+        public DateTime? UpdatedDate { get; set; }
+        public string? UpdatedBy { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
