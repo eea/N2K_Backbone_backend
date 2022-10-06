@@ -165,28 +165,25 @@ namespace N2K_BackboneBackEnd.Services
             }
 
             //Added in source
-            var sourceOnlySites = (from source2 in ULDetailsSource
-                                   from target2 in ULDetailsTarget.Where(trg => (source2.SCI_code == trg.SCI_code) && (source2.BioRegion == trg.BioRegion))
-                                   where target2.SCI_code == null
-                                   select new { source2, target2 }).ToList();
+            var sourceOnlySites = ULDetailsTarget.Where(trg => !ULDetailsSource.Any(src => (trg.SCI_code == src.SCI_code) && (trg.BioRegion == src.BioRegion)));
 
             foreach (var item in sourceOnlySites)
             {
                 UnionListComparerViewModel changedItem = new UnionListComparerViewModel();
-                changedItem.BioRegion = item.source2.BioRegion;
-                changedItem.Sitecode = item.source2.SCI_code;
+                changedItem.BioRegion = item.BioRegion;
+                changedItem.Sitecode = item.SCI_code;
 
-                changedItem.SitenameSourceValue = item.source2.SCI_Name;
+                changedItem.SitenameSourceValue = item.SCI_Name;
                 changedItem.SitenameTargetValue = null;
-                changedItem.PrioritySourceValue = item.source2.Priority;
+                changedItem.PrioritySourceValue = item.Priority;
                 changedItem.PriorityTargetValue = null;
-                changedItem.AreaSourceValue = item.source2.Area;
+                changedItem.AreaSourceValue = item.Area;
                 changedItem.AreaTargetValue = null;
-                changedItem.LengthSourceValue = item.source2.Length;
+                changedItem.LengthSourceValue = item.Length;
                 changedItem.LengthTargetValue = null;
-                changedItem.LatitudeSourceValue = item.source2.Lat;
+                changedItem.LatitudeSourceValue = item.Lat;
                 changedItem.LatitudeTargetValue = null;
-                changedItem.LongitudeSourceValue = item.source2.Long;
+                changedItem.LongitudeSourceValue = item.Long;
                 changedItem.LongitudeTargetValue = null;
 
                 changedItem.Changes.Add("ADDED");
@@ -195,29 +192,26 @@ namespace N2K_BackboneBackEnd.Services
             }
 
             //Deleted in source
-            var targetOnlySites = (from target3 in ULDetailsTarget
-                                   from source3 in ULDetailsSource.Where(trg => (target3.SCI_code == trg.SCI_code) && (target3.BioRegion == trg.BioRegion))
-                                   where source3.SCI_code == null
-                                   select new { source3, target3 }).ToList();
+            var targetOnlySites = ULDetailsSource.Where(src => !ULDetailsTarget.Any(trg => (src.SCI_code == trg.SCI_code) && (src.BioRegion == trg.BioRegion)));
 
             foreach (var item in targetOnlySites)
             {
                 UnionListComparerViewModel changedItem = new UnionListComparerViewModel();
-                changedItem.BioRegion = item.target3.BioRegion;
-                changedItem.Sitecode = item.target3.SCI_code;
+                changedItem.BioRegion = item.BioRegion;
+                changedItem.Sitecode = item.SCI_code;
 
                 changedItem.SitenameSourceValue = null;
-                changedItem.SitenameTargetValue = item.target3.SCI_Name;
+                changedItem.SitenameTargetValue = item.SCI_Name;
                 changedItem.PrioritySourceValue = null;
-                changedItem.PriorityTargetValue = item.target3.Priority;
+                changedItem.PriorityTargetValue = item.Priority;
                 changedItem.AreaSourceValue = null;
-                changedItem.AreaTargetValue = item.target3.Area;
+                changedItem.AreaTargetValue = item.Area;
                 changedItem.LengthSourceValue = null;
-                changedItem.LengthTargetValue = item.target3.Length;
+                changedItem.LengthTargetValue = item.Length;
                 changedItem.LatitudeSourceValue = null;
-                changedItem.LatitudeTargetValue = item.target3.Lat;
+                changedItem.LatitudeTargetValue = item.Lat;
                 changedItem.LongitudeSourceValue = null;
-                changedItem.LongitudeTargetValue = item.target3.Long;
+                changedItem.LongitudeTargetValue = item.Long;
 
                 changedItem.Changes.Add("DELETED");
 
