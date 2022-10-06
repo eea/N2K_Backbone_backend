@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -8,25 +8,41 @@
   </PropertyGroup>
 
   <ItemGroup>
+
+    <Compile Remove="bin\Release\net6.0\x64\**" />
+    <Compile Remove="bin\Release\net6.0\x86\**" />
+    <Content Remove="bin\Release\net6.0\x64\**" />
+    <Content Remove="bin\Release\net6.0\x86\**" />
+
+    <EmbeddedResource Remove="bin\Release\net6.0\x64\**" />
+    <EmbeddedResource Remove="bin\Release\net6.0\x86\**" />
+    <None Remove="bin\Release\net6.0\x64\**" />
+    <None Remove="bin\Release\net6.0\x86\**" />
+
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="11.0.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.12.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.13.0" />
     <PackageReference Include="DotNetZip" Version="1.16.0" />
-    <PackageReference Include="Microsoft.AspNet.Mvc" Version="5.2.9" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.2.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="5.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.ResponseCompression" Version="2.2.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.3">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.7">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.3" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.3">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.7">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.2" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.7" />
+    <PackageReference Include="SevenZipSharp.Interop" Version="19.0.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,6 +50,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="bin\Release\net6.0\" />
     <Folder Include="Resources\Images\" />
   </ItemGroup>
 

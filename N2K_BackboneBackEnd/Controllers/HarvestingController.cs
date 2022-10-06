@@ -1,16 +1,19 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
+using Microsoft.AspNetCore.Authorization;
 
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace N2K_BackboneBackEnd.Controllers
 {
+    [Authorize(AuthenticationSchemes = "EULoginSchema")]
     [Route("api/[controller]")]
     [ApiController]
     public class HarvestingController : ControllerBase
@@ -78,6 +81,34 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        /// <summary>
+        /// Retrives those envelopes with the input status
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetEnvelopesByStatus")]
+        public async Task<ActionResult<ServiceResponse<HarvestingExpanded>>> GetEnvelopesByStatus(HarvestingStatus status)
+        {
+            var response = new ServiceResponse<List<HarvestingExpanded>>();
+            try
+            {
+                var envelopes = await _harvestedService.GetEnvelopesByStatus(status);
+                response.Success = true;
+                response.Message = "";
+                response.Data = envelopes;
+                response.Count = (envelopes == null) ? 0 : envelopes.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<HarvestingExpanded>();
+                return Ok(response);
+            }
+        }
+
 
         [HttpGet]
         [Route("Harvested")]
@@ -85,8 +116,8 @@ namespace N2K_BackboneBackEnd.Controllers
         {
             return new string[] { "value1", "value2" };
         }
-        
-        
+
+
         [HttpGet("Harvested/{fromDate}")]
         public IEnumerable<string> Harvested(DateTime? fromDate)
         {
@@ -192,6 +223,66 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+        /// <summary>
+        /// Execute an unattended load of the data from versioning
+        /// </summary>
+        /// <returns></returns>
+        [Route("FullHarvest")]
+        [HttpPost]
+        public async Task<ActionResult<List<HarvestedEnvelope>>> FullHarvest()
+        {
+            var response = new ServiceResponse<List<HarvestedEnvelope>>();
+            try
+            {
+                var siteChanges = await _harvestedService.FullHarvest();
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<HarvestedEnvelope>();
+                return Ok(response);
+            }
+        }
+
+
+        /// <summary>
+        /// Changes te status of a envelope
+        /// </summary>
+        /// <returns></returns>
+        [Route("ChangeStatus")]
+        [HttpPost]
+        public async Task<ActionResult<ProcessedEnvelopes>> ChangeStatus(string country, int version, HarvestingStatus toStatus)
+        {
+            var response = new ServiceResponse<ProcessedEnvelopes>();
+            try
+            {
+                var siteChanges = await _harvestedService.ChangeStatus(country, version, toStatus);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new ProcessedEnvelopes();
+                return  Ok(response);
+            }
+        }
+
+
+
 
         /// <summary>
         /// Executes the process of the validation for a selected envelop (Country and Version).

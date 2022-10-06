@@ -17,6 +17,12 @@ namespace N2K_BackboneBackEnd.Services
             public string Country { get; set; } = "";
 
         }
+        private class CountryVersion
+        {
+            public string Country { get; set; } = "";
+            public int Version { get; set; }
+
+        }
 
         private readonly N2KBackboneContext _dataContext;
         private readonly IEnumerable<Countries> _countries;
@@ -27,20 +33,21 @@ namespace N2K_BackboneBackEnd.Services
             _countries = _dataContext.Set<Countries>().AsNoTracking().ToList();
         }
 
-        public async Task<List<Countries>> GetWithDataAsync()
+        public async Task<List<CountriesWithDataView>> GetWithDataAsync()
         {
 
-            var changes = _dataContext.Set<SiteChangeDb>().Select(c => c.Country).Distinct();
-            var countries = _dataContext.Set<Countries>();
+            var changes = _dataContext.Set<SiteChangeDb>().Select(ch => new CountryVersion { Country = ch.Country, Version = ch.N2KVersioningVersion.Value }).Distinct();
+            var countries = _dataContext.Set<CountriesWithDataView>();
 
             var aux = (from ch in await changes.ToListAsync()
                        join ctr in countries
-                       on ch.ToUpper() equals ctr.Code.ToUpper()
-                       select new Countries
+                       on ch.Country.ToUpper() equals ctr.Code.ToUpper()
+                       select new CountriesWithDataView
                        {
-                           Code = ch.ToUpper(),
+                           Code = ch.Country.ToUpper(),
                            Country = ctr.Country,
-                           isEUCountry = ctr.isEUCountry
+                           isEUCountry = ctr.isEUCountry,
+                           Version = ch.Version
                        }).ToList();
 
             return aux;
@@ -60,15 +67,15 @@ namespace N2K_BackboneBackEnd.Services
                 .ToListAsync();
         }
         
-        public async Task<List<Countries>> GetWithDataAsync(SiteChangeStatus? status, Level? level)
+        public async Task<List<CountriesWithDataView>> GetWithDataAsync(SiteChangeStatus? status, Level? level)
         {
 
             var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : string.Empty);
             var param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : string.Empty);
 
 
-            List<Countries> countries = await _dataContext
-                .Set<Countries>()
+            List<CountriesWithDataView> countries = await _dataContext
+                .Set<CountriesWithDataView>()
                 .FromSqlRaw($"exec dbo.spGetCountriesByStatusAndLevel @status, @level", param2, param3)
                 .AsNoTracking()
                 .ToListAsync();
@@ -82,6 +89,17 @@ namespace N2K_BackboneBackEnd.Services
             var countries = await _dataContext
                 .Set<CountriesChangesView>()
                 .FromSqlRaw($"exec dbo.spGetCountriesCountLevelByStatus @status", param1)
+                .AsNoTracking()
+                .ToListAsync();
+            return countries;
+        }
+
+        public async Task<List<SitesWithChangesView>> GetSiteLevelAsync(SiteChangeStatus? status)
+        {
+            var param1 = new SqlParameter("@status", status.HasValue ? status.ToString() : string.Empty);
+            var countries = await _dataContext
+                .Set<SitesWithChangesView>()
+                .FromSqlRaw($"exec dbo.spGetSiteCountLevelByStatus @status", param1)
                 .AsNoTracking()
                 .ToListAsync();
             return countries;

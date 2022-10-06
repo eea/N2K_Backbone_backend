@@ -7,6 +7,7 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using System.Data;
+using N2K_BackboneBackEnd.Models.BackboneDB;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -32,6 +33,10 @@ namespace N2K_BackboneBackEnd.Services
         private readonly IEnumerable<Countries> _countries;
         private IEnumerable<Habitats>? _siteHabitats;
         private IEnumerable<Species>? _siteSpecies;
+        private IEnumerable<SpeciesOther>? _siteSpeciesOther;
+        private IEnumerable<Habitats>? _siteHabitatsReference;
+        private IEnumerable<Species>? _siteSpeciesReference;
+        private IEnumerable<SpeciesOther>? _siteSpeciesOtherReference;
 
 
         public SiteChangesService(N2KBackboneContext dataContext)
@@ -47,16 +52,20 @@ namespace N2K_BackboneBackEnd.Services
         {
 
             var startRow = (page - 1) * pageLimit;
-            var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level))
-                .Skip(startRow)
-                .Take(pageLimit)
-                .ToList();
-                
+            var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level));
+            if (pageLimit > 0)
+            {
+                sitesList = sitesList
+                    .Skip(startRow)
+                    .Take(pageLimit)
+                    .ToList();
+            }
             var sitecodesfilter = new DataTable("sitecodesfilter");
             sitecodesfilter.Columns.Add("SiteCode", typeof(string));
             sitecodesfilter.Columns.Add("Version", typeof(int));
 
-            foreach (var sc in sitesList) {
+            foreach (var sc in sitesList)
+            {
                 sitecodesfilter.Rows.Add(new Object[] { sc.SiteCode, sc.Version });
             }
 
@@ -81,12 +90,12 @@ namespace N2K_BackboneBackEnd.Services
                                                                      select new OrderedChanges
                                                                      {
                                                                          SiteCode = g.Key.SiteCode,
-                                                                         SiteName= g.Key.SiteName,
+                                                                         SiteName = g.Key.SiteName,
                                                                          Level = (from t2 in g select t2.Level).Max(),
                                                                          //Nest all changes of each sitecode ordered by Level
                                                                          ChangeList = g.Where(s => s.SiteCode.ToUpper() == g.Key.SiteCode.ToUpper()).OrderByDescending(x => (int)x.Level).ToList()
                                                                      }).OrderByDescending(a => a.Level).ThenBy(b => b.SiteCode);
-            
+
             /*
             if (pageLimit != 0)
             {
@@ -122,6 +131,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Country = "";
                         siteChange.JustificationProvided = change.JustificationProvided;
                         siteChange.JustificationRequired = change.JustificationRequired;
+                        siteChange.HasGeometry = change.HasGeometry;
                         if (change.Country != null)
                         {
                             var countryName = _countries.Where(ctry => ctry.Code.ToLower() == change.Country.ToLower()).FirstOrDefault();
@@ -141,14 +151,15 @@ namespace N2K_BackboneBackEnd.Services
                             Country = "",
                             Level = change.Level,
                             Status = change.Status,
-                            Tags = change.Tags
+                            Tags = change.Tags,
+                            NumChanges = 1
                         };
                         siteChange.subRows = new List<SiteChangeView>();
                         siteChange.subRows.Add(changeView);
                     }
                     else
                     {
-                        if (!siteChange.subRows.Any(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType==change.ChangeType))
+                        if (!siteChange.subRows.Any(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType))
                         {
                             siteChange.subRows.Add(new SiteChangeView
                             {
@@ -161,7 +172,7 @@ namespace N2K_BackboneBackEnd.Services
                                 Level = change.Level,
                                 Status = change.Status,
                                 Tags = string.Empty,
-                                NumChanges=1
+                                NumChanges = 1
                             });
                         }
                         else
@@ -252,6 +263,16 @@ namespace N2K_BackboneBackEnd.Services
             var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
             if (site != null)
             {
+                changeDetailVM.HasGeometry = false;
+                SqlParameter param1 = new SqlParameter("@SiteCode", site.SiteCode);
+                SqlParameter param2 = new SqlParameter("@Version", site.Version);
+
+                var geometries = await _dataContext.Set<SiteGeometry>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometry  @SiteCode, @Version",
+                                param1, param2).ToArrayAsync();
+
+                if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].GeoJson)) changeDetailVM.HasGeometry = true;
+                
+
 #pragma warning disable CS8601 // Posible asignación de referencia nula
                 changeDetailVM.Name = site.Name;
                 changeDetailVM.Status = (SiteChangeStatus?)site.CurrentStatus;
@@ -259,11 +280,15 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetailVM.JustificationRequired = site.JustificationRequired.HasValue ? site.JustificationRequired.Value : false;
 #pragma warning restore CS8601 // Posible asignación de referencia nula
             }
-            var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == pSiteCode).ToListAsync();
+            var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(changes => changes.SiteCode == pSiteCode && changes.N2KVersioningVersion == site.N2KVersioningVersion).ToListAsync();
 
 
             _siteHabitats = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
             _siteSpecies = await _dataContext.Set<Species>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
+            _siteSpeciesOther = await _dataContext.Set<SpeciesOther>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion && site.SpecieCode != null).ToListAsync();
+            _siteHabitatsReference = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion).ToListAsync();
+            _siteSpeciesReference = await _dataContext.Set<Species>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion).ToListAsync();
+            _siteSpeciesOtherReference = await _dataContext.Set<SpeciesOther>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion && site.SpecieCode != null).ToListAsync();
 
             changeDetailVM.Critical = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Critical);
             changeDetailVM.Warning = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Warning);
@@ -272,13 +297,29 @@ namespace N2K_BackboneBackEnd.Services
 
             _siteHabitats = null;
             _siteSpecies = null;
+            _siteSpeciesOther = null;
 
             return changeDetailVM;
         }
 
+        public async Task<List<SiteCodeView>> GetReferenceSiteCodes(string country)
+        {
+            return (await _dataContext.Set<Sites>().AsNoTracking().Where(s => s.CountryCode == country && s.Current == true).ToListAsync()).Select(x =>
+                 new SiteCodeView
+                 {
+                     SiteCode = x.SiteCode,
+                     Version = x.Version,
+                     Name = x.Name
+                 }
+            ).ToList();
+        }
+
+
 
         public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level)
         {
+
+
 
             var result = new List<SiteCodeView>();
 
@@ -293,12 +334,17 @@ namespace N2K_BackboneBackEnd.Services
                  new SiteCodeView
                  {
                      SiteCode = x.SiteCode,
-                     Version = x.Version
+                     Version = x.Version,
+                     Name = x.Name
                  }
             ).ToList();
 
         }
 
+        public async Task<int> GetPendingChangesByCountry(string? country)
+        {
+            return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null)).Count;
+        }
 
 
         private SiteChangesLevelDetail FillLevelChangeDetailCategory(List<SiteChangeDb> changesDB, string pSiteCode, int pCountryVersion, Level level)
@@ -326,6 +372,7 @@ namespace N2K_BackboneBackEnd.Services
                 switch (_levelDetail.Section)
                 {
                     case "Site":
+                    case "BioRegions":
                         /*
                         if (_levelDetail.ChangeType.IndexOf("Added") > -1)
                         {
@@ -392,7 +439,7 @@ namespace N2K_BackboneBackEnd.Services
                         foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
                         {
                             _Section.DeletedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                                CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version)
+                                CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
                             );
                         }
                     }
@@ -416,7 +463,7 @@ namespace N2K_BackboneBackEnd.Services
                     foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
                     {
                         _Section.AddedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                            CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version)
+                            CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
                         );
 
                     }
@@ -439,20 +486,36 @@ namespace N2K_BackboneBackEnd.Services
             foreach (var changedItem in changeList.OrderBy(c => c.Code == null ? "" : c.Code))
             {
                 var fields = new Dictionary<string, string>();
-                fields.Add("Reference", changedItem.OldValue);
-                fields.Add("Reported", changedItem.NewValue);
+                string nullCase = "";
+                if (changedItem.OldValue != null && changedItem.OldValue.ToUpper() != "NULL")
+                {
+                    fields.Add("Reference", changedItem.OldValue);
+                }
+                else
+                {
+                    fields.Add("Reference", nullCase);
+                }
+
+                if (changedItem.NewValue != null && changedItem.NewValue.ToUpper() != "NULL")
+                {
+                    fields.Add("Reported", changedItem.NewValue);
+                }
+                else
+                {
+                    fields.Add("Reported", nullCase);
+                }
 
 
                 catChange.ChangedCodesDetail.Add(
-                    new CodeChangeDetail
-                    {
-                        Code = changedItem.Code,
-                        Name = GetCodeName(changedItem),
-                        ChangeId = changedItem.ChangeId,
-                        Fields = fields
-                    }
+                        new CodeChangeDetail
+                        {
+                            Code = changedItem.Code,
+                            Name = GetCodeName(changedItem),
+                            ChangeId = changedItem.ChangeId,
+                            Fields = fields
+                        }
 
-                );
+                    );
             }
             return catChange;
         }
@@ -464,6 +527,7 @@ namespace N2K_BackboneBackEnd.Services
             switch (change.Section)
             {
                 case "Site":
+                case "BioRegions":
                     if (_dataContext.Set<Sites>().FirstOrDefault(sp => sp.SiteCode.ToLower() == change.Code.ToLower() && sp.Version == change.Version) != null)
                     {
                         name = _dataContext.Set<Sites>().FirstOrDefault(sp => sp.SiteCode.ToLower() == change.Code.ToLower() && sp.Version == change.Version).Name;
@@ -492,7 +556,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        private CodeChangeDetail? CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion)
+        private CodeChangeDetail? CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion, int versionReferenceId)
         {
             var fields = new Dictionary<string, string>();
             switch (section)
@@ -504,8 +568,8 @@ namespace N2K_BackboneBackEnd.Services
 
                     if (code != null)
                     {
-                        var spectype = _speciesTypes.FirstOrDefault(s => s.Code.ToLower() == code.ToLower()).Name;
-                        if (spectype != null) specName = spectype;
+                        SpeciesTypes? _spectype = _speciesTypes.FirstOrDefault(s => s.Code.ToLower() == code.ToLower());
+                        if (_spectype != null) specName = _spectype.Name;
 
                         var specDetails = _siteSpecies.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
                             .Select(spc => new
@@ -513,6 +577,33 @@ namespace N2K_BackboneBackEnd.Services
                                 Population = spc.Population,
                                 SpecType = spc.SpecieType
                             }).FirstOrDefault();
+                        if (specDetails == null)
+                        {
+                            specDetails = _siteSpeciesOther.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
+                            .Select(spc => new
+                            {
+                                Population = spc.Population,
+                                SpecType = spc.SpecieType
+                            }).FirstOrDefault();
+                        }
+                        if (specDetails == null)
+                        {
+                            specDetails = _siteSpeciesReference.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == versionReferenceId)
+                            .Select(spc => new
+                            {
+                                Population = spc.Population,
+                                SpecType = spc.SpecieType
+                            }).FirstOrDefault();
+                        }
+                        if (specDetails == null)
+                        {
+                            specDetails = _siteSpeciesOtherReference.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == versionReferenceId)
+                            .Select(spc => new
+                            {
+                                Population = spc.Population,
+                                SpecType = spc.SpecieType
+                            }).FirstOrDefault();
+                        }
                         if (specDetails != null)
                         {
                             population = specDetails.Population;
@@ -547,6 +638,16 @@ namespace N2K_BackboneBackEnd.Services
                                 CoverHA = hab.CoverHA.ToString(),
                                 RelativeSurface = hab.RelativeSurface
                             }).FirstOrDefault();
+
+                        if (habDetails == null)
+                        {
+                            habDetails = _siteHabitatsReference.Where(sh => sh.HabitatCode.ToLower() == code.ToLower() && sh.Version == versionReferenceId)
+                            .Select(hab => new
+                            {
+                                CoverHA = hab.CoverHA.ToString(),
+                                RelativeSurface = hab.RelativeSurface
+                            }).FirstOrDefault();
+                        }
                         if (habDetails != null)
                         {
                             relSurface = habDetails.RelativeSurface;

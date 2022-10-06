@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
@@ -38,7 +39,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<ContainsSpecies> elements = null;
             try
             {
-                TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
+                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
 
                 elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
 
@@ -84,12 +85,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 }
 
-                TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
+                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
                 return 1;
             }
             catch (Exception ex)
             {
-                TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
+                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
                 return 0;
             }
 
@@ -100,7 +101,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<ContainsSpecies> elements = null;
             try
             {
-                TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
+                //TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
                 elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
                 foreach (ContainsSpecies element in elements)
                 {
@@ -154,7 +155,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             finally
             {
-                TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
+                //TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
             }
 
         }
@@ -167,7 +168,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             return 1;
         }
 
-        public async Task<List<SiteChangeDb>> ValidateSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority)
+        public async Task<List<SiteChangeDb>> ValidateSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope)
         {
             try
             {
@@ -191,7 +192,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Decrease";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Warning;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
@@ -200,6 +201,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
                         else if (storedSpecies.Population.ToUpper() == "D" && harvestingSpecies.Population.ToUpper() != "D")
@@ -211,7 +213,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Increase";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
@@ -220,6 +222,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
                         else if (storedSpecies.Population.ToUpper() != harvestingSpecies.Population.ToUpper())
@@ -231,7 +234,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Change";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
                             siteChange.Tags = string.Empty;
@@ -240,6 +243,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
 
@@ -264,7 +268,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Species Losing Priority";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Critical;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.Tags = string.Empty;
                                 siteChange.NewValue = Convert.ToString(isHarvestingPriority);
                                 siteChange.OldValue = Convert.ToString(isStoredPriority);
@@ -273,6 +277,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.VersionReferenceId = storedSpecies.VersionId;
                                 siteChange.FieldName = "Priority";
                                 siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                siteChange.N2KVersioningVersion = envelope.VersionId;
                                 changes.Add(siteChange);
                             }
                             else if (!isStoredPriority && isHarvestingPriority)
@@ -284,7 +289,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Species Getting Priority";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.Tags = string.Empty;
                                 siteChange.NewValue = Convert.ToString(isHarvestingPriority);
                                 siteChange.OldValue = Convert.ToString(isStoredPriority);
@@ -293,6 +298,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.VersionReferenceId = storedSpecies.VersionId;
                                 siteChange.FieldName = "Priority";
                                 siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                siteChange.N2KVersioningVersion = envelope.VersionId;
                                 changes.Add(siteChange);
                             }
                         }
@@ -302,23 +308,23 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     {
                         if (harvestingSpecies.SpeciesCode != null)
                         {
-                            changes.Add(new SiteChangeDb
-                            {
-                                SiteCode = harvestingSite.SiteCode,
-                                Version = harvestingSite.VersionId,
-                                ChangeCategory = "Species",
-                                ChangeType = "Species Added",
-                                Country = envelope.CountryCode,
-                                Level = Enumerations.Level.Info,
-                                Status = Enumerations.SiteChangeStatus.PreHarvested,
-                                Tags = string.Empty,
-                                NewValue = harvestingSpecies.SpeciesCode,
-                                OldValue = null,
-                                Code = harvestingSpecies.SpeciesCode,
-                                Section = "Species",
-                                VersionReferenceId = harvestingSpecies.VersionId,
-                                ReferenceSiteCode = storedSite.SiteCode
-                            });
+                            SiteChangeDb siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Species";
+                            siteChange.ChangeType = "Species Added";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingSpecies.SpeciesCode;
+                            siteChange.OldValue = null;
+                            siteChange.Code = harvestingSpecies.SpeciesCode;
+                            siteChange.Section = "Species";
+                            siteChange.VersionReferenceId = harvestingSpecies.VersionId;
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            changes.Add(siteChange);
                         }
                     }
                 }
@@ -329,23 +335,23 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     SpeciesToHarvest harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode && s.PopulationType == storedSpecies.PopulationType).FirstOrDefault();
                     if (harvestingSpecies == null)
                     {
-                        changes.Add(new SiteChangeDb
-                        {
-                            SiteCode = storedSite.SiteCode,
-                            Version = harvestingSite.VersionId,
-                            ChangeCategory = "Species",
-                            ChangeType = "Species Deleted",
-                            Country = envelope.CountryCode,
-                            Level = Enumerations.Level.Critical,
-                            Status = Enumerations.SiteChangeStatus.PreHarvested,
-                            Tags = string.Empty,
-                            NewValue = null,
-                            OldValue = storedSpecies.SpeciesCode,
-                            Code = storedSpecies.SpeciesCode,
-                            Section = "Species",
-                            VersionReferenceId = storedSpecies.VersionId,
-                            ReferenceSiteCode = storedSite.SiteCode
-                        });
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = storedSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Species";
+                        siteChange.ChangeType = "Species Deleted";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Critical;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = null;
+                        siteChange.OldValue = storedSpecies.SpeciesCode;
+                        siteChange.Code = storedSpecies.SpeciesCode;
+                        siteChange.Section = "Species";
+                        siteChange.VersionReferenceId = storedSpecies.VersionId;
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        changes.Add(siteChange);
                     }
                 }
                 
@@ -364,7 +370,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Decrease";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
@@ -373,6 +379,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
                         else if (storedSpecies.Population.ToUpper() == "D" && harvestingSpecies.Population.ToUpper() != "D")
@@ -384,7 +391,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Increase";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
@@ -393,6 +400,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
                         else if (storedSpecies.Population.ToUpper() != harvestingSpecies.Population.ToUpper())
@@ -404,7 +412,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.ChangeType = "Population Priority Change";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                             siteChange.NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null;
                             siteChange.OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null;
                             siteChange.Tags = string.Empty;
@@ -413,6 +421,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.VersionReferenceId = storedSpecies.VersionId;
                             siteChange.FieldName = "Population";
                             siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
 
@@ -437,7 +446,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Species Losing Priority";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.Tags = string.Empty;
                                 siteChange.NewValue = Convert.ToString(isHarvestingPriority);
                                 siteChange.OldValue = Convert.ToString(isStoredPriority);
@@ -446,6 +455,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.VersionReferenceId = storedSpecies.VersionId;
                                 siteChange.FieldName = "Priority";
                                 siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                siteChange.N2KVersioningVersion = envelope.VersionId;
                                 changes.Add(siteChange);
                             }
                             else if (!isStoredPriority && isHarvestingPriority)
@@ -457,7 +467,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.ChangeType = "Species Getting Priority";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = Enumerations.SiteChangeStatus.PreHarvested;
+                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                                 siteChange.Tags = string.Empty;
                                 siteChange.NewValue = Convert.ToString(isHarvestingPriority);
                                 siteChange.OldValue = Convert.ToString(isStoredPriority);
@@ -466,6 +476,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.VersionReferenceId = storedSpecies.VersionId;
                                 siteChange.FieldName = "Priority";
                                 siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                siteChange.N2KVersioningVersion = envelope.VersionId;
                                 changes.Add(siteChange);
                             }
                         }
@@ -475,23 +486,23 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     {
                         if (harvestingSpecies.SpeciesCode != null)
                         {
-                            changes.Add(new SiteChangeDb
-                            {
-                                SiteCode = harvestingSite.SiteCode,
-                                Version = harvestingSite.VersionId,
-                                ChangeCategory = "Species",
-                                ChangeType = "Species Added",
-                                Country = envelope.CountryCode,
-                                Level = Enumerations.Level.Info,
-                                Status = Enumerations.SiteChangeStatus.PreHarvested,
-                                Tags = string.Empty,
-                                NewValue = harvestingSpecies.SpeciesCode,
-                                OldValue = null,
-                                Code = harvestingSpecies.SpeciesCode,
-                                Section = "Species",
-                                VersionReferenceId = harvestingSpecies.VersionId,
-                                ReferenceSiteCode = storedSite.SiteCode
-                            });
+                            SiteChangeDb siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Species";
+                            siteChange.ChangeType = "Species Added";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Info;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                            siteChange.Tags = string.Empty;
+                            siteChange.NewValue = harvestingSpecies.SpeciesCode;
+                            siteChange.OldValue = null;
+                            siteChange.Code = harvestingSpecies.SpeciesCode;
+                            siteChange.Section = "Species";
+                            siteChange.VersionReferenceId = harvestingSpecies.VersionId;
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            changes.Add(siteChange);
                         }
                     }
                 }
@@ -501,23 +512,23 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     SpeciesToHarvest harvestingSpecies = speciesOtherVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode && s.PopulationType == storedSpecies.PopulationType).FirstOrDefault();
                     if (harvestingSpecies == null)
                     {
-                        changes.Add(new SiteChangeDb
-                        {
-                            SiteCode = storedSite.SiteCode,
-                            Version = harvestingSite.VersionId,
-                            ChangeCategory = "Species",
-                            ChangeType = "Species Deleted",
-                            Country = envelope.CountryCode,
-                            Level = Enumerations.Level.Info,
-                            Status = Enumerations.SiteChangeStatus.PreHarvested,
-                            Tags = string.Empty,
-                            NewValue = null,
-                            OldValue = storedSpecies.SpeciesCode,
-                            Code = storedSpecies.SpeciesCode,
-                            Section = "Species",
-                            VersionReferenceId = storedSpecies.VersionId,
-                            ReferenceSiteCode = storedSite.SiteCode
-                        });
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = storedSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Species";
+                        siteChange.ChangeType = "Species Deleted";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Warning;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = null;
+                        siteChange.OldValue = storedSpecies.SpeciesCode;
+                        siteChange.Code = storedSpecies.SpeciesCode;
+                        siteChange.Section = "Species";
+                        siteChange.VersionReferenceId = storedSpecies.VersionId;
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        changes.Add(siteChange);
                     }
                 }
             }

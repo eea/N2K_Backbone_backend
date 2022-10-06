@@ -7,9 +7,16 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Authorization;
+using Azure.Core;
+using NuGet.Common;
+using System.IdentityModel.Tokens.Jwt;
+using Newtonsoft.Json.Linq;
+using N2K_BackboneBackEnd.Helpers;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
+    [Authorize(AuthenticationSchemes = "EULoginSchema")]
     [Route("api/[controller]")]
     [ApiController]
     public class SiteDetailsController : ControllerBase
@@ -19,6 +26,7 @@ namespace N2K_BackboneBackEnd.Controllers
         private readonly IMapper _mapper;
 
 
+
         public SiteDetailsController(ISiteDetailsService siteDetailsService, IMapper mapper)
         {
             _siteDetailsService = siteDetailsService;
@@ -26,9 +34,37 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        #region SiteComments
-        [HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
-        public async Task<ActionResult<List<StatusChanges>>> ListSiteComments(string pSiteCode, int pCountryVersion)
+        #region SiteGeometry
+        [HttpGet("GetSiteGeometry/siteCode={pSiteCode}&version={pCountryVersion}")]
+        public async Task<ActionResult<SiteGeometryDetailed>> GetSiteGeometry(string pSiteCode, int pCountryVersion)
+        {
+            ServiceResponse<SiteGeometryDetailed> response = new ServiceResponse<SiteGeometryDetailed>();
+            try
+            {
+                SiteGeometryDetailed siteGeometry = await _siteDetailsService.GetSiteGeometry(pSiteCode, pCountryVersion);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteGeometry;
+                response.Count = (siteGeometry == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+
+        #endregion
+
+
+        #region SiteComments        
+        [HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]        
+        public async Task<ActionResult<List<StatusChanges>>> ListSiteComments(string pSiteCode, int pCountryVersion)            
         {
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
             try
@@ -55,10 +91,12 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpPost]
         public async Task<ActionResult<List<StatusChanges>>> AddComment([FromBody] StatusChanges comment)
         {
+
+            string username = HeaderHelpers.GetUsername(Request.Headers);
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
             try
             {
-                List<StatusChanges> siteComments = await _siteDetailsService.AddComment(comment);
+                List<StatusChanges> siteComments = await _siteDetailsService.AddComment(comment, username);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -106,9 +144,10 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<List<StatusChanges>>> UpdateComment([FromBody] StatusChanges comment)
         {
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
+            string username = HeaderHelpers.GetUsername(Request.Headers);
             try
             {
-                List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment);
+                List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment,username);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -154,9 +193,10 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("UploadAttachedFile")]
         [HttpPost, DisableRequestSizeLimit]
-        public async Task<ActionResult<List<JustificationFiles>>> UploadFile([FromQuery] AttachedFile   attachedFiles)
+        public async Task<ActionResult<List<JustificationFiles>>> UploadFile([FromQuery] AttachedFile attachedFiles)
         {
             var response = new ServiceResponse<List<JustificationFiles>>();
+            string username = HeaderHelpers.GetUsername(Request.Headers);
             try
             {
                 if (attachedFiles.Files == null || attachedFiles.Files.Count == 0)
@@ -168,7 +208,7 @@ namespace N2K_BackboneBackEnd.Controllers
                     return Ok(response);
                 }
                 //var formCollection = await Request.ReadFormAsync();
-                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles);
+                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles, username);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteFiles;
@@ -217,5 +257,55 @@ namespace N2K_BackboneBackEnd.Controllers
 
         #endregion
 
+
+        [Route("SaveEdition/")]
+        [HttpPost]
+        public async Task<ActionResult<string>> SaveEdition([FromBody] ChangeEditionDb changeEdition)
+        {
+            var response = new ServiceResponse<string>();
+
+            string username = HeaderHelpers.GetUsername(Request.Headers);           
+            try
+            {
+                var siteChanges = await _siteDetailsService.SaveEdition(changeEdition, username);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("GetReferenceEditInfo/")]
+        [HttpGet]
+        public async Task<ActionResult<ChangeEditionViewModel>> GetReferenceEditInfo(string siteCode)
+        {
+            var response = new ServiceResponse<ChangeEditionViewModel>();
+            try
+            {
+                var siteChange = await _siteDetailsService.GetReferenceEditInfo(siteCode);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChange;
+                response.Count = siteChange == null ? 1 : 0;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
     }
 }

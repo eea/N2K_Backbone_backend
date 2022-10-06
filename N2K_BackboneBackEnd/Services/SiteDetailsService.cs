@@ -1,14 +1,12 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using N2K_BackboneBackEnd.Data;
-using N2K_BackboneBackEnd.Models;
-using N2K_BackboneBackEnd.Models.ViewModel;
-using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Enumerations;
-using N2K_BackboneBackEnd.Models.versioning_db;
-using System.Net.Http.Headers;
-using N2K_BackboneBackEnd.Helpers;
 using Microsoft.Extensions.Options;
+using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Enumerations;
+using N2K_BackboneBackEnd.Helpers;
+using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.ViewModel;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -16,13 +14,36 @@ namespace N2K_BackboneBackEnd.Services
     {
 
         private readonly N2KBackboneContext _dataContext;
+        private readonly N2K_VersioningContext _versioningContext;
         private readonly IOptions<ConfigSettings> _appSettings;
 
-        public SiteDetailsService(N2KBackboneContext dataContext, IOptions<ConfigSettings> app)
+        public SiteDetailsService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
+            _versioningContext = versioningContext;
             _appSettings = app;
         }
+
+        #region SiteGeometry
+        public async Task<SiteGeometryDetailed> GetSiteGeometry(string siteCode, int version)
+        {
+            SiteGeometryDetailed result = new SiteGeometryDetailed();
+            SqlParameter param1 = new SqlParameter("@SiteCode", siteCode);
+            SqlParameter param2 = new SqlParameter("@Version", version);
+
+            var geometries = await _dataContext.Set<SiteGeometryDetailed>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometryDetailed  @SiteCode, @Version",
+                            param1, param2).ToArrayAsync();
+
+
+#pragma warning disable CS8603 // Posible tipo de valor devuelto de referencia nulo
+            if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].SiteCode))
+                return geometries[0];
+
+#pragma warning restore CS8603 // Posible tipo de valor devuelto de referencia nulo
+            return result;
+        }
+        #endregion 
+
 
 
         #region SiteComments
@@ -34,10 +55,13 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<StatusChanges>> AddComment(StatusChanges comment)
+        public async Task<List<StatusChanges>> AddComment(StatusChanges comment,string  username ="")
         {
 
+            
+
             comment.Date = DateTime.Now;
+            comment.Owner = GlobalData.Username;
             await _dataContext.Set<StatusChanges>().AddAsync(comment);
             await _dataContext.SaveChangesAsync();
 
@@ -59,8 +83,10 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<StatusChanges>> UpdateComment(StatusChanges comment)
+        public async Task<List<StatusChanges>> UpdateComment(StatusChanges comment, string username = "")
         {
+            comment.Date= DateTime.Now;
+            comment.Owner = username;
             _dataContext.Set<StatusChanges>().Update(comment);
             await _dataContext.SaveChangesAsync();
 
@@ -81,10 +107,10 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile)
+        public async Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile, string username = "")
         {
             List<JustificationFiles> result = new List<JustificationFiles>();
-            IAttachedFileHandler fileHandler = null;
+            IAttachedFileHandler? fileHandler = null;
 
             if (_appSettings.Value.AttachedFiles == null) return result;
 
@@ -103,7 +129,9 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     Path = fUrl,
                     SiteCode = attachedFile.SiteCode,
-                    Version = attachedFile.Version
+                    Version = attachedFile.Version,
+                    ImportDate = DateTime.Now,
+                    Username= username
                 };
                 await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
                 await _dataContext.SaveChangesAsync();
@@ -122,7 +150,7 @@ namespace N2K_BackboneBackEnd.Services
             {
                 _dataContext.Set<JustificationFiles>().Remove(justification);
 
-                IAttachedFileHandler fileHandler = null;
+                IAttachedFileHandler? fileHandler = null;
                 if (_appSettings.Value.AttachedFiles == null) return 0;
                 if (_appSettings.Value.AttachedFiles.AzureBlob)
                 {
@@ -140,7 +168,111 @@ namespace N2K_BackboneBackEnd.Services
             return result;
 
         }
+        #endregion
 
+
+        #region SiteEdition
+        public async Task<string> SaveEdition(ChangeEditionDb changeEdition, string username = "")
+        {
+            try
+            {
+                SqlParameter param1 = new SqlParameter("@sitecode", changeEdition.SiteCode);
+                SqlParameter param2 = new SqlParameter("@clonebioregion", false);
+                await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSitesAndRelatedBySitecodeAndVersion  @sitecode, @clonebioregion", param1, param2);
+
+                Sites site = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefault();
+                if (site != null)
+                {
+                    if (changeEdition.SiteName != "string")
+                        site.Name = changeEdition.SiteName;
+                    if (changeEdition.SiteType != "string")
+                        site.SiteType = changeEdition.SiteType;
+                    if (changeEdition.Area != 0)
+                        site.Area = changeEdition.Area;
+                    if (changeEdition.Length != 0)
+                        site.Length = changeEdition.Length;
+
+                    _dataContext.Set<Sites>().Update(site);
+                }
+                
+                if (changeEdition.BioRegion != "string")
+                {
+                    var bioregions = changeEdition.BioRegion.Split(",");
+                    if (bioregions.Length > 0)
+                    {
+                        foreach (var bioregion in bioregions)
+                        {
+                            BioRegions bioreg = new BioRegions
+                            {
+                                SiteCode = changeEdition.SiteCode,
+                                Version = site.Version,
+                                BGRID = int.Parse(bioregion),
+                                Percentage = 100 / bioregions.Length // NEEDS TO BE CHANGED - PENDING
+                            };
+                            _dataContext.Set<BioRegions>().Add(bioreg);
+                        }
+                    }
+                }
+                
+                
+                if (changeEdition.CentreX != 0 || changeEdition.CentreY != 0)
+                {
+                    SqlParameter param4 = new SqlParameter("@version", site.Version);
+                    SqlParameter param5 = new SqlParameter("@centroidX", changeEdition.CentreX);
+                    SqlParameter param6 = new SqlParameter("@centroidY", changeEdition.CentreY);
+                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.setEditedSiteSpatial  @sitecode, @version, @centroidX, @centroidY", param1, param4, param5, param6);
+                }
+                
+                await _dataContext.SaveChangesAsync();
+
+                var processingVersion = _dataContext.Set<ProcessedEnvelopes>().Where(e => e.Status == HarvestingStatus.Harvested && e.Country == site.CountryCode).FirstOrDefault();
+
+                //Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && (e.CurrentStatus == SiteChangeStatus.Harvested || e.CurrentStatus == SiteChangeStatus.PreHarvested)).FirstOrDefault();
+                Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.N2KVersioningVersion== processingVersion.Version).FirstOrDefault();                                
+                if (siteReported != null)
+                {
+                    await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE SiteCode = '" + siteReported.SiteCode + "' AND N2KVersioningVersion = " + siteReported.N2KVersioningVersion);
+
+                    HarvestedService harvestedService = new HarvestedService(_dataContext, _versioningContext, _appSettings);
+                    await harvestedService.ValidateSingleSite(siteReported.SiteCode, siteReported.Version);
+                    await harvestedService.ValidateSingleSiteSpatialData(siteReported.SiteCode, siteReported.Version);
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SaveEdition", "");
+            }
+
+            return "OK";
+        }
+
+        public async Task<ChangeEditionViewModel?> GetReferenceEditInfo(string siteCode)
+        {
+            SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
+            List<ChangeEditionDb> list = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.spGetReferenceEditInfo  @sitecode",
+                                param1).ToListAsync();
+            ChangeEditionDb changeEdition = list.FirstOrDefault();
+            if (changeEdition == null)
+            {
+                return null;
+            }
+            else
+            {
+                return new ChangeEditionViewModel
+                {
+                    Area = changeEdition.Area,
+                    BioRegion = !string.IsNullOrEmpty(changeEdition.BioRegion) ? changeEdition.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>(),
+                    CentreX = changeEdition.CentreX,
+                    CentreY = changeEdition.CentreY,
+                    Length = changeEdition.Length,
+                    SiteCode = changeEdition.SiteCode,
+                    SiteName = changeEdition.SiteName,
+                    SiteType = changeEdition.SiteType,
+                    Version = changeEdition.Version
+                };
+            }
+        }
 
         #endregion
     }

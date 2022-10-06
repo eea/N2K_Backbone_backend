@@ -4,10 +4,11 @@ using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
-
+using Microsoft.AspNetCore.Authorization;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
+    [System.Web.Http.AllowAnonymous]
     [Route("api/[controller]")]
     [ApiController]
     public class EULoginController : ControllerBase
@@ -17,7 +18,6 @@ namespace N2K_BackboneBackEnd.Controllers
         private readonly IMapper _mapper;
 
 
-
         public EULoginController(IOptions<ConfigSettings> app, IEULoginService euLoginService, IMapper mapper )
         {
             _appSettings = app;
@@ -25,14 +25,16 @@ namespace N2K_BackboneBackEnd.Controllers
             _mapper= mapper;
         }
 
+        [System.Web.Http.AllowAnonymous]
         [HttpGet("GetLoginUrl/redirectionUrl={redirectionUrl}")]
         public async Task<ActionResult<ServiceResponse<string>>> GetLoginUrl (string redirectionUrl)
         {
-            redirectionUrl = Uri.UnescapeDataString(redirectionUrl);
+
+            var stringUrl = redirectionUrl.Replace("##", "/");
             var response = new ServiceResponse<string>();
             try
             {              
-                var url = await _euLoginService.GetLoginUrl(redirectionUrl);
+                var url = await _euLoginService.GetLoginUrl(stringUrl);
                 response.Success = true;
                 response.Message = "";
                 response.Data = url;
@@ -55,15 +57,15 @@ namespace N2K_BackboneBackEnd.Controllers
         /// </summary>
         /// <param name="redirectionUrl">The url to be redirected to</param>
         /// <param name="code_challenge">A code challenge generated in javascript via base64URL(CryptoJS.SHA256(code_verifier)))</param>
+        [System.Web.Http.AllowAnonymous]
         [HttpGet("GetLoginUrlByCodeChallenge/redirectionUrl={redirectionUrl}&code_challenge={code_challenge}")]
-
         public async Task<ActionResult<ServiceResponse<string>>> GetLoginUrl(string redirectionUrl,string code_challenge)
         {
-            redirectionUrl = Uri.UnescapeDataString(redirectionUrl);
+            var stringUrl = redirectionUrl.Replace("##", "/");
             var response = new ServiceResponse<string>();
             try
             {
-                var url = await _euLoginService.GetLoginUrl(redirectionUrl, code_challenge);
+                var url = await _euLoginService.GetLoginUrl(stringUrl, code_challenge);
                 response.Success = true;
                 response.Message = "";
                 response.Data = url;
@@ -78,18 +80,18 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = "";
                 return Ok(response);
             }
-
         }
 
 
+        [System.Web.Http.AllowAnonymous]
         [HttpGet("GetToken/redirectionUrl={redirectionUrl}&code={code}&code_verifier={code_verifier}")]
         public async Task<ActionResult<ServiceResponse<string>>> GetToken(string redirectionUrl, string code, string code_verifier)
         {            
             var response = new ServiceResponse<string>();
-            redirectionUrl = Uri.UnescapeDataString(redirectionUrl);
+            var stringUrl = redirectionUrl.Replace("##", "/");
             try
             {
-                var url = await _euLoginService.GetToken(redirectionUrl, code, code_verifier);
+                var url = await _euLoginService.GetToken(stringUrl, code, code_verifier);
                 response.Success = true;
                 response.Message = "";
                 response.Data = url;
@@ -107,7 +109,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         }
 
-
+        [System.Web.Http.AllowAnonymous]
         [HttpGet("GetUsername/token={token}")]
         public async Task<ActionResult<ServiceResponse<string>>> GetUsername(string token)
         {

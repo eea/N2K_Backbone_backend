@@ -10,6 +10,12 @@ using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.Configuration;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +32,9 @@ builder.Services.AddScoped<ISiteDetailsService, SiteDetailsService>();
 builder.Services.AddScoped<IHarvestedService, HarvestedService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<IEULoginService, EULoginService>();
+builder.Services.AddScoped<IConfigService, ConfigService>();
+builder.Services.AddScoped<IMasterDataService, MasterDataService>();
+builder.Services.AddScoped<IUnionListService, UnionListService>();
 
 builder.Services.AddResponseCompression(options =>
 {
@@ -54,43 +63,69 @@ builder.Services.Configure<FormOptions>(o =>
     o.MemoryBufferThreshold = int.MaxValue;
 });
 
-/*
-builder.Services.AddDbContext<N2KBackboneReadOnlyContext>(options =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
-});
-*/
-
-
-
 builder.Services.AddDbContext<N2K_VersioningContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_VersioningBackEndContext"));
 });
 
 
-
-//builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddControllersWithViews();
 builder.Services.Configure<ConfigSettings>(builder.Configuration.GetSection("GeneralSettings"));
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+
+
 builder.Services.AddSwaggerGen(c => {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "N2KBacboneAPI", Version = "v1" });
+    /*
+    c.AddSecurityDefinition(name: "Bearer", securityScheme: new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Enter the Bearer Authorization string as following: `Bearer Generated-JWT-Token`",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Name = "Bearer",
+                    In = ParameterLocation.Header,
+                    Reference = new OpenApiReference
+                    {
+                        Id = "Bearer",
+                        Type = ReferenceType.SecurityScheme
+                    }
+                },                          
+                new List<string>()
+            }
+        });
+    */
 });
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = "EULoginSchema";
+})
+.AddScheme<ValidateHashAuthenticationSchemeOptions, ValidateHashAuthenticationHandler>("EULoginSchema", null);
+
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
-builder.Services.AddRouting(options =>
-{
-    options.ConstraintMap.Add("string", typeof(RouteAlphaNumericConstraint));
-    options.ConstraintMap.Add("Status", typeof(RouteStatusConstraint));
-    options.ConstraintMap.Add("level",  typeof(RouteLevelConstraint));
-});
+    builder.Services.AddRouting(options =>
+    {
+        options.ConstraintMap.Add("string", typeof(RouteAlphaNumericConstraint));
+        options.ConstraintMap.Add("Status", typeof(RouteStatusConstraint));
+        options.ConstraintMap.Add("level",  typeof(RouteLevelConstraint));
+    });
+
+
 
 
 
@@ -119,6 +154,7 @@ app.UseStaticFiles(new StaticFileOptions()
     FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Resources")),
     RequestPath = new PathString("/Resources")
 });
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

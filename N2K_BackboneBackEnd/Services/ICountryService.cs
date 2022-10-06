@@ -8,10 +8,11 @@ namespace N2K_BackboneBackEnd.Services
 {
     public interface ICountryService
     {
-        Task<List<Countries>> GetWithDataAsync();
+        Task<List<CountriesWithDataView>> GetWithDataAsync();
         Task<List<Countries>> GetAsync();
-        Task<List<Countries>> GetWithDataAsync(SiteChangeStatus? status, Level? level);
+        Task<List<CountriesWithDataView>> GetWithDataAsync(SiteChangeStatus? status, Level? level);
         Task<List<CountriesChangesView>> GetPendingLevelAsync();
+        Task<List<SitesWithChangesView>> GetSiteLevelAsync(SiteChangeStatus? status);
         Task<List<CountriesSiteCountView>> GetSiteCountAsync();
     }
 }
