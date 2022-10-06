@@ -46,6 +46,30 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        [Route("UnionList/GetUnionLists")]
+        [HttpGet]
+        public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion()
+        {
+            var response = new ServiceResponse<List<UnionListHeader>>();
+            try
+            {
+                var unionListHeader = await _unionListService.GetUnionListHeadersByBioRegion(null);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListHeader;
+                response.Count = (unionListHeader == null) ? 0 : unionListHeader.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListHeader>();
+                return Ok(response);
+            }
+        }
+
         [Route("UnionList/GetUnionLists/bioRegion={bioRegionShortCode}")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion(string? bioRegionShortCode)
@@ -54,6 +78,30 @@ namespace N2K_BackboneBackEnd.Controllers
             try
             {
                 var unionListHeader = await _unionListService.GetUnionListHeadersByBioRegion(bioRegionShortCode);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListHeader;
+                response.Count = (unionListHeader == null) ? 0 : unionListHeader.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListHeader>();
+                return Ok(response);
+            }
+        }
+
+        [Route("UnionList/GetUnionLists/id={id}")]
+        [HttpGet]
+        public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersById(long? id)
+        {
+            var response = new ServiceResponse<List<UnionListHeader>>();
+            try
+            {
+                var unionListHeader = await _unionListService.GetUnionListHeadersById(id);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
@@ -94,38 +142,14 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetUnionLists/id={id}")]
-        [HttpGet]
-        public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersById(long? id)
-        {
-            var response = new ServiceResponse<List<UnionListHeader>>();
-            try
-            {
-                var unionListHeader = await _unionListService.GetUnionListHeadersById(id);
-                response.Success = true;
-                response.Message = "";
-                response.Data = unionListHeader;
-                response.Count = (unionListHeader == null) ? 0 : unionListHeader.Count;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = new List<UnionListHeader>();
-                return Ok(response);
-            }
-        }
-
         [Route("UnionList/Compare")]
         [HttpGet]
-        public async Task<ActionResult<ServiceResponse<List<UnionListDetail>>>> Compare(long? idTarget, long? idSource)
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerViewModel>>>> Compare(long? idSource, long? idTarget)
         {
-            var response = new ServiceResponse<List<UnionListDetail>>();
+            var response = new ServiceResponse<List<UnionListComparerViewModel>>();
             try
             {
-                var unionListDetail = await _unionListService.CompareUnionLists(idTarget, idSource);
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListDetail;
@@ -137,7 +161,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<UnionListDetail>();
+                response.Data = new List<UnionListComparerViewModel>();
                 return Ok(response);
             }
         }
