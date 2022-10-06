@@ -57,17 +57,14 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<StatusChanges>> AddComment(StatusChanges comment,string  username ="")
         {
-
-            
-
             comment.Date = DateTime.Now;
             comment.Owner = GlobalData.Username;
+            comment.Edited = 0;
             await _dataContext.Set<StatusChanges>().AddAsync(comment);
             await _dataContext.SaveChangesAsync();
 
             List<StatusChanges> result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
             return result;
-
         }
 
         public async Task<int> DeleteComment(long CommentId)
@@ -85,14 +82,14 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<StatusChanges>> UpdateComment(StatusChanges comment, string username = "")
         {
-            comment.Date= DateTime.Now;
-            comment.Owner = username;
+            comment.EditedDate = DateTime.Now;
+            comment.Edited += 1;
+            comment.Editedby = username;
             _dataContext.Set<StatusChanges>().Update(comment);
             await _dataContext.SaveChangesAsync();
 
             List<StatusChanges> result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
             return result;
-
         }
 
 
