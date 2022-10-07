@@ -168,7 +168,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("UnionList/Create")]
         [HttpPost]
-        public async Task<ActionResult<List<UnionListHeader>>> CreateUnionList(UnionListHeaderInputParam unionList)
+        public async Task<ActionResult<List<UnionListHeader>>> CreateUnionList([FromBody] UnionListHeaderInputParam unionList)
         {
             ServiceResponse<List<UnionListHeader>> response = new ServiceResponse<List<UnionListHeader>>();
             try
@@ -192,7 +192,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("UnionList/Update")]
         [HttpPut]
-        public async Task<ActionResult<List<UnionListHeader>>> UpdateUnionList(UnionListHeaderInputParam unionList)
+        public async Task<ActionResult<List<UnionListHeader>>> UpdateUnionList([FromBody]  UnionListHeaderInputParam unionList)
         {
             ServiceResponse<List<UnionListHeader>> response = new ServiceResponse<List<UnionListHeader>>();
             try
@@ -216,7 +216,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("UnionList/Delete")]
         [HttpDelete]
-        public async Task<ActionResult<int>> DeleteUnionList(long id)
+        public async Task<ActionResult<int>> DeleteUnionList([FromBody]  long id)
         {
             ServiceResponse<int> response = new ServiceResponse<int>();
             try
