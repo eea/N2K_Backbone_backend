@@ -229,23 +229,11 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<UnionListHeader>> CreateUnionList(string name, Boolean final)
         {
-            UnionListHeader unionList = new UnionListHeader();
-            unionList.Name = name;
-            unionList.Date = DateTime.Now;
-            unionList.CreatedBy = GlobalData.Username;
-            unionList.Final = final;
+            SqlParameter param1 = new SqlParameter("@name", name);
+            SqlParameter param2 = new SqlParameter("@creator", GlobalData.Username);
+            SqlParameter param3 = new SqlParameter("@final", final);
 
-            _dataContext.Set<UnionListHeader>().Add(unionList);
-            await _dataContext.SaveChangesAsync();
-
-            SqlParameter param1 = new SqlParameter("@bioregion", string.Empty);
-            List<UnionListDetail> unionListDetails = await _dataContext.Set<UnionListDetail>().FromSqlRaw($"exec dbo.spGetCurrentSitesUnionListDetailByBioRegion  @bioregion",
-                            param1).AsNoTracking().ToListAsync();
-            unionListDetails.ForEach(c => { c.idUnionListHeader = unionList.idULHeader; });
-
-            _dataContext.Set<UnionListDetail>().AddRange(unionListDetails);
-            await _dataContext.SaveChangesAsync();
-
+            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final ", param1, param2, param3);
             return await GetUnionListHeadersByBioRegion(null);
         }
 
