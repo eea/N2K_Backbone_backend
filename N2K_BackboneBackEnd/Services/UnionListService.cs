@@ -227,7 +227,7 @@ namespace N2K_BackboneBackEnd.Services
             return result.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
         }
 
-        public async Task<UnionListHeader> CreateUnionList(string name, Boolean final)
+        public async Task<List<UnionListHeader>> CreateUnionList(string name, Boolean final)
         {
             UnionListHeader unionList = new UnionListHeader();
             unionList.Name = name;
@@ -246,10 +246,10 @@ namespace N2K_BackboneBackEnd.Services
             _dataContext.Set<UnionListDetail>().AddRange(unionListDetails);
             await _dataContext.SaveChangesAsync();
 
-            return unionList;
+            return await GetUnionListHeadersByBioRegion(null);
         }
 
-        public async Task<UnionListHeader> EditUnionList(long id, string name, Boolean final)
+        public async Task<List<UnionListHeader>> UpdateUnionList(long id, string name, Boolean final)
         {
             UnionListHeader unionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.idULHeader == id).FirstOrDefaultAsync();
             if (unionList != null)
@@ -265,7 +265,9 @@ namespace N2K_BackboneBackEnd.Services
             }
             await _dataContext.SaveChangesAsync();
 
-            return await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.idULHeader == id).FirstOrDefaultAsync();
+            return await GetUnionListHeadersByBioRegion(null);
+
+
         }
 
         public async Task<int> DeleteUnionList(long id)

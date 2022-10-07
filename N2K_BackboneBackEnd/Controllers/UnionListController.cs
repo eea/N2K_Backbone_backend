@@ -168,16 +168,16 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("UnionList/Create")]
         [HttpPost]
-        public async Task<ActionResult<UnionListHeader>> CreateUnionList(string name, Boolean final)
+        public async Task<ActionResult<List<UnionListHeader>>> CreateUnionList(UnionListHeaderInputParam unionList)
         {
-            ServiceResponse<UnionListHeader> response = new ServiceResponse<UnionListHeader>();
+            ServiceResponse<List<UnionListHeader>> response = new ServiceResponse<List<UnionListHeader>>();
             try
             {
-                UnionListHeader unionListHeader = await _unionListService.CreateUnionList(name, final);
+                List<UnionListHeader> unionListHeader = await _unionListService.CreateUnionList(unionList.Name,unionList.Final.HasValue? unionList.Final.Value: false );
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
-                response.Count = 1;
+                response.Count = unionListHeader == null? 0: unionListHeader.Count;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -190,18 +190,18 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Edit")]
+        [Route("UnionList/Update")]
         [HttpPut]
-        public async Task<ActionResult<UnionListHeader>> EditUnionList(long id, string name, Boolean final)
+        public async Task<ActionResult<List<UnionListHeader>>> UpdateUnionList(UnionListHeaderInputParam unionList)
         {
-            ServiceResponse<UnionListHeader> response = new ServiceResponse<UnionListHeader>();
+            ServiceResponse<List<UnionListHeader>> response = new ServiceResponse<List<UnionListHeader>>();
             try
             {
-                UnionListHeader unionListHeader = await _unionListService.EditUnionList(id, name, final);
+                List<UnionListHeader> unionListHeader = await _unionListService.UpdateUnionList(unionList.Id, unionList.Name, unionList.Final.HasValue ? unionList.Final.Value : false);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
-                response.Count = (unionListHeader == null) ? 0 : 1;
+                response.Count = (unionListHeader == null) ? 0 : unionListHeader.Count;
                 return Ok(response);
             }
             catch (Exception ex)
