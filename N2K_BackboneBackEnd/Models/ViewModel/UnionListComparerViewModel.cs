@@ -18,11 +18,32 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
     }
 
+    [NotMapped]
+    public class UnionListComparerBioReg : IEntityModelBackboneDB
+    {
+        public string BioRegion { get; set; } = string.Empty;
+        public int Count { get; set; }
+    }
+
+    [NotMapped]
+    public class UnionListComparerSummaryViewModel : IEntityModelBackboneDB
+    {
+        public List<UnionListComparerCodesViewModel> BioRegSiteCodes { get; set; } = new List<UnionListComparerCodesViewModel>();
+        public List<UnionListComparerBioReg> BioRegionSummary { get; set; } = new List<UnionListComparerBioReg>();
+    }
+
+
+    [NotMapped]
+    public class UnionListComparerCodesViewModel : IEntityModelBackboneDB
+    {
+        public string BioRegion { get; set; } = string.Empty;
+        public string Sitecode { get; set; } = string.Empty;
+    }
 
 
     [NotMapped]
     [Keyless]
-    public class UnionListComparerViewModel : IEntityModel
+    public class UnionListComparerDetailedViewModel : IEntityModelBackboneDB
     {
         public string BioRegion { get; set; } = string.Empty;
         public string Sitecode { get; set; } = string.Empty;
@@ -40,10 +61,6 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public UnionListValues<double>? Longitude { get; set; } = null;
 
         public string? Changes { get; set; } 
-
-        public static void OnModelCreating(ModelBuilder builder)
-        {
-            builder.Entity<UnionListComparerViewModel>().HasNoKey();
-        }
+        
     }
 }
