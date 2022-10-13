@@ -57,7 +57,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<StatusChanges>> AddComment(StatusChanges comment,string  username ="")
+        public async Task<List<StatusChanges>> AddComment(StatusChanges comment)
         {
             comment.Date = DateTime.Now;
             comment.Owner = GlobalData.Username;
@@ -82,7 +82,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<StatusChanges>> UpdateComment(StatusChanges comment, string username = "")
+        public async Task<List<StatusChanges>> UpdateComment(StatusChanges comment)
         {
             var edited = 1;
             StatusChanges? _comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == comment.Id);
@@ -92,7 +92,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             comment.EditedDate = DateTime.Now;                        
             comment.Edited =  edited;
-            comment.Editedby = username;
+            comment.Editedby = GlobalData.Username; 
             _dataContext.Set<StatusChanges>().Update(comment);
             await _dataContext.SaveChangesAsync();
 
@@ -112,10 +112,11 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile, string username = "")
+        public async Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile)
         {
             List<JustificationFiles> result = new List<JustificationFiles>();
             IAttachedFileHandler? fileHandler = null;
+            var username = GlobalData.Username;
 
             if (_appSettings.Value.AttachedFiles == null) return result;
 
@@ -177,8 +178,9 @@ namespace N2K_BackboneBackEnd.Services
 
 
         #region SiteEdition
-        public async Task<string> SaveEdition(ChangeEditionDb changeEdition, string username = "")
+        public async Task<string> SaveEdition(ChangeEditionDb changeEdition)
         {
+            var username= GlobalData.Username;
             try
             {
                 SqlParameter param1 = new SqlParameter("@sitecode", changeEdition.SiteCode);

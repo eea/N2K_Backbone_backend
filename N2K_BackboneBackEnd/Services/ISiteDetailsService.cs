@@ -14,20 +14,20 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<StatusChanges>> ListSiteComments(string siteCode, int version);
 
-        Task<List<StatusChanges>> AddComment(StatusChanges comment, string username="");
+        Task<List<StatusChanges>> AddComment(StatusChanges comment);
 
         Task<int> DeleteComment(long CommentId);
 
-        Task<List<StatusChanges>> UpdateComment(StatusChanges comment,string username="");
+        Task<List<StatusChanges>> UpdateComment(StatusChanges comment);
 
 
         Task<List<JustificationFiles>> ListSiteFiles(string siteCode, int version);
 
-        Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile,string username="");
+        Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile);
 
 
         Task<int> DeleteFile(long justificationId);
-        Task<string> SaveEdition(ChangeEditionDb changeEdition,string username="");
+        Task<string> SaveEdition(ChangeEditionDb changeEdition);
         Task<ChangeEditionViewModel?> GetReferenceEditInfo(string siteCode);
     }
 
