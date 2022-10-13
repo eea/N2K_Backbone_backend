@@ -144,7 +144,7 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<List<StatusChanges>>> UpdateComment([FromBody] StatusChanges comment)
         {
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
-            string username = HeaderHelpers.GetUsername(Request.Headers);
+            string username = "oesparza@bilbomatica.es"; // HeaderHelpers.GetUsername(Request.Headers);
             try
             {
                 List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment,username);

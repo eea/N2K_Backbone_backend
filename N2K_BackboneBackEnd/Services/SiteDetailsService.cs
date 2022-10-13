@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Microsoft.CodeAnalysis.Differencing;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Data;
@@ -7,6 +8,7 @@ using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
+using System.ComponentModel.Design;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -82,8 +84,14 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<StatusChanges>> UpdateComment(StatusChanges comment, string username = "")
         {
-            comment.EditedDate = DateTime.Now;
-            comment.Edited += 1;
+            var edited = 1;
+            StatusChanges? _comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == comment.Id);
+            if (_comment!= null)
+            {
+                if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
+            }
+            comment.EditedDate = DateTime.Now;                        
+            comment.Edited =  edited;
             comment.Editedby = username;
             _dataContext.Set<StatusChanges>().Update(comment);
             await _dataContext.SaveChangesAsync();
