@@ -1,26 +1,45 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
+
+    [NotMapped]
+    public class UnionListValues<T> 
+    {
+        public object? Source { get; set; } = null;
+        public object? Target { get; set; } = null;
+        public string? Change { get; set; } = null;
+
+        public static void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<UnionListValues<string>>().HasNoKey();
+        }
+
+    }
+
+
+
+    [NotMapped]
     [Keyless]
     public class UnionListComparerViewModel : IEntityModel
     {
         public string BioRegion { get; set; } = string.Empty;
         public string Sitecode { get; set; } = string.Empty;
-        public string? SitenameSourceValue { get; set; }
-        public string? SitenameTargetValue { get; set; }
-        public Boolean? PrioritySourceValue { get; set; }
-        public Boolean? PriorityTargetValue { get; set; }
-        public double? AreaSourceValue { get; set; }
-        public double? AreaTargetValue { get; set; }
-        public double? LengthSourceValue { get; set; }
-        public double? LengthTargetValue { get; set; }
-        public double? LatitudeSourceValue { get; set; }
-        public double? LatitudeTargetValue { get; set; }
-        public double? LongitudeSourceValue { get; set; }
-        public double? LongitudeTargetValue { get; set; }
 
-        public List<string> Changes { get; set; } = new List<string>();
+        public UnionListValues<string>? SiteName { get; set; } = null;
+
+        public UnionListValues<bool>? Priority { get; set; } = null;
+
+        public UnionListValues<double>? Area { get; set; } = null;
+
+        public UnionListValues<double>? Length { get; set; } = null;
+
+        public UnionListValues<double>? Latitude { get; set; } = null;
+
+        public UnionListValues<double>? Longitude { get; set; } = null;
+
+        public string? Changes { get; set; } 
 
         public static void OnModelCreating(ModelBuilder builder)
         {
