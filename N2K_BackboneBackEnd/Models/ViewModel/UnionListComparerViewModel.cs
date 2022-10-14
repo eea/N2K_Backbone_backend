@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using N2K_BackboneBackEnd.Models.backbone_db;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
@@ -28,7 +29,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [NotMapped]
     public class UnionListComparerSummaryViewModel : IEntityModelBackboneDB
     {
-        public List<UnionListComparerCodesViewModel> BioRegSiteCodes { get; set; } = new List<UnionListComparerCodesViewModel>();
+        public List<BioRegionSiteCode> BioRegSiteCodes { get; set; } = new List<BioRegionSiteCode>();
         public List<UnionListComparerBioReg> BioRegionSummary { get; set; } = new List<UnionListComparerBioReg>();
     }
 

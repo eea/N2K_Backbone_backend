@@ -1,9 +1,12 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
+using System.Diagnostics.Metrics;
+using System.Linq;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -49,71 +52,35 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<UnionListComparerSummaryViewModel> GetCompareSummary(long? idSource, long? idTarget)
         {
-            List<UnionListComparerCodesViewModel> resultCodes = new List<UnionListComparerCodesViewModel>();
-            List<UnionListDetail> ULDetailsSource = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idSource).ToListAsync();
-            List<UnionListDetail> ULDetailsTarget = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idTarget).ToListAsync();
-
-            //Changed
-            resultCodes.AddRange(
-                    (from source1 in ULDetailsSource
-                                join target1 in ULDetailsTarget
-                                     on new { source1.SCI_code, source1.BioRegion } equals new { target1.SCI_code, target1.BioRegion }
-                                where source1.SCI_Name != target1.SCI_Name || source1.SCI_Name != target1.SCI_Name
-                                 || source1.Priority != target1.Priority || source1.Area != target1.Area
-                                 || source1.Length != target1.Length || source1.Lat != target1.Lat
-                                 || source1.Long != target1.Long
-                                select new UnionListComparerCodesViewModel
-                                {
-                                     
-                                    BioRegion = source1.BioRegion,
-                                    Sitecode = source1.SCI_code
-                                }                                                               
-                         ).OrderBy(a=> a.BioRegion).ThenBy(b=>b.Sitecode).DistinctBy(m => new UnionListComparerCodesViewModel {
-                             BioRegion = m.BioRegion,
-                             Sitecode = m.Sitecode
-                         }).ToList()
-                    );
-            var aaa = resultCodes
-                          .GroupBy(a => new { a.BioRegion, a.Sitecode })
-                          .Select(b => b.First()).OrderBy(c=>c.BioRegion).ThenBy(d=> d.Sitecode).ToList();
-
-
-            /*
-            //Added in source
-            resultCodes.AddRange (
-                     (from source2 in ULDetailsSource
-                         from target2 in ULDetailsTarget.Where(trg => (source2.SCI_code == trg.SCI_code) && (source2.BioRegion == trg.BioRegion))
-                         where target2.SCI_code == null
-                      select new UnionListComparerCodesViewModel
-                      {
-                          BioRegion = source2.BioRegion,
-                          Sitecode = source2.SCI_code
-                      }).ToList()
-                  );
-
-
-            //Deleted in source
-            resultCodes.AddRange(
-                     (from target3 in ULDetailsTarget
-                                  from source3 in ULDetailsSource.Where(trg => (target3.SCI_code == trg.SCI_code) && (target3.BioRegion == trg.BioRegion))
-                                   where source3.SCI_code == null
-                      select new UnionListComparerCodesViewModel
-                      {
-                          BioRegion = target3.BioRegion,
-                          Sitecode = target3.SCI_code
-                      }).ToList()
-                   );
-            */
-
+            SqlParameter param1 = new SqlParameter("@idULHeaderSource", idSource);
+            SqlParameter param2 = new SqlParameter("@idULHeaderTarget", idTarget);
+            List<BioRegionSiteCode> resultCodes = await _dataContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInUnionListComparer  @idULHeaderSource, @idULHeaderTarget",
+                            param1, param2).ToListAsync();
+           
             UnionListComparerSummaryViewModel res = new UnionListComparerSummaryViewModel();
-            res.BioRegSiteCodes = resultCodes.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
-            res.BioRegionSummary = resultCodes.GroupBy(n => n.BioRegion)
+            res.BioRegSiteCodes = resultCodes;
+
+            //Get the number of site codes per bio region
+            List<BioRegionTypes> bioRegions = await GetUnionBioRegionTypes();
+
+            var codesGrouped = resultCodes.GroupBy(n => n.BioRegion)
                          .Select(n => new UnionListComparerBioReg
                          {
                              BioRegion = n.Key,
                              Count = n.Count()
-                         })
-                         .OrderBy(n => n.BioRegion).ToList();
+                         }).ToList();
+            var _bioRegionSummary =
+                (
+                from p in bioRegions
+                join co in codesGrouped on p.BioRegionShortCode equals co.BioRegion into PersonasColegio
+                from pco in PersonasColegio.DefaultIfEmpty(new UnionListComparerBioReg { BioRegion = p.BioRegionShortCode, Count = 0 })
+                select new UnionListComparerBioReg
+                {
+                    BioRegion = pco.BioRegion,
+                    Count = pco.Count
+                }).OrderBy(b => b.BioRegion).ToList();
+
+            res.BioRegionSummary = _bioRegionSummary;
             return res;
         }
 
