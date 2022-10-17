@@ -57,7 +57,7 @@ namespace N2K_BackboneBackEnd.Services
 
         private async Task<List<BioRegionSiteCode>> GetBioregionSiteCodesInUnionListComparer (long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache)
         {
-            string listName = string.Format("{0}_{1}_{2}_{3}", ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions)?string.Empty: bioRegions.Replace(",","_"));
+            string listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions)?string.Empty: bioRegions.Replace(",","_"));
             List<BioRegionSiteCode> resultCodes = new List<BioRegionSiteCode>();
             if (cache.TryGetValue(listName, out List<BioRegionSiteCode> cachedList))
             {
