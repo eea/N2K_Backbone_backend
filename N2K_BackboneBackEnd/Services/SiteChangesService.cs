@@ -50,7 +50,6 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<SiteChangeDb>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, int page = 1, int pageLimit = 0)
         {
-
             var startRow = (page - 1) * pageLimit;
             var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level));
             if (pageLimit > 0)
@@ -318,8 +317,6 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level)
         {
-
-
 
             var result = new List<SiteCodeView>();
 

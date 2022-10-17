@@ -22,7 +22,7 @@ namespace N2K_BackboneBackEnd.Controllers
             _mapper = mapper;
         }
 
-        [Route("UnionList/GetBioRegionTypes")]
+        [Route("GetBioRegionTypes")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<BioRegionTypes>>>> GetUnionBioRegionTypes()
         {
@@ -46,7 +46,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetUnionLists")]
+        [Route("GetUnionLists")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion()
         {
@@ -70,7 +70,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetUnionLists/bioRegion={bioRegionShortCode}")]
+        [Route("GetUnionLists/bioRegion={bioRegionShortCode}")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion(string? bioRegionShortCode)
         {
@@ -94,7 +94,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetUnionLists/id={id}")]
+        [Route("GetUnionLists/id={id}")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersById(long? id)
         {
@@ -118,7 +118,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetCurrentListDetailed")]
+        [Route("GetCurrentListDetailed")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListDetail>>>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode)
         {
@@ -142,14 +142,13 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("GetCompareSummary")]
-        [HttpGet]
+        [HttpGet("GetCompareSummary/idSource={idSource:int}&idTarget={idTarget:int}")]
         public async Task<ActionResult<ServiceResponse<UnionListComparerSummaryViewModel>>> GetCompareSummary(long? idSource, long? idTarget)
         {
             var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
             try
             {
-                var unionListCompareSummary= await _unionListService.GetCompareSummary(idSource, idTarget);
+                var unionListCompareSummary= await _unionListService.GetCompareSummary(idSource, idTarget, null);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListCompareSummary;
@@ -166,13 +165,60 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}&level={level:Level}")]
-        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> Compare(long idSource, long idTarget, int page, int limit)
+        [HttpGet("GetCompareSummary/idSource={idSource:int}&idTarget={idTarget:int}&bioRegions={bioRegions:string}")]
+        public async Task<ActionResult<ServiceResponse<UnionListComparerSummaryViewModel>>> GetCompareSummaryByBioRegion(long? idSource, long? idTarget, string? bioRegions )
+        {
+            var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
+            try
+            {
+                var unionListCompareSummary = await _unionListService.GetCompareSummary(idSource, idTarget, bioRegions);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListCompareSummary;
+                response.Count = (unionListCompareSummary == null) ? 0 : unionListCompareSummary.BioRegSiteCodes.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new UnionListComparerSummaryViewModel();
+                return Ok(response);
+            }
+        }
+
+
+        [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}")]
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> Compare(long idSource, long idTarget)
         {
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
             {
-                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, null,null);
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget,null);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListDetail;
+                response.Count = (unionListDetail == null) ? 0 : unionListDetail.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListComparerDetailedViewModel>();
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}&bioRegions={bioRegions:string}")]
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> CompareByBioRegion(long idSource, long idTarget,string bioRegions)
+        {
+            var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
+            try
+            {
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, bioRegions);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListDetail;
@@ -190,14 +236,13 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-
-        [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}&level={level:Level}&page={page:int}&limit={limit:int}")]
+        [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> ComparePaginated(long idSource, long idTarget,int page, int limit)
         {
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
             {
-                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, page,limit);
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget,null, page,limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListDetail;
@@ -214,7 +259,30 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Create")]
+        [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}&bioRegions={bioRegions:string}&page={page:int}&limit={limit:int}")]
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> ComparePaginatedByBioregion(long idSource, long idTarget,string bioRegions, int page, int limit)
+        {
+            var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
+            try
+            {
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, bioRegions, page, limit);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListDetail;
+                response.Count = (unionListDetail == null) ? 0 : unionListDetail.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListComparerDetailedViewModel>();
+                return Ok(response);
+            }
+        }
+
+        [Route("Create")]
         [HttpPost]
         public async Task<ActionResult<List<UnionListHeader>>> CreateUnionList([FromBody] UnionListHeaderInputParam unionList)
         {
@@ -238,7 +306,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Update")]
+        [Route("Update")]
         [HttpPut]
         public async Task<ActionResult<List<UnionListHeader>>> UpdateUnionList([FromBody]  UnionListHeaderInputParam unionList)
         {
@@ -262,7 +330,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Delete")]
+        [Route("Delete")]
         [HttpDelete]
         public async Task<ActionResult<int>> DeleteUnionList([FromBody]  long id)
         {

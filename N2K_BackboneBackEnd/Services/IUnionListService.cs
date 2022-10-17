@@ -9,8 +9,8 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<UnionListHeader>> GetUnionListHeadersByBioRegion(string? bioRegionShortCode);
         Task<List<UnionListDetail>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode);
         Task<List<UnionListHeader>> GetUnionListHeadersById(long? id);
-        Task<UnionListComparerSummaryViewModel> GetCompareSummary(long? idSource, long? idTarget);
-        Task<List<UnionListComparerDetailedViewModel>> CompareUnionLists(long? idSource, long? idTarget,int? page,int? limit);
+        Task<UnionListComparerSummaryViewModel> GetCompareSummary(long? idSource, long? idTarget, string? bioRegions);
+        Task<List<UnionListComparerDetailedViewModel>> CompareUnionLists(long? idSource, long? idTarget, string? bioRegions, int page = 1, int pageLimit = 0);
         Task<List<UnionListHeader>> CreateUnionList(string name, Boolean final);
         Task<List<UnionListHeader>> UpdateUnionList(long id, string name, Boolean final);
         Task<int> DeleteUnionList(long id);
