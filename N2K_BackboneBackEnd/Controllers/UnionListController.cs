@@ -151,7 +151,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
             try
             {
-                var unionListCompareSummary= await _unionListService.GetCompareSummary(idSource, idTarget, null);
+                var unionListCompareSummary= await _unionListService.GetCompareSummary(idSource, idTarget, null, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListCompareSummary;
@@ -174,7 +174,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
             try
             {
-                var unionListCompareSummary = await _unionListService.GetCompareSummary(idSource, idTarget, bioRegions);
+                var unionListCompareSummary = await _unionListService.GetCompareSummary(idSource, idTarget, bioRegions,_cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListCompareSummary;
@@ -198,7 +198,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
             {
-                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget,null);
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget,null,_cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListDetail;
@@ -221,7 +221,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
             {
-                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, bioRegions);
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, bioRegions, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListDetail;
@@ -245,7 +245,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
             {
-                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget,null, page,limit);
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget,null,_cache, page,limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListDetail;
@@ -268,7 +268,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
             {
-                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, bioRegions, page, limit);
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, bioRegions,_cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListDetail;

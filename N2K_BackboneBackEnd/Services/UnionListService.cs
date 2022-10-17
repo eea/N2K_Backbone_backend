@@ -10,12 +10,14 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Resources;
+using Microsoft.Build.Execution;
 
 namespace N2K_BackboneBackEnd.Services
 {
     public class UnionListService : IUnionListService
     {
         private readonly N2KBackboneContext _dataContext;
+        private const string ulBioRegSites = "ulBioRegSites";
 
         public UnionListService(N2KBackboneContext dataContext)
         {
@@ -53,17 +55,40 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<UnionListComparerSummaryViewModel> GetCompareSummary(long? idSource, long? idTarget, string? bioRegions)
+        private async Task<List<BioRegionSiteCode>> GetBioregionSiteCodesInUnionListComparer (long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache)
         {
-            SqlParameter param1 = new SqlParameter("@idULHeaderSource", idSource);
-            SqlParameter param2 = new SqlParameter("@idULHeaderTarget", idTarget);
-            SqlParameter param3 = new SqlParameter("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty: bioRegions);
+            string listName = string.Format("{0}_{1}_{2}_{3}", ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions)?string.Empty: bioRegions.Replace(",","_"));
+            List<BioRegionSiteCode> resultCodes = new List<BioRegionSiteCode>();
+            if (cache.TryGetValue(listName, out List<BioRegionSiteCode> cachedList))
+            {
+                resultCodes = cachedList;
+            }
+            else
+            {
+                SqlParameter param1 = new SqlParameter("@idULHeaderSource", idSource);
+                SqlParameter param2 = new SqlParameter("@idULHeaderTarget", idTarget);
+                SqlParameter param3 = new SqlParameter("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
 
-            List<BioRegionSiteCode> resultCodes = await _dataContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInUnionListComparer  @idULHeaderSource, @idULHeaderTarget, @bioRegions",
-                            param1, param2).ToListAsync();
+                resultCodes = await _dataContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInUnionListComparer  @idULHeaderSource, @idULHeaderTarget, @bioRegions",
+                                param1, param2, param3).ToListAsync();
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                        .SetSlidingExpiration(TimeSpan.FromSeconds(60))
+                        .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
+                        .SetPriority(CacheItemPriority.Normal)
+                        .SetSize(40000);
+                cache.Set(listName, resultCodes, cacheEntryOptions);
+            }
+            return resultCodes; 
+
+        }
+
+        public async Task<UnionListComparerSummaryViewModel> GetCompareSummary(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache )
+        {
            
             UnionListComparerSummaryViewModel res = new UnionListComparerSummaryViewModel();
-            res.BioRegSiteCodes = resultCodes;
+            List<BioRegionSiteCode> resultCodes =  await GetBioregionSiteCodesInUnionListComparer(idSource, idTarget,bioRegions, cache);
+            res.BioRegSiteCodes = resultCodes.Take(10).ToList();
 
             //Get the number of site codes per bio region
             List<BioRegionTypes> ulBioRegions = await GetUnionBioRegionTypes();
@@ -90,15 +115,10 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<UnionListComparerDetailedViewModel>> CompareUnionLists(long? idSource, long? idTarget, string? bioRegions, int page = 1, int pageLimit = 0)
+        public async Task<List<UnionListComparerDetailedViewModel>> CompareUnionLists(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache, int page = 1, int pageLimit = 0)
         {
-            SqlParameter param1 = new SqlParameter("@idULHeaderSource", idSource);
-            SqlParameter param2 = new SqlParameter("@idULHeaderTarget", idTarget);
-            SqlParameter param3 = new SqlParameter("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
-
+            List<BioRegionSiteCode> ulSites = await GetBioregionSiteCodesInUnionListComparer(idSource, idTarget, bioRegions, cache);
             var startRow = (page - 1) * pageLimit;
-            var ulSites = (await _dataContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInUnionListComparer  @idULHeaderSource, @idULHeaderTarget, @bioRegions",
-                            param1, param2,param3).ToListAsync());
             if (pageLimit > 0)
             {
                 ulSites = ulSites
@@ -107,10 +127,7 @@ namespace N2K_BackboneBackEnd.Services
                     .ToList();
             }
 
-
-            //HttpContext.Session.SetString(sessionKey, serialisedDate);
-
-
+            //get the bioReg-SiteCodes of the source UL
             var _ulDetails = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idSource).ToListAsync();
             List<UnionListDetail> ulDetailsSource = (from src1 in ulSites
                                               from trgt1 in _ulDetails.Where(trg1 => (src1.SiteCode == trg1.SCI_code) && (src1.BioRegion == trg1.BioRegion))
@@ -118,11 +135,14 @@ namespace N2K_BackboneBackEnd.Services
             ).ToList();
             _ulDetails.Clear();
 
+            //get the bioReg-SiteCodes of the target UL
             _ulDetails = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idTarget).ToListAsync();
             List<UnionListDetail> ulDetailsTarget = (from src1 in ulSites
                                               from trgt2 in _ulDetails.Where(trg2 => (src1.SiteCode == trg2.SCI_code) && (src1.BioRegion == trg2.BioRegion))
                                               select trgt2
             ).ToList();
+
+            //clear the memory
             _ulDetails.Clear();
             ulSites.Clear();
 
