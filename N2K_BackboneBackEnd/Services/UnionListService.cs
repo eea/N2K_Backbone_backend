@@ -46,6 +46,9 @@ namespace N2K_BackboneBackEnd.Services
             return await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.idULHeader == id).ToListAsync();
         }
 
+
+
+
         public async Task<List<UnionListComparerViewModel>> CompareUnionLists(long? idSource, long? idTarget)
         {
             List<UnionListDetail> ULDetailsSource = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idSource).ToListAsync();
@@ -69,181 +72,234 @@ namespace N2K_BackboneBackEnd.Services
                 changedItem.BioRegion = item.source1.BioRegion;
                 changedItem.Sitecode = item.source1.SCI_code;
 
-                changedItem.SitenameSourceValue = item.source1.SCI_Name;
-                changedItem.SitenameTargetValue = item.target1.SCI_Name;
-                changedItem.PrioritySourceValue = item.source1.Priority;
-                changedItem.PriorityTargetValue = item.target1.Priority;
-                changedItem.AreaSourceValue = item.source1.Area;
-                changedItem.AreaTargetValue = item.target1.Area;
-                changedItem.LengthSourceValue = item.source1.Length;
-                changedItem.LengthTargetValue = item.target1.Length;
-                changedItem.LatitudeSourceValue = item.source1.Lat;
-                changedItem.LatitudeTargetValue = item.target1.Lat;
-                changedItem.LongitudeSourceValue = item.source1.Long;
-                changedItem.LongitudeTargetValue = item.target1.Long;
+                changedItem.SiteName = new UnionListValues<string>
+                {
+                    Source = item.source1.SCI_Name,
+                    Target = item.target1.SCI_Name
+                };
+
+
+                changedItem.Priority = new UnionListValues<bool>
+                {
+                    Source = item.source1.Priority,
+                    Target = item.target1.Priority
+                };
+
+
+                changedItem.Area = new UnionListValues<double>
+                {
+                    Source = item.source1.Area,
+                    Target = item.target1.Area
+                };
+
+                changedItem.Length = new UnionListValues<double>
+                {
+                    Source = item.source1.Length,
+                    Target = item.target1.Length
+                };
+
+                changedItem.Longitude = new UnionListValues<double>
+                {
+                    Source = item.source1.Long,
+                    Target = item.target1.Long
+                };
+
+                changedItem.Latitude = new UnionListValues<double>
+                {
+                    Source = item.source1.Lat,
+                    Target = item.target1.Lat
+                };
+
 
                 //COMPARE THE VALUES FIELD BY FIELD
-                if (changedItem.SitenameSourceValue != changedItem.SitenameTargetValue)
-                    changedItem.Changes.Add("SITENAME");
-                if (changedItem.PrioritySourceValue != changedItem.PriorityTargetValue)
+                if ((string?)changedItem.SiteName.Source != (string?)changedItem.SiteName.Target)
+                    changedItem.SiteName.Change = "SITENAME Changed";
+
+
+                if ((bool?)changedItem.Priority.Source != (bool?)changedItem.Priority.Target)
                 {
-                    if (changedItem.PrioritySourceValue == true && changedItem.PriorityTargetValue == false)
+                    bool prioSource = ((bool?)changedItem.Priority.Source).HasValue ? ((bool?)changedItem.Priority.Source).Value : false;
+                    bool prioTarget = ((bool?)changedItem.Priority.Target).HasValue ? ((bool?)changedItem.Priority.Target).Value : false;
+
+                    if (prioSource && !prioTarget)
                     {
-                        changedItem.Changes.Add("PRIORITY_LOST");
+                        changedItem.Priority.Change = "PRIORITY_LOST";
                     }
-                    else if (changedItem.PrioritySourceValue == false && changedItem.PriorityTargetValue == true)
+                    else if (!prioSource == false && prioTarget)
                     {
-                        changedItem.Changes.Add("PRIORITY_GAIN");
+                        changedItem.Priority.Change = "PRIORITY_GAIN";
+
                     }
                     else
                     {
-                        changedItem.Changes.Add("PRIORITY_CHANGED");
-                    }
-                }
-                if (changedItem.AreaSourceValue != changedItem.AreaTargetValue)
-                {
-                    if (changedItem.AreaSourceValue < changedItem.AreaTargetValue)
-                    {
-                        changedItem.Changes.Add("AREA_INCREASED");
-                    }
-                    else if (changedItem.AreaSourceValue > changedItem.AreaTargetValue)
-                    {
-                        changedItem.Changes.Add("AREA_DECREASED");
-                    }
-                    else
-                    {
-                        changedItem.Changes.Add("AREA_CHANGED");
-                    }
-                }
-                if (changedItem.LengthSourceValue != changedItem.LengthTargetValue)
-                {
-                    if (changedItem.LengthSourceValue < changedItem.LengthTargetValue)
-                    {
-                        changedItem.Changes.Add("LENGTH_INCREASED");
-                    }
-                    else if (changedItem.LengthSourceValue > changedItem.LengthTargetValue)
-                    {
-                        changedItem.Changes.Add("LENGTH_DECREASED");
-                    }
-                    else
-                    {
-                        changedItem.Changes.Add("LENGTH_CHANGED");
-                    }
-                }
-                if (changedItem.LatitudeSourceValue != changedItem.LatitudeTargetValue)
-                {
-                    if (changedItem.LatitudeSourceValue < changedItem.LatitudeTargetValue)
-                    {
-                        changedItem.Changes.Add("LATITUDE_INCREASED");
-                    }
-                    else if (changedItem.LatitudeSourceValue > changedItem.LatitudeTargetValue)
-                    {
-                        changedItem.Changes.Add("LATITUDE_DECREASED");
-                    }
-                    else
-                    {
-                        changedItem.Changes.Add("LATITUDE_CHANGED");
-                    }
-                }
-                if (changedItem.LongitudeSourceValue != changedItem.LongitudeTargetValue)
-                {
-                    if (changedItem.LongitudeSourceValue < changedItem.LongitudeTargetValue)
-                    {
-                        changedItem.Changes.Add("LONGITUDE_INCREASED");
-                    }
-                    else if (changedItem.LongitudeSourceValue > changedItem.LongitudeTargetValue)
-                    {
-                        changedItem.Changes.Add("LONGITUDE_DECREASED");
-                    }
-                    else
-                    {
-                        changedItem.Changes.Add("LONGITUDE_CHANGED");
+                        changedItem.Priority.Change = "PRIORITY_CHANGED";
                     }
                 }
 
+
+                if ((double?)changedItem.Area.Source != (double?)changedItem.Area.Target)
+                {
+                    double source = ((double?)changedItem.Area.Source).HasValue ? ((double?)changedItem.Area.Source).Value : 0.0;
+                    double target = ((double?)changedItem.Area.Target).HasValue ? ((double?)changedItem.Area.Target).Value : 0.0;
+
+                    if (source < target)
+                    {
+                        changedItem.Area.Change = "AREA_INCREASED";
+                    }
+                    else if (source > target)
+                    {
+                        changedItem.Area.Change = "AREA_DECREASED";
+                    }
+                    else
+                    {
+                        changedItem.Area.Change = "AREA_CHANGED";
+                    }
+                }
+
+                if ((double?)changedItem.Length.Source != (double?)changedItem.Length.Target)
+                {
+                    double source = ((double?)changedItem.Length.Source).HasValue ? ((double?)changedItem.Length.Source).Value : 0.0;
+                    double target = ((double?)changedItem.Length.Target).HasValue ? ((double?)changedItem.Length.Target).Value : 0.0;
+
+                    if (source < target)
+                    {
+                        changedItem.Length.Change = "LENGTH_INCREASED";
+                    }
+                    else if (source > target)
+                    {
+                        changedItem.Length.Change = "LENGTH_DECREASED";
+                    }
+                    else
+                    {
+                        changedItem.Length.Change = "LENGTH_CHANGED";
+                    }
+                }
+
+                if ((double?)changedItem.Latitude.Source != (double?)changedItem.Latitude.Target)
+                {
+                    changedItem.Latitude.Change = "LATITUDE_CHANGED";
+                }
+
+                if ((double?)changedItem.Longitude.Source != (double?)changedItem.Longitude.Target)
+                {
+                    changedItem.Longitude.Change = "LONGITUDE_CHANGED";
+                }
+
+                changedItem.Changes = "ATTRIBUTES CHANGED";
                 result.Add(changedItem);
             }
 
+            
             //Added in source
-            var sourceOnlySites = ULDetailsTarget.Where(trg => !ULDetailsSource.Any(src => (trg.SCI_code == src.SCI_code) && (trg.BioRegion == src.BioRegion)));
+            var sourceOnlySites = (from source2 in ULDetailsSource
+                                   from target2 in ULDetailsTarget.Where(trg => (source2.SCI_code == trg.SCI_code) && (source2.BioRegion == trg.BioRegion))
+                                   where target2.SCI_code == null
+                                   select new { source2, target2 }).ToList();
 
             foreach (var item in sourceOnlySites)
             {
                 UnionListComparerViewModel changedItem = new UnionListComparerViewModel();
-                changedItem.BioRegion = item.BioRegion;
-                changedItem.Sitecode = item.SCI_code;
+                changedItem.BioRegion = item.source2.BioRegion;
+                changedItem.Sitecode = item.source2.SCI_code;
 
-                changedItem.SitenameSourceValue = item.SCI_Name;
-                changedItem.SitenameTargetValue = null;
-                changedItem.PrioritySourceValue = item.Priority;
-                changedItem.PriorityTargetValue = null;
-                changedItem.AreaSourceValue = item.Area;
-                changedItem.AreaTargetValue = null;
-                changedItem.LengthSourceValue = item.Length;
-                changedItem.LengthTargetValue = null;
-                changedItem.LatitudeSourceValue = item.Lat;
-                changedItem.LatitudeTargetValue = null;
-                changedItem.LongitudeSourceValue = item.Long;
-                changedItem.LongitudeTargetValue = null;
+                changedItem.SiteName = new UnionListValues<string>
+                {
+                    Source = item.source2.SCI_Name,
+                    Target = null
+                };
 
-                changedItem.Changes.Add("ADDED");
 
+                changedItem.Area  = new UnionListValues<double>
+                {
+                    Source = item.source2.Area,
+                    Target = null
+                };
+
+                changedItem.Length = new UnionListValues<double>
+                {
+                    Source = item.source2.Length,
+                    Target = null
+                };
+
+                changedItem.Latitude = new UnionListValues<double>
+                {
+                    Source = item.source2.Lat,
+                    Target = null
+                };
+
+
+                changedItem.Longitude = new UnionListValues<double>
+                {
+                    Source = item.source2.Long,
+                    Target = null
+                };
+
+                changedItem.Changes= "ADDED";
                 result.Add(changedItem);
             }
 
+            
             //Deleted in source
-            var targetOnlySites = ULDetailsSource.Where(src => !ULDetailsTarget.Any(trg => (src.SCI_code == trg.SCI_code) && (src.BioRegion == trg.BioRegion)));
+            var targetOnlySites = (from target3 in ULDetailsTarget
+                                   from source3 in ULDetailsSource.Where(trg => (target3.SCI_code == trg.SCI_code) && (target3.BioRegion == trg.BioRegion))
+                                   where source3.SCI_code == null
+                                   select new { source3, target3 }).ToList();
 
             foreach (var item in targetOnlySites)
             {
                 UnionListComparerViewModel changedItem = new UnionListComparerViewModel();
-                changedItem.BioRegion = item.BioRegion;
-                changedItem.Sitecode = item.SCI_code;
+                changedItem.BioRegion = item.target3.BioRegion;
+                changedItem.Sitecode = item.target3.SCI_code;
 
-                changedItem.SitenameSourceValue = null;
-                changedItem.SitenameTargetValue = item.SCI_Name;
-                changedItem.PrioritySourceValue = null;
-                changedItem.PriorityTargetValue = item.Priority;
-                changedItem.AreaSourceValue = null;
-                changedItem.AreaTargetValue = item.Area;
-                changedItem.LengthSourceValue = null;
-                changedItem.LengthTargetValue = item.Length;
-                changedItem.LatitudeSourceValue = null;
-                changedItem.LatitudeTargetValue = item.Lat;
-                changedItem.LongitudeSourceValue = null;
-                changedItem.LongitudeTargetValue = item.Long;
+                changedItem.SiteName = new UnionListValues<string>
+                {
+                    Target = item.target3.SCI_Name,
+                    Source = null
+                };
 
-                changedItem.Changes.Add("DELETED");
 
+                changedItem.Area = new UnionListValues<double>
+                {
+                    Target = item.target3.Area,
+                    Source = null
+                };
+
+                changedItem.Length = new UnionListValues<double>
+                {
+                    Target = item.target3.Length,
+                    Source = null
+                };
+
+                changedItem.Latitude = new UnionListValues<double>
+                {
+                    Target = item.target3.Lat,
+                    Source = null
+                };
+
+
+                changedItem.Longitude = new UnionListValues<double>
+                {
+                    Target = item.target3.Long,
+                    Source = null
+                };
+                changedItem.Changes= "DELETED";
                 result.Add(changedItem);
             }
-
+            
             return result.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
         }
 
-        public async Task<UnionListHeader> CreateUnionList(string name, Boolean final)
+        public async Task<List<UnionListHeader>> CreateUnionList(string name, Boolean final)
         {
-            UnionListHeader unionList = new UnionListHeader();
-            unionList.Name = name;
-            unionList.Date = DateTime.Now;
-            unionList.CreatedBy = GlobalData.Username;
-            unionList.Final = final;
+            SqlParameter param1 = new SqlParameter("@name", name);
+            SqlParameter param2 = new SqlParameter("@creator", GlobalData.Username);
+            SqlParameter param3 = new SqlParameter("@final", final);
 
-            _dataContext.Set<UnionListHeader>().Add(unionList);
-            await _dataContext.SaveChangesAsync();
-
-            SqlParameter param1 = new SqlParameter("@bioregion", string.Empty);
-            List<UnionListDetail> unionListDetails = await _dataContext.Set<UnionListDetail>().FromSqlRaw($"exec dbo.spGetCurrentSitesUnionListDetailByBioRegion  @bioregion",
-                            param1).AsNoTracking().ToListAsync();
-            unionListDetails.ForEach(c => { c.idUnionListHeader = unionList.idULHeader; });
-
-            _dataContext.Set<UnionListDetail>().AddRange(unionListDetails);
-            await _dataContext.SaveChangesAsync();
-
-            return unionList;
+            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final ", param1, param2, param3);
+            return await GetUnionListHeadersByBioRegion(null);
         }
 
-        public async Task<UnionListHeader> EditUnionList(long id, string name, Boolean final)
+        public async Task<List<UnionListHeader>> UpdateUnionList(long id, string name, Boolean final)
         {
             UnionListHeader unionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.idULHeader == id).FirstOrDefaultAsync();
             if (unionList != null)
@@ -259,7 +315,9 @@ namespace N2K_BackboneBackEnd.Services
             }
             await _dataContext.SaveChangesAsync();
 
-            return await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.idULHeader == id).FirstOrDefaultAsync();
+            return await GetUnionListHeadersByBioRegion(null);
+
+
         }
 
         public async Task<int> DeleteUnionList(long id)
