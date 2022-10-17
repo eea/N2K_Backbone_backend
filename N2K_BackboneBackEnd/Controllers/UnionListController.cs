@@ -22,7 +22,7 @@ namespace N2K_BackboneBackEnd.Controllers
             _mapper = mapper;
         }
 
-        [Route("UnionList/GetBioRegionTypes")]
+        [Route("GetBioRegionTypes")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<BioRegionTypes>>>> GetUnionBioRegionTypes()
         {
@@ -46,7 +46,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetUnionLists")]
+        [Route("GetUnionLists")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion()
         {
@@ -70,7 +70,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetUnionLists/bioRegion={bioRegionShortCode}")]
+        [Route("GetUnionLists/bioRegion={bioRegionShortCode}")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion(string? bioRegionShortCode)
         {
@@ -94,7 +94,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetUnionLists/id={id}")]
+        [Route("GetUnionLists/id={id}")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersById(long? id)
         {
@@ -118,7 +118,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetCurrentListDetailed")]
+        [Route("GetCurrentListDetailed")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListDetail>>>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode)
         {
@@ -142,7 +142,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Compare")]
+        [Route("Compare")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListComparerViewModel>>>> Compare(long? idSource, long? idTarget)
         {
@@ -166,7 +166,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Create")]
+        [Route("Create")]
         [HttpPost]
         public async Task<ActionResult<List<UnionListHeader>>> CreateUnionList([FromBody] UnionListHeaderInputParam unionList)
         {
@@ -190,7 +190,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Update")]
+        [Route("Update")]
         [HttpPut]
         public async Task<ActionResult<List<UnionListHeader>>> UpdateUnionList([FromBody]  UnionListHeaderInputParam unionList)
         {
@@ -214,7 +214,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Delete")]
+        [Route("Delete")]
         [HttpDelete]
         public async Task<ActionResult<int>> DeleteUnionList([FromBody]  long id)
         {
