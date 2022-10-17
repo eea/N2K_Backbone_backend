@@ -325,8 +325,11 @@ namespace N2K_BackboneBackEnd.Services
                     string.IsNullOrEmpty(status.ToString()) ? string.Empty : status.ToString(),
                     string.IsNullOrEmpty(level.ToString()) ? string.Empty : level.ToString()
                    );
+            //if there has been a change in the status refresh the changed sitecodes cache
+            if (refresh)  cache.Remove(listName);
+
             var result = new List<SiteCodeView>();
-            if (!refresh && cache.TryGetValue(listName, out List<SiteCodeView> cachedList))
+            if (cache.TryGetValue(listName, out List<SiteCodeView> cachedList))
             {
                 result = cachedList;
             }
@@ -895,8 +898,6 @@ namespace N2K_BackboneBackEnd.Services
             {
                 throw;
             }
-
-
         }
 
 
