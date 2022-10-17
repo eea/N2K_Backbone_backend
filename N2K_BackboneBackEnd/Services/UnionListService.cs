@@ -1,15 +1,23 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
+using System.Diagnostics.Metrics;
+using System.Linq;
+using System.Resources;
+using Microsoft.Build.Execution;
 
 namespace N2K_BackboneBackEnd.Services
 {
     public class UnionListService : IUnionListService
     {
         private readonly N2KBackboneContext _dataContext;
+        private const string ulBioRegSites = "ulBioRegSites";
 
         public UnionListService(N2KBackboneContext dataContext)
         {
@@ -32,7 +40,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
         public async Task<List<UnionListDetail>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode)
-        {
+          {
             SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
 
             List<UnionListDetail> unionListDetails = await _dataContext.Set<UnionListDetail>().FromSqlRaw($"exec dbo.spGetCurrentSitesUnionListDetailByBioRegion  @bioregion",
@@ -47,18 +55,100 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-
-
-        public async Task<List<UnionListComparerViewModel>> CompareUnionLists(long? idSource, long? idTarget)
+        private async Task<List<BioRegionSiteCode>> GetBioregionSiteCodesInUnionListComparer (long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache)
         {
-            List<UnionListDetail> ULDetailsSource = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idSource).ToListAsync();
-            List<UnionListDetail> ULDetailsTarget = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idTarget).ToListAsync();
+            string listName = string.Format("{0}_{1}_{2}_{3}", ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions)?string.Empty: bioRegions.Replace(",","_"));
+            List<BioRegionSiteCode> resultCodes = new List<BioRegionSiteCode>();
+            if (cache.TryGetValue(listName, out List<BioRegionSiteCode> cachedList))
+            {
+                resultCodes = cachedList;
+            }
+            else
+            {
+                SqlParameter param1 = new SqlParameter("@idULHeaderSource", idSource);
+                SqlParameter param2 = new SqlParameter("@idULHeaderTarget", idTarget);
+                SqlParameter param3 = new SqlParameter("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
 
-            List<UnionListComparerViewModel> result = new List<UnionListComparerViewModel>();
+                resultCodes = await _dataContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInUnionListComparer  @idULHeaderSource, @idULHeaderTarget, @bioRegions",
+                                param1, param2, param3).ToListAsync();
 
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                        .SetSlidingExpiration(TimeSpan.FromSeconds(60))
+                        .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
+                        .SetPriority(CacheItemPriority.Normal)
+                        .SetSize(40000);
+                cache.Set(listName, resultCodes, cacheEntryOptions);
+            }
+            return resultCodes; 
+
+        }
+
+        public async Task<UnionListComparerSummaryViewModel> GetCompareSummary(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache )
+        {           
+            UnionListComparerSummaryViewModel res = new UnionListComparerSummaryViewModel();
+            List<BioRegionSiteCode> resultCodes =  await GetBioregionSiteCodesInUnionListComparer(idSource, idTarget,bioRegions, cache);
+            res.BioRegSiteCodes = resultCodes.ToList();
+
+            //Get the number of site codes per bio region
+            List<BioRegionTypes> ulBioRegions = await GetUnionBioRegionTypes();
+
+            var codesGrouped = resultCodes.GroupBy(n => n.BioRegion)
+                         .Select(n => new UnionListComparerBioReg
+                         {
+                             BioRegion = n.Key,
+                             Count = n.Count()
+                         }).ToList();
+            var _bioRegionSummary =
+                (
+                from p in ulBioRegions
+                join co in codesGrouped on p.BioRegionShortCode equals co.BioRegion into PersonasColegio
+                from pco in PersonasColegio.DefaultIfEmpty(new UnionListComparerBioReg { BioRegion = p.BioRegionShortCode, Count = 0 })
+                select new UnionListComparerBioReg
+                {
+                    BioRegion = pco.BioRegion,
+                    Count = pco.Count
+                }).OrderBy(b => b.BioRegion).ToList();
+
+            res.BioRegionSummary = _bioRegionSummary;
+            return res;
+        }
+
+
+        public async Task<List<UnionListComparerDetailedViewModel>> CompareUnionLists(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache, int page = 1, int pageLimit = 0)
+        {
+            List<BioRegionSiteCode> ulSites = await GetBioregionSiteCodesInUnionListComparer(idSource, idTarget, bioRegions, cache);
+            var startRow = (page - 1) * pageLimit;
+            if (pageLimit > 0)
+            {
+                ulSites = ulSites
+                    .Skip(startRow)
+                    .Take(pageLimit)
+                    .ToList();
+            }
+
+            //get the bioReg-SiteCodes of the source UL
+            var _ulDetails = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idSource).ToListAsync();
+            List<UnionListDetail> ulDetailsSource = (from src1 in ulSites
+                                              from trgt1 in _ulDetails.Where(trg1 => (src1.SiteCode == trg1.SCI_code) && (src1.BioRegion == trg1.BioRegion))
+                                              select trgt1
+            ).ToList();
+            _ulDetails.Clear();
+
+            //get the bioReg-SiteCodes of the target UL
+            _ulDetails = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idTarget).ToListAsync();
+            List<UnionListDetail> ulDetailsTarget = (from src1 in ulSites
+                                              from trgt2 in _ulDetails.Where(trg2 => (src1.SiteCode == trg2.SCI_code) && (src1.BioRegion == trg2.BioRegion))
+                                              select trgt2
+            ).ToList();
+
+            //clear the memory
+            _ulDetails.Clear();
+            ulSites.Clear();
+
+            List<UnionListComparerDetailedViewModel> result = new List<UnionListComparerDetailedViewModel>();
             //Changed
-            var changedSites = (from source1 in ULDetailsSource
-                                join target1 in ULDetailsTarget
+            var changedSites = (from source1 in ulDetailsSource
+                                join target1 in ulDetailsTarget
                                      on new { source1.SCI_code, source1.BioRegion } equals new { target1.SCI_code, target1.BioRegion }
                                 where source1.SCI_Name != target1.SCI_Name || source1.SCI_Name != target1.SCI_Name
                                  || source1.Priority != target1.Priority || source1.Area != target1.Area
@@ -68,7 +158,7 @@ namespace N2K_BackboneBackEnd.Services
 
             foreach (var item in changedSites)
             {
-                UnionListComparerViewModel changedItem = new UnionListComparerViewModel();
+                UnionListComparerDetailedViewModel changedItem = new UnionListComparerDetailedViewModel();
                 changedItem.BioRegion = item.source1.BioRegion;
                 changedItem.Sitecode = item.source1.SCI_code;
 
@@ -189,48 +279,48 @@ namespace N2K_BackboneBackEnd.Services
                 result.Add(changedItem);
             }
 
-            
-            //Added in source
-            var sourceOnlySites = (from source2 in ULDetailsSource
-                                   from target2 in ULDetailsTarget.Where(trg => (source2.SCI_code == trg.SCI_code) && (source2.BioRegion == trg.BioRegion))
-                                   where target2.SCI_code == null
-                                   select new { source2, target2 }).ToList();
 
+            //Added in source
+            var sourceOnlySites = (from source2 in ulDetailsSource
+                                   join target2 in ulDetailsTarget on new { source2.SCI_code, source2.BioRegion } equals new { target2.SCI_code, target2.BioRegion } into t
+                                   from od in t.DefaultIfEmpty()
+                                   where od == null
+                                   select source2).ToList();
             foreach (var item in sourceOnlySites)
             {
-                UnionListComparerViewModel changedItem = new UnionListComparerViewModel();
-                changedItem.BioRegion = item.source2.BioRegion;
-                changedItem.Sitecode = item.source2.SCI_code;
+                UnionListComparerDetailedViewModel changedItem = new UnionListComparerDetailedViewModel();
+                changedItem.BioRegion = item.BioRegion;
+                changedItem.Sitecode = item.SCI_code;
 
                 changedItem.SiteName = new UnionListValues<string>
                 {
-                    Source = item.source2.SCI_Name,
+                    Source = item.SCI_Name,
                     Target = null
                 };
 
 
                 changedItem.Area  = new UnionListValues<double>
                 {
-                    Source = item.source2.Area,
+                    Source = item.Area,
                     Target = null
                 };
 
                 changedItem.Length = new UnionListValues<double>
                 {
-                    Source = item.source2.Length,
+                    Source = item.Length,
                     Target = null
                 };
 
                 changedItem.Latitude = new UnionListValues<double>
                 {
-                    Source = item.source2.Lat,
+                    Source = item.Lat,
                     Target = null
                 };
 
 
                 changedItem.Longitude = new UnionListValues<double>
                 {
-                    Source = item.source2.Long,
+                    Source = item.Long,
                     Target = null
                 };
 
@@ -238,54 +328,53 @@ namespace N2K_BackboneBackEnd.Services
                 result.Add(changedItem);
             }
 
-            
-            //Deleted in source
-            var targetOnlySites = (from target3 in ULDetailsTarget
-                                   from source3 in ULDetailsSource.Where(trg => (target3.SCI_code == trg.SCI_code) && (target3.BioRegion == trg.BioRegion))
-                                   where source3.SCI_code == null
-                                   select new { source3, target3 }).ToList();
 
+            //Deleted in source            
+            var targetOnlySites = (from target3 in ulDetailsTarget
+                                   join source3 in ulDetailsSource on new { target3.SCI_code, target3.BioRegion }  equals new  { source3.SCI_code, source3.BioRegion } into t
+                                   from od in t.DefaultIfEmpty()
+                                   where od == null
+                                   select target3).ToList();
             foreach (var item in targetOnlySites)
             {
-                UnionListComparerViewModel changedItem = new UnionListComparerViewModel();
-                changedItem.BioRegion = item.target3.BioRegion;
-                changedItem.Sitecode = item.target3.SCI_code;
+                UnionListComparerDetailedViewModel changedItem = new UnionListComparerDetailedViewModel();
+                changedItem.BioRegion = item.BioRegion;
+                changedItem.Sitecode = item.SCI_code;
 
                 changedItem.SiteName = new UnionListValues<string>
                 {
-                    Target = item.target3.SCI_Name,
+                    Target = item.SCI_Name,
                     Source = null
                 };
 
 
                 changedItem.Area = new UnionListValues<double>
                 {
-                    Target = item.target3.Area,
+                    Target = item.Area,
                     Source = null
                 };
 
                 changedItem.Length = new UnionListValues<double>
                 {
-                    Target = item.target3.Length,
+                    Target = item.Length,
                     Source = null
                 };
 
                 changedItem.Latitude = new UnionListValues<double>
                 {
-                    Target = item.target3.Lat,
+                    Target = item.Lat,
                     Source = null
                 };
 
 
                 changedItem.Longitude = new UnionListValues<double>
                 {
-                    Target = item.target3.Long,
+                    Target = item.Long,
                     Source = null
                 };
                 changedItem.Changes= "DELETED";
                 result.Add(changedItem);
-            }
-            
+            }           
             return result.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
         }
 
