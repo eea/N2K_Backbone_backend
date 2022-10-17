@@ -145,6 +145,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+
         [HttpGet("GetCompareSummary/idSource={idSource:int}&idTarget={idTarget:int}")]
         public async Task<ActionResult<ServiceResponse<UnionListComparerSummaryViewModel>>> GetCompareSummary(long? idSource, long? idTarget)
         {
@@ -263,7 +264,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}&bioRegions={bioRegions:string}&page={page:int}&limit={limit:int}")]
-        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> ComparePaginatedByBioregion(long idSource, long idTarget,string bioRegions, int page, int limit)
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> ComparePaginatedByBioregion(long idSource, long idTarget,string bioRegions, int page, int limit)    
         {
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try

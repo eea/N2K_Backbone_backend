@@ -92,11 +92,10 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<List<StatusChanges>>> AddComment([FromBody] StatusChanges comment)
         {
 
-            string username = HeaderHelpers.GetUsername(Request.Headers);
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
             try
             {
-                List<StatusChanges> siteComments = await _siteDetailsService.AddComment(comment, username);
+                List<StatusChanges> siteComments = await _siteDetailsService.AddComment(comment);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -144,10 +143,9 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<List<StatusChanges>>> UpdateComment([FromBody] StatusChanges comment)
         {
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
-            string username = HeaderHelpers.GetUsername(Request.Headers);
             try
             {
-                List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment,username);
+                List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -196,7 +194,6 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<List<JustificationFiles>>> UploadFile([FromQuery] AttachedFile attachedFiles)
         {
             var response = new ServiceResponse<List<JustificationFiles>>();
-            string username = HeaderHelpers.GetUsername(Request.Headers);
             try
             {
                 if (attachedFiles.Files == null || attachedFiles.Files.Count == 0)
@@ -208,7 +205,7 @@ namespace N2K_BackboneBackEnd.Controllers
                     return Ok(response);
                 }
                 //var formCollection = await Request.ReadFormAsync();
-                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles, username);
+                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteFiles;
@@ -263,11 +260,9 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<string>> SaveEdition([FromBody] ChangeEditionDb changeEdition)
         {
             var response = new ServiceResponse<string>();
-
-            string username = HeaderHelpers.GetUsername(Request.Headers);           
             try
             {
-                var siteChanges = await _siteDetailsService.SaveEdition(changeEdition, username);
+                var siteChanges = await _siteDetailsService.SaveEdition(changeEdition);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;

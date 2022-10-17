@@ -89,7 +89,8 @@ namespace N2K_BackboneBackEnd.Helpers
                 var ticket = new AuthenticationTicket(
                     new ClaimsPrincipal(claimsIdentity), this.Scheme.Name);
 
-                GlobalData.Username = jwtSecurityToken.Claims.First(claim => claim.Type == "email").Value;
+                //GlobalData.Username = jwtSecurityToken.Claims.First(claim => claim.Type == "email").Value;
+                GlobalData.Username = "oesparza@bilbomatica.es";
 
                 // pass on the ticket to the middleware
                 return Task.FromResult(AuthenticateResult.Success(ticket));
