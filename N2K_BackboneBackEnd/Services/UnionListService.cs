@@ -84,11 +84,10 @@ namespace N2K_BackboneBackEnd.Services
         }
 
         public async Task<UnionListComparerSummaryViewModel> GetCompareSummary(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache )
-        {
-           
+        {           
             UnionListComparerSummaryViewModel res = new UnionListComparerSummaryViewModel();
             List<BioRegionSiteCode> resultCodes =  await GetBioregionSiteCodesInUnionListComparer(idSource, idTarget,bioRegions, cache);
-            res.BioRegSiteCodes = resultCodes.Take(10).ToList();
+            res.BioRegSiteCodes = resultCodes.ToList();
 
             //Get the number of site codes per bio region
             List<BioRegionTypes> ulBioRegions = await GetUnionBioRegionTypes();
