@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using N2K_BackboneBackEnd.Models.backbone_db;
@@ -15,11 +16,13 @@ namespace N2K_BackboneBackEnd.Controllers
     {
         private readonly IUnionListService _unionListService;
         private readonly IMapper _mapper;
+        private IMemoryCache _cache;
 
-        public UnionListController(IUnionListService unionListService, IMapper mapper)
+        public UnionListController(IUnionListService unionListService, IMapper mapper, IMemoryCache cache)
         {
             _unionListService = unionListService;
             _mapper = mapper;
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
         [Route("GetBioRegionTypes")]

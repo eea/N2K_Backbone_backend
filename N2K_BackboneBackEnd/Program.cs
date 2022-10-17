@@ -112,6 +112,8 @@ builder.Services.AddAuthentication(options =>
 })
 .AddScheme<ValidateHashAuthenticationSchemeOptions, ValidateHashAuthenticationHandler>("EULoginSchema", null);
 
+builder.Services.AddMemoryCache();
+
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
