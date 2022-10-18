@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace N2K_BackboneBackEnd.Models.versioning_db
@@ -9,7 +11,9 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
     {
         public Int32 OBJECTID { get; set; }
         public string COUNTRYCODE { get; set; }
+        [Column(TypeName = "decimal(18, 0)")]
         public decimal VERSIONID { get; set; }
+        [Column(TypeName = "decimal(18, 0)")]
         public decimal COUNTRYVERSIONID { get; set; }
         public string SITECODE { get; set; }
         public string SITENAME { get; set; }
@@ -25,15 +29,21 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         public DateTime? DATE_CONF_SCI { get; set; }
         public DateTime? DATE_SPA { get; set; }
         public DateTime? DATE_SAC { get; set; }
+
+        [Column(TypeName = "decimal(38, 4)")]
         public decimal? AREAHA { get; set; }
+        [Column(TypeName = "decimal(38, 2)")]
         public decimal? LENGTHKM { get; set; }
+        [Column(TypeName = "decimal(38, 6)")]
         public decimal? LATITUDE { get; set; }
+        [Column(TypeName = "decimal(38, 6)")]
         public decimal? LONGITUDE { get; set; }
         public Int16? PUBLISHED { get; set; }
         public Int16? SENSITIVE { get; set; }
         public string? SPA_LEGAL_REFERENCE { get; set; }
         public string? SAC_LEGAL_REFERENCE { get; set; }
         public string? EXPLANATIONS { get; set; }
+        [Column(TypeName = "decimal(38, 4)")]
         public decimal? MARINEAREA { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
