@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Microsoft.CodeAnalysis.Differencing;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Data;
@@ -7,6 +8,7 @@ using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
+using System.ComponentModel.Design;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -55,7 +57,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<StatusChanges>> AddComment(StatusChanges comment,string  username ="")
+        public async Task<List<StatusChanges>> AddComment(StatusChanges comment)
         {
             comment.Date = DateTime.Now;
             comment.Owner = GlobalData.Username;
@@ -80,11 +82,17 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<StatusChanges>> UpdateComment(StatusChanges comment, string username = "")
+        public async Task<List<StatusChanges>> UpdateComment(StatusChanges comment)
         {
-            comment.EditedDate = DateTime.Now;
-            comment.Edited += 1;
-            comment.Editedby = username;
+            var edited = 1;
+            StatusChanges? _comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == comment.Id);
+            if (_comment!= null)
+            {
+                if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
+            }
+            comment.EditedDate = DateTime.Now;                        
+            comment.Edited =  edited;
+            comment.Editedby = GlobalData.Username; 
             _dataContext.Set<StatusChanges>().Update(comment);
             await _dataContext.SaveChangesAsync();
 
@@ -104,10 +112,11 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile, string username = "")
+        public async Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile)
         {
             List<JustificationFiles> result = new List<JustificationFiles>();
             IAttachedFileHandler? fileHandler = null;
+            var username = GlobalData.Username;
 
             if (_appSettings.Value.AttachedFiles == null) return result;
 
@@ -169,8 +178,9 @@ namespace N2K_BackboneBackEnd.Services
 
 
         #region SiteEdition
-        public async Task<string> SaveEdition(ChangeEditionDb changeEdition, string username = "")
+        public async Task<string> SaveEdition(ChangeEditionDb changeEdition)
         {
+            var username= GlobalData.Username;
             try
             {
                 SqlParameter param1 = new SqlParameter("@sitecode", changeEdition.SiteCode);

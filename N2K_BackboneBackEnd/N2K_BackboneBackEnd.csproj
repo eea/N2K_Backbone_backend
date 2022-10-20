@@ -8,20 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-
-    <Compile Remove="bin\Release\net6.0\x64\**" />
-    <Compile Remove="bin\Release\net6.0\x86\**" />
-    <Content Remove="bin\Release\net6.0\x64\**" />
-    <Content Remove="bin\Release\net6.0\x86\**" />
-
-    <EmbeddedResource Remove="bin\Release\net6.0\x64\**" />
-    <EmbeddedResource Remove="bin\Release\net6.0\x86\**" />
-    <None Remove="bin\Release\net6.0\x64\**" />
-    <None Remove="bin\Release\net6.0\x86\**" />
-
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="11.0.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.13.0" />
@@ -39,6 +25,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.7" />
     <PackageReference Include="SevenZipSharp.Interop" Version="19.0.2" />
@@ -50,7 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="bin\Release\net6.0\" />
+    <Folder Include="bin\" />
     <Folder Include="Resources\Images\" />
   </ItemGroup>
 
