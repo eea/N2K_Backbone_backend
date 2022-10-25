@@ -24,6 +24,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public Boolean? JustificationRequired { get; set;}
         public Boolean? JustificationProvided { get; set; }
         public DateTime? DateConfSCI { get; set; }
+        public Boolean? Priority { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {

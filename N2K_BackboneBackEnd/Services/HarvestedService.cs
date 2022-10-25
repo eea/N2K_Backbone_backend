@@ -12,6 +12,8 @@ using N2K_BackboneBackEnd.Enumerations;
 using IsImpactedBy = N2K_BackboneBackEnd.Models.versioning_db.IsImpactedBy;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models.BackboneDB;
+using System.Diagnostics.Metrics;
+using System;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -419,7 +421,7 @@ namespace N2K_BackboneBackEnd.Services
                 SiteToHarvest? storedSite = referencedSites.Where(s => s.SiteCode == harvestingSite.SiteCode).FirstOrDefault();
                 if (storedSite != null)
                 {
-                    //These booleans declare whether or not each habitat is a priority
+                    //These booleans declare whether or not each site is a priority
                     Boolean isStoredSitePriority = false;
                     Boolean isHarvestingSitePriority = false;
 
@@ -574,6 +576,14 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
+
+                    Sites stored = _dataContext.Set<Sites>().Where(ss => ss.SiteCode == storedSite.SiteCode && ss.Version == storedSite.VersionId).FirstOrDefault();
+                    Sites harvesting = _dataContext.Set<Sites>().Where(hs => hs.SiteCode == harvestingSite.SiteCode && hs.Version == harvestingSite.VersionId).FirstOrDefault();
+                    stored.Priority = isStoredSitePriority;
+                    harvesting.Priority = isHarvestingSitePriority;
+                    _dataContext.Set<Sites>().Update(stored);
+                    _dataContext.Set<Sites>().Update(harvesting);
+                    await _dataContext.SaveChangesAsync();
                 }
                 else
                 {
@@ -673,11 +683,11 @@ namespace N2K_BackboneBackEnd.Services
 
                                     HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
                                     await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
-                                    
+
                                     _dataContext.SaveChanges();
                                     _ThereAreChanges = false;
                                 }
-                                
+
                             }
                             catch (DbUpdateException ex)
                             {
@@ -873,30 +883,32 @@ namespace N2K_BackboneBackEnd.Services
                     foreach (Harvesting vEnvelope in vEnvelopes)
                     {
                         EnvelopesToProcess envelope = new EnvelopesToProcess
-                            {
-                                VersionId = Int32.Parse(vEnvelope.Id.ToString()),
-                                CountryCode = vEnvelope.Country,
-                                SubmissionDate = vEnvelope.SubmissionDate
-                            };
+                        {
+                            VersionId = Int32.Parse(vEnvelope.Id.ToString()),
+                            CountryCode = vEnvelope.Country,
+                            SubmissionDate = vEnvelope.SubmissionDate
+                        };
 
                         ProcessedEnvelopes process = new ProcessedEnvelopes
-                            {
-                                Country = vEnvelope.Country,
-                                Version = Int32.Parse(vEnvelope.Id.ToString()),
-                                ImportDate = vEnvelope.SubmissionDate,
-                                Status = HarvestingStatus.Queued,
-                                Importer = "Automatic",
-                                N2K_VersioningDate = vEnvelope.SubmissionDate
-                            };
+                        {
+                            Country = vEnvelope.Country,
+                            Version = Int32.Parse(vEnvelope.Id.ToString()),
+                            ImportDate = vEnvelope.SubmissionDate,
+                            Status = HarvestingStatus.Queued,
+                            Importer = "Automatic",
+                            N2K_VersioningDate = vEnvelope.SubmissionDate
+                        };
 
                         _dataContext.Set<ProcessedEnvelopes>().Add(process);
                         _dataContext.SaveChanges();
-                        
+
                         EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { envelope };
                         List<HarvestedEnvelope> bbEnvelope = await Harvest(_tempEnvelope);
                         List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(_tempEnvelope);
 
-                        if (bbEnvelope.Count > 0)
+                        List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == _tempEnvelope[0].CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToListAsync();
+
+                        if (bbEnvelope.Count > 0 && envelopes.Count == 0)
                         {
                             Task tabValidationTask = Validate(_tempEnvelope);
                             Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
@@ -905,12 +917,10 @@ namespace N2K_BackboneBackEnd.Services
                             //change the status of the whole process to PreHarvested
                             await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested);
                             bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
-
-                            
                         }
                         bbEnvelopes.Add(bbEnvelope[0]);
                     }
-                    
+
                     return bbEnvelopes;
                 }
                 else
@@ -1016,7 +1026,6 @@ namespace N2K_BackboneBackEnd.Services
                             case HarvestingStatus.Closed:
                                 sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @country, @version;";
                                 break;
-
                             case HarvestingStatus.Pending:
                                 sqlToExecute = "exec dbo.setStatusToEnvelopePending  @country, @version;";
                                 break;
@@ -1024,6 +1033,27 @@ namespace N2K_BackboneBackEnd.Services
                                 break;
                         }
                         await _dataContext.Database.ExecuteSqlRawAsync(sqlToExecute, param1, param2);
+
+                        if (toStatus == HarvestingStatus.Discarded || toStatus == HarvestingStatus.Closed)
+                        {
+                            ProcessedEnvelopes nextEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == country) && (pe.Status == HarvestingStatus.DataLoaded)).OrderBy(pe => pe.Version).FirstOrDefaultAsync();
+                            if (nextEnvelope != null)
+                            {
+                                EnvelopesToProcess nextEnvelopeToValidate = new EnvelopesToProcess
+                                {
+                                    VersionId = Int32.Parse(nextEnvelope.Version.ToString()),
+                                    CountryCode = nextEnvelope.Country,
+                                    SubmissionDate = DateTime.Now
+                                };
+                                EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { nextEnvelopeToValidate };
+                                Task tabValidationTask = Validate(_tempEnvelope);
+                                Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
+                                //make sure they are all finished
+                                await Task.WhenAll(tabValidationTask, spatialValidationTask);
+                                //change the status of the whole process to PreHarvested
+                                await ChangeStatus(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested);
+                            }
+                        }
 
                         envelope.Status = toStatus;
                         return envelope;
