@@ -77,8 +77,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 
 builder.Services.AddSwaggerGen(c => {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "N2KBacboneAPI", Version = "v1" });
-    /*
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "N2KBacboneAPI", Version = "v1" });    
     c.AddSecurityDefinition(name: "Bearer", securityScheme: new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -102,8 +101,7 @@ builder.Services.AddSwaggerGen(c => {
                 },                          
                 new List<string>()
             }
-        });
-    */ 
+    });
 });
 
 builder.Services.AddAuthentication(options =>
