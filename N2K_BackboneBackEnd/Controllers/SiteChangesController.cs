@@ -502,7 +502,28 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
+        [Route("GetNonPendingSiteCodes/country={country:string}/")]
+        [HttpGet()]
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetNonPendingSiteCodes(string country)
+        {
+            var response = new ServiceResponse<List<SiteCodeView>>();
+            try
+            {
+                var siteCodes = await _siteChangesService.GetNonPendingSiteCodes(country);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteCodes;
+                response.Count = await _siteChangesService.GetPendingChangesByCountry(country,_cache);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                return Ok(response);
+            }
+        }
 
 
         [HttpGet("GetSiteChangesDetail/siteCode={pSiteCode}&version={pCountryVersion}")]
