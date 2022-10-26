@@ -70,7 +70,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         public async Task<Sites>? HarvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
         {
             Sites? bbSite = null;
-            
+
             try
             {
 
@@ -122,6 +122,63 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             Sites bbSite = new Sites();
             int versionNext = -1;
 
+            #region SitePriority
+            //Get the lists of priority habitats and species
+            List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+            List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+
+            SqlParameter param3 = new SqlParameter("@site", pVSite.SITECODE);
+            SqlParameter param4 = new SqlParameter("@versionId", pVSite.VERSIONID);
+
+            List<HabitatToHarvest> habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+                                    param3, param4).ToListAsync();
+            List<SpeciesToHarvest> speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+                            param3, param4).ToListAsync();
+
+            //These booleans declare whether or not each site is a priority
+            Boolean isHarvestingSitePriority = false;
+
+            foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
+            {
+                HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
+                if (priorityCount != null)
+                {
+                    if (priorityCount.Priority == 2)
+                    {
+                        if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true)
+                        {
+                            isHarvestingSitePriority = true;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if (harvestingHabitat.Representativity.ToUpper() != "D")
+                        {
+                            isHarvestingSitePriority = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!isHarvestingSitePriority)
+            {
+                foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
+                {
+                    SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+                    if (priorityCount != null)
+                    {
+                        if (harvestingSpecies.Population.ToUpper() != "D")
+                        {
+                            isHarvestingSitePriority = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            #endregion
+
             try
             {
                 versionNext = await _dataContext.Set<Sites>().Where(s => s.SiteCode == pVSite.SITECODE).OrderBy(s => s.Version).Select(s => s.Version).LastOrDefaultAsync();
@@ -147,6 +204,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.N2KVersioningRef = Int32.Parse(pVSite.VERSIONID.ToString());
                 bbSite.N2KVersioningVersion = pEnvelope.VersionId;
                 bbSite.DateConfSCI = pVSite.DATE_CONF_SCI;
+                bbSite.Priority = isHarvestingSitePriority;
                 return bbSite;
             }
             catch (Exception ex)
@@ -425,10 +483,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     COUNTRYCODE = cl.First().COUNTRYCODE,
                     VERSIONID = cl.First().VERSIONID,
-                    COUNTRYVERSIONID= cl.First().COUNTRYVERSIONID,
-                    SITECODE=cl.First().SITECODE,
-                    TYPE=cl.First().TYPE,
-                    PERCENT=cl.Sum(c=> c.PERCENT),
+                    COUNTRYVERSIONID = cl.First().COUNTRYVERSIONID,
+                    SITECODE = cl.First().SITECODE,
+                    TYPE = cl.First().TYPE,
+                    PERCENT = cl.Sum(c => c.PERCENT),
                 }).ToListAsync();
                 foreach (OwnerType element in elements)
                 {
