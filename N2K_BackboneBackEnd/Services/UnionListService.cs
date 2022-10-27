@@ -11,6 +11,10 @@ using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Resources;
 using Microsoft.Build.Execution;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml;
+using System.IO.Compression;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -40,7 +44,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
         public async Task<List<UnionListDetail>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode)
-          {
+        {
             SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
 
             List<UnionListDetail> unionListDetails = await _dataContext.Set<UnionListDetail>().FromSqlRaw($"exec dbo.spGetCurrentSitesUnionListDetailByBioRegion  @bioregion",
@@ -55,9 +59,9 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        private async Task<List<BioRegionSiteCode>> GetBioregionSiteCodesInUnionListComparer (long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache)
+        private async Task<List<BioRegionSiteCode>> GetBioregionSiteCodesInUnionListComparer(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache)
         {
-            string listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions)?string.Empty: bioRegions.Replace(",","_"));
+            string listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions.Replace(",", "_"));
             List<BioRegionSiteCode> resultCodes = new List<BioRegionSiteCode>();
             if (cache.TryGetValue(listName, out List<BioRegionSiteCode> cachedList))
             {
@@ -79,14 +83,14 @@ namespace N2K_BackboneBackEnd.Services
                         .SetSize(40000);
                 cache.Set(listName, resultCodes, cacheEntryOptions);
             }
-            return resultCodes; 
+            return resultCodes;
 
         }
 
-        public async Task<UnionListComparerSummaryViewModel> GetCompareSummary(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache )
-        {           
+        public async Task<UnionListComparerSummaryViewModel> GetCompareSummary(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache)
+        {
             UnionListComparerSummaryViewModel res = new UnionListComparerSummaryViewModel();
-            List<BioRegionSiteCode> resultCodes =  await GetBioregionSiteCodesInUnionListComparer(idSource, idTarget,bioRegions, cache);
+            List<BioRegionSiteCode> resultCodes = await GetBioregionSiteCodesInUnionListComparer(idSource, idTarget, bioRegions, cache);
             res.BioRegSiteCodes = resultCodes.ToList();
 
             //Get the number of site codes per bio region
@@ -129,16 +133,16 @@ namespace N2K_BackboneBackEnd.Services
             //get the bioReg-SiteCodes of the source UL
             var _ulDetails = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idSource).ToListAsync();
             List<UnionListDetail> ulDetailsSource = (from src1 in ulSites
-                                              from trgt1 in _ulDetails.Where(trg1 => (src1.SiteCode == trg1.SCI_code) && (src1.BioRegion == trg1.BioRegion))
-                                              select trgt1
+                                                     from trgt1 in _ulDetails.Where(trg1 => (src1.SiteCode == trg1.SCI_code) && (src1.BioRegion == trg1.BioRegion))
+                                                     select trgt1
             ).ToList();
             _ulDetails.Clear();
 
             //get the bioReg-SiteCodes of the target UL
             _ulDetails = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idTarget).ToListAsync();
             List<UnionListDetail> ulDetailsTarget = (from src1 in ulSites
-                                              from trgt2 in _ulDetails.Where(trg2 => (src1.SiteCode == trg2.SCI_code) && (src1.BioRegion == trg2.BioRegion))
-                                              select trgt2
+                                                     from trgt2 in _ulDetails.Where(trg2 => (src1.SiteCode == trg2.SCI_code) && (src1.BioRegion == trg2.BioRegion))
+                                                     select trgt2
             ).ToList();
 
             //clear the memory
@@ -299,7 +303,7 @@ namespace N2K_BackboneBackEnd.Services
                 };
 
 
-                changedItem.Area  = new UnionListValues<double>
+                changedItem.Area = new UnionListValues<double>
                 {
                     Source = item.Area,
                     Target = null
@@ -324,14 +328,14 @@ namespace N2K_BackboneBackEnd.Services
                     Target = null
                 };
 
-                changedItem.Changes= "ADDED";
+                changedItem.Changes = "ADDED";
                 result.Add(changedItem);
             }
 
 
             //Deleted in source            
             var targetOnlySites = (from target3 in ulDetailsTarget
-                                   join source3 in ulDetailsSource on new { target3.SCI_code, target3.BioRegion }  equals new  { source3.SCI_code, source3.BioRegion } into t
+                                   join source3 in ulDetailsSource on new { target3.SCI_code, target3.BioRegion } equals new { source3.SCI_code, source3.BioRegion } into t
                                    from od in t.DefaultIfEmpty()
                                    where od == null
                                    select target3).ToList();
@@ -372,9 +376,9 @@ namespace N2K_BackboneBackEnd.Services
                     Target = item.Long,
                     Source = null
                 };
-                changedItem.Changes= "DELETED";
+                changedItem.Changes = "DELETED";
                 result.Add(changedItem);
-            }           
+            }
             return result.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
         }
 
@@ -420,6 +424,229 @@ namespace N2K_BackboneBackEnd.Services
                 result = 1;
             }
             return result;
+        }
+
+        public async Task<int> UnionListDownload(long id)
+        {
+            try
+            {
+                string repositoryPath = "c:\\temp";
+                string repositoryPath = "https://n2kbackbonesharedfiles.blob.core.windows.net\\justificationfiles";
+
+                string tempZipFile = repositoryPath + "\\" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_Union List.zip";
+                File.Delete(tempZipFile);
+                ZipArchive archive = ZipFile.Open(tempZipFile, ZipArchiveMode.Create);
+
+                string[] bioRegions = { "ALP", "ATL", "MED" };
+                foreach (string bioRegion in bioRegions)
+                {
+                    //The file path must be parametrized in the web.config
+                    string filePath = repositoryPath + "\\" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + bioRegion + "_Union List.xlsx";
+                    //Create the Excel document
+                    SpreadsheetDocument workbook = SpreadsheetDocument.Create(filePath, DocumentFormat.OpenXml.SpreadsheetDocumentType.Workbook);
+                    //Create the different sections and parts necesaries for the Excel
+                    WorkbookPart workbookPart = workbook.AddWorkbookPart();
+                    workbook.WorkbookPart.Workbook = new Workbook();
+                    workbook.WorkbookPart.Workbook.Sheets = new Sheets();
+                    WorksheetPart sheetPart = workbook.WorkbookPart.AddNewPart<WorksheetPart>();
+                    SheetData sheetData = new SheetData();
+                    sheetPart.Worksheet = new Worksheet(sheetData);
+                    Sheets sheets = workbook.WorkbookPart.Workbook.GetFirstChild<Sheets>();
+                    string relationshipId = workbook.WorkbookPart.GetIdOfPart(sheetPart);
+                    //Just a sheet for the excel book
+                    uint sheetId = 1;
+                    if (sheets.Elements<Sheet>().Count() > 0)
+                    {
+                        sheetId = sheets.Elements<Sheet>().Select(s => s.SheetId.Value).Max() + 1;
+                    }
+
+                    Sheet sheet = new Sheet() { Id = relationshipId, SheetId = sheetId, Name = bioRegion }; //Page name = BioRegion name
+                    sheets.Append(sheet);
+
+                    #region Retrive of the data to insert
+                    SqlConnection connection = new SqlConnection("Data Source=backbonedb.database.windows.net;Initial Catalog=n2k_backbone;User ID=developers;Password=4@<H5~XbrSPZWR7L"); //Change to _dataContext
+                    connection.Open();
+                    string sql = "SELECT SCI_code, SCI_Name, ISNULL(CAST(CASE WHEN Priority IN (1) THEN '*' ELSE '' END AS varchar(1)),''), ISNULL(Area,0), ISNULL(Length,0), ISNULL(Long,0), ISNULL(Lat,0)" +
+                        "FROM UnionListDetail WHERE idUnionListHeader = " + id + " AND BioRegion = '" + bioRegion + "';"; //Change BioRegion
+                    SqlCommand cmd = new SqlCommand(sql, connection);
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    #endregion
+
+                    #region Styling
+                    WorkbookStylesPart stylesPart = workbook.WorkbookPart.AddNewPart<WorkbookStylesPart>();
+                    stylesPart.Stylesheet = new Stylesheet(
+                        new Fonts(
+                            new Font(                                                           // Index 0 - The default font.
+                                new DocumentFormat.OpenXml.Spreadsheet.FontSize() { Val = 11 },
+                                new Color() { Rgb = new HexBinaryValue() { Value = "000000" } },
+                                new FontName() { Val = "Calibri" })
+                        ),
+                        new Fills(
+                            new Fill(                                                           // Index 0 - The default fill.
+                                new PatternFill() { PatternType = PatternValues.None }),
+                            new Fill(                                                           // Index 1 - The grey fill.
+                                new PatternFill(
+                                    new ForegroundColor() { Rgb = new HexBinaryValue() { Value = "C0C0C0" } }
+                                )
+                                { PatternType = PatternValues.Solid }
+                            )
+                        ),
+                        new Borders(
+                            new Border(                                                         // Index 0 - The default border.
+                                new LeftBorder(),
+                                new RightBorder(),
+                                new TopBorder(),
+                                new BottomBorder(),
+                                new DiagonalBorder()),
+                            new Border(                                                         // Index 1 - Applies a Left, Right, Top, Bottom border to a cell
+                                new LeftBorder(
+                                    new Color() { Auto = true }
+                                )
+                                { Style = BorderStyleValues.Thin },
+                                new RightBorder(
+                                    new Color() { Auto = true }
+                                )
+                                { Style = BorderStyleValues.Thin },
+                                new TopBorder(
+                                    new Color() { Auto = true }
+                                )
+                                { Style = BorderStyleValues.Thin },
+                                new BottomBorder(
+                                    new Color() { Auto = true }
+                                )
+                                { Style = BorderStyleValues.Thin }
+                            )
+                        ),
+                        new CellFormats(
+                            new CellFormat(new Alignment() { Horizontal = HorizontalAlignmentValues.Left, Vertical = VerticalAlignmentValues.Bottom })
+                            { FontId = 0, FillId = 0, BorderId = 0, ApplyFont = true },   // Index 0 - Left align. The default cell style.  If a cell does not have a style index applied it will use this style combination instead
+
+                            new CellFormat(new Alignment() { Horizontal = HorizontalAlignmentValues.Right, Vertical = VerticalAlignmentValues.Bottom })
+                            { FontId = 0, FillId = 0, BorderId = 0, ApplyFont = true },   // Index 1 - Right align
+
+                            new CellFormat(new Alignment() { Horizontal = HorizontalAlignmentValues.Center, Vertical = VerticalAlignmentValues.Bottom })
+                            { FontId = 0, FillId = 1, BorderId = 1, ApplyFont = true }    // Index 2 - Header
+                        )
+                    );
+                    stylesPart.Stylesheet.Save();
+                    #endregion
+
+                    Row row = new Row();
+                    Cell cell = new Cell();
+
+                    #region Header of the columns, but we can handwrite it because we know the structure
+                    //SCI code
+                    cell.DataType = CellValues.String;
+                    cell.CellValue = new CellValue("SCI code");
+                    cell.StyleIndex = 2;
+                    row.AppendChild(cell);
+                    cell = new Cell();
+                    //Name of SCI
+                    cell.DataType = CellValues.String;
+                    cell.CellValue = new CellValue("Name of SCI");
+                    cell.StyleIndex = 2;
+                    row.AppendChild(cell);
+                    cell = new Cell();
+                    //Priority
+                    cell.DataType = CellValues.String;
+                    cell.CellValue = new CellValue("Priority");
+                    cell.StyleIndex = 2;
+                    row.AppendChild(cell);
+                    cell = new Cell();
+                    //Area of SCI (ha)
+                    cell.DataType = CellValues.String;
+                    cell.CellValue = new CellValue("Area of SCI (ha)");
+                    cell.StyleIndex = 2;
+                    row.AppendChild(cell);
+                    cell = new Cell();
+                    //Length of SCI (km)
+                    cell.DataType = CellValues.String;
+                    cell.CellValue = new CellValue("Length of SCI (km)");
+                    cell.StyleIndex = 2;
+                    row.AppendChild(cell);
+                    cell = new Cell();
+                    //Longitude
+                    cell.DataType = CellValues.String;
+                    cell.CellValue = new CellValue("Longitude");
+                    cell.StyleIndex = 2;
+                    row.AppendChild(cell);
+                    cell = new Cell();
+                    //Latitude
+                    cell.DataType = CellValues.String;
+                    cell.CellValue = new CellValue("Latitude");
+                    cell.StyleIndex = 2;
+                    row.AppendChild(cell);
+                    cell = new Cell();
+                    #endregion
+
+                    sheetData.AppendChild(row);
+                    row = new Row();
+                    while (reader.Read())
+                    {
+                        #region Content row creation
+                        row = new Row();
+                        //In the same way we know the structure of the data, so we can call for each field
+                        //SCI code
+                        cell = new Cell();
+                        cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                        cell.CellValue = new CellValue(reader.GetString(0)); //The GetString is because SqlDataReader. With the Entity it's not necesary
+                        cell.StyleIndex = 0;
+                        row.AppendChild(cell);
+                        //Name of SCI
+                        cell = new Cell();
+                        cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                        cell.CellValue = new CellValue(reader.GetString(1));
+                        cell.StyleIndex = 0;
+                        row.AppendChild(cell);
+                        //Priority
+                        cell = new Cell();
+                        cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                        cell.CellValue = new CellValue(reader.GetString(2));
+                        cell.StyleIndex = 0;
+                        row.AppendChild(cell);
+                        //Area of SCI (ha)
+                        cell = new Cell();
+                        cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                        cell.CellValue = new CellValue(reader.GetDouble(3));
+                        cell.StyleIndex = 1;
+                        row.AppendChild(cell);
+                        //Length of SCI (km)
+                        cell = new Cell();
+                        cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                        cell.CellValue = new CellValue(reader.GetDouble(4));
+                        cell.StyleIndex = 1;
+                        row.AppendChild(cell);
+                        //Longitude
+                        cell = new Cell();
+                        cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                        cell.CellValue = new CellValue(reader.GetDouble(5));
+                        cell.StyleIndex = 1;
+                        row.AppendChild(cell);
+                        //Latitude
+                        cell = new Cell();
+                        cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                        cell.CellValue = new CellValue(reader.GetDouble(6));
+                        cell.StyleIndex = 1;
+                        row.AppendChild(cell);
+                        #endregion
+
+                        sheetData.AppendChild(row);
+                    }
+
+                    workbookPart.Workbook.Save();
+                    workbook.Close();
+
+                    ZipArchiveEntry fileInZip = archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
+                    File.Delete(filePath);
+                }
+                archive.Dispose();
+
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
         }
     }
 }
