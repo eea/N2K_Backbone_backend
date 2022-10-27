@@ -15,6 +15,8 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<SiteCodeView>> GetReferenceSiteCodes(string country);
 
+        Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country);
+
         Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false);
 
         Task<int> GetPendingChangesByCountry(string? country, IMemoryCache cache);
