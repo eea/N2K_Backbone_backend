@@ -37,6 +37,8 @@
         public string fme_service_spatialload { get; set; } = "";
         public string fme_service_spatialchanges { get; set; } = "";
         public string fme_service_singlesite_spatialchanges { get; set; } = "";
+        public string current_ul_name { get; set; } = "";
+        public string current_ul_createdby { get; set; } = "";
 
     }
 }

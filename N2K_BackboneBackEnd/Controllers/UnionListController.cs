@@ -241,7 +241,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}&page={page:int}&limit={limit:int}")]
-        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> ComparePaginated(long idSource, long idTarget,int page, int limit)
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> ComparePaginated(long idSource, long idTarget, int page, int limit)
         {
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
@@ -293,11 +293,11 @@ namespace N2K_BackboneBackEnd.Controllers
             ServiceResponse<List<UnionListHeader>> response = new ServiceResponse<List<UnionListHeader>>();
             try
             {
-                List<UnionListHeader> unionListHeader = await _unionListService.CreateUnionList(unionList.Name,unionList.Final.HasValue? unionList.Final.Value: false );
+                List<UnionListHeader> unionListHeader = await _unionListService.CreateUnionList(unionList.Name, unionList.Final.HasValue ? unionList.Final.Value : false);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
-                response.Count = unionListHeader == null? 0: unionListHeader.Count;
+                response.Count = unionListHeader == null ? 0 : unionListHeader.Count;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -312,7 +312,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("Update")]
         [HttpPut]
-        public async Task<ActionResult<List<UnionListHeader>>> UpdateUnionList([FromBody]  UnionListHeaderInputParam unionList)
+        public async Task<ActionResult<List<UnionListHeader>>> UpdateUnionList([FromBody] UnionListHeaderInputParam unionList)
         {
             ServiceResponse<List<UnionListHeader>> response = new ServiceResponse<List<UnionListHeader>>();
             try
@@ -336,7 +336,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("Delete")]
         [HttpDelete]
-        public async Task<ActionResult<int>> DeleteUnionList([FromBody]  long id)
+        public async Task<ActionResult<int>> DeleteUnionList([FromBody] long id)
         {
             ServiceResponse<int> response = new ServiceResponse<int>();
             try
@@ -354,6 +354,76 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Message = ex.Message;
                 response.Count = 0;
                 response.Data = 0;
+                return Ok(response);
+            }
+        }
+
+        [Route("Download")]
+        [HttpGet]
+        public async Task<ActionResult<int>> UnionListDownload(long id)
+        {
+            ServiceResponse<string> response = new ServiceResponse<string>();
+            try
+            {
+                int unionListHeader = await _unionListService.UnionListDownload(id);
+                response.Success = true;
+                response.Message = "";
+                response.Data = "https://servidor/url/nombrearchivo.xslx";
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = String.Empty;
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("GetUnionListComparerSummary")]
+        public async Task<ActionResult<ServiceResponse<UnionListComparerSummaryViewModel>>> GetUnionListComparerSummary()
+        {
+            var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
+            try
+            {
+                var unionListCompareSummary = await _unionListService.GetUnionListComparerSummary(_cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListCompareSummary;
+                response.Count = (unionListCompareSummary == null) ? 0 : unionListCompareSummary.BioRegSiteCodes.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new UnionListComparerSummaryViewModel();
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("GetUnionListComparer=page={page:int}&limit={limit:int}")]
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer(int page, int limit)
+        {
+            var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
+            try
+            {
+                var unionListCompareSummary = await _unionListService.GetUnionListComparer(_cache, page, limit);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListCompareSummary;
+                response.Count = (unionListCompareSummary == null) ? 0 : unionListCompareSummary.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListComparerDetailedViewModel>();
                 return Ok(response);
             }
         }
