@@ -15,17 +15,21 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml;
 using System.IO.Compression;
+using Microsoft.Extensions.Options;
+using N2K_BackboneBackEnd.Models;
 
 namespace N2K_BackboneBackEnd.Services
 {
     public class UnionListService : IUnionListService
     {
         private readonly N2KBackboneContext _dataContext;
+        private readonly IOptions<ConfigSettings> _appSettings;
         private const string ulBioRegSites = "ulBioRegSites";
 
-        public UnionListService(N2KBackboneContext dataContext)
+        public UnionListService(N2KBackboneContext dataContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
+            _appSettings = app;
         }
 
         public async Task<List<BioRegionTypes>> GetUnionBioRegionTypes()
@@ -431,7 +435,7 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 string repositoryPath = "c:\\temp";
-                string repositoryPath = "https://n2kbackbonesharedfiles.blob.core.windows.net\\justificationfiles";
+                //string repositoryPath = "https://n2kbackbonesharedfiles.blob.core.windows.net\\justificationfiles";
 
                 string tempZipFile = repositoryPath + "\\" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_Union List.zip";
                 File.Delete(tempZipFile);
@@ -648,5 +652,66 @@ namespace N2K_BackboneBackEnd.Services
                 return 0;
             }
         }
+
+        public async Task<UnionListComparerSummaryViewModel> GetUnionListComparerSummary(IMemoryCache _cache)
+        {
+            //Delete Current if it already exists
+            UnionListHeader? tempUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby));
+            if (tempUnionList != null)
+            {
+                _dataContext.Set<UnionListHeader>().Remove(tempUnionList);
+                await _dataContext.SaveChangesAsync();
+            }
+
+            //Get latest release
+            UnionListHeader? latestUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) && (ulh.CreatedBy != _appSettings.Value.current_ul_createdby) && (ulh.Final == true)).OrderByDescending(ulh => ulh.Date).FirstOrDefaultAsync();
+
+            //Create Current
+            SqlParameter param1 = new SqlParameter("@name", _appSettings.Value.current_ul_name);
+            SqlParameter param2 = new SqlParameter("@creator", _appSettings.Value.current_ul_createdby);
+            SqlParameter param3 = new SqlParameter("@final", false);
+            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final ", param1, param2, param3);
+
+            //Get Current
+            UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
+
+            return await GetCompareSummary(latestUnionList.idULHeader, currentUnionList.idULHeader, null, _cache);
+        }
+
+        public async Task<List<UnionListComparerDetailedViewModel>> GetUnionListComparer(IMemoryCache _cache, int page = 1, int pageLimit = 0)
+        {
+            //Delete Current if it already exists
+            UnionListHeader? tempUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby));
+            if (tempUnionList != null)
+            {
+                _dataContext.Set<UnionListHeader>().Remove(tempUnionList);
+                await _dataContext.SaveChangesAsync();
+            }
+
+            //Get latest release
+            UnionListHeader? latestUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) && (ulh.CreatedBy != _appSettings.Value.current_ul_createdby) && (ulh.Final == true)).OrderByDescending(ulh => ulh.Date).FirstOrDefaultAsync();
+
+            //Create Current
+            SqlParameter param1 = new SqlParameter("@name", _appSettings.Value.current_ul_name);
+            SqlParameter param2 = new SqlParameter("@creator", _appSettings.Value.current_ul_createdby);
+            SqlParameter param3 = new SqlParameter("@final", false);
+            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final ", param1, param2, param3);
+
+            //Get Current
+            UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
+
+            List<UnionListComparerDetailedViewModel> ulSites = await CompareUnionLists(latestUnionList.idULHeader, currentUnionList.idULHeader, null, _cache, page, pageLimit);
+            var startRow = (page - 1) * pageLimit;
+            if (pageLimit > 0)
+            {
+                ulSites = ulSites
+                    .Skip(startRow)
+                    .Take(pageLimit)
+                    .ToList();
+            }
+
+            return ulSites;
+        }
+
     }
 }
