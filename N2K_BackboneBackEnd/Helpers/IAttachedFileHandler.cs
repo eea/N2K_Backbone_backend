@@ -6,8 +6,10 @@ namespace N2K_BackboneBackEnd.Helpers
     {
 
         Task<List<string>> UploadFileAsync(AttachedFile file);
+        Task<List<string>> UploadFileAsync(string file);
 
         Task<int> DeleteFileAsync(string fileName);
+        Task<int> DeleteUnionListsFilesAsync();
 
 
     }
