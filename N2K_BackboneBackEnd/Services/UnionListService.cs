@@ -443,11 +443,9 @@ namespace N2K_BackboneBackEnd.Services
                 fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
             }
 
-            //string repositoryPath = "c:\\temp";
-            //string repositoryPath = _appSettings.Value.AttachedFiles.PublicFilesUrl + "//" + _appSettings.Value.AttachedFiles.JustificationFolder;
             string repositoryPath = Path.Combine(Directory.GetCurrentDirectory(), _appSettings.Value.AttachedFiles.JustificationFolder);
-
             string tempZipFile = repositoryPath + "//" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + GlobalData.Username.Split("@")[0] + "_Union List.zip";
+            
             //Delete file to avoid duplicates with the same name
             string[] files = Directory.GetFiles(repositoryPath);
             foreach (string file in files)
@@ -456,6 +454,7 @@ namespace N2K_BackboneBackEnd.Services
                     File.Delete(file);
             }
             await fileHandler.DeleteUnionListsFilesAsync();
+
             //Create a new zip file
             ZipArchive archive = ZipFile.Open(tempZipFile, ZipArchiveMode.Create);
 
@@ -487,12 +486,10 @@ namespace N2K_BackboneBackEnd.Services
 
                 #region Retrive the data to insert
                 UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
-                SqlConnection connection = new SqlConnection("Data Source=backbonedb.database.windows.net;Initial Catalog=n2k_backbone;User ID=developers;Password=4@<H5~XbrSPZWR7L"); //Change to _dataContext
-                connection.Open();
-                string sql = "SELECT SCI_code, SCI_Name, ISNULL(CAST(CASE WHEN Priority IN (1) THEN '*' ELSE '' END AS varchar(1)),''), ISNULL(Area,0), ISNULL(Length,0), ISNULL(Long,0), ISNULL(Lat,0)" +
-                    "FROM UnionListDetail WHERE idUnionListHeader = " + currentUnionList.idULHeader + " AND BioRegion = '" + bioRegion + "';"; //Change BioRegion
-                SqlCommand cmd = new SqlCommand(sql, connection);
-                SqlDataReader reader = cmd.ExecuteReader();
+
+                SqlParameter param1 = new SqlParameter("@idHeader", currentUnionList.idULHeader);
+                SqlParameter param2 = new SqlParameter("@bioregion", bioRegion);
+                List<UnionListDetailExcel> currentDetails = await _dataContext.Set<UnionListDetailExcel>().FromSqlRaw("exec dbo.spGetCurrentUnionListDetailByHeaderIdAndBioRegion  @idHeader, @bioregion ", param1, param2).AsNoTracking().ToListAsync();
                 #endregion
 
                 #region Styling
@@ -604,7 +601,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 sheetData.AppendChild(row);
                 row = new Row();
-                while (reader.Read())
+                foreach (UnionListDetailExcel ulde in currentDetails)
                 {
                     #region Content row creation
                     row = new Row();
@@ -612,43 +609,43 @@ namespace N2K_BackboneBackEnd.Services
                     //SCI code
                     cell = new Cell();
                     cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                    cell.CellValue = new CellValue(reader.GetString(0)); //The GetString is because SqlDataReader. With the Entity it's not necesary
+                    cell.CellValue = new CellValue(ulde.SCI_code); //The GetString is because SqlDataReader. With the Entity it's not necesary
                     cell.StyleIndex = 0;
                     row.AppendChild(cell);
                     //Name of SCI
                     cell = new Cell();
                     cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                    cell.CellValue = new CellValue(reader.GetString(1));
+                    cell.CellValue = new CellValue(ulde.SCI_Name);
                     cell.StyleIndex = 0;
                     row.AppendChild(cell);
                     //Priority
                     cell = new Cell();
                     cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                    cell.CellValue = new CellValue(reader.GetString(2));
+                    cell.CellValue = new CellValue(ulde.Priority);
                     cell.StyleIndex = 0;
                     row.AppendChild(cell);
                     //Area of SCI (ha)
                     cell = new Cell();
                     cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                    cell.CellValue = new CellValue(reader.GetDouble(3));
+                    cell.CellValue = new CellValue((double)ulde.Area);
                     cell.StyleIndex = 1;
                     row.AppendChild(cell);
                     //Length of SCI (km)
                     cell = new Cell();
                     cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                    cell.CellValue = new CellValue(reader.GetDouble(4));
+                    cell.CellValue = new CellValue((double)ulde.Length);
                     cell.StyleIndex = 1;
                     row.AppendChild(cell);
                     //Longitude
                     cell = new Cell();
                     cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                    cell.CellValue = new CellValue(reader.GetDouble(5));
+                    cell.CellValue = new CellValue((double)ulde.Long);
                     cell.StyleIndex = 1;
                     row.AppendChild(cell);
                     //Latitude
                     cell = new Cell();
                     cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                    cell.CellValue = new CellValue(reader.GetDouble(6));
+                    cell.CellValue = new CellValue((double)ulde.Lat);
                     cell.StyleIndex = 1;
                     row.AppendChild(cell);
                     #endregion
@@ -661,7 +658,6 @@ namespace N2K_BackboneBackEnd.Services
 
                 ZipArchiveEntry fileInZip = archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
                 File.Delete(filePath);
-                connection.Dispose();
             }
 
             archive.Dispose();
