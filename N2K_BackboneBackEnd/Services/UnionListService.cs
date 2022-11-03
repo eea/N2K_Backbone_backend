@@ -430,227 +430,240 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<int> UnionListDownload(long id)
+        public async Task<string> UnionListDownload(string bioregs)
         {
-            try
+            IAttachedFileHandler? fileHandler = null;
+            var username = GlobalData.Username;
+            if (_appSettings.Value.AttachedFiles.AzureBlob)
             {
-                string repositoryPath = "c:\\temp";
-                //string repositoryPath = "https://n2kbackbonesharedfiles.blob.core.windows.net\\justificationfiles";
+                fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+            }
+            else
+            {
+                fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+            }
 
-                string tempZipFile = repositoryPath + "\\" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_Union List.zip";
-                File.Delete(tempZipFile);
-                ZipArchive archive = ZipFile.Open(tempZipFile, ZipArchiveMode.Create);
+            string repositoryPath = Path.Combine(Directory.GetCurrentDirectory(), _appSettings.Value.AttachedFiles.JustificationFolder);
+            string tempZipFile = repositoryPath + "//" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + GlobalData.Username.Split("@")[0] + "_Union List.zip";
+            
+            //Delete file to avoid duplicates with the same name
+            string[] files = Directory.GetFiles(repositoryPath);
+            foreach (string file in files)
+            {
+                if (file.EndsWith("_Union List.zip"))
+                    File.Delete(file);
+            }
+            await fileHandler.DeleteUnionListsFilesAsync();
 
-                string[] bioRegions = { "ALP", "ATL", "MED" };
-                foreach (string bioRegion in bioRegions)
+            //Create a new zip file
+            ZipArchive archive = ZipFile.Open(tempZipFile, ZipArchiveMode.Create);
+
+            string[] bioRegions = bioregs.Split(',');
+            foreach (string bioRegion in bioRegions)
+            {
+                //The file path must be parametrized in the web.config
+                string filePath = repositoryPath + "//" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + bioRegion + "_Union List.xlsx";
+                //Create the Excel document
+                SpreadsheetDocument workbook = SpreadsheetDocument.Create(filePath, DocumentFormat.OpenXml.SpreadsheetDocumentType.Workbook);
+                //Create the different sections and parts necesaries for the Excel
+                WorkbookPart workbookPart = workbook.AddWorkbookPart();
+                workbook.WorkbookPart.Workbook = new Workbook();
+                workbook.WorkbookPart.Workbook.Sheets = new Sheets();
+                WorksheetPart sheetPart = workbook.WorkbookPart.AddNewPart<WorksheetPart>();
+                SheetData sheetData = new SheetData();
+                sheetPart.Worksheet = new Worksheet(sheetData);
+                Sheets sheets = workbook.WorkbookPart.Workbook.GetFirstChild<Sheets>();
+                string relationshipId = workbook.WorkbookPart.GetIdOfPart(sheetPart);
+                //Just a sheet for the excel book
+                uint sheetId = 1;
+                if (sheets.Elements<Sheet>().Count() > 0)
                 {
-                    //The file path must be parametrized in the web.config
-                    string filePath = repositoryPath + "\\" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + bioRegion + "_Union List.xlsx";
-                    //Create the Excel document
-                    SpreadsheetDocument workbook = SpreadsheetDocument.Create(filePath, DocumentFormat.OpenXml.SpreadsheetDocumentType.Workbook);
-                    //Create the different sections and parts necesaries for the Excel
-                    WorkbookPart workbookPart = workbook.AddWorkbookPart();
-                    workbook.WorkbookPart.Workbook = new Workbook();
-                    workbook.WorkbookPart.Workbook.Sheets = new Sheets();
-                    WorksheetPart sheetPart = workbook.WorkbookPart.AddNewPart<WorksheetPart>();
-                    SheetData sheetData = new SheetData();
-                    sheetPart.Worksheet = new Worksheet(sheetData);
-                    Sheets sheets = workbook.WorkbookPart.Workbook.GetFirstChild<Sheets>();
-                    string relationshipId = workbook.WorkbookPart.GetIdOfPart(sheetPart);
-                    //Just a sheet for the excel book
-                    uint sheetId = 1;
-                    if (sheets.Elements<Sheet>().Count() > 0)
-                    {
-                        sheetId = sheets.Elements<Sheet>().Select(s => s.SheetId.Value).Max() + 1;
-                    }
+                    sheetId = sheets.Elements<Sheet>().Select(s => s.SheetId.Value).Max() + 1;
+                }
 
-                    Sheet sheet = new Sheet() { Id = relationshipId, SheetId = sheetId, Name = bioRegion }; //Page name = BioRegion name
-                    sheets.Append(sheet);
+                Sheet sheet = new Sheet() { Id = relationshipId, SheetId = sheetId, Name = bioRegion }; //Page name = BioRegion name
+                sheets.Append(sheet);
 
-                    #region Retrive of the data to insert
-                    SqlConnection connection = new SqlConnection("Data Source=backbonedb.database.windows.net;Initial Catalog=n2k_backbone;User ID=developers;Password=4@<H5~XbrSPZWR7L"); //Change to _dataContext
-                    connection.Open();
-                    string sql = "SELECT SCI_code, SCI_Name, ISNULL(CAST(CASE WHEN Priority IN (1) THEN '*' ELSE '' END AS varchar(1)),''), ISNULL(Area,0), ISNULL(Length,0), ISNULL(Long,0), ISNULL(Lat,0)" +
-                        "FROM UnionListDetail WHERE idUnionListHeader = " + id + " AND BioRegion = '" + bioRegion + "';"; //Change BioRegion
-                    SqlCommand cmd = new SqlCommand(sql, connection);
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    #endregion
+                #region Retrive the data to insert
+                UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
 
-                    #region Styling
-                    WorkbookStylesPart stylesPart = workbook.WorkbookPart.AddNewPart<WorkbookStylesPart>();
-                    stylesPart.Stylesheet = new Stylesheet(
-                        new Fonts(
-                            new Font(                                                           // Index 0 - The default font.
-                                new DocumentFormat.OpenXml.Spreadsheet.FontSize() { Val = 11 },
-                                new Color() { Rgb = new HexBinaryValue() { Value = "000000" } },
-                                new FontName() { Val = "Calibri" })
-                        ),
-                        new Fills(
-                            new Fill(                                                           // Index 0 - The default fill.
-                                new PatternFill() { PatternType = PatternValues.None }),
-                            new Fill(                                                           // Index 1 - The grey fill.
-                                new PatternFill(
-                                    new ForegroundColor() { Rgb = new HexBinaryValue() { Value = "C0C0C0" } }
-                                )
-                                { PatternType = PatternValues.Solid }
+                SqlParameter param1 = new SqlParameter("@idHeader", currentUnionList.idULHeader);
+                SqlParameter param2 = new SqlParameter("@bioregion", bioRegion);
+                List<UnionListDetailExcel> currentDetails = await _dataContext.Set<UnionListDetailExcel>().FromSqlRaw("exec dbo.spGetCurrentUnionListDetailByHeaderIdAndBioRegion  @idHeader, @bioregion ", param1, param2).AsNoTracking().ToListAsync();
+                #endregion
+
+                #region Styling
+                WorkbookStylesPart stylesPart = workbook.WorkbookPart.AddNewPart<WorkbookStylesPart>();
+                stylesPart.Stylesheet = new Stylesheet(
+                    new Fonts(
+                        new Font(                                                           // Index 0 - The default font.
+                            new DocumentFormat.OpenXml.Spreadsheet.FontSize() { Val = 11 },
+                            new Color() { Rgb = new HexBinaryValue() { Value = "000000" } },
+                            new FontName() { Val = "Calibri" })
+                    ),
+                    new Fills(
+                        new Fill(                                                           // Index 0 - The default fill.
+                            new PatternFill() { PatternType = PatternValues.None }),
+                        new Fill(                                                           // Index 1 - The grey fill.
+                            new PatternFill(
+                                new ForegroundColor() { Rgb = new HexBinaryValue() { Value = "C0C0C0" } }
                             )
-                        ),
-                        new Borders(
-                            new Border(                                                         // Index 0 - The default border.
-                                new LeftBorder(),
-                                new RightBorder(),
-                                new TopBorder(),
-                                new BottomBorder(),
-                                new DiagonalBorder()),
-                            new Border(                                                         // Index 1 - Applies a Left, Right, Top, Bottom border to a cell
-                                new LeftBorder(
-                                    new Color() { Auto = true }
-                                )
-                                { Style = BorderStyleValues.Thin },
-                                new RightBorder(
-                                    new Color() { Auto = true }
-                                )
-                                { Style = BorderStyleValues.Thin },
-                                new TopBorder(
-                                    new Color() { Auto = true }
-                                )
-                                { Style = BorderStyleValues.Thin },
-                                new BottomBorder(
-                                    new Color() { Auto = true }
-                                )
-                                { Style = BorderStyleValues.Thin }
-                            )
-                        ),
-                        new CellFormats(
-                            new CellFormat(new Alignment() { Horizontal = HorizontalAlignmentValues.Left, Vertical = VerticalAlignmentValues.Bottom })
-                            { FontId = 0, FillId = 0, BorderId = 0, ApplyFont = true },   // Index 0 - Left align. The default cell style.  If a cell does not have a style index applied it will use this style combination instead
-
-                            new CellFormat(new Alignment() { Horizontal = HorizontalAlignmentValues.Right, Vertical = VerticalAlignmentValues.Bottom })
-                            { FontId = 0, FillId = 0, BorderId = 0, ApplyFont = true },   // Index 1 - Right align
-
-                            new CellFormat(new Alignment() { Horizontal = HorizontalAlignmentValues.Center, Vertical = VerticalAlignmentValues.Bottom })
-                            { FontId = 0, FillId = 1, BorderId = 1, ApplyFont = true }    // Index 2 - Header
+                            { PatternType = PatternValues.Solid }
                         )
-                    );
-                    stylesPart.Stylesheet.Save();
-                    #endregion
+                    ),
+                    new Borders(
+                        new Border(                                                         // Index 0 - The default border.
+                            new LeftBorder(),
+                            new RightBorder(),
+                            new TopBorder(),
+                            new BottomBorder(),
+                            new DiagonalBorder()),
+                        new Border(                                                         // Index 1 - Applies a Left, Right, Top, Bottom border to a cell
+                            new LeftBorder(
+                                new Color() { Auto = true }
+                            )
+                            { Style = BorderStyleValues.Thin },
+                            new RightBorder(
+                                new Color() { Auto = true }
+                            )
+                            { Style = BorderStyleValues.Thin },
+                            new TopBorder(
+                                new Color() { Auto = true }
+                            )
+                            { Style = BorderStyleValues.Thin },
+                            new BottomBorder(
+                                new Color() { Auto = true }
+                            )
+                            { Style = BorderStyleValues.Thin }
+                        )
+                    ),
+                    new CellFormats(
+                        new CellFormat(new Alignment() { Horizontal = HorizontalAlignmentValues.Left, Vertical = VerticalAlignmentValues.Bottom })
+                        { FontId = 0, FillId = 0, BorderId = 0, ApplyFont = true },   // Index 0 - Left align. The default cell style.  If a cell does not have a style index applied it will use this style combination instead
 
-                    Row row = new Row();
-                    Cell cell = new Cell();
+                        new CellFormat(new Alignment() { Horizontal = HorizontalAlignmentValues.Right, Vertical = VerticalAlignmentValues.Bottom })
+                        { FontId = 0, FillId = 0, BorderId = 0, ApplyFont = true },   // Index 1 - Right align
 
-                    #region Header of the columns, but we can handwrite it because we know the structure
+                        new CellFormat(new Alignment() { Horizontal = HorizontalAlignmentValues.Center, Vertical = VerticalAlignmentValues.Bottom })
+                        { FontId = 0, FillId = 1, BorderId = 1, ApplyFont = true }    // Index 2 - Header
+                    )
+                );
+                stylesPart.Stylesheet.Save();
+                #endregion
+
+                Row row = new Row();
+                Cell cell = new Cell();
+
+                #region Header of the columns, but we can handwrite it because we know the structure
+                //SCI code
+                cell.DataType = CellValues.String;
+                cell.CellValue = new CellValue("SCI code");
+                cell.StyleIndex = 2;
+                row.AppendChild(cell);
+                cell = new Cell();
+                //Name of SCI
+                cell.DataType = CellValues.String;
+                cell.CellValue = new CellValue("Name of SCI");
+                cell.StyleIndex = 2;
+                row.AppendChild(cell);
+                cell = new Cell();
+                //Priority
+                cell.DataType = CellValues.String;
+                cell.CellValue = new CellValue("Priority");
+                cell.StyleIndex = 2;
+                row.AppendChild(cell);
+                cell = new Cell();
+                //Area of SCI (ha)
+                cell.DataType = CellValues.String;
+                cell.CellValue = new CellValue("Area of SCI (ha)");
+                cell.StyleIndex = 2;
+                row.AppendChild(cell);
+                cell = new Cell();
+                //Length of SCI (km)
+                cell.DataType = CellValues.String;
+                cell.CellValue = new CellValue("Length of SCI (km)");
+                cell.StyleIndex = 2;
+                row.AppendChild(cell);
+                cell = new Cell();
+                //Longitude
+                cell.DataType = CellValues.String;
+                cell.CellValue = new CellValue("Longitude");
+                cell.StyleIndex = 2;
+                row.AppendChild(cell);
+                cell = new Cell();
+                //Latitude
+                cell.DataType = CellValues.String;
+                cell.CellValue = new CellValue("Latitude");
+                cell.StyleIndex = 2;
+                row.AppendChild(cell);
+                cell = new Cell();
+                #endregion
+
+                sheetData.AppendChild(row);
+                row = new Row();
+                foreach (UnionListDetailExcel ulde in currentDetails)
+                {
+                    #region Content row creation
+                    row = new Row();
+                    //In the same way we know the structure of the data, so we can call for each field
                     //SCI code
-                    cell.DataType = CellValues.String;
-                    cell.CellValue = new CellValue("SCI code");
-                    cell.StyleIndex = 2;
-                    row.AppendChild(cell);
                     cell = new Cell();
+                    cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                    cell.CellValue = new CellValue(ulde.SCI_code); //The GetString is because SqlDataReader. With the Entity it's not necesary
+                    cell.StyleIndex = 0;
+                    row.AppendChild(cell);
                     //Name of SCI
-                    cell.DataType = CellValues.String;
-                    cell.CellValue = new CellValue("Name of SCI");
-                    cell.StyleIndex = 2;
-                    row.AppendChild(cell);
                     cell = new Cell();
+                    cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                    cell.CellValue = new CellValue(ulde.SCI_Name);
+                    cell.StyleIndex = 0;
+                    row.AppendChild(cell);
                     //Priority
-                    cell.DataType = CellValues.String;
-                    cell.CellValue = new CellValue("Priority");
-                    cell.StyleIndex = 2;
-                    row.AppendChild(cell);
                     cell = new Cell();
+                    cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                    cell.CellValue = new CellValue(ulde.Priority);
+                    cell.StyleIndex = 0;
+                    row.AppendChild(cell);
                     //Area of SCI (ha)
-                    cell.DataType = CellValues.String;
-                    cell.CellValue = new CellValue("Area of SCI (ha)");
-                    cell.StyleIndex = 2;
-                    row.AppendChild(cell);
                     cell = new Cell();
+                    cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                    cell.CellValue = new CellValue((double)ulde.Area);
+                    cell.StyleIndex = 1;
+                    row.AppendChild(cell);
                     //Length of SCI (km)
-                    cell.DataType = CellValues.String;
-                    cell.CellValue = new CellValue("Length of SCI (km)");
-                    cell.StyleIndex = 2;
-                    row.AppendChild(cell);
                     cell = new Cell();
+                    cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                    cell.CellValue = new CellValue((double)ulde.Length);
+                    cell.StyleIndex = 1;
+                    row.AppendChild(cell);
                     //Longitude
-                    cell.DataType = CellValues.String;
-                    cell.CellValue = new CellValue("Longitude");
-                    cell.StyleIndex = 2;
-                    row.AppendChild(cell);
                     cell = new Cell();
+                    cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                    cell.CellValue = new CellValue((double)ulde.Long);
+                    cell.StyleIndex = 1;
+                    row.AppendChild(cell);
                     //Latitude
-                    cell.DataType = CellValues.String;
-                    cell.CellValue = new CellValue("Latitude");
-                    cell.StyleIndex = 2;
-                    row.AppendChild(cell);
                     cell = new Cell();
+                    cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                    cell.CellValue = new CellValue((double)ulde.Lat);
+                    cell.StyleIndex = 1;
+                    row.AppendChild(cell);
                     #endregion
 
                     sheetData.AppendChild(row);
-                    row = new Row();
-                    while (reader.Read())
-                    {
-                        #region Content row creation
-                        row = new Row();
-                        //In the same way we know the structure of the data, so we can call for each field
-                        //SCI code
-                        cell = new Cell();
-                        cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                        cell.CellValue = new CellValue(reader.GetString(0)); //The GetString is because SqlDataReader. With the Entity it's not necesary
-                        cell.StyleIndex = 0;
-                        row.AppendChild(cell);
-                        //Name of SCI
-                        cell = new Cell();
-                        cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                        cell.CellValue = new CellValue(reader.GetString(1));
-                        cell.StyleIndex = 0;
-                        row.AppendChild(cell);
-                        //Priority
-                        cell = new Cell();
-                        cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                        cell.CellValue = new CellValue(reader.GetString(2));
-                        cell.StyleIndex = 0;
-                        row.AppendChild(cell);
-                        //Area of SCI (ha)
-                        cell = new Cell();
-                        cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                        cell.CellValue = new CellValue(reader.GetDouble(3));
-                        cell.StyleIndex = 1;
-                        row.AppendChild(cell);
-                        //Length of SCI (km)
-                        cell = new Cell();
-                        cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                        cell.CellValue = new CellValue(reader.GetDouble(4));
-                        cell.StyleIndex = 1;
-                        row.AppendChild(cell);
-                        //Longitude
-                        cell = new Cell();
-                        cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                        cell.CellValue = new CellValue(reader.GetDouble(5));
-                        cell.StyleIndex = 1;
-                        row.AppendChild(cell);
-                        //Latitude
-                        cell = new Cell();
-                        cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                        cell.CellValue = new CellValue(reader.GetDouble(6));
-                        cell.StyleIndex = 1;
-                        row.AppendChild(cell);
-                        #endregion
-
-                        sheetData.AppendChild(row);
-                    }
-
-                    workbookPart.Workbook.Save();
-                    workbook.Close();
-
-                    ZipArchiveEntry fileInZip = archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
-                    File.Delete(filePath);
                 }
-                archive.Dispose();
 
-                return 1;
+                workbookPart.Workbook.Save();
+                workbook.Close();
+
+                ZipArchiveEntry fileInZip = archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
+                File.Delete(filePath);
             }
-            catch (Exception ex)
-            {
-                return 0;
-            }
+
+            archive.Dispose();
+            List<String> url = await fileHandler.UploadFileAsync(tempZipFile);
+
+            return url[0];
         }
 
         public async Task<UnionListComparerSummaryViewModel> GetUnionListComparerSummary(IMemoryCache _cache)
@@ -680,14 +693,6 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<UnionListComparerDetailedViewModel>> GetUnionListComparer(IMemoryCache _cache, int page = 1, int pageLimit = 0)
         {
-            //Delete Current if it already exists
-            UnionListHeader? tempUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby));
-            if (tempUnionList != null)
-            {
-                _dataContext.Set<UnionListHeader>().Remove(tempUnionList);
-                await _dataContext.SaveChangesAsync();
-            }
-
             //Get latest release
             UnionListHeader? latestUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) && (ulh.CreatedBy != _appSettings.Value.current_ul_createdby) && (ulh.Final == true)).OrderByDescending(ulh => ulh.Date).FirstOrDefaultAsync();
 
@@ -701,14 +706,6 @@ namespace N2K_BackboneBackEnd.Services
             UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
 
             List<UnionListComparerDetailedViewModel> ulSites = await CompareUnionLists(latestUnionList.idULHeader, currentUnionList.idULHeader, null, _cache, page, pageLimit);
-            var startRow = (page - 1) * pageLimit;
-            if (pageLimit > 0)
-            {
-                ulSites = ulSites
-                    .Skip(startRow)
-                    .Take(pageLimit)
-                    .ToList();
-            }
 
             return ulSites;
         }

@@ -360,16 +360,16 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("Download")]
         [HttpGet]
-        public async Task<ActionResult<int>> UnionListDownload(long id)
+        public async Task<ActionResult<string>> UnionListDownload(string bioregs)
         {
             ServiceResponse<string> response = new ServiceResponse<string>();
             try
             {
-                int unionListHeader = await _unionListService.UnionListDownload(id);
+                string unionListHeader = await _unionListService.UnionListDownload(bioregs);
                 response.Success = true;
                 response.Message = "";
-                response.Data = "https://servidor/url/nombrearchivo.xslx";
-                response.Count = 1;
+                response.Data = unionListHeader;
+                response.Count = bioregs.Split(',').Length;
                 return Ok(response);
             }
             catch (Exception ex)

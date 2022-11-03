@@ -18,8 +18,8 @@ namespace N2K_BackboneBackEnd.Helpers
         {
             List<String> uploadedFiles = new List<string>();
             if (files == null || files.Files == null) return uploadedFiles;
-            var invalidFile =await AllFilesValid(files);
-          
+            var invalidFile = await AllFilesValid(files);
+
             foreach (var f in files.Files)
             {
 
@@ -50,6 +50,22 @@ namespace N2K_BackboneBackEnd.Helpers
             return uploadedFiles;
         }
 
+        public async Task<List<string>> UploadFileAsync(string file)
+        {
+            List<String> uploadedFiles = new List<string>();
+            if (String.IsNullOrEmpty(file)) return uploadedFiles;
+
+#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
+            var fileName = Path.GetFileName(file);
+
+            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
+
+            await Task.Delay(10);
+
+            return uploadedFiles;
+        }
+
 
         public async Task<int> DeleteFileAsync(string fileName)
         {
@@ -60,6 +76,24 @@ namespace N2K_BackboneBackEnd.Helpers
 
             var fullPath = Path.Combine(_pathToSave, fileName);
             File.Delete(fullPath);
+            return 1;
+
+        }
+
+
+        public async Task<int> DeleteUnionListsFilesAsync()
+        {
+            await Task.Delay(1);
+            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+            var filesUrl = string.Format("{0}{1}/", remoteUrl, _attachedFilesConfig.JustificationFolder);
+
+            string[] files = Directory.GetFiles(filesUrl);
+            foreach (string file in files)
+            {
+                if (file.EndsWith("_Union List.zip"))
+                    File.Delete(file);
+            }
+
             return 1;
 
         }
