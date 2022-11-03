@@ -693,14 +693,6 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<UnionListComparerDetailedViewModel>> GetUnionListComparer(IMemoryCache _cache, int page = 1, int pageLimit = 0)
         {
-            //Delete Current if it already exists
-            UnionListHeader? tempUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby));
-            if (tempUnionList != null)
-            {
-                _dataContext.Set<UnionListHeader>().Remove(tempUnionList);
-                await _dataContext.SaveChangesAsync();
-            }
-
             //Get latest release
             UnionListHeader? latestUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) && (ulh.CreatedBy != _appSettings.Value.current_ul_createdby) && (ulh.Final == true)).OrderByDescending(ulh => ulh.Date).FirstOrDefaultAsync();
 
@@ -714,14 +706,6 @@ namespace N2K_BackboneBackEnd.Services
             UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
 
             List<UnionListComparerDetailedViewModel> ulSites = await CompareUnionLists(latestUnionList.idULHeader, currentUnionList.idULHeader, null, _cache, page, pageLimit);
-            var startRow = (page - 1) * pageLimit;
-            if (pageLimit > 0)
-            {
-                ulSites = ulSites
-                    .Skip(startRow)
-                    .Take(pageLimit)
-                    .ToList();
-            }
 
             return ulSites;
         }
