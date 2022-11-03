@@ -316,7 +316,24 @@ namespace N2K_BackboneBackEnd.Services
             ).ToList();
         }
 
+        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country)
+        {
+            SqlParameter param1 = new SqlParameter("@country", country);
+            IQueryable<SiteCodeVersion> changes = _dataContext
+                .Set<SiteCodeVersion>()
+                .FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryNonPending]  @country", param1);
+            var result = new List<SiteCodeView>();
+            result = (await changes.ToListAsync()).Select(x =>
+                 new SiteCodeView
+                 {
+                     SiteCode = x.SiteCode,
+                     Version = x.Version,
+                     Name = x.Name
+                 }
+            ).ToList();
 
+            return result;
+        }
 
         public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool  refresh=false)
         {           
