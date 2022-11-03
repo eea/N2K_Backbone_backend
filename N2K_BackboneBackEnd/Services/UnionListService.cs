@@ -696,12 +696,6 @@ namespace N2K_BackboneBackEnd.Services
             //Get latest release
             UnionListHeader? latestUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) && (ulh.CreatedBy != _appSettings.Value.current_ul_createdby) && (ulh.Final == true)).OrderByDescending(ulh => ulh.Date).FirstOrDefaultAsync();
 
-            //Create Current
-            SqlParameter param1 = new SqlParameter("@name", _appSettings.Value.current_ul_name);
-            SqlParameter param2 = new SqlParameter("@creator", _appSettings.Value.current_ul_createdby);
-            SqlParameter param3 = new SqlParameter("@final", false);
-            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final ", param1, param2, param3);
-
             //Get Current
             UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
 
