@@ -65,14 +65,26 @@ namespace N2K_BackboneBackEnd.Services
 
         private async Task<List<BioRegionSiteCode>> GetBioregionSiteCodesInUnionListComparer(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache)
         {
-            string listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions.Replace(",", "_"));
+            string listName = string.Format("{0}_{1}_{2}_{3}", GlobalData.Username, ulBioRegSites, idSource, idTarget);
             List<BioRegionSiteCode> resultCodes = new List<BioRegionSiteCode>();
             if (cache.TryGetValue(listName, out List<BioRegionSiteCode> cachedList))
             {
                 resultCodes = cachedList;
+                if (!string.IsNullOrEmpty(bioRegions))
+                {
+                    List<string> bioRegList = bioRegions.Split(",").ToList();
+                    resultCodes = (from rc in resultCodes
+                                   join brl in bioRegList on rc.BioRegion equals brl
+                                   select rc).OrderBy(rc => rc.BioRegion).ToList();
+                }
             }
             else
             {
+                if (!string.IsNullOrEmpty(bioRegions))
+                {
+                    listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions.Replace(",", "_"));
+                }
+
                 SqlParameter param1 = new SqlParameter("@idULHeaderSource", idSource);
                 SqlParameter param2 = new SqlParameter("@idULHeaderTarget", idTarget);
                 SqlParameter param3 = new SqlParameter("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
@@ -445,7 +457,7 @@ namespace N2K_BackboneBackEnd.Services
 
             string repositoryPath = Path.Combine(Directory.GetCurrentDirectory(), _appSettings.Value.AttachedFiles.JustificationFolder);
             string tempZipFile = repositoryPath + "//" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + GlobalData.Username.Split("@")[0] + "_Union List.zip";
-            
+
             //Delete file to avoid duplicates with the same name
             string[] files = Directory.GetFiles(repositoryPath);
             foreach (string file in files)
@@ -691,7 +703,7 @@ namespace N2K_BackboneBackEnd.Services
             return await GetCompareSummary(latestUnionList.idULHeader, currentUnionList.idULHeader, null, _cache);
         }
 
-        public async Task<List<UnionListComparerDetailedViewModel>> GetUnionListComparer(IMemoryCache _cache, int page = 1, int pageLimit = 0)
+        public async Task<List<UnionListComparerDetailedViewModel>> GetUnionListComparer(IMemoryCache _cache, string? bioregions, int page = 1, int pageLimit = 0)
         {
             //Get latest release
             UnionListHeader? latestUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) && (ulh.CreatedBy != _appSettings.Value.current_ul_createdby) && (ulh.Final == true)).OrderByDescending(ulh => ulh.Date).FirstOrDefaultAsync();
@@ -699,7 +711,7 @@ namespace N2K_BackboneBackEnd.Services
             //Get Current
             UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
 
-            List<UnionListComparerDetailedViewModel> ulSites = await CompareUnionLists(latestUnionList.idULHeader, currentUnionList.idULHeader, null, _cache, page, pageLimit);
+            List<UnionListComparerDetailedViewModel> ulSites = await CompareUnionLists(latestUnionList.idULHeader, currentUnionList.idULHeader, bioregions, _cache, page, pageLimit);
 
             return ulSites;
         }

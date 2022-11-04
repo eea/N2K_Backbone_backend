@@ -17,6 +17,6 @@ namespace N2K_BackboneBackEnd.Services
         Task<int> DeleteUnionList(long id);
         Task<string> UnionListDownload(string bioregs);
         Task<UnionListComparerSummaryViewModel> GetUnionListComparerSummary(IMemoryCache _cache);
-        Task<List<UnionListComparerDetailedViewModel>> GetUnionListComparer(IMemoryCache _cache, int page = 1, int pageLimit = 0);
+        Task<List<UnionListComparerDetailedViewModel>> GetUnionListComparer(IMemoryCache _cache, string? bioregions, int page = 1, int pageLimit = 0);
     }
 }
