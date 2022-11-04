@@ -405,7 +405,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("GetUnionListComparer=page={page:int}&limit={limit:int}")]
+        [HttpGet("GetUnionListComparer/page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer(int page, int limit)
         {
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
@@ -428,7 +428,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("GetUnionListComparer=bioregions={bioregions:string}&page={page:int}&limit={limit:int}")]
+        [HttpGet("GetUnionListComparer/bioregions={bioregions:string}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer(string bioregions, int page, int limit)
         {
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
