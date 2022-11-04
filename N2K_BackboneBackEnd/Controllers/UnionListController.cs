@@ -411,7 +411,30 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
             {
-                var unionListCompareSummary = await _unionListService.GetUnionListComparer(_cache, page, limit);
+                var unionListCompareSummary = await _unionListService.GetUnionListComparer(_cache, null, page, limit);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListCompareSummary;
+                response.Count = (unionListCompareSummary == null) ? 0 : unionListCompareSummary.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListComparerDetailedViewModel>();
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("GetUnionListComparer=bioregions={bioregions:string}&page={page:int}&limit={limit:int}")]
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer(string bioregions, int page, int limit)
+        {
+            var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
+            try
+            {
+                var unionListCompareSummary = await _unionListService.GetUnionListComparer(_cache, bioregions, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListCompareSummary;
