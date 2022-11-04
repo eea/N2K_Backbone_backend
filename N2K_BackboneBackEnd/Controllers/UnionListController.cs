@@ -6,6 +6,7 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
+using System.Web.Http.OData;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
@@ -405,31 +406,10 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("GetUnionListComparer/page={page:int}&limit={limit:int}")]
-        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer(int page, int limit)
-        {
-            var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
-            try
-            {
-                var unionListCompareSummary = await _unionListService.GetUnionListComparer(_cache, null, page, limit);
-                response.Success = true;
-                response.Message = "";
-                response.Data = unionListCompareSummary;
-                response.Count = (unionListCompareSummary == null) ? 0 : unionListCompareSummary.Count;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = new List<UnionListComparerDetailedViewModel>();
-                return Ok(response);
-            }
-        }
 
-        [HttpGet("GetUnionListComparer/bioregions={bioregions:string}&page={page:int}&limit={limit:int}")]
-        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer(string bioregions, int page, int limit)
+        [HttpGet]
+        [Route("GetUnionListComparer"), EnableQuery()]
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer([FromQuery(Name = "bioregions")] string? bioregions, [FromQuery(Name = "page")] int page, [FromQuery(Name = "limit")] int limit)
         {
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
