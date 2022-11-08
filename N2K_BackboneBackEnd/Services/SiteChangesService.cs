@@ -161,7 +161,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     else
                     {
-                        if (!siteChange.subRows.Any(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType))
+                        if (!siteChange.subRows.Any(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType && ch.Level == change.Level))
                         {
                             siteChange.subRows.Add(new SiteChangeView
                             {
@@ -179,7 +179,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         else
                         {
-                            siteChange.subRows.Where(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType).FirstOrDefault().NumChanges++;
+                            siteChange.subRows.Where(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType && ch.Level == change.Level).FirstOrDefault().NumChanges++;
                         }
                         siteChange.NumChanges++;
                     }
