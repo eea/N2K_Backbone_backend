@@ -249,6 +249,7 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "SaveEdition", "");
+                throw ex;
             }
 
             return "OK";

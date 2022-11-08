@@ -290,7 +290,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChange;
-                response.Count = siteChange == null ? 1 : 0;
+                response.Count = siteChange == null ? 0 : 1;
                 return Ok(response);
             }
             catch (Exception ex)

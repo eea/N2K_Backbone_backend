@@ -43,7 +43,7 @@ namespace N2K_BackboneBackEnd.Services
 
             List<UnionListHeader> unionListHeaders = await _dataContext.Set<UnionListHeader>().FromSqlRaw($"exec dbo.spGetUnionListHeadersByBioRegion  @bioregion",
                             param1).AsNoTracking().ToListAsync();
-
+            unionListHeaders = unionListHeaders.Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) || (ulh.CreatedBy != _appSettings.Value.current_ul_createdby)).ToList();
             return unionListHeaders;
         }
 
