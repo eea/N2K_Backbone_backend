@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.ServiceResponse;
 using AutoMapper;
@@ -17,12 +18,14 @@ namespace N2K_BackboneBackEnd.Controllers
     {
         private readonly ISiteChangesService _siteChangesService;
         private readonly IMapper _mapper;
+        private IMemoryCache _cache;
 
 
-        public SiteChangesController(ISiteChangesService siteChangesService, IMapper mapper)
+        public SiteChangesController(ISiteChangesService siteChangesService, IMapper mapper,IMemoryCache cache)
         {
             _siteChangesService = siteChangesService;
             _mapper = mapper;
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
 
@@ -32,7 +35,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(String.Empty, null, null);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(String.Empty, null, null, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -54,7 +57,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, null, null, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, null, null,_cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -77,7 +80,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, null);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, null, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -101,7 +104,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, null, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, null,_cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -124,7 +127,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, null, level);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, null, level, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -147,7 +150,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(String.Empty, null, level, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(String.Empty, null, level, _cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -171,7 +174,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, level);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, level, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -196,7 +199,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, level, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, level, _cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -220,7 +223,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, status, null);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, status, null, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -244,7 +247,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(String.Empty, status, null, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(String.Empty, status, null, _cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -267,7 +270,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, null);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, null, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -290,7 +293,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, null, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, null, _cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -314,7 +317,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(String.Empty, status, level);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(String.Empty, status, level, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -338,7 +341,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, status, level, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, status, level, _cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -361,7 +364,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, level);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, level, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -384,7 +387,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDb>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, level, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, level, _cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -417,11 +420,11 @@ namespace N2K_BackboneBackEnd.Controllers
                 }
                 else
                 {
-                    var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, null, null);
+                    var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, null, null,_cache);
                     response.Success = true;
                     response.Message = "";
                     response.Data = siteCodes;
-                    response.Count = await _siteChangesService.GetPendingChangesByCountry(country);
+                    response.Count = await _siteChangesService.GetPendingChangesByCountry(country,_cache);
                 }
                 return Ok(response);
             }
@@ -483,11 +486,11 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteCodeView>>();
             try
             {
-                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, status, level);
+                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, status, level,_cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteCodes;
-                response.Count = await _siteChangesService.GetPendingChangesByCountry(country);
+                response.Count = await _siteChangesService.GetPendingChangesByCountry(country,_cache);
                 return Ok(response);
             }
             catch (Exception ex)
@@ -499,7 +502,28 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
+        [Route("GetNonPendingSiteCodes/country={country:string}/")]
+        [HttpGet()]
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetNonPendingSiteCodes(string country)
+        {
+            var response = new ServiceResponse<List<SiteCodeView>>();
+            try
+            {
+                var siteCodes = await _siteChangesService.GetNonPendingSiteCodes(country);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteCodes;
+                response.Count = await _siteChangesService.GetPendingChangesByCountry(country,_cache);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                return Ok(response);
+            }
+        }
 
 
         [HttpGet("GetSiteChangesDetail/siteCode={pSiteCode}&version={pCountryVersion}")]
@@ -538,7 +562,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<ModifiedSiteCode>>();
             try
             {
-                var siteChanges = await _siteChangesService.AcceptChanges(acceptedChanges);
+                var siteChanges = await _siteChangesService.AcceptChanges(acceptedChanges, _cache );
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -565,7 +589,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<ModifiedSiteCode>>();
             try
             {
-                var siteChanges = await _siteChangesService.MoveToPending(changedSiteStatus);
+                var siteChanges = await _siteChangesService.MoveToPending(changedSiteStatus,_cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -591,7 +615,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<ModifiedSiteCode>>();
             try
             {
-                var siteChanges = await _siteChangesService.RejectChanges(rejectedChanges);
+                var siteChanges = await _siteChangesService.RejectChanges(rejectedChanges,_cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;

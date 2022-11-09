@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
+using System.Web.Http.OData;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
@@ -15,14 +17,16 @@ namespace N2K_BackboneBackEnd.Controllers
     {
         private readonly IUnionListService _unionListService;
         private readonly IMapper _mapper;
+        private IMemoryCache _cache;
 
-        public UnionListController(IUnionListService unionListService, IMapper mapper)
+        public UnionListController(IUnionListService unionListService, IMapper mapper, IMemoryCache cache)
         {
             _unionListService = unionListService;
             _mapper = mapper;
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
-        [Route("UnionList/GetBioRegionTypes")]
+        [Route("GetBioRegionTypes")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<BioRegionTypes>>>> GetUnionBioRegionTypes()
         {
@@ -46,7 +50,31 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetUnionLists/bioRegion={bioRegionShortCode}")]
+        [Route("GetUnionLists")]
+        [HttpGet]
+        public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion()
+        {
+            var response = new ServiceResponse<List<UnionListHeader>>();
+            try
+            {
+                var unionListHeader = await _unionListService.GetUnionListHeadersByBioRegion(null);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListHeader;
+                response.Count = (unionListHeader == null) ? 0 : unionListHeader.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListHeader>();
+                return Ok(response);
+            }
+        }
+
+        [Route("GetUnionLists/bioRegion={bioRegionShortCode}")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersByBioRegion(string? bioRegionShortCode)
         {
@@ -70,31 +98,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/GetCurrentListDetailed")]
-        [HttpGet]
-        public async Task<ActionResult<ServiceResponse<List<UnionListDetail>>>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode)
-        {
-            var response = new ServiceResponse<List<UnionListDetail>>();
-            try
-            {
-                var unionListDetail = await _unionListService.GetCurrentSitesUnionListDetailByBioRegion(bioRegionShortCode);
-                response.Success = true;
-                response.Message = "";
-                response.Data = unionListDetail;
-                response.Count = (unionListDetail == null) ? 0 : unionListDetail.Count;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = new List<UnionListDetail>();
-                return Ok(response);
-            }
-        }
-
-        [Route("UnionList/GetUnionLists/id={id}")]
+        [Route("GetUnionLists/id={id}")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetUnionListHeadersById(long? id)
         {
@@ -118,14 +122,14 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Compare")]
+        [Route("GetCurrentListDetailed")]
         [HttpGet]
-        public async Task<ActionResult<ServiceResponse<List<UnionListDetail>>>> Compare(long? idTarget, long? idSource)
+        public async Task<ActionResult<ServiceResponse<List<UnionListDetail>>>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode)
         {
             var response = new ServiceResponse<List<UnionListDetail>>();
             try
             {
-                var unionListDetail = await _unionListService.CompareUnionLists(idTarget, idSource);
+                var unionListDetail = await _unionListService.GetCurrentSitesUnionListDetailByBioRegion(bioRegionShortCode);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListDetail;
@@ -142,18 +146,159 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Create")]
+
+        [HttpGet("GetCompareSummary/idSource={idSource:int}&idTarget={idTarget:int}")]
+        public async Task<ActionResult<ServiceResponse<UnionListComparerSummaryViewModel>>> GetCompareSummary(long? idSource, long? idTarget)
+        {
+            var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
+            try
+            {
+                var unionListCompareSummary= await _unionListService.GetCompareSummary(idSource, idTarget, null, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListCompareSummary;
+                response.Count = (unionListCompareSummary == null) ? 0 : unionListCompareSummary.BioRegSiteCodes.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new UnionListComparerSummaryViewModel() ;
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("GetCompareSummary/idSource={idSource:int}&idTarget={idTarget:int}&bioRegions={bioRegions:string}")]
+        public async Task<ActionResult<ServiceResponse<UnionListComparerSummaryViewModel>>> GetCompareSummaryByBioRegion(long? idSource, long? idTarget, string? bioRegions )
+        {
+            var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
+            try
+            {
+                var unionListCompareSummary = await _unionListService.GetCompareSummary(idSource, idTarget, bioRegions,_cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListCompareSummary;
+                response.Count = (unionListCompareSummary == null) ? 0 : unionListCompareSummary.BioRegSiteCodes.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new UnionListComparerSummaryViewModel();
+                return Ok(response);
+            }
+        }
+
+
+        [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}")]
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> Compare(long idSource, long idTarget)
+        {
+            var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
+            try
+            {
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget,null,_cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListDetail;
+                response.Count = (unionListDetail == null) ? 0 : unionListDetail.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListComparerDetailedViewModel>();
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}&bioRegions={bioRegions:string}")]
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> CompareByBioRegion(long idSource, long idTarget,string bioRegions)
+        {
+            var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
+            try
+            {
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, bioRegions, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListDetail;
+                response.Count = (unionListDetail == null) ? 0 : unionListDetail.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListComparerDetailedViewModel>();
+                return Ok(response);
+            }
+        }
+
+
+        [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}&page={page:int}&limit={limit:int}")]
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> ComparePaginated(long idSource, long idTarget, int page, int limit)
+        {
+            var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
+            try
+            {
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget,null,_cache, page,limit);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListDetail;
+                response.Count = (unionListDetail == null) ? 0 : unionListDetail.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListComparerDetailedViewModel>();
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("Compare/idSource={idSource:int}&idTarget={idTarget:int}&bioRegions={bioRegions:string}&page={page:int}&limit={limit:int}")]
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> ComparePaginatedByBioregion(long idSource, long idTarget,string bioRegions, int page, int limit)    
+        {
+            var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
+            try
+            {
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, bioRegions,_cache, page, limit);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListDetail;
+                response.Count = (unionListDetail == null) ? 0 : unionListDetail.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListComparerDetailedViewModel>();
+                return Ok(response);
+            }
+        }
+
+        [Route("Create")]
         [HttpPost]
-        public async Task<ActionResult<UnionListHeader>> CreateUnionList(string name, Boolean final)
+        public async Task<ActionResult<List<UnionListHeader>>> CreateUnionList([FromBody] UnionListHeaderInputParam unionList)
         {
-            ServiceResponse<UnionListHeader> response = new ServiceResponse<UnionListHeader>();
+            ServiceResponse<List<UnionListHeader>> response = new ServiceResponse<List<UnionListHeader>>();
             try
             {
-                UnionListHeader unionListHeader = await _unionListService.CreateUnionList(name, final);
+                List<UnionListHeader> unionListHeader = await _unionListService.CreateUnionList(unionList.Name, unionList.Final.HasValue ? unionList.Final.Value : false);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
-                response.Count = 1;
+                response.Count = unionListHeader == null ? 0 : unionListHeader.Count;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -166,18 +311,18 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Edit")]
+        [Route("Update")]
         [HttpPut]
-        public async Task<ActionResult<UnionListHeader>> EditUnionList(long id, string name, Boolean final)
+        public async Task<ActionResult<List<UnionListHeader>>> UpdateUnionList([FromBody] UnionListHeaderInputParam unionList)
         {
-            ServiceResponse<UnionListHeader> response = new ServiceResponse<UnionListHeader>();
+            ServiceResponse<List<UnionListHeader>> response = new ServiceResponse<List<UnionListHeader>>();
             try
             {
-                UnionListHeader unionListHeader = await _unionListService.EditUnionList(id, name, final);
+                List<UnionListHeader> unionListHeader = await _unionListService.UpdateUnionList(unionList.Id, unionList.Name, unionList.Final.HasValue ? unionList.Final.Value : false);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
-                response.Count = (unionListHeader == null) ? 0 : 1;
+                response.Count = (unionListHeader == null) ? 0 : unionListHeader.Count;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -190,9 +335,9 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("UnionList/Delete")]
+        [Route("Delete")]
         [HttpDelete]
-        public async Task<ActionResult<int>> DeleteUnionList(long id)
+        public async Task<ActionResult<int>> DeleteUnionList([FromBody] long id)
         {
             ServiceResponse<int> response = new ServiceResponse<int>();
             try
@@ -210,6 +355,78 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Message = ex.Message;
                 response.Count = 0;
                 response.Data = 0;
+                return Ok(response);
+            }
+        }
+
+        [Route("Download")]
+        [HttpGet]
+        public async Task<ActionResult<string>> UnionListDownload(string bioregs)
+        {
+            ServiceResponse<string> response = new ServiceResponse<string>();
+            try
+            {
+                string unionListHeader = await _unionListService.UnionListDownload(bioregs);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListHeader;
+                response.Count = bioregs.Split(',').Length;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = String.Empty;
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("GetUnionListComparerSummary")]
+        public async Task<ActionResult<ServiceResponse<UnionListComparerSummaryViewModel>>> GetUnionListComparerSummary()
+        {
+            var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
+            try
+            {
+                var unionListCompareSummary = await _unionListService.GetUnionListComparerSummary(_cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListCompareSummary;
+                response.Count = (unionListCompareSummary == null) ? 0 : unionListCompareSummary.BioRegSiteCodes.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new UnionListComparerSummaryViewModel();
+                return Ok(response);
+            }
+        }
+
+
+        [HttpGet]
+        [Route("GetUnionListComparer"), EnableQuery()]
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer([FromQuery(Name = "bioregions")] string? bioregions, [FromQuery(Name = "page")] int page, [FromQuery(Name = "limit")] int limit)
+        {
+            var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
+            try
+            {
+                var unionListCompareSummary = await _unionListService.GetUnionListComparer(_cache, bioregions, page, limit);
+                response.Success = true;
+                response.Message = "";
+                response.Data = unionListCompareSummary;
+                response.Count = (unionListCompareSummary == null) ? 0 : unionListCompareSummary.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<UnionListComparerDetailedViewModel>();
                 return Ok(response);
             }
         }

@@ -15,6 +15,11 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? Convention { get; set; }
         public static void OnModelCreating(ModelBuilder builder)
         {
+
+            builder.Entity<DetailedProtectionStatus>()
+                .Property(b => b.OverlapPercentage)
+                .HasPrecision(38, 2);
+
             builder.Entity<DetailedProtectionStatus>()
                 .ToTable("DetailedProtectionStatus")
                 .HasKey(c => new { c.ID });

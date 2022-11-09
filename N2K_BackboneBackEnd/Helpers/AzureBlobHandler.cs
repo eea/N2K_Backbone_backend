@@ -1,4 +1,5 @@
 ﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using N2K_BackboneBackEnd.Models;
 using System.Net.Http.Headers;
 
@@ -32,8 +33,8 @@ namespace N2K_BackboneBackEnd.Helpers
             List<String> uploadedFiles = new List<string>();
             if (files == null || files.Files == null) return uploadedFiles;
 
-            var invalidFile =await AllFilesValid(files);
-                       
+            var invalidFile = await AllFilesValid(files);
+
             foreach (var f in files.Files)
             {
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
@@ -70,6 +71,30 @@ namespace N2K_BackboneBackEnd.Helpers
         }
 
 
+        public async Task<List<string>> UploadFileAsync(string file)
+        {
+            var remoteUrl = "";
+            List<String> uploadedFiles = new List<string>();
+            if (String.IsNullOrEmpty(file))
+                return uploadedFiles;
+
+#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
+            var fileName = Path.GetFileName(file);
+#pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
+            var fullPath = Path.Combine(_pathToSave, fileName);
+
+            BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
+            await blobClient.UploadAsync(fullPath, true);
+            remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
+
+            File.Delete(file);
+
+            return uploadedFiles;
+
+        }
+
+
         public async Task<int> DeleteFileAsync(string fileName)
         {
             var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
@@ -79,6 +104,25 @@ namespace N2K_BackboneBackEnd.Helpers
             BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
             // Upload data from the local file
             await blobClient.DeleteIfExistsAsync();
+
+            return 1;
+        }
+
+
+        public async Task<int> DeleteUnionListsFilesAsync()
+        {
+            BlobContainerClient blobContainerClient = ConnectToAzureBlob();
+            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+            var filesUrl = string.Format("{0}{1}", remoteUrl, _attachedFilesConfig.JustificationFolder);
+
+            blobContainerClient.GetBlobs();
+            foreach (BlobItem blob in blobContainerClient.GetBlobs())
+            {
+                if (blob.Name.EndsWith("_Union List.zip"))
+                {
+                    await blobContainerClient.GetBlobClient(blob.Name).DeleteIfExistsAsync();
+                }
+            }
 
             return 1;
         }

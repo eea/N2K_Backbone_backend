@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Reflection.Emit;
+using System.Reflection.Metadata;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
@@ -8,9 +10,15 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
         public string HabitatCode { get; set; } = string.Empty;
+        
         public decimal? Percentage { get; set; }
         public static void OnModelCreating(ModelBuilder builder)
         {
+            builder.Entity<DescribeSites>()
+                .Property(b => b.Percentage)
+                .HasPrecision(18, 2);
+
+
             builder.Entity<DescribeSites>()
                 .ToTable("DescribeSites")
                 .HasKey(c => new { c.SiteCode, c.Version, c.HabitatCode });

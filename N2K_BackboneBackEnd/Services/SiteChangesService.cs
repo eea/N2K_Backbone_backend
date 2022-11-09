@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
@@ -7,7 +8,9 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using System.Data;
-using N2K_BackboneBackEnd.Models.BackboneDB;
+using NuGet.Protocol;
+using N2K_BackboneBackEnd.Helpers;
+using System.Security.Policy;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -48,11 +51,10 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<SiteChangeDb>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, int page = 1, int pageLimit = 0)
+        public async Task<List<SiteChangeDb>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level,IMemoryCache cache, int page = 1, int pageLimit = 0)
         {
-
             var startRow = (page - 1) * pageLimit;
-            var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level));
+            var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level,cache));
             if (pageLimit > 0)
             {
                 sitesList = sitesList
@@ -159,7 +161,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     else
                     {
-                        if (!siteChange.subRows.Any(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType))
+                        if (!siteChange.subRows.Any(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType && ch.Level == change.Level))
                         {
                             siteChange.subRows.Add(new SiteChangeView
                             {
@@ -177,7 +179,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         else
                         {
-                            siteChange.subRows.Where(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType).FirstOrDefault().NumChanges++;
+                            siteChange.subRows.Where(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType && ch.Level == change.Level).FirstOrDefault().NumChanges++;
                         }
                         siteChange.NumChanges++;
                     }
@@ -280,7 +282,8 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetailVM.JustificationRequired = site.JustificationRequired.HasValue ? site.JustificationRequired.Value : false;
 #pragma warning restore CS8601 // Posible asignación de referencia nula
             }
-            var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(changes => changes.SiteCode == pSiteCode && changes.N2KVersioningVersion == site.N2KVersioningVersion).ToListAsync();
+            ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == site.CountryCode && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
+            var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(changes => changes.SiteCode == pSiteCode && changes.N2KVersioningVersion == harvestedEnvelope.Version).ToListAsync();
 
 
             _siteHabitats = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
@@ -314,23 +317,14 @@ namespace N2K_BackboneBackEnd.Services
             ).ToList();
         }
 
-
-
-        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level)
+        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country)
         {
-
-
-
-            var result = new List<SiteCodeView>();
-
             SqlParameter param1 = new SqlParameter("@country", country);
-            SqlParameter param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : String.Empty);
-            SqlParameter param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : String.Empty);
-
-            IQueryable<SiteCodeVersion> changes = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryAndStatusAndLevel]  @country, @status, @level",
-                            param1, param2, param3);
-
-            return (await changes.ToListAsync()).Select(x =>
+            IQueryable<SiteCodeVersion> changes = _dataContext
+                .Set<SiteCodeVersion>()
+                .FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryNonPending]  @country", param1);
+            var result = new List<SiteCodeView>();
+            result = (await changes.ToListAsync()).Select(x =>
                  new SiteCodeView
                  {
                      SiteCode = x.SiteCode,
@@ -339,11 +333,54 @@ namespace N2K_BackboneBackEnd.Services
                  }
             ).ToList();
 
+            return result;
         }
 
-        public async Task<int> GetPendingChangesByCountry(string? country)
+        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool  refresh=false)
+        {           
+            string listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes",
+                    country,
+                    string.IsNullOrEmpty(status.ToString()) ? string.Empty : status.ToString(),
+                    string.IsNullOrEmpty(level.ToString()) ? string.Empty : level.ToString()
+                   );
+            //if there has been a change in the status refresh the changed sitecodes cache
+            if (refresh)  cache.Remove(listName);
+
+            var result = new List<SiteCodeView>();
+            if (cache.TryGetValue(listName, out List<SiteCodeView> cachedList))
+            {
+                result = cachedList;
+            }
+            else
+            {
+                SqlParameter param1 = new SqlParameter("@country", country);
+                SqlParameter param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : String.Empty);
+                SqlParameter param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : String.Empty);
+
+                IQueryable<SiteCodeVersion> changes = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryAndStatusAndLevel]  @country, @status, @level",
+                            param1, param2, param3);
+
+                result = (await changes.ToListAsync()).Select(x =>
+                     new SiteCodeView
+                     {
+                         SiteCode = x.SiteCode,
+                         Version = x.Version,
+                         Name = x.Name
+                     }
+                ).ToList();
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                        .SetSlidingExpiration(TimeSpan.FromSeconds(60))
+                        .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
+                        .SetPriority(CacheItemPriority.Normal)
+                        .SetSize(40000);
+                cache.Set(listName, result, cacheEntryOptions);
+            }
+            return result;
+        }
+
+        public async Task<int> GetPendingChangesByCountry(string? country, IMemoryCache cache)
         {
-            return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null)).Count;
+            return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null,cache)).Count;
         }
 
 
@@ -671,7 +708,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<ModifiedSiteCode>> AcceptChanges(ModifiedSiteCode[] changedSiteStatus)
+        public async Task<List<ModifiedSiteCode>> AcceptChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
 
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
@@ -703,6 +740,19 @@ namespace N2K_BackboneBackEnd.Services
                         result.Add(modifiedSiteCode);
                     }
                 }
+
+                //Refresh site codes cache
+                if (result.Count > 0)
+                {
+                    var country = (result.First().SiteCode).Substring(0, 2);
+                    var site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
+                    Level level = (Level) site.Max(a => a.Level);
+                    var status = site.FirstOrDefault().Status;
+
+                    //refresh the cache of site codes
+                    await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Accepted,level, cache, true);
+                    await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                }
                 return result;
             }
             catch (Exception ex)
@@ -714,7 +764,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus)
+        public async Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus,IMemoryCache cache)
         {
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
             try
@@ -745,6 +795,19 @@ namespace N2K_BackboneBackEnd.Services
                         result.Add(modifiedSiteCode);
                     }
                 }
+                //get the country and the level of the first site code. The other codes will have the same level
+                //refresh the chache
+                if (result.Count > 0)
+                {
+                    var country = (result.First().SiteCode).Substring(0, 2);
+                    var site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
+                    Level level = (Level)site.Max(a => a.Level);
+                    var status = site.FirstOrDefault().Status;
+
+                    //refresh the cache of site codes
+                    await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, true);
+                    await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                }
                 return result;
             }
             catch (Exception ex)
@@ -756,8 +819,13 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus)
+        public async Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
+            var country = (changedSiteStatus.First().SiteCode).Substring(0, 2);
+            var site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == changedSiteStatus.First().SiteCode && site.Version == changedSiteStatus.First().VersionId).ToListAsync();
+            Level level = (Level)site.Max(a => a.Level);
+            var status = site.FirstOrDefault().Status;
+
 
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
             try
@@ -786,6 +854,16 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         result.Add(modifiedSiteCode);
                     }
+                }
+
+                //GetSiteCodesByStatusAndLevelAndCountry
+                //get the country and the level of the first site code. The other codes will have the same level
+                //refresh the chache
+                if (result.Count > 0)
+                {
+                    //refresh the cache of site codes
+                    await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, true);
+                    await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
                 return result;
             }
@@ -838,8 +916,6 @@ namespace N2K_BackboneBackEnd.Services
             {
                 throw;
             }
-
-
         }
 
 
