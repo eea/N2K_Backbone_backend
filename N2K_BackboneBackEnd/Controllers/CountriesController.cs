@@ -95,7 +95,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [HttpGet("GetConsolidatedCountries")]
-        public async Task<ActionResult<ServiceResponse<List<CountriesList>>>> GetConsolidatedCountries()
+        public async Task<ActionResult<ServiceResponse<List<CountriesChangesView>>>> GetConsolidatedCountries()
         {
             var response = new ServiceResponse<List<CountriesChangesView>>();
             try
