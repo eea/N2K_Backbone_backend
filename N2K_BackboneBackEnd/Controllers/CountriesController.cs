@@ -94,6 +94,30 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        [HttpGet("GetConsolidatedCountries")]
+        public async Task<ActionResult<ServiceResponse<List<CountriesList>>>> GetConsolidatedCountries()
+        {
+            var response = new ServiceResponse<List<CountriesChangesView>>();
+            try
+            {
+                List<CountriesChangesView> countriesWithData = await _countryService.GetConsolidatedCountries();
+                response.Success = true;
+                response.Message = "";
+                response.Data = countriesWithData;
+                response.Count = (countriesWithData == null) ? 0 : countriesWithData.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<CountriesChangesView>();
+                return Ok(response);
+            }
+        }
+
+
         [HttpGet("GetSiteCount")]
         public async Task<ActionResult<ServiceResponse<List<CountriesSiteCountView>>>> GetSiteCount()
         {

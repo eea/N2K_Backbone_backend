@@ -94,6 +94,17 @@ namespace N2K_BackboneBackEnd.Services
             return countries;
         }
 
+        public async Task<List<CountriesChangesView>> GetConsolidatedCountries()
+        {
+            var countries = await _dataContext
+                .Set<CountriesChangesView>()
+                .FromSqlRaw($"exec dbo.spGetCountriesWithOnlyConsolidatedSumbmisions")
+                .AsNoTracking()
+                .ToListAsync();
+            return countries;
+        }
+
+
         public async Task<List<SitesWithChangesView>> GetSiteLevelAsync(SiteChangeStatus? status)
         {
             var param1 = new SqlParameter("@status", status.HasValue ? status.ToString() : string.Empty);
