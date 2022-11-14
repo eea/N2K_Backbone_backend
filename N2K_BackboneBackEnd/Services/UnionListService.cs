@@ -273,7 +273,7 @@ namespace N2K_BackboneBackEnd.Services
             }
 
 
-            //Added in source
+            //Deleted in target
             var sourceOnlySites = (from source2 in ulDetailsSource
                                    join target2 in ulDetailsTarget on new { source2.SCI_code, source2.BioRegion } equals new { target2.SCI_code, target2.BioRegion } into t
                                    from od in t.DefaultIfEmpty()
@@ -317,12 +317,12 @@ namespace N2K_BackboneBackEnd.Services
                     Target = null
                 };
 
-                changedItem.Changes = "ADDED";
+                changedItem.Changes = "DELETED";
                 result.Add(changedItem);
             }
 
 
-            //Deleted in source            
+            //Added in target            
             var targetOnlySites = (from target3 in ulDetailsTarget
                                    join source3 in ulDetailsSource on new { target3.SCI_code, target3.BioRegion } equals new { source3.SCI_code, source3.BioRegion } into t
                                    from od in t.DefaultIfEmpty()
@@ -365,7 +365,7 @@ namespace N2K_BackboneBackEnd.Services
                     Target = item.Long,
                     Source = null
                 };
-                changedItem.Changes = "DELETED";
+                changedItem.Changes = "ADDED";
                 result.Add(changedItem);
             }
             return result.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
