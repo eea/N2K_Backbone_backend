@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.Differencing;
+﻿using DocumentFormat.OpenXml.Bibliography;
+using Microsoft.CodeAnalysis.Differencing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -204,7 +205,9 @@ namespace N2K_BackboneBackEnd.Services
                 
                 if (changeEdition.BioRegion != "string")
                 {
-                    var bioregions = changeEdition.BioRegion.Split(",");
+                    string[] bioregions = new string[] { };                    
+                    if (changeEdition.BioRegion!= null) 
+                        bioregions= changeEdition.BioRegion.Split(",");
                     if (bioregions.Length > 0)
                     {
                         foreach (var bioregion in bioregions)
@@ -233,16 +236,18 @@ namespace N2K_BackboneBackEnd.Services
                 await _dataContext.SaveChangesAsync();
 
                 var processingVersion = _dataContext.Set<ProcessedEnvelopes>().Where(e => e.Status == HarvestingStatus.Harvested && e.Country == site.CountryCode).FirstOrDefault();
-
-                //Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && (e.CurrentStatus == SiteChangeStatus.Harvested || e.CurrentStatus == SiteChangeStatus.PreHarvested)).FirstOrDefault();
-                Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.N2KVersioningVersion== processingVersion.Version).FirstOrDefault();                                
-                if (siteReported != null)
+                if (processingVersion != null)
                 {
-                    await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE SiteCode = '" + siteReported.SiteCode + "' AND N2KVersioningVersion = " + siteReported.N2KVersioningVersion);
+                    //Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && (e.CurrentStatus == SiteChangeStatus.Harvested || e.CurrentStatus == SiteChangeStatus.PreHarvested)).FirstOrDefault();
+                    Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.N2KVersioningVersion == processingVersion.Version).FirstOrDefault();
+                    if (siteReported != null)
+                    {
+                        await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE SiteCode = '" + siteReported.SiteCode + "' AND N2KVersioningVersion = " + siteReported.N2KVersioningVersion);
 
-                    HarvestedService harvestedService = new HarvestedService(_dataContext, _versioningContext, _appSettings);
-                    await harvestedService.ValidateSingleSite(siteReported.SiteCode, siteReported.Version);
-                    await harvestedService.ValidateSingleSiteSpatialData(siteReported.SiteCode, siteReported.Version);
+                        HarvestedService harvestedService = new HarvestedService(_dataContext, _versioningContext, _appSettings);
+                        await harvestedService.ValidateSingleSite(siteReported.SiteCode, siteReported.Version);
+                        await harvestedService.ValidateSingleSiteSpatialData(siteReported.SiteCode, siteReported.Version);
+                    }
                 }
                 
             }
