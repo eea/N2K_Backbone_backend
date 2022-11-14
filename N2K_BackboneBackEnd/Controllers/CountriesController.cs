@@ -117,6 +117,29 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        [HttpGet("GetClosedAndDiscardedCountries")]
+        public async Task<ActionResult<ServiceResponse<List<ClosedCountriesView>>>> GetClosedAndDiscardedCountries()
+        {
+            var response = new ServiceResponse<List<ClosedCountriesView>>();
+            try
+            {
+                List<ClosedCountriesView> countriesWithData = await _countryService.GetClosedAndDiscardedCountriesAsync();
+                response.Success = true;
+                response.Message = "";
+                response.Data = countriesWithData;
+                response.Count = (countriesWithData == null) ? 0 : countriesWithData.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<ClosedCountriesView>();
+                return Ok(response);
+            }
+        }
+
 
         [HttpGet("GetSiteCount")]
         public async Task<ActionResult<ServiceResponse<List<CountriesSiteCountView>>>> GetSiteCount()

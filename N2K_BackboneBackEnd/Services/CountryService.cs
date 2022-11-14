@@ -104,6 +104,15 @@ namespace N2K_BackboneBackEnd.Services
             return countries;
         }
 
+        public async Task<List<ClosedCountriesView>> GetClosedAndDiscardedCountriesAsync()
+        {
+            var countries = await _dataContext
+                .Set<ClosedCountriesView>()
+                .FromSqlRaw($"exec dbo.spGetCountriesWithClosedOrDiscardedSubmissions")
+                .AsNoTracking()
+                .ToListAsync();
+            return countries;
+        }
 
         public async Task<List<SitesWithChangesView>> GetSiteLevelAsync(SiteChangeStatus? status)
         {
