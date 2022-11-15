@@ -234,7 +234,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         changedItem.Priority.Change = "PRIORITY_LOST";
                     }
-                    else if (!prioSource == false && prioTarget)
+                    else if (!prioSource && prioTarget)
                     {
                         changedItem.Priority.Change = "PRIORITY_GAIN";
 
