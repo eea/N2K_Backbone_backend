@@ -291,6 +291,12 @@ namespace N2K_BackboneBackEnd.Services
                     Target = null
                 };
 
+                changedItem.Priority = new UnionListValues<bool>
+                {
+                    Source = item.Priority,
+                    Target = null
+                };
+
 
                 changedItem.Area = new UnionListValues<double>
                 {
@@ -337,6 +343,12 @@ namespace N2K_BackboneBackEnd.Services
                 changedItem.SiteName = new UnionListValues<string>
                 {
                     Target = item.SCI_Name,
+                    Source = null
+                };
+
+                changedItem.Priority = new UnionListValues<bool>
+                {
+                    Target = item.Priority,
                     Source = null
                 };
 
