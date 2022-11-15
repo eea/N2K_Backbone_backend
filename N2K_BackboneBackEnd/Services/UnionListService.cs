@@ -37,32 +37,6 @@ namespace N2K_BackboneBackEnd.Services
             return await _dataContext.Set<BioRegionTypes>().AsNoTracking().Where(bio => bio.BioRegionShortCode != null).ToListAsync();
         }
 
-        public async Task<List<UnionListHeader>> GetUnionListHeadersByBioRegion(string? bioRegionShortCode)
-        {
-            SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
-
-            List<UnionListHeader> unionListHeaders = await _dataContext.Set<UnionListHeader>().FromSqlRaw($"exec dbo.spGetUnionListHeadersByBioRegion  @bioregion",
-                            param1).AsNoTracking().ToListAsync();
-            unionListHeaders = unionListHeaders.Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) || (ulh.CreatedBy != _appSettings.Value.current_ul_createdby)).ToList();
-            return unionListHeaders;
-        }
-
-        public async Task<List<UnionListDetail>> GetCurrentSitesUnionListDetailByBioRegion(string? bioRegionShortCode)
-        {
-            SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
-
-            List<UnionListDetail> unionListDetails = await _dataContext.Set<UnionListDetail>().FromSqlRaw($"exec dbo.spGetCurrentSitesUnionListDetailByBioRegion  @bioregion",
-                            param1).AsNoTracking().ToListAsync();
-
-            return unionListDetails;
-        }
-
-        public async Task<List<UnionListHeader>> GetUnionListHeadersById(long? id)
-        {
-            return await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.idULHeader == id).ToListAsync();
-        }
-
-
         private async Task<List<BioRegionSiteCode>> GetBioregionSiteCodesInUnionListComparer(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache)
         {
             string listName = string.Format("{0}_{1}_{2}_{3}", GlobalData.Username, ulBioRegSites, idSource, idTarget);
@@ -132,7 +106,6 @@ namespace N2K_BackboneBackEnd.Services
             res.BioRegionSummary = _bioRegionSummary;
             return res;
         }
-
 
         public async Task<List<UnionListComparerDetailedViewModel>> CompareUnionLists(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache, int page = 1, int pageLimit = 0)
         {
@@ -300,7 +273,7 @@ namespace N2K_BackboneBackEnd.Services
             }
 
 
-            //Added in source
+            //Deleted in target
             var sourceOnlySites = (from source2 in ulDetailsSource
                                    join target2 in ulDetailsTarget on new { source2.SCI_code, source2.BioRegion } equals new { target2.SCI_code, target2.BioRegion } into t
                                    from od in t.DefaultIfEmpty()
@@ -344,12 +317,12 @@ namespace N2K_BackboneBackEnd.Services
                     Target = null
                 };
 
-                changedItem.Changes = "ADDED";
+                changedItem.Changes = "DELETED";
                 result.Add(changedItem);
             }
 
 
-            //Deleted in source            
+            //Added in target            
             var targetOnlySites = (from target3 in ulDetailsTarget
                                    join source3 in ulDetailsSource on new { target3.SCI_code, target3.BioRegion } equals new { source3.SCI_code, source3.BioRegion } into t
                                    from od in t.DefaultIfEmpty()
@@ -392,54 +365,10 @@ namespace N2K_BackboneBackEnd.Services
                     Target = item.Long,
                     Source = null
                 };
-                changedItem.Changes = "DELETED";
+                changedItem.Changes = "ADDED";
                 result.Add(changedItem);
             }
             return result.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
-        }
-
-        public async Task<List<UnionListHeader>> CreateUnionList(string name, Boolean final)
-        {
-            SqlParameter param1 = new SqlParameter("@name", name);
-            SqlParameter param2 = new SqlParameter("@creator", GlobalData.Username);
-            SqlParameter param3 = new SqlParameter("@final", final);
-
-            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final ", param1, param2, param3);
-            return await GetUnionListHeadersByBioRegion(null);
-        }
-
-        public async Task<List<UnionListHeader>> UpdateUnionList(long id, string name, Boolean final)
-        {
-            UnionListHeader unionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.idULHeader == id).FirstOrDefaultAsync();
-            if (unionList != null)
-            {
-                if (name != "string")
-                    unionList.Name = name;
-
-                unionList.Final = final;
-                unionList.UpdatedBy = GlobalData.Username;
-                unionList.UpdatedDate = DateTime.Now;
-
-                _dataContext.Set<UnionListHeader>().Update(unionList);
-            }
-            await _dataContext.SaveChangesAsync();
-
-            return await GetUnionListHeadersByBioRegion(null);
-
-
-        }
-
-        public async Task<int> DeleteUnionList(long id)
-        {
-            int result = 0;
-            UnionListHeader? unionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(ulh => ulh.idULHeader == id);
-            if (unionList != null)
-            {
-                _dataContext.Set<UnionListHeader>().Remove(unionList);
-                await _dataContext.SaveChangesAsync();
-                result = 1;
-            }
-            return result;
         }
 
         public async Task<string> UnionListDownload(string bioregs)
