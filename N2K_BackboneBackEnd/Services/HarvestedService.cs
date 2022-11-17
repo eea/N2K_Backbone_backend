@@ -101,6 +101,13 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
+        public async Task<List<HarvestingExpanded>> GetOnlyClosedEnvelopes()
+        {
+            List<HarvestingExpanded> result = await _dataContext.Set<HarvestingExpanded>().FromSqlRaw($"exec dbo.spGetOnlyClosedEnvelopes").AsNoTracking().ToListAsync();
+
+            return result;
+        }
+
         public async Task<List<EnvelopesToHarvest>> GetPreHarvestedEnvelopes()
         {
             IQueryable<EnvelopesToHarvest> changes = _dataContext.Set<EnvelopesToHarvest>().FromSqlRaw($"exec dbo.spGetPreHarvestedEnvelopes");
