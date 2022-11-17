@@ -109,6 +109,34 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        /// <summary>
+        /// Retrives contries with closed envelopes and no open envelopes
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetOnlyClosedEnvelopes")]
+        public async Task<ActionResult<ServiceResponse<HarvestingExpanded>>> GetOnlyClosedEnvelopes()
+        {
+            var response = new ServiceResponse<List<HarvestingExpanded>>();
+            try
+            {
+                var envelopes = await _harvestedService.GetOnlyClosedEnvelopes();
+                response.Success = true;
+                response.Message = "";
+                response.Data = envelopes;
+                response.Count = (envelopes == null) ? 0 : envelopes.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<HarvestingExpanded>();
+                return Ok(response);
+            }
+        }
+
 
         [HttpGet]
         [Route("Harvested")]
