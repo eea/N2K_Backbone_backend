@@ -369,7 +369,7 @@ namespace N2K_BackboneBackEnd.Services
                      }
                 ).ToList();
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
-                        .SetSlidingExpiration(TimeSpan.FromSeconds(60))
+                        .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
                         .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
                         .SetPriority(CacheItemPriority.Normal)
                         .SetSize(40000);
@@ -380,7 +380,15 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<int> GetPendingChangesByCountry(string? country, IMemoryCache cache)
         {
-            return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null,cache)).Count;
+            //return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null,cache)).Count;
+            SqlParameter param1 = new SqlParameter("@country", country);
+
+            IQueryable<PendingSites> changes = _dataContext.Set<PendingSites> () .FromSqlRaw($"exec dbo.[spGetPendingSiteCodesByCountry] @country ",
+                        param1);
+
+            var result = (await changes.ToListAsync());
+            if (result != null && result.Count > 0) return result[0].NumSites;
+            return 0;
         }
 
 
