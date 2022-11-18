@@ -205,6 +205,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.N2KVersioningVersion = pEnvelope.VersionId;
                 bbSite.DateConfSCI = pVSite.DATE_CONF_SCI;
                 bbSite.Priority = isHarvestingSitePriority;
+                bbSite.DatePropSCI = pVSite.DATE_PROP_SCI;
+                bbSite.DateSpa = pVSite.DATE_SPA;
+                bbSite.DateSac = pVSite.DATE_SAC;
                 return bbSite;
             }
             catch (Exception ex)
