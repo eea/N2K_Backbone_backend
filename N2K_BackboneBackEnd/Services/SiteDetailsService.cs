@@ -184,72 +184,43 @@ namespace N2K_BackboneBackEnd.Services
             var username= GlobalData.Username;
             try
             {
-                SqlParameter param1 = new SqlParameter("@sitecode", changeEdition.SiteCode);
-                SqlParameter param2 = new SqlParameter("@clonebioregion", false);
-                await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSitesAndRelatedBySitecodeAndVersion  @sitecode, @clonebioregion", param1, param2);
+                SqlParameter param_sitecode = new SqlParameter("@sitecode", changeEdition.SiteCode);
+                SqlParameter param_version = new SqlParameter("@version", changeEdition.Version);
+                SqlParameter param_name = new SqlParameter("@name", changeEdition.SiteName);
+                SqlParameter param_sitetype = new SqlParameter("@sitetype", changeEdition.SiteType);
+                SqlParameter param_area = new SqlParameter("@area", changeEdition.Area);
+                SqlParameter param_length = new SqlParameter("@length", changeEdition.Length);
+                SqlParameter param_centrex = new SqlParameter("@centrex", changeEdition.CentreY);
+                SqlParameter param_centrey = new SqlParameter("@centrey", changeEdition.CentreY);
 
+                await _dataContext.Database.ExecuteSqlRawAsync("$ exec dbo.spCloneSites " +
+                    "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey"
+                    , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey);
+                
                 Sites site = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefault();
                 if (site != null)
                 {
-                    if (changeEdition.SiteName != "string")
-                        site.Name = changeEdition.SiteName;
-                    if (changeEdition.SiteType != "string")
-                        site.SiteType = changeEdition.SiteType;
-                    if (changeEdition.Area != 0)
-                        site.Area = changeEdition.Area;
-                    if (changeEdition.Length != 0)
-                        site.Length = changeEdition.Length;
-
-                    _dataContext.Set<Sites>().Update(site);
-                }
-                
-                if (changeEdition.BioRegion != "string")
-                {
-                    string[] bioregions = new string[] { };                    
-                    if (changeEdition.BioRegion!= null) 
-                        bioregions= changeEdition.BioRegion.Split(",");
-                    if (bioregions.Length > 0)
+                    if (changeEdition.BioRegion != "string")
                     {
-                        foreach (var bioregion in bioregions)
+                        string[] bioregions = new string[] { };                    
+                        if (changeEdition.BioRegion!= null) 
+                            bioregions= changeEdition.BioRegion.Split(",");
+                        if (bioregions.Length > 0)
                         {
-                            BioRegions bioreg = new BioRegions
+                            foreach (var bioregion in bioregions)
                             {
-                                SiteCode = changeEdition.SiteCode,
-                                Version = site.Version,
-                                BGRID = int.Parse(bioregion),
-                                Percentage = 100 / bioregions.Length // NEEDS TO BE CHANGED - PENDING
-                            };
-                            _dataContext.Set<BioRegions>().Add(bioreg);
+                                BioRegions bioreg = new BioRegions
+                                {
+                                    SiteCode = changeEdition.SiteCode,
+                                    Version = site.Version,
+                                    BGRID = int.Parse(bioregion),
+                                    Percentage = 100 / bioregions.Length // NEEDS TO BE CHANGED - PENDING
+                                };
+                                _dataContext.Set<BioRegions>().Add(bioreg);
+                            }
                         }
                     }
                 }
-                
-                
-                if (changeEdition.CentreX != 0 || changeEdition.CentreY != 0)
-                {
-                    SqlParameter param4 = new SqlParameter("@version", site.Version);
-                    SqlParameter param5 = new SqlParameter("@centroidX", changeEdition.CentreX);
-                    SqlParameter param6 = new SqlParameter("@centroidY", changeEdition.CentreY);
-                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.setEditedSiteSpatial  @sitecode, @version, @centroidX, @centroidY", param1, param4, param5, param6);
-                }
-                
-                await _dataContext.SaveChangesAsync();
-
-                var processingVersion = _dataContext.Set<ProcessedEnvelopes>().Where(e => e.Status == HarvestingStatus.Harvested && e.Country == site.CountryCode).FirstOrDefault();
-                if (processingVersion != null)
-                {
-                    //Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && (e.CurrentStatus == SiteChangeStatus.Harvested || e.CurrentStatus == SiteChangeStatus.PreHarvested)).FirstOrDefault();
-                    Sites siteReported = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.N2KVersioningVersion == processingVersion.Version).FirstOrDefault();
-                    if (siteReported != null)
-                    {
-                        await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE SiteCode = '" + siteReported.SiteCode + "' AND N2KVersioningVersion = " + siteReported.N2KVersioningVersion);
-
-                        HarvestedService harvestedService = new HarvestedService(_dataContext, _versioningContext, _appSettings);
-                        await harvestedService.ValidateSingleSite(siteReported.SiteCode, siteReported.Version);
-                        await harvestedService.ValidateSingleSiteSpatialData(siteReported.SiteCode, siteReported.Version);
-                    }
-                }
-                
             }
             catch (Exception ex)
             {
