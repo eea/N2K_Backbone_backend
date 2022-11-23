@@ -672,6 +672,9 @@ namespace N2K_BackboneBackEnd.Services
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
 
+                        List<Contact> vContact = _versioningContext.Set<Contact>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
+                        _dataContext.Set<Respondents>().AddRange(await HarvestRespondents(vContact, envelope));
+
                         List<Sites> bbSites = new List<Sites>();
 
                         foreach (NaturaSite vSite in vSites)
@@ -1247,6 +1250,44 @@ namespace N2K_BackboneBackEnd.Services
 
             }
 
+        }
+
+        /// <summary>
+        ///  This method retrives the complete information for a Site in Versioning and stores it in BackBone.
+        ///  (Just the Site)
+        /// </summary>
+        /// <param name="pVSite">The definition ogf the versioning Site</param>
+        /// <param name="pEnvelope">The envelope to process</param>
+        /// <returns>Returns a BackBone Site object</returns>
+        private async Task<List<Respondents>>? HarvestRespondents(List<Contact> vContact, EnvelopesToProcess pEnvelope)
+        {
+            List<Respondents> items = new List<Respondents>();
+            foreach (Contact contact in vContact)
+            {
+                Respondents respondent = new Respondents();
+                try
+                {
+                    respondent.SiteCode = contact.SITECODE;
+                    respondent.Version = (int)contact.VERSIONID;
+                    respondent.locatorName = contact.LOCATOR_NAME;
+                    respondent.addressArea = contact.ADDRESS_AREA;
+                    respondent.postName = contact.POST_NAME;
+                    respondent.postCode = contact.POSTCODE;
+                    respondent.thoroughfare = contact.THOROUGHFARE;
+                    respondent.addressUnstructured = contact.UNSTRUCTURED_ADD;
+                    respondent.name = contact.CONTACT_NAME;
+                    respondent.Email = contact.EMAIL;
+                    respondent.AdminUnit = contact.ADMIN_UNIT;
+                    respondent.LocatorDesignator = contact.LOCATOR_DESIGNATOR;
+                    items.Add(respondent);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestRespondents", "");
+                    return null;
+                }
+            }
+            return items;
         }
 
     }
