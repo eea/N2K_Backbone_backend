@@ -15,6 +15,13 @@
       "type": "mssql.azure",
       "connectionId": "ConnectionStrings:N2K_VersioningBackEndContext",
       "dynamicId": null
+    },
+    "mssql3": {
+      "secretStore": "LocalSecretsFile",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/backbonedb/databases/n2k_releases",
+      "type": "mssql.azure",
+      "connectionId": "ConnectionStrings:N2K_ReleasesBackEndContext",
+      "dynamicId": null
     }
   }
 }
