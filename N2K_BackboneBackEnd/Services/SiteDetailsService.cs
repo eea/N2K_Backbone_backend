@@ -186,14 +186,14 @@ namespace N2K_BackboneBackEnd.Services
             {
                 SqlParameter param_sitecode = new SqlParameter("@sitecode", changeEdition.SiteCode);
                 SqlParameter param_version = new SqlParameter("@version", changeEdition.Version);
-                SqlParameter param_name = new SqlParameter("@name", changeEdition.SiteName);
-                SqlParameter param_sitetype = new SqlParameter("@sitetype", changeEdition.SiteType);
-                SqlParameter param_area = new SqlParameter("@area", changeEdition.Area);
-                SqlParameter param_length = new SqlParameter("@length", changeEdition.Length);
-                SqlParameter param_centrex = new SqlParameter("@centrex", changeEdition.CentreY);
-                SqlParameter param_centrey = new SqlParameter("@centrey", changeEdition.CentreY);
+                SqlParameter param_name = new SqlParameter("@name", changeEdition.SiteName is null ? DBNull.Value : changeEdition.SiteName);
+                SqlParameter param_sitetype = new SqlParameter("@sitetype", changeEdition.SiteType is null ? DBNull.Value : changeEdition.SiteType);
+                SqlParameter param_area = new SqlParameter("@area", changeEdition.Area == 0 ? DBNull.Value : changeEdition.Area);
+                SqlParameter param_length = new SqlParameter("@length", changeEdition.Length == 0 ? DBNull.Value : changeEdition.Length);
+                SqlParameter param_centrex = new SqlParameter("@centrex", changeEdition.CentreX == 0 ? DBNull.Value : changeEdition.CentreX);
+                SqlParameter param_centrey = new SqlParameter("@centrey", changeEdition.CentreY == 0 ? DBNull.Value : changeEdition.CentreY);
 
-                await _dataContext.Database.ExecuteSqlRawAsync("$ exec dbo.spCloneSites " +
+                await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSites " +
                     "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey"
                     , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey);
                 
