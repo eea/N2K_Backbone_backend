@@ -69,6 +69,11 @@ builder.Services.AddDbContext<N2K_VersioningContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_VersioningBackEndContext"));
 });
 
+builder.Services.AddDbContext<N2KReleasesContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_ReleasesBackEndContext"));
+});
+
 
 builder.Services.AddControllersWithViews();
 builder.Services.Configure<ConfigSettings>(builder.Configuration.GetSection("GeneralSettings"));
