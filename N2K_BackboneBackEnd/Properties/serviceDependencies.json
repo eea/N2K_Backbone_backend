@@ -18,10 +18,6 @@
     "identityapp1": {
       "ignored": "true",
       "type": "identityapp"
-    },
-    "mssql3": {
-      "type": "mssql",
-      "connectionId": "ConnectionStrings:N2K_ReleasesBackEndContext"
     }
   }
 }
