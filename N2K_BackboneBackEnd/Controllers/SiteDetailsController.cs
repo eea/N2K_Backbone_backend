@@ -13,6 +13,7 @@ using NuGet.Common;
 using System.IdentityModel.Tokens.Jwt;
 using Newtonsoft.Json.Linq;
 using N2K_BackboneBackEnd.Helpers;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
@@ -24,13 +25,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
         private readonly ISiteDetailsService _siteDetailsService;
         private readonly IMapper _mapper;
+        private IMemoryCache _cache;
 
-
-
-        public SiteDetailsController(ISiteDetailsService siteDetailsService, IMapper mapper)
-        {
+        public SiteDetailsController(ISiteDetailsService siteDetailsService, IMapper mapper, IMemoryCache cache) { 
             _siteDetailsService = siteDetailsService;
             _mapper = mapper;
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
 
@@ -69,7 +69,30 @@ namespace N2K_BackboneBackEnd.Controllers
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
             try
             {
-                List<StatusChanges> siteComments = await _siteDetailsService.ListSiteComments(pSiteCode, pCountryVersion);
+                List<StatusChanges> siteComments = await _siteDetailsService.ListSiteComments(pSiteCode, pCountryVersion, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteComments;
+                response.Count = (siteComments == null) ? 0 : siteComments.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("GetSiteTemporalComments/siteCode={pSiteCode}&version={pCountryVersion}")]
+        public async Task<ActionResult<List<StatusChanges>>> GetSiteTemporalComments(string pSiteCode, int pCountryVersion)
+        {
+            ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
+            try
+            {
+                List<StatusChanges> siteComments = await _siteDetailsService.ListSiteComments(pSiteCode, pCountryVersion, _cache, true);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -87,6 +110,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
+
         [Route("SiteComments/Add")]
         [HttpPost]
         public async Task<ActionResult<List<StatusChanges>>> AddComment([FromBody] StatusChanges comment)
@@ -95,7 +119,32 @@ namespace N2K_BackboneBackEnd.Controllers
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
             try
             {
-                List<StatusChanges> siteComments = await _siteDetailsService.AddComment(comment);
+                List<StatusChanges> siteComments = await _siteDetailsService.AddComment(comment, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteComments;
+                response.Count = (siteComments == null) ? 0 : siteComments.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("SiteComments/AddTemporal")]
+        [HttpPost]
+        public async Task<ActionResult<List<StatusChanges>>> AddTemporal([FromBody] StatusChanges comment)
+        {
+
+            ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
+            try
+            {
+                List<StatusChanges> siteComments = await _siteDetailsService.AddComment(comment,_cache, true);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -115,12 +164,36 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("SiteComments/Delete")]
         [HttpDelete]
-        public async Task<ActionResult<int>> DeleteComment([FromBody] int Id)
+        public async Task<ActionResult<int>> Delete([FromBody] long Id)
         {
             ServiceResponse<int> response = new ServiceResponse<int>();
             try
             {
-                int siteComments = await _siteDetailsService.DeleteComment(Id);
+                int siteComments = await _siteDetailsService.DeleteComment(Id, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteComments;
+                response.Count = (siteComments == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = 0;
+                return Ok(response);
+            }
+        }
+
+        [Route("SiteComments/DeleteTemporal")]
+        [HttpDelete]
+        public async Task<ActionResult<int>> DeleteTemporal([FromBody] long Id)
+        {
+            ServiceResponse<int> response = new ServiceResponse<int>();
+            try
+            {
+                int siteComments = await _siteDetailsService.DeleteComment(Id, _cache, true);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -138,6 +211,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
+
         [Route("SiteComments/Update")]
         [HttpPut]
         public async Task<ActionResult<List<StatusChanges>>> UpdateComment([FromBody] StatusChanges comment)
@@ -145,7 +219,7 @@ namespace N2K_BackboneBackEnd.Controllers
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
             try
             {
-                List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment);
+                List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -161,6 +235,32 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+        [Route("SiteComments/UpdateTemporal")]
+        [HttpPut]
+        public async Task<ActionResult<List<StatusChanges>>> UpdateTemporalComment([FromBody] StatusChanges comment)
+        {
+            ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
+            try
+            {
+                List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment, _cache, true);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteComments;
+                response.Count = (siteComments == null) ? 0 : siteComments.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+
         #endregion
 
 
@@ -171,7 +271,30 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<JustificationFiles>>();
             try
             {
-                List<JustificationFiles> siteFiles = await _siteDetailsService.ListSiteFiles(pSiteCode, pCountryVersion);
+                List<JustificationFiles> siteFiles = await _siteDetailsService.ListSiteFiles(pSiteCode, pCountryVersion, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteFiles;
+                response.Count = (siteFiles == null) ? 0 : siteFiles.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("GetTemporalAttachedFiles/siteCode={pSiteCode}&version={pCountryVersion}")]
+        public async Task<ActionResult<List<JustificationFiles>>> GetTemporalAttachedFiles(string pSiteCode, int pCountryVersion)
+        {
+            var response = new ServiceResponse<List<JustificationFiles>>();
+            try
+            {
+                List<JustificationFiles> siteFiles = await _siteDetailsService.ListSiteFiles(pSiteCode, pCountryVersion,_cache, true );
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteFiles;
@@ -205,7 +328,7 @@ namespace N2K_BackboneBackEnd.Controllers
                     return Ok(response);
                 }
                 //var formCollection = await Request.ReadFormAsync();
-                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles);
+                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles,_cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteFiles;
@@ -225,6 +348,43 @@ namespace N2K_BackboneBackEnd.Controllers
 
         }
 
+        [Route("UploadTemporalAttachedFile")]
+        [HttpPost, DisableRequestSizeLimit]
+        public async Task<ActionResult<List<JustificationFiles>>> UploadTemporalAttachedFile([FromQuery] AttachedFile attachedFiles)
+        {
+            var response = new ServiceResponse<List<JustificationFiles>>();
+            try
+            {
+                if (attachedFiles.Files == null || attachedFiles.Files.Count == 0)
+                {
+                    response.Success = false;
+                    response.Message = "No file selected";
+                    response.Count = 0;
+                    response.Data = null;
+                    return Ok(response);
+                }
+                //var formCollection = await Request.ReadFormAsync();
+                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles,_cache,true);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteFiles;
+                response.Count = (siteFiles == null) ? 0 : siteFiles.Count;
+                return Ok(response);
+
+
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+
+        }
+
+
         [Route("DeleteAttachedFile")]
         [HttpDelete]
         public async Task<ActionResult<int>> DeleteFile([FromQuery] long justificationId)
@@ -233,7 +393,34 @@ namespace N2K_BackboneBackEnd.Controllers
             ServiceResponse<int> response = new ServiceResponse<int>();
             try
             {
-                int siteComments = await _siteDetailsService.DeleteFile(justificationId);
+                int siteComments = await _siteDetailsService.DeleteFile(justificationId,_cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteComments;
+                response.Count = (siteComments == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = 0;
+                return Ok(response);
+            }
+
+
+        }
+
+        [Route("DeleteTemporalAttachedFile")]
+        [HttpDelete]
+        public async Task<ActionResult<int>> DeleteTemporalAttachedFile([FromQuery] long justificationId)
+        {
+
+            ServiceResponse<int> response = new ServiceResponse<int>();
+            try
+            {
+                int siteComments = await _siteDetailsService.DeleteFile(justificationId,_cache,true);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -262,7 +449,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<string>();
             try
             {
-                var siteChanges = await _siteDetailsService.SaveEdition(changeEdition);
+                var siteChanges = await _siteDetailsService.SaveEdition(changeEdition, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
