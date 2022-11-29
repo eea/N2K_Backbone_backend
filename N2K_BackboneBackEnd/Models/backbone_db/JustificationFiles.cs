@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
@@ -17,6 +18,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public string? Username { get; set; }
 
+        [NotMapped]
+        public bool Temporal { get; set; } = false;
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<JustificationFiles>()
