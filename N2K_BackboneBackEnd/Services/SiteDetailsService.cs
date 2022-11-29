@@ -428,7 +428,6 @@ namespace N2K_BackboneBackEnd.Services
                             }
                         }
                         cache.Set(listName, comCachedList);
-                        await _dataContext.SaveChangesAsync();
                     }
 
                     //add temporal files
@@ -451,8 +450,9 @@ namespace N2K_BackboneBackEnd.Services
                             }
                         }
                         cache.Set(listName, comCachedList);
-                        await _dataContext.SaveChangesAsync();
                     }
+
+                    await _dataContext.SaveChangesAsync();
                 }
             }
             catch (Exception ex)
