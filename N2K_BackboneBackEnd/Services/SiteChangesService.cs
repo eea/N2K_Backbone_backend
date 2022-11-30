@@ -269,10 +269,11 @@ namespace N2K_BackboneBackEnd.Services
                 SqlParameter param1 = new SqlParameter("@SiteCode", site.SiteCode);
                 SqlParameter param2 = new SqlParameter("@Version", site.Version);
 
-                var geometries = await _dataContext.Set<SiteGeometry>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometry  @SiteCode, @Version",
-                                param1, param2).ToArrayAsync();
+                //var geometries = await _dataContext.Set<SiteGeometry>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometry  @SiteCode, @Version",
+                //                param1, param2).ToArrayAsync();
 
-                if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].GeoJson)) changeDetailVM.HasGeometry = true;
+                //if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].GeoJson)) 
+                changeDetailVM.HasGeometry = true;
                 
 
 #pragma warning disable CS8601 // Posible asignación de referencia nula
