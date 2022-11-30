@@ -86,7 +86,7 @@ namespace N2K_BackboneBackEnd.Services
                        );
                 if (cache.TryGetValue(listName, out List<StatusChanges> cachedList))
                 {
-                    result.AddRange(cachedList);
+                    result.AddRange(cachedList.Where(a => a.SiteCode == pSiteCode && a.Version == pCountryVersion));
                 }
             }
             return result;
