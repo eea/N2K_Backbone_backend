@@ -206,8 +206,8 @@ namespace N2K_BackboneBackEnd.Services
                     cachedList.Add(comment);
 
                     cache.Set(listName, cachedList);
-                    result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
-                    result.AddRange(cachedList);
+                    //result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
+                    //result.AddRange(cachedList);
                 }
             }
 
@@ -250,7 +250,7 @@ namespace N2K_BackboneBackEnd.Services
                        );
                 if (cache.TryGetValue(listName, out List<JustificationFiles> cachedList))
                 {
-                    result.AddRange(cachedList);
+                    result.AddRange(cachedList.Where(a => a.SiteCode == pSiteCode && a.Version == pCountryVersion));
                 }
             }
             return result;
@@ -307,7 +307,8 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 
                 result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(jf => jf.SiteCode == attachedFile.SiteCode && jf.Version == attachedFile.Version).ToListAsync();
-                result.AddRange(cachedList);
+                if (temporal)
+                    result.AddRange(cachedList.Where(a => a.SiteCode == attachedFile.SiteCode && a.Version == attachedFile.Version));
             }
             return result;
         }
@@ -364,12 +365,8 @@ namespace N2K_BackboneBackEnd.Services
                     fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
                 }
 
-                if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
-                
+                if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);                
                 result = 1;
-
-
-
             }
             return result;
 
