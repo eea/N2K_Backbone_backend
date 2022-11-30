@@ -39,14 +39,7 @@ namespace N2K_BackboneBackEnd.Services
         }
         private void CreateEmptyCommentCache(string listName, IMemoryCache cache)
         {
-
-            MemoryCacheEntryOptions cacheEntryOptions = new MemoryCacheEntryOptions()
-                .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
-                .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
-                .SetPriority(CacheItemPriority.Normal)
-                .SetSize(40000);
-
-            cache.Set(listName, new List<StatusChanges>() , cacheEntryOptions);            
+            cache.Set(listName, new List<StatusChanges>() , CreateCacheEntryOptions());            
         }
 
         public long GetRandomId()
@@ -134,7 +127,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 cache.Set(listName, cachedList);
                 result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
-                result.AddRange(cachedList);
+                result.AddRange(cachedList.Where(a => a.SiteCode == comment.SiteCode && a.Version == comment.Version));
             }
             return result;
         }
@@ -187,14 +180,34 @@ namespace N2K_BackboneBackEnd.Services
                         GlobalData.Username,
                         "temp_comments"
                        );                
-                if (cache.TryGetValue(listName, out cachedList))
+                if (!cache.TryGetValue(listName, out cachedList)) {
+                    CreateEmptyCommentCache(listName, cache);
+                    cachedList = new List<StatusChanges>();    
+                }
+
+                if (cachedList.FirstOrDefault(a => a.Id == comment.Id ) != null)
                 {
-                    if (cachedList.FirstOrDefault(a => a.Id == comment.Id ) != null)
+                    var item = cachedList.FirstOrDefault(a => a.Id == comment.Id);
+                    item.Comments = comment.Comments;
+                    item.Justification = comment.Justification;
+                }
+                else
+                {
+                    StatusChanges? _comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == comment.Id);
+                    if (_comment != null)
                     {
-                        var item = cachedList.FirstOrDefault(a => a.Id == comment.Id);
-                        item.Comments = comment.Comments;
-                        item.Justification = comment.Justification;
+                        if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
                     }
+                    comment.EditedDate = DateTime.Now;
+                    comment.Edited = edited;
+                    comment.Editedby = GlobalData.Username;
+                    comment.Temporal = true;
+                    
+                    cachedList.Add(comment);
+
+                    cache.Set(listName, cachedList);
+                    result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
+                    result.AddRange(cachedList);
                 }
             }
 
@@ -214,7 +227,7 @@ namespace N2K_BackboneBackEnd.Services
             result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
             if (temporal)
             {
-                result.AddRange(cachedList); 
+                result.AddRange(cachedList.Where(a=> a.SiteCode== comment.SiteCode && a.Version== comment.Version)); 
             }
             return result;
         }
@@ -429,6 +442,9 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         cache.Set(listName, comCachedList);
                     }
+                    comCachedList.Clear();
+                    cache.Remove(listName);
+
 
                     //add temporal files
                     listName = string.Format("{0}_{1}",
@@ -449,9 +465,10 @@ namespace N2K_BackboneBackEnd.Services
                                 justifCachedList.Remove(justif);
                             }
                         }
-                        cache.Set(listName, comCachedList);
+                        
                     }
-
+                    justifCachedList.Clear();
+                    cache.Remove(listName);
                     await _dataContext.SaveChangesAsync();
                 }
             }
