@@ -18,6 +18,11 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public double CentreY { get; set; } = 0;
 
         public string? BioRegion { get; set; }
+
+        public bool? JustificationRequired { get; set; } = false;
+
+        public bool? JustificationProvided { get; set; } = false;
+
         public static  void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<ChangeEditionDb>();
