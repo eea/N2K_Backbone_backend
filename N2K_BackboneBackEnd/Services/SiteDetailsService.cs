@@ -398,32 +398,25 @@ namespace N2K_BackboneBackEnd.Services
                 Sites site = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefault();
                 if (site != null)
                 {
-                    if (changeEdition.BioRegion != "string")
+                    if (changeEdition.BioRegion != null && changeEdition.BioRegion != "string" && changeEdition.BioRegion != "")
                     {
-                        string[] bioregions = new string[] { };                    
-                        if (changeEdition.BioRegion!= null) 
-                            bioregions= changeEdition.BioRegion.Split(",");
-                        if (bioregions.Length > 0)
+                        string[] bioregions = changeEdition.BioRegion.Split(",");
+                        foreach (var bioregion in bioregions)
                         {
-                            foreach (var bioregion in bioregions)
+                            BioRegions bioreg = new BioRegions
                             {
-                                BioRegions bioreg = new BioRegions
-                                {
-                                    SiteCode = changeEdition.SiteCode,
-                                    Version = site.Version,
-                                    BGRID = int.Parse(bioregion),
-                                    Percentage = 100 / bioregions.Length // NEEDS TO BE CHANGED - PENDING
-                                };
-                                _dataContext.Set<BioRegions>().Add(bioreg);
-                            }
+                                SiteCode = changeEdition.SiteCode,
+                                Version = site.Version,
+                                BGRID = int.Parse(bioregion),
+                                Percentage = 100 / bioregions.Length // NEEDS TO BE CHANGED - PENDING
+                            };
+                            _dataContext.Set<BioRegions>().Add(bioreg);
                         }
+                        _dataContext.SaveChanges();
                     }
 
                     //add temporal comments
-                    string listName = string.Format("{0}_{1}",
-                            GlobalData.Username,
-                            "temp_comments"
-                           );
+                    string listName = string.Format("{0}_{1}",GlobalData.Username,"temp_comments");
                     List<StatusChanges> comCachedList = new List<StatusChanges>();
                     if (cache.TryGetValue(listName, out comCachedList))
                     {
@@ -446,10 +439,7 @@ namespace N2K_BackboneBackEnd.Services
 
 
                     //add temporal files
-                    listName = string.Format("{0}_{1}",
-                            GlobalData.Username,
-                            "temp_files"
-                    );
+                    listName = string.Format("{0}_{1}",GlobalData.Username,"temp_files");
                     List<JustificationFiles> justifCachedList = new List<JustificationFiles>();
                     if (cache.TryGetValue(listName, out justifCachedList))
                     {
