@@ -388,10 +388,12 @@ namespace N2K_BackboneBackEnd.Services
                 SqlParameter param_length = new SqlParameter("@length", changeEdition.Length == 0 ? DBNull.Value : changeEdition.Length);
                 SqlParameter param_centrex = new SqlParameter("@centrex", changeEdition.CentreX == 0 ? DBNull.Value : changeEdition.CentreX);
                 SqlParameter param_centrey = new SqlParameter("@centrey", changeEdition.CentreY == 0 ? DBNull.Value : changeEdition.CentreY);
+                SqlParameter param_justif_required = new SqlParameter("@justif_required", changeEdition.JustificationRequired == null? false : changeEdition.JustificationRequired);
+                SqlParameter param_justif_provided = new SqlParameter("@justif_provided", changeEdition.JustificationProvided == null ? false : changeEdition.JustificationProvided ) ;
 
                 await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSites " +
-                    "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey"
-                    , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey);
+                    "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided " 
+                    , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey , param_justif_required , param_justif_provided);
                 
                 Sites site = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefault();
                 if (site != null)
@@ -439,7 +441,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         cache.Set(listName, comCachedList);
                     }
-                    comCachedList.Clear();
+                    if (comCachedList!=null)  comCachedList.Clear();
                     cache.Remove(listName);
 
 
@@ -464,7 +466,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         
                     }
-                    justifCachedList.Clear();
+                    if (justifCachedList != null) justifCachedList.Clear();
                     cache.Remove(listName);
                     await _dataContext.SaveChangesAsync();
                 }
@@ -481,7 +483,7 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<ChangeEditionViewModel?> GetReferenceEditInfo(string siteCode)
         {
             SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
-            List<ChangeEditionDb> list = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.spGetReferenceEditInfo  @sitecode",
+            List<ChangeEditionDb> list = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.[spGetReferenceEditInfo]  @sitecode",
                                 param1).ToListAsync();
             ChangeEditionDb changeEdition = list.FirstOrDefault();
             if (changeEdition == null)
@@ -500,7 +502,9 @@ namespace N2K_BackboneBackEnd.Services
                     SiteCode = changeEdition.SiteCode,
                     SiteName = changeEdition.SiteName,
                     SiteType = changeEdition.SiteType,
-                    Version = changeEdition.Version
+                    Version = changeEdition.Version,
+                    JustificationRequired = changeEdition.JustificationRequired,
+                    JustificationProvided = changeEdition.JustificationProvided
                 };
             }
         }
