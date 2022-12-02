@@ -19,7 +19,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? Username { get; set; }
 
         [NotMapped]
-        public new string Tags { get; set; } = "";
+        public new string? Tags { get; set; } = "";
 
 
         //[NotMapped]

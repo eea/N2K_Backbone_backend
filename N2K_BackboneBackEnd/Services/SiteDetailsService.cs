@@ -236,20 +236,21 @@ namespace N2K_BackboneBackEnd.Services
                 if (_comment != null)
                 {
                     if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
-
-                    if (cachedList.FirstOrDefault(a => a.Id == comment.Id) != null)
+                    var item = cachedList.FirstOrDefault(a => a.Id == comment.Id);
+                    if (item != null)
                     {
-                        var item = cachedList.FirstOrDefault(a => a.Id == comment.Id);
-                        comment.EditedDate = DateTime.Now;
-                        comment.Edited = edited;
-                        comment.Editedby = GlobalData.Username;
-                        comment.Tags = "Updated";
-
+                        item.EditedDate = DateTime.Now;
+                        item.Edited = edited;
+                        item.Editedby = GlobalData.Username;
+                        item.Tags = "Updated";
                         item.Comments = comment.Comments;
-                        item.Justification = comment.Justification;
+                        item.Date = _comment.Date;
+                        item.Owner = _comment.Owner;
                     }
                     else
                     {
+                        comment.Date = _comment.Date;
+                        comment.Owner = _comment.Owner;
                         comment.EditedDate = DateTime.Now;
                         comment.Edited = edited;
                         comment.Temporal = true;
@@ -257,9 +258,7 @@ namespace N2K_BackboneBackEnd.Services
                         comment.Tags = "Updated";
                         cachedList.Add(comment);
                     }
-
                     cache.Set(comlistName, cachedList);
-
                 }
                 else
                 {
@@ -489,44 +488,41 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.SaveChanges();
                     }
 
-                    //add temporal comments
+                    //add temporal comments                    
                     CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
-                    List<StatusChanges> comCachedList = ComItem.GetCachedList();
+                    List<StatusChanges> comsInDB = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(f => f.SiteCode == changeEdition.SiteCode && f.Version == changeEdition.Version).ToListAsync();
+                    List<StatusChanges> comCachedList = ComItem.GetFinalList(comsInDB);
                     foreach (var comm in comCachedList) { 
                         if (site.SiteCode == comm.SiteCode)
                         {
                             comm.Version = site.Version;
-                            comm.Date = DateTime.Now;
-                            comm.Owner = GlobalData.Username;
-                            comm.Edited = 0;
+                            comm.Tags = null;
+                            comm.Id = 0;
                             await _dataContext.Set<StatusChanges>().AddAsync(comm);
-                            comCachedList.Remove(comm);
                         }
                     }
-                        cache.Set(comlistName, comCachedList);
-
                     if (comCachedList!=null)  comCachedList.Clear();
                     cache.Remove(comlistName);
 
 
-                    //add temporal files                    
+                    //add temporal files                                        
                     CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
-                    List<JustificationFiles> justifCachedList = JustifItem.GetCachedList();
-
+                    List< JustificationFiles> filesInDB = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(f => f.SiteCode == changeEdition.SiteCode  && f.Version == changeEdition.Version).ToListAsync();
+                    List<JustificationFiles> justifCachedList = JustifItem.GetFinalList(filesInDB);
                     foreach (var justif in justifCachedList)
                     {
                         if (site.SiteCode == justif.SiteCode)
                         {
                             justif.Version = site.Version;
-                            justif.ImportDate = DateTime.Now;
-                            justif.Username  = GlobalData.Username;
+                            justif.Id = 0;
+                            justif.Tags = null;
                             await _dataContext.Set<JustificationFiles>().AddAsync(justif);
-                            justifCachedList.Remove(justif);
                         }
                     }
 
                     if (justifCachedList != null) justifCachedList.Clear();
                     cache.Remove(justiflistName);
+
                     await _dataContext.SaveChangesAsync();
                 }
             }
