@@ -17,18 +17,22 @@ using DocumentFormat.OpenXml;
 using System.IO.Compression;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
+using System.Data;
+using DocumentFormat.OpenXml.ExtendedProperties;
 
 namespace N2K_BackboneBackEnd.Services
 {
     public class ReleaseService : IReleaseService
     {
         private readonly N2KBackboneContext _dataContext;
+        private readonly N2KReleasesContext _releaseContext;
         private readonly IOptions<ConfigSettings> _appSettings;
         private const string ulBioRegSites = "ulBioRegSites";
 
-        public ReleaseService(N2KBackboneContext dataContext, IOptions<ConfigSettings> app)
+        public ReleaseService(N2KBackboneContext dataContext, N2KReleasesContext releaseContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
+            _releaseContext = releaseContext;
             _appSettings = app;
         }
 
@@ -37,29 +41,53 @@ namespace N2K_BackboneBackEnd.Services
             return await _dataContext.Set<BioRegionTypes>().AsNoTracking().Where(bio => bio.BioRegionShortCode != null).ToListAsync();
         }
 
-        public async Task<List<UnionListHeader>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
+        public async Task<List<Releases>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
+        {
+            List<Releases> releaseHeaders = new List<Releases>();
+
+            if (bioRegionShortCode != null)
+            {
+                var bioregionList = await GetUnionBioRegionTypes();
+
+                var bioRegionCodes = new DataTable("bioRegionCodes");
+                bioRegionCodes.Columns.Add("Code", typeof(int));
+                bioRegionCodes.Columns.Add("RefBioGeoName", typeof(string));
+                bioRegionCodes.Columns.Add("RefBioRegionCode", typeof(string));
+                bioRegionCodes.Columns.Add("BioRegionShortCode", typeof(string));
+
+                foreach (var br in bioregionList)
+                {
+                    bioRegionCodes.Rows.Add(new Object[] { br.Code, br.RefBioGeoName, br.RefBioRegionCode, br.BioRegionShortCode });
+                }
+
+                SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
+                SqlParameter param2 = new SqlParameter("@bioregionCodes", System.Data.SqlDbType.Structured);
+                param2.Value = bioRegionCodes;
+                param2.TypeName = "[dbo].[BioRegionCodes]";
+
+                releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeadersByBioRegion  @bioregion, @bioregionCodes",
+                                param1, param2).AsNoTracking().ToListAsync();
+            } else
+            {
+                releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeaders").AsNoTracking().ToListAsync();
+            }
+            releaseHeaders = releaseHeaders.Where(ulh => (ulh.Title != _appSettings.Value.current_ul_name) || (ulh.Author != _appSettings.Value.current_ul_createdby)).ToList();
+            return releaseHeaders;
+        }
+
+        public async Task<List<ReleaseDetail>> GetCurrentSitesReleaseDetailByBioRegion(string? bioRegionShortCode)
         {
             SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
 
-            List<UnionListHeader> unionListHeaders = await _dataContext.Set<UnionListHeader>().FromSqlRaw($"exec dbo.spGetUnionListHeadersByBioRegion  @bioregion",
-                            param1).AsNoTracking().ToListAsync();
-            unionListHeaders = unionListHeaders.Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) || (ulh.CreatedBy != _appSettings.Value.current_ul_createdby)).ToList();
-            return unionListHeaders;
-        }
-
-        public async Task<List<UnionListDetail>> GetCurrentSitesReleaseDetailByBioRegion(string? bioRegionShortCode)
-        {
-            SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
-
-            List<UnionListDetail> unionListDetails = await _dataContext.Set<UnionListDetail>().FromSqlRaw($"exec dbo.spGetCurrentSitesUnionListDetailByBioRegion  @bioregion",
+            List<ReleaseDetail> releaseDetails = await _dataContext.Set<ReleaseDetail>().FromSqlRaw($"exec dbo.spGetCurrentSitesReleaseDetailByBioRegion  @bioregion",
                             param1).AsNoTracking().ToListAsync();
 
-            return unionListDetails;
+            return releaseDetails;
         }
 
-        public async Task<List<UnionListHeader>> GetReleaseHeadersById(long? id)
+        public async Task<List<Releases>> GetReleaseHeadersById(long? id)
         {
-            return await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.idULHeader == id).ToListAsync();
+            return await _releaseContext.Set<Releases>().AsNoTracking().Where(ulh => ulh.ID == id).ToListAsync();
         }
 
         private async Task<List<BioRegionSiteCode>> GetBioregionSiteCodesInReleaseComparer(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache)
@@ -84,12 +112,28 @@ namespace N2K_BackboneBackEnd.Services
                     listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions.Replace(",", "_"));
                 }
 
-                SqlParameter param1 = new SqlParameter("@idULHeaderSource", idSource);
-                SqlParameter param2 = new SqlParameter("@idULHeaderTarget", idTarget);
-                SqlParameter param3 = new SqlParameter("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
+                var bioregionList = await GetUnionBioRegionTypes();
 
-                resultCodes = await _dataContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInUnionListComparer  @idULHeaderSource, @idULHeaderTarget, @bioRegions",
-                                param1, param2, param3).ToListAsync();
+                var bioRegionCodes = new DataTable("bioRegionCodes");
+                bioRegionCodes.Columns.Add("Code", typeof(int));
+                bioRegionCodes.Columns.Add("RefBioGeoName", typeof(string));
+                bioRegionCodes.Columns.Add("RefBioRegionCode", typeof(string));
+                bioRegionCodes.Columns.Add("BioRegionShortCode", typeof(string));
+
+                foreach (var br in bioregionList)
+                {
+                    bioRegionCodes.Rows.Add(new Object[] { br.Code, br.RefBioGeoName, br.RefBioRegionCode, br.BioRegionShortCode });
+                }
+
+                SqlParameter param1 = new SqlParameter("@idReleaseSource", idSource);
+                SqlParameter param2 = new SqlParameter("@idReleaseTarget", idTarget);
+                SqlParameter param3 = new SqlParameter("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
+                SqlParameter param4 = new SqlParameter("@bioregionCodes", System.Data.SqlDbType.Structured);
+                param4.Value = bioRegionCodes;
+                param4.TypeName = "[dbo].[BioRegionCodes]";
+
+                resultCodes = await _releaseContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInReleaseComparer  @idReleaseSource, @idReleaseTarget, @bioRegions, @bioregionCodes",
+                                param1, param2, param3, param4).ToListAsync();
 
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                         .SetSlidingExpiration(TimeSpan.FromSeconds(60))
@@ -133,7 +177,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<UnionListComparerDetailedViewModel>> CompareReleases(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache, int page = 1, int pageLimit = 0)
+        public async Task<List<UnionListComparerDetailedViewModel>> CompareReleases(long? idSource, long? idTarget, string? bioRegions, string? country, IMemoryCache cache, int page = 1, int pageLimit = 0)
         {
             List<BioRegionSiteCode> ulSites = await GetBioregionSiteCodesInReleaseComparer(idSource, idTarget, bioRegions, cache);
             var startRow = (page - 1) * pageLimit;
@@ -145,24 +189,49 @@ namespace N2K_BackboneBackEnd.Services
                     .ToList();
             }
 
+            var bioregionList = await GetUnionBioRegionTypes();
+
+            var bioRegionCodes = new DataTable("bioRegionCodes");
+            bioRegionCodes.Columns.Add("Code", typeof(int));
+            bioRegionCodes.Columns.Add("RefBioGeoName", typeof(string));
+            bioRegionCodes.Columns.Add("RefBioRegionCode", typeof(string));
+            bioRegionCodes.Columns.Add("BioRegionShortCode", typeof(string));
+
+            foreach (var br in bioregionList)
+            {
+                bioRegionCodes.Rows.Add(new Object[] { br.Code, br.RefBioGeoName, br.RefBioRegionCode, br.BioRegionShortCode });
+            }
+
+            SqlParameter param3 = new SqlParameter("@bioregionCodes", System.Data.SqlDbType.Structured);
+            param3.Value = bioRegionCodes;
+            param3.TypeName = "[dbo].[BioRegionCodes]";
+
             //get the bioReg-SiteCodes of the source UL
-            var _ulDetails = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idSource).ToListAsync();
-            List<UnionListDetail> ulDetailsSource = (from src1 in ulSites
-                                                     from trgt1 in _ulDetails.Where(trg1 => (src1.SiteCode == trg1.SCI_code) && (src1.BioRegion == trg1.BioRegion))
-                                                     select trgt1
+            SqlParameter param1 = new SqlParameter("@idRelease", idSource);
+            var _ulDetails = await _releaseContext.Set<ReleaseDetail>().FromSqlRaw($"exec dbo.spGetReleaseDetailsById  @idRelease, @bioregionCodes", param1, param3).ToListAsync();
+            List<ReleaseDetail> ulDetailsSource = (from src1 in ulSites
+                                                   from trgt1 in _ulDetails.Where(trg1 => (src1.SiteCode == trg1.SCI_code) && (src1.BioRegion == trg1.BioRegion))
+                                                   select trgt1
             ).ToList();
             _ulDetails.Clear();
 
             //get the bioReg-SiteCodes of the target UL
-            _ulDetails = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idTarget).ToListAsync();
-            List<UnionListDetail> ulDetailsTarget = (from src1 in ulSites
-                                                     from trgt2 in _ulDetails.Where(trg2 => (src1.SiteCode == trg2.SCI_code) && (src1.BioRegion == trg2.BioRegion))
-                                                     select trgt2
+            SqlParameter param2 = new SqlParameter("@idRelease", idTarget);
+            _ulDetails = await _releaseContext.Set<ReleaseDetail>().FromSqlRaw($"exec dbo.spGetReleaseDetailsById  @idRelease, @bioregionCodes", param2, param3).ToListAsync();
+            List<ReleaseDetail> ulDetailsTarget = (from src1 in ulSites
+                                                   from trgt2 in _ulDetails.Where(trg2 => (src1.SiteCode == trg2.SCI_code) && (src1.BioRegion == trg2.BioRegion))
+                                                   select trgt2
             ).ToList();
 
             //clear the memory
             _ulDetails.Clear();
             ulSites.Clear();
+
+            if (country != null)
+            {
+                ulDetailsSource = ulDetailsSource.Where(uld => (uld.SCI_code.Substring(0, 2) == country)).ToList();
+                ulDetailsTarget = ulDetailsTarget.Where(uld => (uld.SCI_code.Substring(0, 2) == country)).ToList();
+            }
 
             List<UnionListComparerDetailedViewModel> result = new List<UnionListComparerDetailedViewModel>();
             //Changed
@@ -397,45 +466,47 @@ namespace N2K_BackboneBackEnd.Services
             return result.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
         }
 
-        public async Task<List<UnionListHeader>> CreateRelease(string name, Boolean final)
+        public async Task<List<Releases>> CreateRelease(string title, Boolean? isOfficial, string? character, string? comments)
         {
-            SqlParameter param1 = new SqlParameter("@name", name);
-            SqlParameter param2 = new SqlParameter("@creator", GlobalData.Username);
-            SqlParameter param3 = new SqlParameter("@final", final);
+            SqlParameter param1 = new SqlParameter("@Title", title);
+            SqlParameter param2 = new SqlParameter("@Author", GlobalData.Username);
+            SqlParameter param3 = new SqlParameter("@CreateDate", DateTime.Now);
+            SqlParameter param4 = new SqlParameter("@ModifyDate", DateTime.Now);
+            SqlParameter param5 = new SqlParameter("@IsOfficial", isOfficial);
+            SqlParameter param6 = new SqlParameter("@Character", character);
+            SqlParameter param7 = new SqlParameter("@Comments", comments);
 
-            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final ", param1, param2, param3);
+            await _releaseContext.Database.ExecuteSqlRawAsync("exec dbo.createNewRelease  @Title, @Author, @CreateDate, @ModifyDate, @IsOfficial, @Character, @Comments", param1, param2, param3, param4, param5, param6, param7);
             return await GetReleaseHeadersByBioRegion(null);
         }
 
-        public async Task<List<UnionListHeader>> UpdateRelease(long id, string name, Boolean final)
+        public async Task<List<Releases>> UpdateRelease(long id, string name, Boolean final)
         {
-            UnionListHeader unionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.idULHeader == id).FirstOrDefaultAsync();
-            if (unionList != null)
+            Releases release = await _releaseContext.Set<Releases>().AsNoTracking().Where(ulh => ulh.ID == id).FirstOrDefaultAsync();
+            if (release != null)
             {
                 if (name != "string")
-                    unionList.Name = name;
+                    release.Title = name;
 
-                unionList.Final = final;
-                unionList.UpdatedBy = GlobalData.Username;
-                unionList.UpdatedDate = DateTime.Now;
+                release.IsOfficial = final;
+                release.ModifyUser = GlobalData.Username;
+                release.ModifyDate = DateTime.Now;
 
-                _dataContext.Set<UnionListHeader>().Update(unionList);
+                _releaseContext.Set<Releases>().Update(release);
             }
-            await _dataContext.SaveChangesAsync();
+            await _releaseContext.SaveChangesAsync();
 
             return await GetReleaseHeadersByBioRegion(null);
-
-
         }
 
         public async Task<int> DeleteRelease(long id)
         {
             int result = 0;
-            UnionListHeader? unionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(ulh => ulh.idULHeader == id);
-            if (unionList != null)
+            Releases? release = await _releaseContext.Set<Releases>().AsNoTracking().FirstOrDefaultAsync(ulh => ulh.ID == id);
+            if (release != null)
             {
-                _dataContext.Set<UnionListHeader>().Remove(unionList);
-                await _dataContext.SaveChangesAsync();
+                _releaseContext.Set<Releases>().Remove(release);
+                await _releaseContext.SaveChangesAsync();
                 result = 1;
             }
             return result;
