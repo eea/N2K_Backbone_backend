@@ -57,6 +57,17 @@ builder.Services.AddDbContext<N2KBackboneContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
 });
 
+builder.Services.AddDbContext<N2KReleasesContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_ReleasesBackEndContext"));
+});
+
+builder.Services.AddDbContext<N2K_VersioningContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_VersioningBackEndContext"));
+});
+
+
 builder.Services.Configure<FormOptions>(o =>
 {
     o.ValueLengthLimit = int.MaxValue;
@@ -64,10 +75,7 @@ builder.Services.Configure<FormOptions>(o =>
     o.MemoryBufferThreshold = int.MaxValue;
 });
 
-builder.Services.AddDbContext<N2K_VersioningContext>(options =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_VersioningBackEndContext"));
-});
+
 
 
 builder.Services.AddControllersWithViews();
