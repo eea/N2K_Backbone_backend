@@ -1,5 +1,7 @@
 ﻿using DocumentFormat.OpenXml.Bibliography;
 using DocumentFormat.OpenXml.Office2019.Word.Cid;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Differencing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +18,77 @@ using System.ComponentModel.Design;
 
 namespace N2K_BackboneBackEnd.Services
 {
+    public class CachedListItem<T> where T : DocumentationChanges
+    {
+        private readonly IMemoryCache _cache;
+        private readonly string _listName;
+
+        private MemoryCacheEntryOptions CreateCacheEntryOptions()
+        {
+            return new MemoryCacheEntryOptions()
+                .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
+                .SetPriority(CacheItemPriority.Normal)
+                .SetSize(40000);
+        }
+
+        public CachedListItem(string listName, IMemoryCache cache)
+        {
+            _cache = cache;
+            _listName = listName;
+            List<T> cachedList = new List<T>();
+            if (!cache.TryGetValue(listName, out cachedList))
+            {
+                cache.Set(listName, new List<T>(), CreateCacheEntryOptions());
+            }
+        }
+
+        public List<T> GetCachedList()
+        {
+            List<T> cachedList = new List<T>();
+            if (!_cache.TryGetValue(_listName, out cachedList))
+            {
+                if (cachedList == null)
+                    return new List<T>();
+            }
+            return cachedList;
+        }
+
+        public List<T> GetFinalList( List<T> dbList)
+        {
+            List<T> cachedList = GetCachedList();
+            //build the list to return
+            List<T> finalResult = new List<T>();
+            foreach (T item in dbList)
+            {
+                //check if the item is in the cached list
+                var cachedItem = cachedList.FindLast(it => it.SiteCode == item.SiteCode && it.Version == item.Version && it.Id == item.Id);
+                if (cachedItem != null)
+                {
+                    //if the item in the cached list 
+                    //if the new item is an updated one
+                    if (item.Tags == "Updated")
+                    {
+                        finalResult.Add(cachedItem);
+                    }
+                }
+                else
+                {
+                    //add the item from te DB
+                    finalResult.Add(item);
+                }
+            }
+
+            //add the new items to the list
+            foreach (T item in cachedList.Where(it => it.Temporal == true || it.Tags!="Deleted" ).ToList())
+            {
+                finalResult.Add(item);
+            }
+            return finalResult;
+        }
+    }
+
+
     public class SiteDetailsService : ISiteDetailsService
     {
 
@@ -23,23 +96,14 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2K_VersioningContext _versioningContext;
         private readonly IOptions<ConfigSettings> _appSettings;
 
+        private string comlistName = string.Format("{0}_{1}", GlobalData.Username, "temp_comments");
+        private string justiflistName = string.Format("{0}_{1}", GlobalData.Username, "temp_files");
+
         public SiteDetailsService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
             _appSettings = app;
-        }
-
-        private MemoryCacheEntryOptions CreateCacheEntryOptions() {
-            return new MemoryCacheEntryOptions()
-                .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
-                .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
-                .SetPriority(CacheItemPriority.Normal)
-                .SetSize(40000);
-        }
-        private void CreateEmptyCommentCache(string listName, IMemoryCache cache)
-        {
-            cache.Set(listName, new List<StatusChanges>() , CreateCacheEntryOptions());            
         }
 
         public long GetRandomId()
@@ -80,14 +144,8 @@ namespace N2K_BackboneBackEnd.Services
 
             if (temporal)
             {
-                string listName = string.Format("{0}_{1}", 
-                        GlobalData.Username, 
-                        "temp_comments"
-                       );
-                if (cache.TryGetValue(listName, out List<StatusChanges> cachedList))
-                {
-                    result.AddRange(cachedList.Where(a => a.SiteCode == pSiteCode && a.Version == pCountryVersion));
-                }
+                CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                return ComItem.GetFinalList(result);               
             }
             return result;
         }
@@ -98,6 +156,7 @@ namespace N2K_BackboneBackEnd.Services
             List<StatusChanges> result = new List<StatusChanges>();
             comment.Date = DateTime.Now;
             comment.Owner = GlobalData.Username;
+            comment.Temporal = true;
             comment.Edited = 0;            
 
             if (!temporal)
@@ -111,23 +170,13 @@ namespace N2K_BackboneBackEnd.Services
             else
             {
                 comment.Temporal = true;
-                string listName = string.Format("{0}_{1}",
-                        GlobalData.Username,
-                        "temp_comments"
-                       );
-
-                List<StatusChanges> cachedList = new List<StatusChanges>();
-                if (!cache.TryGetValue(listName, out cachedList))
-                {
-                    CreateEmptyCommentCache(listName, cache);
-                    cachedList = new List<StatusChanges>();
-                }
+                CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                List<StatusChanges> cachedList = ComItem.GetCachedList();
                 comment.Id = GetRandomId();
                 cachedList.Add(comment);
 
-                cache.Set(listName, cachedList);
-                result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
-                result.AddRange(cachedList.Where(a => a.SiteCode == comment.SiteCode && a.Version == comment.Version));
+                cache.Set(comlistName, cachedList);
+                return await ListSiteComments(comment.SiteCode, comment.Version, cache, temporal);
             }
             return result;
         }
@@ -135,30 +184,34 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<int> DeleteComment(long CommentId, IMemoryCache cache, bool temporal = false)
         {
             int result = 0;
+            StatusChanges? comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == CommentId);
             if (temporal)
             {
-                string listName = string.Format("{0}_{1}",
-                        GlobalData.Username,
-                        "temp_comments"
-                       );
-                List<StatusChanges> cachedList = new List<StatusChanges>();
-                if (!cache.TryGetValue(listName, out cachedList))
+                CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                List<StatusChanges> cachedList = ComItem.GetCachedList();
+                //if it is a comment existing in the database add it to the cache tagged as deleted
+                if (comment != null)
                 {
-                    return 0;
-                }
+                    comment.EditedDate = DateTime.Now;
+                    comment.Tags = "Deleted";
+                    comment.Editedby = GlobalData.Username;
+                    cachedList.Add(comment);
 
-                if (cachedList.FirstOrDefault(a => a.Id == CommentId) != null)
-                {
-                    cachedList.Remove(cachedList.FirstOrDefault(a => a.Id == CommentId));
-                    cache.Set(listName, cachedList);
+                    cache.Set(comlistName, cachedList);
                     return 1;
                 }
+                else
+                    //it is a temp comment, delete it from cache
+                    if (cachedList.FirstOrDefault(a => a.Id == CommentId) != null)
+                    {
+                        cachedList.Remove(cachedList.FirstOrDefault(a => a.Id == CommentId));
+                        cache.Set(comlistName, cachedList);
+                        return 1;
+                    }
                 return 0;
             }
             else
             {
-
-                StatusChanges? comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == CommentId);
                 if (comment != null)
                 {
                     _dataContext.Set<StatusChanges>().Remove(comment);
@@ -174,62 +227,65 @@ namespace N2K_BackboneBackEnd.Services
             List<StatusChanges> result = new List<StatusChanges>();
             var edited = 1;
             List<StatusChanges> cachedList = new List<StatusChanges>();
+            StatusChanges? _comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == comment.Id);
             if (temporal)
             {
-                string listName = string.Format("{0}_{1}",
-                        GlobalData.Username,
-                        "temp_comments"
-                       );                
-                if (!cache.TryGetValue(listName, out cachedList)) {
-                    CreateEmptyCommentCache(listName, cache);
-                    cachedList = new List<StatusChanges>();    
-                }
-
-                if (cachedList.FirstOrDefault(a => a.Id == comment.Id ) != null)
-                {
-                    var item = cachedList.FirstOrDefault(a => a.Id == comment.Id);
-                    item.Comments = comment.Comments;
-                    item.Justification = comment.Justification;
-                }
-                else
-                {
-                    StatusChanges? _comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == comment.Id);
-                    if (_comment != null)
-                    {
-                        if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
-                    }
-                    comment.EditedDate = DateTime.Now;
-                    comment.Edited = edited;
-                    comment.Editedby = GlobalData.Username;
-                    comment.Temporal = true;
-                    
-                    cachedList.Add(comment);
-
-                    cache.Set(listName, cachedList);
-                    //result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
-                    //result.AddRange(cachedList);
-                }
-            }
-
-            else  { 
-                StatusChanges? _comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == comment.Id);
+                CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                cachedList = ComItem.GetCachedList();
+                //if it is a comment existing in the database add it to the cache tagged as updated
                 if (_comment != null)
                 {
                     if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
+                    var item = cachedList.FirstOrDefault(a => a.Id == comment.Id);
+                    if (item != null)
+                    {
+                        item.EditedDate = DateTime.Now;
+                        item.Edited = edited;
+                        item.Editedby = GlobalData.Username;
+                        item.Tags = "Updated";
+                        item.Comments = comment.Comments;
+                        item.Date = _comment.Date;
+                        item.Owner = _comment.Owner;
+                    }
+                    else
+                    {
+                        comment.Date = _comment.Date;
+                        comment.Owner = _comment.Owner;
+                        comment.EditedDate = DateTime.Now;
+                        comment.Edited = edited;
+                        comment.Temporal = true;
+                        comment.Editedby = GlobalData.Username;
+                        comment.Tags = "Updated";
+                        cachedList.Add(comment);
+                    }
+                    cache.Set(comlistName, cachedList);
                 }
-                comment.EditedDate = DateTime.Now;
-                comment.Edited = edited;
-                comment.Editedby = GlobalData.Username;
-                _dataContext.Set<StatusChanges>().Update(comment);
-                await _dataContext.SaveChangesAsync();
+                else
+                {
+                    //cyeck if it exists in the cache and update the item
+                    if (cachedList.FirstOrDefault(a => a.Id == comment.Id) != null)
+                    {
+                        var item = cachedList.FirstOrDefault(a => a.Id == comment.Id);
+                        item.Comments = comment.Comments;
+                        item.Justification = comment.Justification;
+                    }
+                }
+            }
+            
+            else  {
+                if (_comment != null)
+                {
+                    if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
+
+                    comment.EditedDate = DateTime.Now;
+                    comment.Edited = edited;
+                    comment.Editedby = GlobalData.Username;
+                    _dataContext.Set<StatusChanges>().Update(comment);
+                    await _dataContext.SaveChangesAsync();
+                }
             }
 
-            result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
-            if (temporal)
-            {
-                result.AddRange(cachedList.Where(a=> a.SiteCode== comment.SiteCode && a.Version== comment.Version)); 
-            }
-            return result;
+            return await ListSiteComments(comment.SiteCode, comment.Version, cache, temporal);
         }
 
 
@@ -239,19 +295,14 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<JustificationFiles>> ListSiteFiles(string pSiteCode, int pCountryVersion, IMemoryCache cache, bool temporal = false)
         {
+
             List<JustificationFiles> result = new List<JustificationFiles>();
             result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(f => f.SiteCode == pSiteCode && f.Version == pCountryVersion).ToListAsync();
 
             if (temporal)
             {
-                string listName = string.Format("{0}_{1}",
-                        GlobalData.Username,
-                        "temp_files"
-                       );
-                if (cache.TryGetValue(listName, out List<JustificationFiles> cachedList))
-                {
-                    result.AddRange(cachedList.Where(a => a.SiteCode == pSiteCode && a.Version == pCountryVersion));
-                }
+                CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
+                return JustifItem.GetFinalList(result);
             }
             return result;
         }
@@ -286,87 +337,109 @@ namespace N2K_BackboneBackEnd.Services
                 };
                 if (temporal)
                 {
-                    string listName = string.Format("{0}_{1}",
-                            GlobalData.Username,
-                            "temp_files"
-                           );
-                    if (!cache.TryGetValue(listName, out cachedList))
-                    {
-                        CreateEmptyCommentCache(listName, cache);
-                        cachedList = new List<JustificationFiles>();
-                    }
+
+                    CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
+                    cachedList = JustifItem.GetCachedList();
                     justFile.Id = GetRandomId();
                     cachedList.Add(justFile);
 
-                    cache.Set(listName, cachedList);
+                    cache.Set(justiflistName, cachedList);
                 }
                 else
                 {
                     await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
                     await _dataContext.SaveChangesAsync();
                 }
+
                 
-                result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(jf => jf.SiteCode == attachedFile.SiteCode && jf.Version == attachedFile.Version).ToListAsync();
-                if (temporal)
-                    result.AddRange(cachedList.Where(a => a.SiteCode == attachedFile.SiteCode && a.Version == attachedFile.Version));
             }
-            return result;
+            return await ListSiteFiles(attachedFile.SiteCode, attachedFile.Version, cache, temporal);
         }
 
 
         public async Task<int> DeleteFile(long justificationId, IMemoryCache cache, bool temporal = false)
         {
             int result = 0;
-            JustificationFiles? justification = null;
+            JustificationFiles? justification = await _dataContext.Set<JustificationFiles>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == justificationId);
             if (temporal)
             {
-                string listName = string.Format("{0}_{1}",
-                        GlobalData.Username,
-                        "temp_files"
-                       );
-                List<JustificationFiles> cachedList = new List<JustificationFiles>();
-                if (!cache.TryGetValue(listName, out cachedList))
+                CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
+                List<JustificationFiles> cachedList = JustifItem.GetCachedList();
+                //if it is a justification existing in the database, add it to the cache tagged as deleted
+                if (justification != null)
                 {
-                    return 0;
-                }
-                if (cachedList.FirstOrDefault(a => a.Id == justificationId) == null) return 0;
-
-                cachedList.Remove(cachedList.FirstOrDefault(a => a.Id == justificationId));
-                cache.Set(listName, cachedList);
-                
-            }                
-            else
-            {
-                justification = await _dataContext.Set<JustificationFiles>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == justificationId);
-            }
-
-            if (justification != null)
-            {
-                if (temporal)
-                {
-
+                    justification.Tags = "Deleted";
+                    cachedList.Add(justification);
+                    cache.Set(comlistName, cachedList);
+                    return 1;
                 }
                 else
+                {
+                    //it is a temp justification, delete it from cache
+                    if (cachedList.FirstOrDefault(a => a.Id == justificationId) != null)
+                    {
+                        //check if the file is linked to another id
+                        //if not delete from repository
+                        //delete file from repository
+                        JustificationFiles cachedItem = cachedList.FirstOrDefault(a => a.Id == justificationId);
+
+                        if (!_dataContext.Set<JustificationFiles>().Any(it => it.Path == cachedItem.Path))
+                        {
+                            IAttachedFileHandler? fileHandler = null;
+                            if (_appSettings.Value.AttachedFiles == null) return 0;
+                            if (_appSettings.Value.AttachedFiles.AzureBlob)
+                            {
+                                fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                            }
+                            else
+                            {
+                                fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                            }
+                            if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
+                        }
+
+                        //remove item from cache
+                        cachedList.Remove(cachedList.FirstOrDefault(a => a.Id == justificationId));
+                        cache.Set(comlistName, cachedList);
+                        return 1;
+                    }
+                }
+                return 0;
+            }
+            else
+            {
+                if (justification != null)
                 {
                     //delete record from DB
                     _dataContext.Set<JustificationFiles>().Remove(justification);
                     await _dataContext.SaveChangesAsync();
                 }
+            }
 
-                //delete file from repository
-                IAttachedFileHandler? fileHandler = null;
-                if (_appSettings.Value.AttachedFiles == null) return 0;
-                if (_appSettings.Value.AttachedFiles.AzureBlob)
+            if (justification != null)
+            {
+                if (!temporal)
                 {
-                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
-                }
-                else
-                {
-                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
-                }
+                    //delete record from DB
+                    _dataContext.Set<JustificationFiles>().Remove(justification);
+                    await _dataContext.SaveChangesAsync();
 
-                if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);                
-                result = 1;
+
+                    //delete file from repository
+                    IAttachedFileHandler? fileHandler = null;
+                    if (_appSettings.Value.AttachedFiles == null) return 0;
+                    if (_appSettings.Value.AttachedFiles.AzureBlob)
+                    {
+                        fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                    }
+                    else
+                    {
+                        fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                    }
+
+                    if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
+                    result = 1;
+                }
             }
             return result;
 
@@ -415,49 +488,41 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.SaveChanges();
                     }
 
-                    //add temporal comments
-                    string listName = string.Format("{0}_{1}",GlobalData.Username,"temp_comments");
-                    List<StatusChanges> comCachedList = new List<StatusChanges>();
-                    if (cache.TryGetValue(listName, out comCachedList))
-                    {
-                        foreach (var comm in comCachedList)
+                    //add temporal comments                    
+                    CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                    List<StatusChanges> comsInDB = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(f => f.SiteCode == changeEdition.SiteCode && f.Version == changeEdition.Version).ToListAsync();
+                    List<StatusChanges> comCachedList = ComItem.GetFinalList(comsInDB);
+                    foreach (var comm in comCachedList) { 
+                        if (site.SiteCode == comm.SiteCode)
                         {
-                            if (site.SiteCode == comm.SiteCode)
-                            {
-                                comm.Version = site.Version;
-                                comm.Date = DateTime.Now;
-                                comm.Owner = GlobalData.Username;
-                                comm.Edited = 0;
-                                await _dataContext.Set<StatusChanges>().AddAsync(comm);
-                                comCachedList.Remove(comm);
-                            }
+                            comm.Version = site.Version;
+                            comm.Tags = null;
+                            comm.Id = 0;
+                            await _dataContext.Set<StatusChanges>().AddAsync(comm);
                         }
-                        cache.Set(listName, comCachedList);
                     }
                     if (comCachedList!=null)  comCachedList.Clear();
-                    cache.Remove(listName);
+                    cache.Remove(comlistName);
 
 
-                    //add temporal files
-                    listName = string.Format("{0}_{1}",GlobalData.Username,"temp_files");
-                    List<JustificationFiles> justifCachedList = new List<JustificationFiles>();
-                    if (cache.TryGetValue(listName, out justifCachedList))
+                    //add temporal files                                        
+                    CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
+                    List< JustificationFiles> filesInDB = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(f => f.SiteCode == changeEdition.SiteCode  && f.Version == changeEdition.Version).ToListAsync();
+                    List<JustificationFiles> justifCachedList = JustifItem.GetFinalList(filesInDB);
+                    foreach (var justif in justifCachedList)
                     {
-                        foreach (var justif in justifCachedList)
+                        if (site.SiteCode == justif.SiteCode)
                         {
-                            if (site.SiteCode == justif.SiteCode)
-                            {
-                                justif.Version = site.Version;
-                                justif.ImportDate = DateTime.Now;
-                                justif.Username  = GlobalData.Username;
-                                await _dataContext.Set<JustificationFiles>().AddAsync(justif);
-                                justifCachedList.Remove(justif);
-                            }
+                            justif.Version = site.Version;
+                            justif.Id = 0;
+                            justif.Tags = null;
+                            await _dataContext.Set<JustificationFiles>().AddAsync(justif);
                         }
-                        
                     }
+
                     if (justifCachedList != null) justifCachedList.Clear();
-                    cache.Remove(listName);
+                    cache.Remove(justiflistName);
+
                     await _dataContext.SaveChangesAsync();
                 }
             }
