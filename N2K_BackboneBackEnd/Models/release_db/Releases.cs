@@ -6,8 +6,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
     public class ReleasesInputParam : IEntityModel, IEntityModelReleasesDB
     {
-        public string? Title { get; set; }
-        public Boolean? IsOfficial { get; set; }
+        public string Name { get; set; } = "";
+        public Boolean? Final { get; set; }
         public string? Character { get; set; }
         public string? Comments { get; set; }
 

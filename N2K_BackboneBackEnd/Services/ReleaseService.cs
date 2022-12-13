@@ -474,8 +474,9 @@ namespace N2K_BackboneBackEnd.Services
             SqlParameter param3 = new SqlParameter("@CreateDate", DateTime.Now);
             SqlParameter param4 = new SqlParameter("@ModifyDate", DateTime.Now);
             SqlParameter param5 = new SqlParameter("@IsOfficial", isOfficial);
-            SqlParameter param6 = new SqlParameter("@Character", character);
-            SqlParameter param7 = new SqlParameter("@Comments", comments);
+
+            SqlParameter param6 = new SqlParameter("@Character", string.IsNullOrEmpty(character)? string.Empty: character);
+            SqlParameter param7 = new SqlParameter("@Comments", string.IsNullOrEmpty(comments) ? string.Empty : comments);
 
             await _releaseContext.Database.ExecuteSqlRawAsync("exec dbo.createNewRelease  @Title, @Author, @CreateDate, @ModifyDate, @IsOfficial, @Character, @Comments", param1, param2, param3, param4, param5, param6, param7);
 
