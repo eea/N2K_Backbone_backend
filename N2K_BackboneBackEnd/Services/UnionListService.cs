@@ -65,13 +65,14 @@ namespace N2K_BackboneBackEnd.Services
 
                 resultCodes = await _dataContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInUnionListComparer  @idULHeaderSource, @idULHeaderTarget, @bioRegions",
                                 param1, param2, param3).ToListAsync();
-
+                /*
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                         .SetSlidingExpiration(TimeSpan.FromSeconds(60))
                         .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
                         .SetPriority(CacheItemPriority.Normal)
                         .SetSize(40000);
                 cache.Set(listName, resultCodes, cacheEntryOptions);
+                */
             }
             return resultCodes;
 
