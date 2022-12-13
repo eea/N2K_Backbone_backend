@@ -67,7 +67,8 @@ namespace N2K_BackboneBackEnd.Services
 
                 releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeadersByBioRegion  @bioregion, @bioregionCodes",
                                 param1, param2).AsNoTracking().ToListAsync();
-            } else
+            }
+            else
             {
                 releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeaders").AsNoTracking().ToListAsync();
             }
@@ -478,6 +479,19 @@ namespace N2K_BackboneBackEnd.Services
             SqlParameter param7 = new SqlParameter("@Comments", string.IsNullOrEmpty(comments) ? string.Empty : comments);
 
             await _releaseContext.Database.ExecuteSqlRawAsync("exec dbo.createNewRelease  @Title, @Author, @CreateDate, @ModifyDate, @IsOfficial, @Character, @Comments", param1, param2, param3, param4, param5, param6, param7);
+
+            if (isOfficial != null)
+            {
+                if ((bool)isOfficial)
+                {
+                    //Create Current
+                    SqlParameter param8 = new SqlParameter("@name", title);
+                    SqlParameter param9 = new SqlParameter("@creator", GlobalData.Username);
+                    SqlParameter param10 = new SqlParameter("@final", isOfficial);
+                    await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final ", param8, param9, param10);
+                }
+            }
+
             return await GetReleaseHeadersByBioRegion(null);
         }
 
