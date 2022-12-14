@@ -47,26 +47,10 @@ namespace N2K_BackboneBackEnd.Services
 
             if (bioRegionShortCode != null)
             {
-                var bioregionList = await GetUnionBioRegionTypes();
-
-                var bioRegionCodes = new DataTable("bioRegionCodes");
-                bioRegionCodes.Columns.Add("Code", typeof(int));
-                bioRegionCodes.Columns.Add("RefBioGeoName", typeof(string));
-                bioRegionCodes.Columns.Add("RefBioRegionCode", typeof(string));
-                bioRegionCodes.Columns.Add("BioRegionShortCode", typeof(string));
-
-                foreach (var br in bioregionList)
-                {
-                    bioRegionCodes.Rows.Add(new Object[] { br.Code, br.RefBioGeoName, br.RefBioRegionCode, br.BioRegionShortCode });
-                }
-
                 SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
-                SqlParameter param2 = new SqlParameter("@bioregionCodes", System.Data.SqlDbType.Structured);
-                param2.Value = bioRegionCodes;
-                param2.TypeName = "[dbo].[BioRegionCodes]";
 
-                releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeadersByBioRegion  @bioregion, @bioregionCodes",
-                                param1, param2).AsNoTracking().ToListAsync();
+                releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeadersByBioRegion  @bioregion",
+                                param1).AsNoTracking().ToListAsync();
             }
             else
             {
@@ -113,28 +97,12 @@ namespace N2K_BackboneBackEnd.Services
                     listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions.Replace(",", "_"));
                 }
 
-                var bioregionList = await GetUnionBioRegionTypes();
-
-                var bioRegionCodes = new DataTable("bioRegionCodes");
-                bioRegionCodes.Columns.Add("Code", typeof(int));
-                bioRegionCodes.Columns.Add("RefBioGeoName", typeof(string));
-                bioRegionCodes.Columns.Add("RefBioRegionCode", typeof(string));
-                bioRegionCodes.Columns.Add("BioRegionShortCode", typeof(string));
-
-                foreach (var br in bioregionList)
-                {
-                    bioRegionCodes.Rows.Add(new Object[] { br.Code, br.RefBioGeoName, br.RefBioRegionCode, br.BioRegionShortCode });
-                }
-
                 SqlParameter param1 = new SqlParameter("@idReleaseSource", idSource);
                 SqlParameter param2 = new SqlParameter("@idReleaseTarget", idTarget);
                 SqlParameter param3 = new SqlParameter("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
-                SqlParameter param4 = new SqlParameter("@bioregionCodes", System.Data.SqlDbType.Structured);
-                param4.Value = bioRegionCodes;
-                param4.TypeName = "[dbo].[BioRegionCodes]";
 
-                resultCodes = await _releaseContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInReleaseComparer  @idReleaseSource, @idReleaseTarget, @bioRegions, @bioregionCodes",
-                                param1, param2, param3, param4).ToListAsync();
+                resultCodes = await _releaseContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInReleaseComparer  @idReleaseSource, @idReleaseTarget, @bioRegions",
+                                param1, param2, param3).ToListAsync();
 
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                         .SetSlidingExpiration(TimeSpan.FromSeconds(60))
@@ -190,26 +158,9 @@ namespace N2K_BackboneBackEnd.Services
                     .ToList();
             }
 
-            var bioregionList = await GetUnionBioRegionTypes();
-
-            var bioRegionCodes = new DataTable("bioRegionCodes");
-            bioRegionCodes.Columns.Add("Code", typeof(int));
-            bioRegionCodes.Columns.Add("RefBioGeoName", typeof(string));
-            bioRegionCodes.Columns.Add("RefBioRegionCode", typeof(string));
-            bioRegionCodes.Columns.Add("BioRegionShortCode", typeof(string));
-
-            foreach (var br in bioregionList)
-            {
-                bioRegionCodes.Rows.Add(new Object[] { br.Code, br.RefBioGeoName, br.RefBioRegionCode, br.BioRegionShortCode });
-            }
-
-            SqlParameter param3 = new SqlParameter("@bioregionCodes", System.Data.SqlDbType.Structured);
-            param3.Value = bioRegionCodes;
-            param3.TypeName = "[dbo].[BioRegionCodes]";
-
             //get the bioReg-SiteCodes of the source UL
             SqlParameter param1 = new SqlParameter("@idRelease", idSource);
-            var _ulDetails = await _releaseContext.Set<ReleaseDetail>().FromSqlRaw($"exec dbo.spGetReleaseDetailsById  @idRelease, @bioregionCodes", param1, param3).ToListAsync();
+            var _ulDetails = await _releaseContext.Set<ReleaseDetail>().FromSqlRaw($"exec dbo.spGetReleaseDetailsById  @idRelease", param1).ToListAsync();
             List<ReleaseDetail> ulDetailsSource = (from src1 in ulSites
                                                    from trgt1 in _ulDetails.Where(trg1 => (src1.SiteCode == trg1.SCI_code) && (src1.BioRegion == trg1.BioRegion))
                                                    select trgt1
@@ -218,7 +169,7 @@ namespace N2K_BackboneBackEnd.Services
 
             //get the bioReg-SiteCodes of the target UL
             SqlParameter param2 = new SqlParameter("@idRelease", idTarget);
-            _ulDetails = await _releaseContext.Set<ReleaseDetail>().FromSqlRaw($"exec dbo.spGetReleaseDetailsById  @idRelease, @bioregionCodes", param2, param3).ToListAsync();
+            _ulDetails = await _releaseContext.Set<ReleaseDetail>().FromSqlRaw($"exec dbo.spGetReleaseDetailsById  @idRelease", param2).ToListAsync();
             List<ReleaseDetail> ulDetailsTarget = (from src1 in ulSites
                                                    from trgt2 in _ulDetails.Where(trg2 => (src1.SiteCode == trg2.SCI_code) && (src1.BioRegion == trg2.BioRegion))
                                                    select trgt2
