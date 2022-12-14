@@ -1,0 +1,18 @@
+﻿
+using Microsoft.EntityFrameworkCore;
+using N2K_BackboneBackEnd.Enumerations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace N2K_BackboneBackEnd.Models.ViewModel
+{
+    [Keyless]
+    public class SiteLineageView : IEntityModel
+    {
+        public string? SiteCode { get; set; }
+        public string? Version { get; set; }
+        public static void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<SiteLineageView>();
+        }
+    }
+}

@@ -30,7 +30,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         [HttpGet("GetSiteLineage")]
-        public async Task<ActionResult<ServiceResponse<List<SiteLineage>>>> Get(string siteCode)
+        public async Task<ActionResult<ServiceResponse<List<SiteLineage>>>> GetSiteLineage(string siteCode)
         {
             var response = new ServiceResponse<List<SiteLineage>>();
             try
