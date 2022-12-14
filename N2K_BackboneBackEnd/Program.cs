@@ -36,6 +36,7 @@ builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 builder.Services.AddScoped<IUnionListService, UnionListService>();
 builder.Services.AddScoped<IReleaseService, ReleaseService>();
+builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
 
 builder.Services.AddResponseCompression(options =>
 {
