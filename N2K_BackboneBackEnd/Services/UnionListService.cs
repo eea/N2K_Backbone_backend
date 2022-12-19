@@ -54,10 +54,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             else
             {
-                if (!string.IsNullOrEmpty(bioRegions))
-                {
-                    listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions.Replace(",", "_"));
-                }
+                
 
                 SqlParameter param1 = new SqlParameter("@idULHeaderSource", idSource);
                 SqlParameter param2 = new SqlParameter("@idULHeaderTarget", idTarget);
@@ -65,14 +62,12 @@ namespace N2K_BackboneBackEnd.Services
 
                 resultCodes = await _dataContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInUnionListComparer  @idULHeaderSource, @idULHeaderTarget, @bioRegions",
                                 param1, param2, param3).ToListAsync();
-                /*
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                         .SetSlidingExpiration(TimeSpan.FromSeconds(60))
                         .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
                         .SetPriority(CacheItemPriority.Normal)
                         .SetSize(40000);
                 cache.Set(listName, resultCodes, cacheEntryOptions);
-                */
             }
             return resultCodes;
 
