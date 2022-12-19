@@ -17,12 +17,14 @@ namespace N2K_BackboneBackEnd.Controllers
     public class ReleaseController : ControllerBase
     {
         private readonly IReleaseService _releaseService;
+        private readonly IUnionListService _unionListService;
         private readonly IMapper _mapper;
         private IMemoryCache _cache;
 
-        public ReleaseController(IReleaseService releaseService, IMapper mapper, IMemoryCache cache)
+        public ReleaseController(IReleaseService releaseService, IUnionListService unionListService, IMapper mapper, IMemoryCache cache)
         {
             _releaseService = releaseService;
+            _unionListService = unionListService;
             _mapper = mapper;
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
@@ -53,9 +55,9 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("GetReleases")]
         [HttpGet]
-        public async Task<ActionResult<ServiceResponse<List<Releases>>>> GetReleaseHeadersByBioRegion()
+        public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetReleaseHeadersByBioRegion()
         {
-            var response = new ServiceResponse<List<Releases>>();
+            var response = new ServiceResponse<List<UnionListHeader>>();
             try
             {
                 var unionListHeader = await _releaseService.GetReleaseHeadersByBioRegion(null);
@@ -70,16 +72,16 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<Releases>();
+                response.Data = new List<UnionListHeader>();
                 return Ok(response);
             }
         }
 
         [Route("GetReleases/bioRegion={bioRegionShortCode}")]
         [HttpGet]
-        public async Task<ActionResult<ServiceResponse<List<Releases>>>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
+        public async Task<ActionResult<ServiceResponse<List<UnionListHeader>>>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
         {
-            var response = new ServiceResponse<List<Releases>>();
+            var response = new ServiceResponse<List<UnionListHeader>>();
             try
             {
                 var unionListHeader = await _releaseService.GetReleaseHeadersByBioRegion(bioRegionShortCode);
@@ -94,7 +96,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<Releases>();
+                response.Data = new List<UnionListHeader>();
                 return Ok(response);
             }
         }
@@ -154,7 +156,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
             try
             {
-                var unionListCompareSummary= await _releaseService.GetCompareSummary(idSource, idTarget, null, _cache);
+                var unionListCompareSummary= await _unionListService.GetCompareSummary(idSource, idTarget, null, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListCompareSummary;
@@ -177,7 +179,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
             try
             {
-                var unionListCompareSummary = await _releaseService.GetCompareSummary(idSource, idTarget, bioRegions,_cache);
+                var unionListCompareSummary = await _unionListService.GetCompareSummary(idSource, idTarget, bioRegions,_cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListCompareSummary;
@@ -195,12 +197,12 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [HttpGet("Compare")]
-        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> CompareByBioRegionAndCountry([FromQuery(Name = "idSource")] long idSource, [FromQuery(Name = "idTarget")] long idTarget, [FromQuery(Name = "bioregions")] string? bioregions, [FromQuery(Name = "country")] string? country)
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> CompareByBioRegion([FromQuery(Name = "idSource")] long idSource, [FromQuery(Name = "idTarget")] long idTarget, [FromQuery(Name = "bioregions")] string? bioregions)
         {
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
             {
-                var unionListDetail = await _releaseService.CompareReleases(idSource, idTarget, bioregions, country, _cache);
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, bioregions, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListDetail;
@@ -218,12 +220,12 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [HttpGet("ComparePaginated")]
-        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> ComparePaginatedByBioRegionAndCountry([FromQuery(Name = "idSource")] long idSource, [FromQuery(Name = "idTarget")] long idTarget, [FromQuery(Name = "bioregions")] string? bioregions, [FromQuery(Name = "country")] string? country, [FromQuery(Name = "page")] int page, [FromQuery(Name = "limit")] int limit)
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> ComparePaginatedByBioRegion([FromQuery(Name = "idSource")] long idSource, [FromQuery(Name = "idTarget")] long idTarget, [FromQuery(Name = "bioregions")] string? bioregions, [FromQuery(Name = "page")] int page, [FromQuery(Name = "limit")] int limit)
         {
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
             {
-                var unionListDetail = await _releaseService.CompareReleases(idSource, idTarget, bioregions, country, _cache, page, limit);
+                var unionListDetail = await _unionListService.CompareUnionLists(idSource, idTarget, bioregions, _cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListDetail;
@@ -242,12 +244,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("Create")]
         [HttpPost]
-        public async Task<ActionResult<List<Releases>>> CreateRelease([FromBody] ReleasesInputParam release)
+        public async Task<ActionResult<List<UnionListHeader>>> CreateRelease([FromBody] ReleasesInputParam release)
         {
-            ServiceResponse<List<Releases>> response = new ServiceResponse<List<Releases>>();
+            ServiceResponse<List<UnionListHeader>> response = new ServiceResponse<List<UnionListHeader>>();
             try
             {
-                List<Releases> unionListHeader = await _releaseService.CreateRelease(release.Name, release.Final, release.Character, release.Comments);
+                List<UnionListHeader> unionListHeader = await _releaseService.CreateRelease(release.Name, release.Final, release.Character, release.Comments);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
@@ -266,12 +268,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("Update")]
         [HttpPut]
-        public async Task<ActionResult<List<Releases>>> UpdateRelease([FromBody] UnionListHeaderInputParam unionList)
+        public async Task<ActionResult<List<UnionListHeader>>> UpdateRelease([FromBody] UnionListHeaderInputParam unionList)
         {
-            ServiceResponse<List<Releases>> response = new ServiceResponse<List<Releases>>();
+            ServiceResponse<List<UnionListHeader>> response = new ServiceResponse<List<UnionListHeader>>();
             try
             {
-                List<Releases> unionListHeader = await _releaseService.UpdateRelease(unionList.Id, unionList.Name, unionList.Final.HasValue ? unionList.Final.Value : false);
+                List<UnionListHeader> unionListHeader = await _releaseService.UpdateRelease(unionList.Id, unionList.Name, unionList.Final.HasValue ? unionList.Final.Value : false);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;

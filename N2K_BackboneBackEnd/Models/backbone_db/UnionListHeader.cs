@@ -27,6 +27,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public Boolean? Final { get; set; }
         public DateTime? UpdatedDate { get; set; }
         public string? UpdatedBy { get; set; }
+        public long? ReleaseID { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
