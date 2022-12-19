@@ -41,22 +41,33 @@ namespace N2K_BackboneBackEnd.Services
             return await _dataContext.Set<BioRegionTypes>().AsNoTracking().Where(bio => bio.BioRegionShortCode != null).ToListAsync();
         }
 
-        public async Task<List<Releases>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
+        public async Task<List<UnionListHeader>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
         {
-            List<Releases> releaseHeaders = new List<Releases>();
+            //List<Releases> releaseHeaders = new List<Releases>();
+            List<UnionListHeader> releaseHeaders = new List<UnionListHeader>();
 
+            SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
+
+            //releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeadersByBioRegion  @bioregion", param1).AsNoTracking().ToListAsync();
+            releaseHeaders = await _dataContext.Set<UnionListHeader>().FromSqlRaw($"exec dbo.spGetUnionListHeadersByBioRegion  @bioregion", param1).AsNoTracking().ToListAsync();
+
+            /*
             if (bioRegionShortCode != null)
             {
                 SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
 
-                releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeadersByBioRegion  @bioregion",
-                                param1).AsNoTracking().ToListAsync();
+                //releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeadersByBioRegion  @bioregion", param1).AsNoTracking().ToListAsync();
+                releaseHeaders = await _dataContext.Set<UnionListHeader>().FromSqlRaw($"exec dbo.spGetUnionListHeadersByBioRegion  @bioregion", param1).AsNoTracking().ToListAsync();
             }
             else
             {
-                releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeaders").AsNoTracking().ToListAsync();
+                //releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeaders").AsNoTracking().ToListAsync();
+                releaseHeaders = await _dataContext.Set<UnionListHeader>().FromSqlRaw($"exec dbo.spGetUnionListHeadersByBioRegion").AsNoTracking().ToListAsync();
             }
-            releaseHeaders = releaseHeaders.Where(ulh => (ulh.Title != _appSettings.Value.current_ul_name) || (ulh.Author != _appSettings.Value.current_ul_createdby)).ToList();
+            */
+
+            //releaseHeaders = releaseHeaders.Where(ulh => (ulh.Title != _appSettings.Value.current_ul_name) || (ulh.Author != _appSettings.Value.current_ul_createdby)).ToList();
+            releaseHeaders = releaseHeaders.Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) || (ulh.CreatedBy != _appSettings.Value.current_ul_createdby)).ToList();
             return releaseHeaders;
         }
 
@@ -418,7 +429,7 @@ namespace N2K_BackboneBackEnd.Services
             return result.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
         }
 
-        public async Task<List<Releases>> CreateRelease(string title, Boolean? isOfficial, string? character, string? comments)
+        public async Task<List<UnionListHeader>> CreateRelease(string title, Boolean? isOfficial, string? character, string? comments)
         {
             SqlParameter param1 = new SqlParameter("@Title", title);
             SqlParameter param2 = new SqlParameter("@Author", GlobalData.Username);
@@ -426,27 +437,22 @@ namespace N2K_BackboneBackEnd.Services
             SqlParameter param4 = new SqlParameter("@ModifyDate", DateTime.Now);
             SqlParameter param5 = new SqlParameter("@IsOfficial", isOfficial);
 
-            SqlParameter param6 = new SqlParameter("@Character", string.IsNullOrEmpty(character)? string.Empty: character);
+            SqlParameter param6 = new SqlParameter("@Character", string.IsNullOrEmpty(character) ? string.Empty : character);
             SqlParameter param7 = new SqlParameter("@Comments", string.IsNullOrEmpty(comments) ? string.Empty : comments);
 
-            await _releaseContext.Database.ExecuteSqlRawAsync("exec dbo.createNewRelease  @Title, @Author, @CreateDate, @ModifyDate, @IsOfficial, @Character, @Comments", param1, param2, param3, param4, param5, param6, param7);
+            List<Releases> releaseID = await _releaseContext.Set<Releases>().FromSqlRaw("exec dbo.createNewRelease  @Title, @Author, @CreateDate, @ModifyDate, @IsOfficial, @Character, @Comments", param1, param2, param3, param4, param5, param6, param7).AsNoTracking().ToListAsync();
 
-            if (isOfficial != null)
-            {
-                if ((bool)isOfficial)
-                {
-                    //Create Current
-                    SqlParameter param8 = new SqlParameter("@name", title);
-                    SqlParameter param9 = new SqlParameter("@creator", GlobalData.Username);
-                    SqlParameter param10 = new SqlParameter("@final", isOfficial);
-                    await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final ", param8, param9, param10);
-                }
-            }
+            //Create UnionList entry
+            SqlParameter param8 = new SqlParameter("@name", title);
+            SqlParameter param9 = new SqlParameter("@creator", GlobalData.Username);
+            SqlParameter param10 = new SqlParameter("@final", isOfficial);
+            SqlParameter param11 = new SqlParameter("@release", releaseID.First().ID);
+            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final, @release ", param8, param9, param10, param11);
 
             return await GetReleaseHeadersByBioRegion(null);
         }
 
-        public async Task<List<Releases>> UpdateRelease(long id, string name, Boolean final)
+        public async Task<List<UnionListHeader>> UpdateRelease(long id, string name, Boolean final)
         {
             Releases release = await _releaseContext.Set<Releases>().AsNoTracking().Where(ulh => ulh.ID == id).FirstOrDefaultAsync();
             if (release != null)
@@ -462,6 +468,20 @@ namespace N2K_BackboneBackEnd.Services
             }
             await _releaseContext.SaveChangesAsync();
 
+            UnionListHeader unionlistheader = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.ReleaseID == id).FirstOrDefaultAsync();
+            if (unionlistheader != null)
+            {
+                if (name != "string")
+                    unionlistheader.Name = name;
+
+                unionlistheader.Final = final;
+                unionlistheader.UpdatedBy = GlobalData.Username;
+                unionlistheader.UpdatedDate = DateTime.Now;
+
+                _dataContext.Set<UnionListHeader>().Update(unionlistheader);
+            }
+            await _dataContext.SaveChangesAsync();
+
             return await GetReleaseHeadersByBioRegion(null);
         }
 
@@ -473,6 +493,14 @@ namespace N2K_BackboneBackEnd.Services
             {
                 _releaseContext.Set<Releases>().Remove(release);
                 await _releaseContext.SaveChangesAsync();
+                result = 1;
+            }
+
+            UnionListHeader? unionlistheader = await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(ulh => ulh.ReleaseID == id);
+            if (unionlistheader != null)
+            {
+                _dataContext.Set<UnionListHeader>().Remove(unionlistheader);
+                await _dataContext.SaveChangesAsync();
                 result = 1;
             }
             return result;
