@@ -41,7 +41,7 @@ namespace N2K_BackboneBackEnd.Services
             return await _dataContext.Set<BioRegionTypes>().AsNoTracking().Where(bio => bio.BioRegionShortCode != null).ToListAsync();
         }
 
-        public async Task<List<UnionListHeader>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
+        public async Task<List<Releases>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
         {
             //List<Releases> releaseHeaders = new List<Releases>();
             List<UnionListHeader> releaseHeaders = new List<UnionListHeader>();
@@ -68,7 +68,38 @@ namespace N2K_BackboneBackEnd.Services
 
             //releaseHeaders = releaseHeaders.Where(ulh => (ulh.Title != _appSettings.Value.current_ul_name) || (ulh.Author != _appSettings.Value.current_ul_createdby)).ToList();
             releaseHeaders = releaseHeaders.Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) || (ulh.CreatedBy != _appSettings.Value.current_ul_createdby)).ToList();
+
+            List<Releases> releaseHeadersConverted = await ConvertUnionListHeaderListToReleases(releaseHeaders);
+
+            return releaseHeadersConverted;
+        }
+
+        public async Task<List<Releases>> ConvertUnionListHeaderListToReleases(List<UnionListHeader> unionListHeaders)
+        {
+            List<Releases> releaseHeaders = new List<Releases>();
+            foreach(UnionListHeader unionListHeader in unionListHeaders)
+            {
+                Releases releaseHeader = await ConvertUnionListHeaderToReleases(unionListHeader);
+                releaseHeaders.Add(releaseHeader);
+            }
             return releaseHeaders;
+        }
+
+        public async Task<Releases> ConvertUnionListHeaderToReleases(UnionListHeader unionListHeader)
+        {
+            Releases releaseHeader = new Releases();
+
+            releaseHeader.ID = unionListHeader.idULHeader;
+            releaseHeader.Title = unionListHeader.Name;
+            releaseHeader.Author = unionListHeader.CreatedBy;
+            releaseHeader.CreateDate = unionListHeader.Date;
+            releaseHeader.ModifyDate = unionListHeader.UpdatedDate;
+            releaseHeader.IsOfficial = unionListHeader.Final;
+            releaseHeader.Character = "";
+            releaseHeader.Comments = "";
+            releaseHeader.ModifyUser = unionListHeader.UpdatedBy;
+
+            return releaseHeader;
         }
 
         public async Task<List<ReleaseDetail>> GetCurrentSitesReleaseDetailByBioRegion(string? bioRegionShortCode)
@@ -83,7 +114,9 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<Releases>> GetReleaseHeadersById(long? id)
         {
-            return await _releaseContext.Set<Releases>().AsNoTracking().Where(ulh => ulh.ID == id).ToListAsync();
+            List<UnionListHeader> unionListHeader = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.idULHeader == id).ToListAsync();
+            List<Releases> releaseHeader = await ConvertUnionListHeaderListToReleases(unionListHeader);
+            return releaseHeader;
         }
 
         private async Task<List<BioRegionSiteCode>> GetBioregionSiteCodesInReleaseComparer(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache)
@@ -429,7 +462,7 @@ namespace N2K_BackboneBackEnd.Services
             return result.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
         }
 
-        public async Task<List<UnionListHeader>> CreateRelease(string title, Boolean? isOfficial, string? character, string? comments)
+        public async Task<List<Releases>> CreateRelease(string title, Boolean? isOfficial, string? character, string? comments)
         {
             SqlParameter param1 = new SqlParameter("@Title", title);
             SqlParameter param2 = new SqlParameter("@Author", GlobalData.Username);
@@ -452,7 +485,7 @@ namespace N2K_BackboneBackEnd.Services
             return await GetReleaseHeadersByBioRegion(null);
         }
 
-        public async Task<List<UnionListHeader>> UpdateRelease(long id, string name, Boolean final)
+        public async Task<List<Releases>> UpdateRelease(long id, string name, Boolean final)
         {
             Releases release = await _releaseContext.Set<Releases>().AsNoTracking().Where(ulh => ulh.ID == id).FirstOrDefaultAsync();
             if (release != null)
