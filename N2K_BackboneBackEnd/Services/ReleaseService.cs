@@ -67,7 +67,7 @@ namespace N2K_BackboneBackEnd.Services
             */
 
             //releaseHeaders = releaseHeaders.Where(ulh => (ulh.Title != _appSettings.Value.current_ul_name) || (ulh.Author != _appSettings.Value.current_ul_createdby)).ToList();
-            releaseHeaders = releaseHeaders.Where(ulh => (ulh.Title != _appSettings.Value.current_ul_name) || (ulh.CreatedBy != _appSettings.Value.current_ul_createdby)).ToList();
+            releaseHeaders = releaseHeaders.Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) || (ulh.CreatedBy != _appSettings.Value.current_ul_createdby)).ToList();
             return releaseHeaders;
         }
 
@@ -472,7 +472,7 @@ namespace N2K_BackboneBackEnd.Services
             if (unionlistheader != null)
             {
                 if (name != "string")
-                    unionlistheader.Title = name;
+                    unionlistheader.Name = name;
 
                 unionlistheader.Final = final;
                 unionlistheader.UpdatedBy = GlobalData.Username;
