@@ -71,7 +71,7 @@ namespace N2K_BackboneBackEnd.Services
 
             List<Releases> releaseHeadersConverted = await ConvertUnionListHeaderListToReleases(releaseHeaders);
 
-            return releaseHeadersConverted;
+            return releaseHeadersConverted.OrderBy(a => a.CreateDate).ToList();
         }
 
         public async Task<List<Releases>> ConvertUnionListHeaderListToReleases(List<UnionListHeader> unionListHeaders)
@@ -136,11 +136,6 @@ namespace N2K_BackboneBackEnd.Services
             }
             else
             {
-                if (!string.IsNullOrEmpty(bioRegions))
-                {
-                    listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, ulBioRegSites, idSource, idTarget, string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions.Replace(",", "_"));
-                }
-
                 SqlParameter param1 = new SqlParameter("@idReleaseSource", idSource);
                 SqlParameter param2 = new SqlParameter("@idReleaseTarget", idTarget);
                 SqlParameter param3 = new SqlParameter("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
