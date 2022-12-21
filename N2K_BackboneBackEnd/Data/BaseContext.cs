@@ -9,7 +9,7 @@ namespace N2K_BackboneBackEnd.Data
 
         public BaseContext(DbContextOptions options ) : base(options)
         {
-            SaveChangesFailed += mySaveChangesFailed;
+           // SaveChangesFailed += mySaveChangesFailed;
         }
 
         
@@ -43,7 +43,7 @@ namespace N2K_BackboneBackEnd.Data
 
         private void mySaveChangesFailed(object sender, SaveChangesFailedEventArgs e)
         {
-            Console.WriteLine($"Save Chagnes Failed at {DateTime.Now}");
+            //Console.WriteLine($"Save Chagnes Failed at {DateTime.Now}");
             try
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ((DbUpdateException)e.Exception).InnerException.Message + " in following Entries:", "mySaveChangesFailed", "Entityframework");

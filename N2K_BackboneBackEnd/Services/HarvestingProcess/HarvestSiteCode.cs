@@ -233,7 +233,18 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<BioRegions> items = new List<BioRegions>();
             try
             {
-                elements = await _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
+                //elements = await _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
+                //Chaged to support a multiple primary codes exception (Site, version and Bioregion)
+                elements = await _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).GroupBy(s => s.BIOREGID).Select(bb => new BelongsToBioRegion
+                {
+                    COUNTRYCODE = bb.First().COUNTRYCODE,
+                    VERSIONID = bb.First().VERSIONID,
+                    COUNTRYVERSIONID = bb.First().COUNTRYVERSIONID,
+                    SITECODE = bb.First().SITECODE,
+                    BIOREGID = bb.First().BIOREGID,
+                    PERCENTAGE = bb.Sum(c => c.PERCENTAGE),
+                }).ToListAsync();
+
                 foreach (BelongsToBioRegion element in elements)
                 {
                     //SystemLog.write(SystemLog.errorLevel.Debug, "Site/Version/BioRegion: " + pVSite.SITECODE + "-" + pVSite.VERSIONID.ToString() + "/" + pVersion.ToString() + "/"+ element.BIOREGID.ToString(), "HarvestedService - harvestBioregions", "");

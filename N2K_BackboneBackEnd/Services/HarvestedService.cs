@@ -658,7 +658,7 @@ namespace N2K_BackboneBackEnd.Services
                         ,
                         Status = HarvestingStatus.Harvesting
                         ,
-                        Importer = "TEST"
+                        Importer = "AUTOIMPORT"
                         ,
                         N2K_VersioningDate = SubmissionDate // envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
                     };
@@ -918,17 +918,24 @@ namespace N2K_BackboneBackEnd.Services
 
                         List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == _tempEnvelope[0].CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToListAsync();
 
-                        if (bbEnvelope.Count > 0 && envelopes.Count == 0)
+                        //Harvest proccess did its work successfully
+                        if (bbEnvelope.Count > 0)
                         {
-                            Task tabValidationTask = Validate(_tempEnvelope);
-                            Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
-                            //make sure they are all finished
-                            await Task.WhenAll(tabValidationTask, spatialValidationTask);
-                            //change the status of the whole process to PreHarvested
-                            await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested);
-                            bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
+                            //When there is no previous envelopes to resolve for this country
+                            if( envelopes.Count == 0)
+                            {
+                                Task tabValidationTask = Validate(_tempEnvelope);
+                                Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
+                                //make sure they are all finished
+                                await Task.WhenAll(tabValidationTask, spatialValidationTask);
+                                //change the status of the whole process to PreHarvested
+                                await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested);
+                                bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
+                            }
+                            
+                            bbEnvelopes.Add(bbEnvelope[0]);
                         }
-                        bbEnvelopes.Add(bbEnvelope[0]);
+                        
                     }
 
                     return bbEnvelopes;
