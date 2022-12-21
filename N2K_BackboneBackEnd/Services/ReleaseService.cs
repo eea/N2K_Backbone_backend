@@ -482,21 +482,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<Releases>> UpdateRelease(long id, string name, Boolean final)
         {
-            Releases release = await _releaseContext.Set<Releases>().AsNoTracking().Where(ulh => ulh.ID == id).FirstOrDefaultAsync();
-            if (release != null)
-            {
-                if (name != "string")
-                    release.Title = name;
-
-                release.IsOfficial = final;
-                release.ModifyUser = GlobalData.Username;
-                release.ModifyDate = DateTime.Now;
-
-                _releaseContext.Set<Releases>().Update(release);
-            }
-            await _releaseContext.SaveChangesAsync();
-
-            UnionListHeader unionlistheader = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.ReleaseID == id).FirstOrDefaultAsync();
+            UnionListHeader unionlistheader = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => ulh.idULHeader == id).FirstOrDefaultAsync();
             if (unionlistheader != null)
             {
                 if (name != "string")
@@ -510,13 +496,36 @@ namespace N2K_BackboneBackEnd.Services
             }
             await _dataContext.SaveChangesAsync();
 
+            Releases release = await _releaseContext.Set<Releases>().AsNoTracking().Where(ulh => ulh.ID == unionlistheader.ReleaseID).FirstOrDefaultAsync();
+            if (release != null)
+            {
+                if (name != "string")
+                    release.Title = name;
+
+                release.IsOfficial = final;
+                release.ModifyUser = GlobalData.Username;
+                release.ModifyDate = DateTime.Now;
+
+                _releaseContext.Set<Releases>().Update(release);
+            }
+            await _releaseContext.SaveChangesAsync();
+
             return await GetReleaseHeadersByBioRegion(null);
         }
 
         public async Task<int> DeleteRelease(long id)
         {
             int result = 0;
-            Releases? release = await _releaseContext.Set<Releases>().AsNoTracking().FirstOrDefaultAsync(ulh => ulh.ID == id);
+
+            UnionListHeader? unionlistheader = await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(ulh => ulh.idULHeader == id);
+            if (unionlistheader != null)
+            {
+                _dataContext.Set<UnionListHeader>().Remove(unionlistheader);
+                await _dataContext.SaveChangesAsync();
+                result = 1;
+            }
+
+            Releases? release = await _releaseContext.Set<Releases>().AsNoTracking().FirstOrDefaultAsync(ulh => ulh.ID == unionlistheader.ReleaseID);
             if (release != null)
             {
                 _releaseContext.Set<Releases>().Remove(release);
@@ -524,13 +533,6 @@ namespace N2K_BackboneBackEnd.Services
                 result = 1;
             }
 
-            UnionListHeader? unionlistheader = await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(ulh => ulh.ReleaseID == id);
-            if (unionlistheader != null)
-            {
-                _dataContext.Set<UnionListHeader>().Remove(unionlistheader);
-                await _dataContext.SaveChangesAsync();
-                result = 1;
-            }
             return result;
         }
 
