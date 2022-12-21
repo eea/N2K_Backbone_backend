@@ -5,20 +5,16 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class DocumentationChanges : IEntityModel, IEntityModelBackboneDB
+    public abstract class DocumentationChanges 
     {
         [Key]
         public long Id { get; set; }
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
-        public string? Tags { get; set; }
+        public abstract string? Tags { get; set; }
         [NotMapped]
         public bool Temporal { get; set; } = false;
 
-        public static void OnModelCreating(ModelBuilder builder)
-        {
-            builder.Entity<StatusChanges>();
-        }
     }
 
 

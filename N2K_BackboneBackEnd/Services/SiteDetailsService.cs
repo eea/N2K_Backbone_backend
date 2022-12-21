@@ -80,7 +80,7 @@ namespace N2K_BackboneBackEnd.Services
             }
 
             //add the new items to the list
-            foreach (T item in cachedList.Where(it => it.Temporal == true || it.Tags!="Deleted" ).ToList())
+            foreach (T item in cachedList.Where(it => it.Temporal == true || it.Tags !="Deleted" ).ToList())
             {
                 finalResult.Add(item);
             }
@@ -370,7 +370,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     justification.Tags = "Deleted";
                     cachedList.Add(justification);
-                    cache.Set(comlistName, cachedList);
+                    cache.Set(justiflistName, cachedList);
                     return 1;
                 }
                 else
@@ -400,7 +400,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         //remove item from cache
                         cachedList.Remove(cachedList.FirstOrDefault(a => a.Id == justificationId));
-                        cache.Set(comlistName, cachedList);
+                        cache.Set(justiflistName, cachedList);
                         return 1;
                     }
                 }

@@ -19,12 +19,12 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? Username { get; set; }
 
         [NotMapped]
-        public new string? Tags { get; set; } = "";
+        public override string? Tags { get; set; } = "";
 
 
         //[NotMapped]
         //public bool Temporal { get; set; } = false;
-        public static new void OnModelCreating(ModelBuilder builder)
+        public static  void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<JustificationFiles>()
                 .ToTable("JustificationFiles");
