@@ -467,8 +467,8 @@ namespace N2K_BackboneBackEnd.Services
                 await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSites " +
                     "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided " 
                     , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey , param_justif_required , param_justif_provided);
-                
-                Sites site = _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefault();
+
+                Sites site = await _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefaultAsync();
                 if (site != null)
                 {
                     if (changeEdition.BioRegion != null && changeEdition.BioRegion != "string" && changeEdition.BioRegion != "")
@@ -485,45 +485,9 @@ namespace N2K_BackboneBackEnd.Services
                             };
                             _dataContext.Set<BioRegions>().Add(bioreg);
                         }
-                        _dataContext.SaveChanges();
+                        await _dataContext.SaveChangesAsync();
                     }
-
-                    //add temporal comments                    
-                    CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
-                    List<StatusChanges> comsInDB = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(f => f.SiteCode == changeEdition.SiteCode && f.Version == changeEdition.Version).ToListAsync();
-                    List<StatusChanges> comCachedList = ComItem.GetFinalList(comsInDB);
-                    foreach (var comm in comCachedList) { 
-                        if (site.SiteCode == comm.SiteCode)
-                        {
-                            comm.Version = site.Version;
-                            comm.Tags = null;
-                            comm.Id = 0;
-                            await _dataContext.Set<StatusChanges>().AddAsync(comm);
-                        }
-                    }
-                    if (comCachedList!=null)  comCachedList.Clear();
-                    cache.Remove(comlistName);
-
-
-                    //add temporal files                                        
-                    CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
-                    List< JustificationFiles> filesInDB = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(f => f.SiteCode == changeEdition.SiteCode  && f.Version == changeEdition.Version).ToListAsync();
-                    List<JustificationFiles> justifCachedList = JustifItem.GetFinalList(filesInDB);
-                    foreach (var justif in justifCachedList)
-                    {
-                        if (site.SiteCode == justif.SiteCode)
-                        {
-                            justif.Version = site.Version;
-                            justif.Id = 0;
-                            justif.Tags = null;
-                            await _dataContext.Set<JustificationFiles>().AddAsync(justif);
-                        }
-                    }
-
-                    if (justifCachedList != null) justifCachedList.Clear();
-                    cache.Remove(justiflistName);
-
-                    await _dataContext.SaveChangesAsync();
+        
                 }
             }
             catch (Exception ex)
