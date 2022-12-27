@@ -637,30 +637,21 @@ namespace N2K_BackboneBackEnd.Services
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
             try
             {
-                //TimeLog.setTimeStamp("Harvesting process ", "Init");
-
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
-                    //remove version from database
-                    await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
-
+                    //Not necessary 
+                    //await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
                     DateTime SubmissionDate = envelope.SubmissionDate; //getOptimalDate(envelope);
-
                     //create a new entry in the processed envelopes table to register that a new one is being harvested
                     ProcessedEnvelopes envelopeToProcess = new ProcessedEnvelopes
                     {
                         Country = envelope.CountryCode
-                        ,
-                        Version = envelope.VersionId
-                        ,
-                        ImportDate = envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
-                        ,
-                        Status = HarvestingStatus.Harvesting
-                        ,
-                        Importer = "AUTOIMPORT"
-                        ,
-                        N2K_VersioningDate = SubmissionDate // envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
+                        ,Version = envelope.VersionId
+                        ,ImportDate = envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
+                        ,Status = HarvestingStatus.Harvesting
+                        ,Importer = "AUTOIMPORT"
+                        ,N2K_VersioningDate = SubmissionDate // envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
                     };
                     try
                     {
@@ -668,15 +659,14 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
                         _dataContext.SaveChanges();
 
-
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
-
-                        List<Contact> vContact = _versioningContext.Set<Contact>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
-                        _dataContext.Set<Respondents>().AddRange(await HarvestRespondents(vContact, envelope));
+                        
+                        //This is not the best place. We need to have the site created before to have the correct site version for the respondants
+                        //List<Contact> vContact = _versioningContext.Set<Contact>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
+                        //_dataContext.Set<Respondents>().AddRange(await HarvestRespondents(vContact, envelope));
 
                         List<Sites> bbSites = new List<Sites>();
-
                         foreach (NaturaSite vSite in vSites)
                         {
                             try
@@ -701,20 +691,15 @@ namespace N2K_BackboneBackEnd.Services
                             }
                             catch (DbUpdateException ex)
                             {
-                                RefusedSites.addAsRefused(vSite, envelope, ex);
+                                SystemLog.write(SystemLog.errorLevel.Error, ex, "Harvest - DbUpdateException for Site " + vSite.SITECODE + "/" + vSite.VERSIONID.ToString(), "");
+                                throw;
                             }
                             catch (Exception ex)
                             {
-                                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSites - Start - Site " + vSite.SITECODE + "/" + vSite.VERSIONID.ToString(), "");
-                                //RefusedSites.addAsRefused(vSite);
-                                //rollback(envelope.CountryCode, envelope.VersionId);
-                                //break;
+                                SystemLog.write(SystemLog.errorLevel.Error, ex, "Harvest - Site " + vSite.SITECODE + "/" + vSite.VERSIONID.ToString(), "");
+                                //This envolpe should be marked as wrong one and should move to the next
+                                throw;
                             }
-                            finally
-                            {
-
-                            }
-
                         }
                         //set the enevelope as successfully completed
                         envelopeToProcess.Status = HarvestingStatus.DataLoaded;
@@ -732,15 +717,15 @@ namespace N2K_BackboneBackEnd.Services
                     catch (Exception ex)
                     {
                         SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                        //if there is an error reject the envelope
-                        _dataContext.Set<ProcessedEnvelopes>().Remove(envelopeToProcess);
+                        envelopeToProcess.Status = HarvestingStatus.Error;
+                        _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
                         result.Add(
                             new HarvestedEnvelope
                             {
                                 CountryCode = envelope.CountryCode,
                                 VersionId = envelope.VersionId,
                                 NumChanges = 0,
-                                Status = SiteChangeStatus.Rejected
+                                Status = SiteChangeStatus.Error //SiteChangeStatus.Error
                             }
                          );
                     }
@@ -749,25 +734,14 @@ namespace N2K_BackboneBackEnd.Services
                         //save the data of the site in backbone DB
                         _dataContext.SaveChanges();
                     }
-
-
-
-
                 }
                 return result;
             }
-
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return await Task.FromResult(new List<HarvestedEnvelope>());
             }
-            finally
-            {
-                //TimeLog.setTimeStamp("Harvesting process ", "End");
-            }
-
-
         }
 
 
