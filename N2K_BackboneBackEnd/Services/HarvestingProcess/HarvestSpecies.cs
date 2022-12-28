@@ -367,7 +367,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Decrease";
+                            siteChange.ChangeType = "Population Priority Decrease (Other Species)";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -443,7 +443,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 siteChange.SiteCode = harvestingSite.SiteCode;
                                 siteChange.Version = harvestingSite.VersionId;
                                 siteChange.ChangeCategory = "Species";
-                                siteChange.ChangeType = "Species Losing Priority";
+                                siteChange.ChangeType = "Other Species Losing Priority";
                                 siteChange.Country = envelope.CountryCode;
                                 siteChange.Level = Enumerations.Level.Info;
                                 siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -490,7 +490,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Species Added";
+                            siteChange.ChangeType = "Other Species Added";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -516,7 +516,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.SiteCode = storedSite.SiteCode;
                         siteChange.Version = harvestingSite.VersionId;
                         siteChange.ChangeCategory = "Species";
-                        siteChange.ChangeType = "Species Deleted";
+                        siteChange.ChangeType = "Other Species Deleted";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Warning;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
