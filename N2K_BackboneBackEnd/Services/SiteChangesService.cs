@@ -474,12 +474,24 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         if (_Section.DeletedCodes.Count == 0)
                         {
-                            _Section.DeletedCodes.Add(new CategoryChangeDetail
+                            if (_levelDetail.ChangeType == "Other Species Deleted")
                             {
-                                ChangeCategory = _levelDetail.Section,
-                                ChangeType = String.Format("List of {0} Deleted", _levelDetail.Section),
-                                ChangedCodesDetail = new List<CodeChangeDetail>()
-                            });
+                                _Section.DeletedCodes.Add(new CategoryChangeDetail
+                                {
+                                    ChangeCategory = _levelDetail.Section,
+                                    ChangeType = String.Format("List of {0}", _levelDetail.ChangeType),
+                                    ChangedCodesDetail = new List<CodeChangeDetail>()
+                                });
+                            }
+                            else
+                            {
+                                _Section.DeletedCodes.Add(new CategoryChangeDetail
+                                {
+                                    ChangeCategory = _levelDetail.Section,
+                                    ChangeType = String.Format("List of {0} Deleted", _levelDetail.Section),
+                                    ChangedCodesDetail = new List<CodeChangeDetail>()
+                                });
+                            }
                         }
 
                         foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
