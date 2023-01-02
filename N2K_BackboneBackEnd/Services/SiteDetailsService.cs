@@ -461,10 +461,10 @@ namespace N2K_BackboneBackEnd.Services
                 SqlParameter param_version = new SqlParameter("@version", changeEdition.Version);
                 SqlParameter param_name = new SqlParameter("@name", changeEdition.SiteName is null ? DBNull.Value : changeEdition.SiteName);
                 SqlParameter param_sitetype = new SqlParameter("@sitetype", changeEdition.SiteType is null ? DBNull.Value : changeEdition.SiteType);
-                SqlParameter param_area = new SqlParameter("@area", changeEdition.Area == 0 ? DBNull.Value : changeEdition.Area);
-                SqlParameter param_length = new SqlParameter("@length", changeEdition.Length == 0 ? DBNull.Value : changeEdition.Length);
-                SqlParameter param_centrex = new SqlParameter("@centrex", changeEdition.CentreX == 0 ? DBNull.Value : changeEdition.CentreX);
-                SqlParameter param_centrey = new SqlParameter("@centrey", changeEdition.CentreY == 0 ? DBNull.Value : changeEdition.CentreY);
+                SqlParameter param_area = new SqlParameter("@area", changeEdition.Area);
+                SqlParameter param_length = new SqlParameter("@length", changeEdition.Length);
+                SqlParameter param_centrex = new SqlParameter("@centrex", changeEdition.CentreX);
+                SqlParameter param_centrey = new SqlParameter("@centrey", changeEdition.CentreY);
                 SqlParameter param_justif_required = new SqlParameter("@justif_required", changeEdition.JustificationRequired == null ? false : changeEdition.JustificationRequired);
                 SqlParameter param_justif_provided = new SqlParameter("@justif_provided", changeEdition.JustificationProvided == null ? false : changeEdition.JustificationProvided);
 
