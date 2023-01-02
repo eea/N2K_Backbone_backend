@@ -12,6 +12,7 @@ using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.BackboneDB;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using NuGet.Packaging;
 using System.ComponentModel.Design;
@@ -54,7 +55,7 @@ namespace N2K_BackboneBackEnd.Services
             return cachedList;
         }
 
-        public List<T> GetFinalList( List<T> dbList)
+        public List<T> GetFinalList(List<T> dbList)
         {
             List<T> cachedList = GetCachedList();
             //build the list to return
@@ -80,7 +81,7 @@ namespace N2K_BackboneBackEnd.Services
             }
 
             //add the new items to the list
-            foreach (T item in cachedList.Where(it => it.Temporal == true || it.Tags !="Deleted" ).ToList())
+            foreach (T item in cachedList.Where(it => it.Temporal == true || it.Tags != "Deleted").ToList())
             {
                 finalResult.Add(item);
             }
@@ -108,7 +109,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public long GetRandomId()
         {
-            Random random = new Random();  
+            Random random = new Random();
             return random.NextInt64(1, 8696761735052207);
         }
 
@@ -137,7 +138,7 @@ namespace N2K_BackboneBackEnd.Services
 
         #region SiteComments
 
-        public async Task<List<StatusChanges>> ListSiteComments(string pSiteCode, int pCountryVersion, IMemoryCache cache,  bool temporal = false)
+        public async Task<List<StatusChanges>> ListSiteComments(string pSiteCode, int pCountryVersion, IMemoryCache cache, bool temporal = false)
         {
             List<StatusChanges> result = new List<StatusChanges>();
             result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == pSiteCode && ch.Version == pCountryVersion).ToListAsync();
@@ -145,7 +146,7 @@ namespace N2K_BackboneBackEnd.Services
             if (temporal)
             {
                 CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
-                return ComItem.GetFinalList(result);               
+                return ComItem.GetFinalList(result);
             }
             return result;
         }
@@ -157,7 +158,7 @@ namespace N2K_BackboneBackEnd.Services
             comment.Date = DateTime.Now;
             comment.Owner = GlobalData.Username;
             comment.Temporal = true;
-            comment.Edited = 0;            
+            comment.Edited = 0;
 
             if (!temporal)
             {
@@ -203,11 +204,11 @@ namespace N2K_BackboneBackEnd.Services
                 else
                     //it is a temp comment, delete it from cache
                     if (cachedList.FirstOrDefault(a => a.Id == CommentId) != null)
-                    {
-                        cachedList.Remove(cachedList.FirstOrDefault(a => a.Id == CommentId));
-                        cache.Set(comlistName, cachedList);
-                        return 1;
-                    }
+                {
+                    cachedList.Remove(cachedList.FirstOrDefault(a => a.Id == CommentId));
+                    cache.Set(comlistName, cachedList);
+                    return 1;
+                }
                 return 0;
             }
             else
@@ -271,8 +272,9 @@ namespace N2K_BackboneBackEnd.Services
                     }
                 }
             }
-            
-            else  {
+
+            else
+            {
                 if (_comment != null)
                 {
                     if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
@@ -333,7 +335,7 @@ namespace N2K_BackboneBackEnd.Services
                     SiteCode = attachedFile.SiteCode,
                     Version = attachedFile.Version,
                     ImportDate = DateTime.Now,
-                    Username= username
+                    Username = username
                 };
                 if (temporal)
                 {
@@ -351,7 +353,7 @@ namespace N2K_BackboneBackEnd.Services
                     await _dataContext.SaveChangesAsync();
                 }
 
-                
+
             }
             return await ListSiteFiles(attachedFile.SiteCode, attachedFile.Version, cache, temporal);
         }
@@ -450,9 +452,11 @@ namespace N2K_BackboneBackEnd.Services
         #region SiteEdition
         public async Task<string> SaveEdition(ChangeEditionDb changeEdition, IMemoryCache cache)
         {
-            var username= GlobalData.Username;
+            var username = GlobalData.Username;
             try
             {
+                SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+
                 SqlParameter param_sitecode = new SqlParameter("@sitecode", changeEdition.SiteCode);
                 SqlParameter param_version = new SqlParameter("@version", changeEdition.Version);
                 SqlParameter param_name = new SqlParameter("@name", changeEdition.SiteName is null ? DBNull.Value : changeEdition.SiteName);
@@ -461,12 +465,21 @@ namespace N2K_BackboneBackEnd.Services
                 SqlParameter param_length = new SqlParameter("@length", changeEdition.Length == 0 ? DBNull.Value : changeEdition.Length);
                 SqlParameter param_centrex = new SqlParameter("@centrex", changeEdition.CentreX == 0 ? DBNull.Value : changeEdition.CentreX);
                 SqlParameter param_centrey = new SqlParameter("@centrey", changeEdition.CentreY == 0 ? DBNull.Value : changeEdition.CentreY);
-                SqlParameter param_justif_required = new SqlParameter("@justif_required", changeEdition.JustificationRequired == null? false : changeEdition.JustificationRequired);
-                SqlParameter param_justif_provided = new SqlParameter("@justif_provided", changeEdition.JustificationProvided == null ? false : changeEdition.JustificationProvided ) ;
+                SqlParameter param_justif_required = new SqlParameter("@justif_required", changeEdition.JustificationRequired == null ? false : changeEdition.JustificationRequired);
+                SqlParameter param_justif_provided = new SqlParameter("@justif_provided", changeEdition.JustificationProvided == null ? false : changeEdition.JustificationProvided);
 
-                await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSites " +
-                    "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided " 
-                    , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey , param_justif_required , param_justif_provided);
+                if (change == null)
+                {
+                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSites " +
+                        "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
+                        , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
+                }
+                else
+                {
+                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spUpdateSites " +
+                        "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
+                        , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
+                }
 
                 Sites site = await _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefaultAsync();
                 if (site != null)
@@ -487,7 +500,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         await _dataContext.SaveChangesAsync();
                     }
-        
+
                 }
             }
             catch (Exception ex)
