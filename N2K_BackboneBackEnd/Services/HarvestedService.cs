@@ -873,19 +873,6 @@ namespace N2K_BackboneBackEnd.Services
                             SubmissionDate = vEnvelope.SubmissionDate
                         };
 
-                        ProcessedEnvelopes process = new ProcessedEnvelopes
-                        {
-                            Country = vEnvelope.Country,
-                            Version = Int32.Parse(vEnvelope.Id.ToString()),
-                            ImportDate = vEnvelope.SubmissionDate,
-                            Status = HarvestingStatus.Queued,
-                            Importer = "Automatic",
-                            N2K_VersioningDate = vEnvelope.SubmissionDate
-                        };
-
-                        _dataContext.Set<ProcessedEnvelopes>().Add(process);
-                        _dataContext.SaveChanges();
-
                         EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { envelope };
                         List<HarvestedEnvelope> bbEnvelope = await Harvest(_tempEnvelope);
                         List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(_tempEnvelope);
