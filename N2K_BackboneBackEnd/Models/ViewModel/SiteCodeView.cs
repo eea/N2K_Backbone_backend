@@ -15,5 +15,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string CountryCode { get; set; } = "";
         //public Level Level { get; set; }
 
+        public string? EditedBy { get; set; }
+        public DateTime? EditedDate { get; set; }
+
     }
 }

@@ -331,7 +331,9 @@ namespace N2K_BackboneBackEnd.Services
                  {
                      SiteCode = x.SiteCode,
                      Version = x.Version,
-                     Name = x.Name
+                     Name = x.Name,
+                     EditedBy = GlobalData.Username,
+                     EditedDate = DateTime.Now
                  }
             ).ToList();
 
