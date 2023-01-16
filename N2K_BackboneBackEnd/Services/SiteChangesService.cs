@@ -779,6 +779,13 @@ namespace N2K_BackboneBackEnd.Services
                                 "exec spAcceptSiteCodeChanges @sitecode, @version",
                                 paramSiteCode,
                                 paramVersionId);
+                        SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId && e.ChangeType == "Site Deleted").FirstOrDefaultAsync();
+                        if (change != null)
+                        {
+                            Sites siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
+                            siteToDelete.Current = false;
+                            await _dataContext.SaveChangesAsync();
+                        }
                         modifiedSiteCode.OK = 1;
                         modifiedSiteCode.Error = string.Empty;
                         modifiedSiteCode.Status = SiteChangeStatus.Accepted;
