@@ -895,7 +895,6 @@ namespace N2K_BackboneBackEnd.Services
                     try
                     {
                         SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId && e.ChangeType == "User edition").FirstOrDefaultAsync();
-                        SiteChangeDb deleted = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId && e.ChangeType == "Site Deleted").FirstOrDefaultAsync();
 
                         SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
                         SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
@@ -927,18 +926,9 @@ namespace N2K_BackboneBackEnd.Services
                         }
 
                         await _dataContext.Database.ExecuteSqlRawAsync(
-                            "exec spMoveSiteCodeToPending @sitecode, @version",
-                            paramSiteCode,
-                            paramVersionId);
-
-                        if (deleted != null)
-                        {
-                            Sites siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
-                            siteToDelete.Current = true;
-                            siteToDelete.CurrentStatus = SiteChangeStatus.Accepted;
-                            await _dataContext.SaveChangesAsync();
-                        }
-
+                                "exec spMoveSiteCodeToPending @sitecode, @version",
+                                paramSiteCode,
+                                paramVersionId);
                         modifiedSiteCode.OK = 1;
                         modifiedSiteCode.Error = string.Empty;
                         modifiedSiteCode.Status = SiteChangeStatus.Pending;
