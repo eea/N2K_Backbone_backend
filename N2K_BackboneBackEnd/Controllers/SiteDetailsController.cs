@@ -86,6 +86,8 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        /*
+
         [HttpGet("GetSiteTemporalComments/siteCode={pSiteCode}&version={pCountryVersion}")]
         public async Task<ActionResult<List<StatusChanges>>> GetSiteTemporalComments(string pSiteCode, int pCountryVersion)
         {
@@ -108,7 +110,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
+        */
 
 
         [Route("SiteComments/Add")]
@@ -136,6 +138,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        /*
         [Route("SiteComments/AddTemporal")]
         [HttpPost]
         public async Task<ActionResult<List<StatusChanges>>> AddTemporal([FromBody] StatusChanges comment)
@@ -160,7 +163,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
+        */
 
         [Route("SiteComments/Delete")]
         [HttpDelete]
@@ -186,6 +189,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        /*
         [Route("SiteComments/DeleteTemporal")]
         [HttpDelete]
         public async Task<ActionResult<int>> DeleteTemporal([FromBody] long Id)
@@ -209,7 +213,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
+        */
 
 
         [Route("SiteComments/Update")]
@@ -236,6 +240,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        /*
         [Route("SiteComments/UpdateTemporal")]
         [HttpPut]
         public async Task<ActionResult<List<StatusChanges>>> UpdateTemporalComment([FromBody] StatusChanges comment)
@@ -259,7 +264,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
+        */
 
         #endregion
 
@@ -288,6 +293,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        /*
         [HttpGet("GetTemporalAttachedFiles/siteCode={pSiteCode}&version={pCountryVersion}")]
         public async Task<ActionResult<List<JustificationFiles>>> GetTemporalAttachedFiles(string pSiteCode, int pCountryVersion)
         {
@@ -310,7 +316,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
+        */
 
         [Route("UploadAttachedFile")]
         [HttpPost, DisableRequestSizeLimit]
@@ -348,6 +354,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         }
 
+        /*
         [Route("UploadTemporalAttachedFile")]
         [HttpPost, DisableRequestSizeLimit]
         public async Task<ActionResult<List<JustificationFiles>>> UploadTemporalAttachedFile([FromQuery] AttachedFile attachedFiles)
@@ -383,7 +390,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
 
         }
-
+        */
 
         [Route("DeleteAttachedFile")]
         [HttpDelete]
@@ -412,6 +419,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         }
 
+        /*
         [Route("DeleteTemporalAttachedFile")]
         [HttpDelete]
         public async Task<ActionResult<int>> DeleteTemporalAttachedFile([FromQuery] long justificationId)
@@ -438,6 +446,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         }
+        */
 
         #endregion
 

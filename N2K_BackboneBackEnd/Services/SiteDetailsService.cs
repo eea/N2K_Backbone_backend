@@ -16,6 +16,7 @@ using N2K_BackboneBackEnd.Models.BackboneDB;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using NuGet.Packaging;
 using System.ComponentModel.Design;
+using System.Security.Policy;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -501,8 +502,29 @@ namespace N2K_BackboneBackEnd.Services
                         await _dataContext.SaveChangesAsync();
                     }
 
+                    //remove the cache 
+                    System.Reflection.PropertyInfo? field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (field != null)
+                    {
+                        var collection = field.GetValue(cache) as System.Collections.ICollection;
+                        var items = new List<string>();
+                        if (collection != null)
+                        {
+                            foreach (var item in collection)
+                            {
+                                var methodInfo = item.GetType().GetProperty("Key");
+                                var val = (methodInfo.GetValue(item) != null) ? methodInfo.GetValue(item).ToString() : "";
+                                if (val != null && val.StartsWith(string.Format("{0}_{1}_{2}_", GlobalData.Username, "list_codes", site.CountryCode)))
+                                {
+                                    cache.Remove(val);
+                                }
+                            }
+                        }
+                    }
                 }
+
             }
+
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "SaveEdition", "");

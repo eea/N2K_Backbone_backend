@@ -29,7 +29,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-
+        /*
         // GET: api/<HarvestingController>
         [Route("Get")]
         [HttpGet]
@@ -54,8 +54,9 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+        */
 
-
+        /*
 
         //Id=>envelopeID
         [HttpGet("Get/{id}")]
@@ -80,6 +81,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+        */
 
         /// <summary>
         /// Retrives those envelopes with the input status
@@ -137,14 +139,16 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
+        /*
         [HttpGet]
         [Route("Harvested")]
         public IEnumerable<string> Harvested()
         {
             return new string[] { "value1", "value2" };
         }
+        */
 
+        /*
 
         [HttpGet("Harvested/{fromDate}")]
         public IEnumerable<string> Harvested(DateTime? fromDate)
@@ -152,13 +156,16 @@ namespace N2K_BackboneBackEnd.Controllers
             if (!fromDate.HasValue) return Harvested();
             return new string[] { "value1", "value2" };
         }
-
+        */
+        /*
         [HttpGet("Harvested/{fromDate}/{toDate}")]
         public IEnumerable<string> Harvested(DateTime fromDate, DateTime? toDate)
         {
             return new string[] { "value1", "value2" };
         }
+        */
 
+        /*
         /// <summary>
         /// Retrives those envelopes with the status Pending
         /// </summary>
@@ -186,7 +193,9 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+        */
 
+        /*
         [HttpGet]
         [Route("PreHarvested")]
         public async Task<ActionResult<ServiceResponse<EnvelopesToHarvest>>> PendingToHarvest()
@@ -210,8 +219,9 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+        */
 
-
+        /*
         /// <summary>
         /// Retrives those envelopes with the status Pending for the selected country
         /// </summary>
@@ -222,6 +232,7 @@ namespace N2K_BackboneBackEnd.Controllers
         {
             return new string[] { "value1", "value2" };
         }
+        */
 
         /// <summary>
         /// Executes the process of the harvesting for a selected envelop (Country and Version)
