@@ -286,7 +286,13 @@ namespace N2K_BackboneBackEnd.Services
             ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == site.CountryCode && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
             var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(changes => changes.SiteCode == pSiteCode && changes.N2KVersioningVersion == harvestedEnvelope.Version).ToListAsync();
             changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
-
+            if (changesDb != null)
+            {
+                if (changesDb.FirstOrDefault().ChangeType == "Site Deleted")
+                {
+                    changeDetailVM.Status = changesDb.FirstOrDefault().Status;
+                }
+            }
 
             _siteHabitats = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
             _siteSpecies = await _dataContext.Set<Species>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
@@ -841,6 +847,14 @@ namespace N2K_BackboneBackEnd.Services
                                 "exec spRejectSiteCodeChanges @sitecode, @version",
                                 paramSiteCode,
                                 paramVersionId);
+                        SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId && e.ChangeType == "Site Deleted").FirstOrDefaultAsync();
+                        if (change != null)
+                        {
+                            Sites siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
+                            siteToDelete.CurrentStatus = SiteChangeStatus.Accepted;
+                            siteToDelete.Current = true;
+                            await _dataContext.SaveChangesAsync();
+                        }
                         modifiedSiteCode.OK = 1;
                         modifiedSiteCode.Error = string.Empty;
                         modifiedSiteCode.Status = SiteChangeStatus.Rejected;
