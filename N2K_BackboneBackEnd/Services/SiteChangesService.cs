@@ -792,6 +792,16 @@ namespace N2K_BackboneBackEnd.Services
                             siteToDelete.Current = false;
                             await _dataContext.SaveChangesAsync();
                         }
+                        SiteActivities activity = new SiteActivities
+                        {
+                            SiteCode = modifiedSiteCode.SiteCode,
+                            Version = modifiedSiteCode.VersionId,
+                            Author = GlobalData.Username,
+                            Date = DateTime.Now,
+                            Action = "Accept Changes"
+                        };
+                        _dataContext.Set<SiteActivities>().Add(activity);
+                        await _dataContext.SaveChangesAsync();
                         modifiedSiteCode.OK = 1;
                         modifiedSiteCode.Error = string.Empty;
                         modifiedSiteCode.Status = SiteChangeStatus.Accepted;
@@ -855,6 +865,16 @@ namespace N2K_BackboneBackEnd.Services
                             siteToDelete.Current = true;
                             await _dataContext.SaveChangesAsync();
                         }
+                        SiteActivities activity = new SiteActivities
+                        {
+                            SiteCode = modifiedSiteCode.SiteCode,
+                            Version = modifiedSiteCode.VersionId,
+                            Author = GlobalData.Username,
+                            Date = DateTime.Now,
+                            Action = "Reject Changes"
+                        };
+                        _dataContext.Set<SiteActivities>().Add(activity);
+                        await _dataContext.SaveChangesAsync();
                         modifiedSiteCode.OK = 1;
                         modifiedSiteCode.Error = string.Empty;
                         modifiedSiteCode.Status = SiteChangeStatus.Rejected;
@@ -943,6 +963,16 @@ namespace N2K_BackboneBackEnd.Services
                                 "exec spMoveSiteCodeToPending @sitecode, @version",
                                 paramSiteCode,
                                 paramVersionId);
+                        SiteActivities activity = new SiteActivities
+                        {
+                            SiteCode = modifiedSiteCode.SiteCode,
+                            Version = modifiedSiteCode.VersionId,
+                            Author = GlobalData.Username,
+                            Date = DateTime.Now,
+                            Action = "Back to Pending"
+                        };
+                        _dataContext.Set<SiteActivities>().Add(activity);
+                        await _dataContext.SaveChangesAsync();
                         modifiedSiteCode.OK = 1;
                         modifiedSiteCode.Error = string.Empty;
                         modifiedSiteCode.Status = SiteChangeStatus.Pending;
