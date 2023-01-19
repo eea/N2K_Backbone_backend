@@ -816,8 +816,9 @@ namespace N2K_BackboneBackEnd.Services
                     var status = site.FirstOrDefault().Status;
 
                     //refresh the cache of site codes
-                    await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Accepted, level, cache, true);
-                    await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                    List<SiteCodeView> mockresult = null;
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Accepted, level, cache, true);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
                 return result;
             }
@@ -879,8 +880,9 @@ namespace N2K_BackboneBackEnd.Services
                     var status = site.FirstOrDefault().Status;
 
                     //refresh the cache of site codes
-                    await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, true);
-                    await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                    List<SiteCodeView> mockresult = null;
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, true);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
                 return result;
             }
@@ -964,8 +966,9 @@ namespace N2K_BackboneBackEnd.Services
                 if (result.Count > 0)
                 {
                     //refresh the cache of site codes
-                    await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, true);
-                    await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                    List<SiteCodeView> mockresult = null;
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, true);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
                 return result;
             }
