@@ -540,6 +540,16 @@ namespace N2K_BackboneBackEnd.Services
                                 }
                             }
                         }
+                        SiteActivities activity = new SiteActivities
+                        {
+                            SiteCode = changeEdition.SiteCode,
+                            Version = changeEdition.Version,
+                            Author = GlobalData.Username,
+                            Date = DateTime.Now,
+                            Action = "User edition"
+                        };
+                        _dataContext.Set<SiteActivities>().Add(activity);
+                        await _dataContext.SaveChangesAsync();
                     }
                 }
                 else {
