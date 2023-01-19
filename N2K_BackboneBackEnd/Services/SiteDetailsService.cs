@@ -454,87 +454,103 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<string> SaveEdition(ChangeEditionDb changeEdition, IMemoryCache cache)
         {
             var username = GlobalData.Username;
+            Sites site = null;
+            SiteChangeDb change = null;
+            SqlParameter param_sitecode = null;
+            SqlParameter param_version = null;
+            SqlParameter param_name = null;
+            SqlParameter param_sitetype = null;
+            SqlParameter param_area = null;
+            SqlParameter param_length = null;
+            SqlParameter param_centrex = null;
+            SqlParameter param_centrey = null;
+            SqlParameter param_justif_required = null;
+            SqlParameter param_justif_provided = null;
+
             try
             {
-                SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                //Verify the site & version exists
+                site = _dataContext.Set<Sites>().Single(x => x.SiteCode == changeEdition.SiteCode && x.Version == changeEdition.Version);
 
-                SqlParameter param_sitecode = new SqlParameter("@sitecode", changeEdition.SiteCode);
-                SqlParameter param_version = new SqlParameter("@version", changeEdition.Version);
-                SqlParameter param_name = new SqlParameter("@name", changeEdition.SiteName is null ? DBNull.Value : changeEdition.SiteName);
-                SqlParameter param_sitetype = new SqlParameter("@sitetype", changeEdition.SiteType is null ? DBNull.Value : changeEdition.SiteType);
-                SqlParameter param_area = new SqlParameter("@area", changeEdition.Area);
-                SqlParameter param_length = new SqlParameter("@length", changeEdition.Length);
-                SqlParameter param_centrex = new SqlParameter("@centrex", changeEdition.CentreX);
-                SqlParameter param_centrey = new SqlParameter("@centrey", changeEdition.CentreY);
-                SqlParameter param_justif_required = new SqlParameter("@justif_required", changeEdition.JustificationRequired == null ? false : changeEdition.JustificationRequired);
-                SqlParameter param_justif_provided = new SqlParameter("@justif_provided", changeEdition.JustificationProvided == null ? false : changeEdition.JustificationProvided);
-
-                if (change == null)
-                {
-                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSites " +
-                        "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
-                        , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
-                }
-                else
-                {
-                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spUpdateSites " +
-                        "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
-                        , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
-                }
-
-                Sites site = await _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefaultAsync();
                 if (site != null)
                 {
-                    if (changeEdition.BioRegion != null && changeEdition.BioRegion != "string" && changeEdition.BioRegion != "")
+
+                    change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+
+                    param_sitecode = new SqlParameter("@sitecode", changeEdition.SiteCode);
+                    param_version = new SqlParameter("@version", changeEdition.Version);
+                    param_name = new SqlParameter("@name", changeEdition.SiteName is null ? DBNull.Value : changeEdition.SiteName);
+                    param_sitetype = new SqlParameter("@sitetype", changeEdition.SiteType is null ? DBNull.Value : changeEdition.SiteType);
+                    param_area = new SqlParameter("@area", changeEdition.Area);
+                    param_length = new SqlParameter("@length", changeEdition.Length);
+                    param_centrex = new SqlParameter("@centrex", changeEdition.CentreX);
+                    param_centrey = new SqlParameter("@centrey", changeEdition.CentreY);
+                    param_justif_required = new SqlParameter("@justif_required", changeEdition.JustificationRequired == null ? false : changeEdition.JustificationRequired);
+                    param_justif_provided = new SqlParameter("@justif_provided", changeEdition.JustificationProvided == null ? false : changeEdition.JustificationProvided);
+
+                    if (change == null)
                     {
-                        string[] bioregions = changeEdition.BioRegion.Split(",");
-                        foreach (var bioregion in bioregions)
-                        {
-                            BioRegions bioreg = new BioRegions
-                            {
-                                SiteCode = changeEdition.SiteCode,
-                                Version = site.Version,
-                                BGRID = int.Parse(bioregion),
-                                Percentage = 100 / bioregions.Length // NEEDS TO BE CHANGED - PENDING
-                            };
-                            _dataContext.Set<BioRegions>().Add(bioreg);
-                        }
-                        await _dataContext.SaveChangesAsync();
+                        await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSites " +
+                            "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
+                            , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
+                    }
+                    else
+                    {
+                        await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spUpdateSites " +
+                            "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
+                            , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
                     }
 
-                    //remove the cache 
-                    System.Reflection.PropertyInfo? field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (field != null)
+                    site = await _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefaultAsync();
+                    if (site != null)
                     {
-                        var collection = field.GetValue(cache) as System.Collections.ICollection;
-                        var items = new List<string>();
-                        if (collection != null)
+                        if (changeEdition.BioRegion != null && changeEdition.BioRegion != "string" && changeEdition.BioRegion != "")
                         {
-                            foreach (var item in collection)
+                            string[] bioregions = changeEdition.BioRegion.Split(",");
+                            foreach (var bioregion in bioregions)
                             {
-                                var methodInfo = item.GetType().GetProperty("Key");
-                                var val = (methodInfo.GetValue(item) != null) ? methodInfo.GetValue(item).ToString() : "";
-                                if (val != null && val.StartsWith(string.Format("{0}_{1}_{2}_", GlobalData.Username, "list_codes", site.CountryCode)))
+                                BioRegions bioreg = new BioRegions
                                 {
-                                    cache.Remove(val);
+                                    SiteCode = changeEdition.SiteCode,
+                                    Version = site.Version,
+                                    BGRID = int.Parse(bioregion),
+                                    Percentage = 100 / bioregions.Length // NEEDS TO BE CHANGED - PENDING
+                                };
+                                _dataContext.Set<BioRegions>().Add(bioreg);
+                            }
+                            await _dataContext.SaveChangesAsync();
+                        }
+
+                        //remove the cache 
+                        System.Reflection.PropertyInfo? field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        if (field != null)
+                        {
+                            var collection = field.GetValue(cache) as System.Collections.ICollection;
+                            var items = new List<string>();
+                            if (collection != null)
+                            {
+                                foreach (var item in collection)
+                                {
+                                    var methodInfo = item.GetType().GetProperty("Key");
+                                    var val = (methodInfo.GetValue(item) != null) ? methodInfo.GetValue(item).ToString() : "";
+                                    if (val != null && val.StartsWith(string.Format("{0}_{1}_{2}_", GlobalData.Username, "list_codes", site.CountryCode)))
+                                    {
+                                        cache.Remove(val);
+                                    }
                                 }
                             }
                         }
                     }
                 }
-                SiteActivities activity = new SiteActivities
-                {
-                    SiteCode = changeEdition.SiteCode,
-                    Version = changeEdition.Version,
-                    Author = GlobalData.Username,
-                    Date = DateTime.Now,
-                    Action = "User edition"
-                };
-                _dataContext.Set<SiteActivities>().Add(activity);
-                await _dataContext.SaveChangesAsync();
-
+                else {
+                    
+                }
             }
-
+            catch(System.InvalidOperationException iex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, "The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")" , "SaveEdition", "");
+                throw new Exception("The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")");
+            }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "SaveEdition", "");
