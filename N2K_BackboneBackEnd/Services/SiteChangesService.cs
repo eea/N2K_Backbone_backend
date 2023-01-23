@@ -346,6 +346,20 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
+
+        public List<SiteCodeView> RefreshSiteCodesByStatusAndLevelAndCountryCache(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool add)
+        {
+            string listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes",
+                    country,
+                    string.IsNullOrEmpty(status.ToString()) ? string.Empty : status.ToString(),
+                    string.IsNullOrEmpty(level.ToString()) ? string.Empty : level.ToString()
+                   );
+
+            var result = new List<SiteCodeView>();
+            return result;
+
+        }
+
         public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false)
         {
             string listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes",
