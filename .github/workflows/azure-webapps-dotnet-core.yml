@@ -27,7 +27,7 @@ env:
 on:
   push:
     branches: 
-      - development
+      - Development
   workflow_dispatch:
 
 permissions:
@@ -83,5 +83,5 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.ZURE_WEBAPP_BACKENDDEV_PROFILE }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_BACKENDDEV_PROFILE }}
           package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
