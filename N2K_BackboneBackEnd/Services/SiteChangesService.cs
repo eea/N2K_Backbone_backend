@@ -360,6 +360,7 @@ namespace N2K_BackboneBackEnd.Services
             if (cache.TryGetValue(listName, out List<SiteCodeView> cachedList))
             {
                 result = cachedList;
+                var a = 1;
             }
             else
             {
