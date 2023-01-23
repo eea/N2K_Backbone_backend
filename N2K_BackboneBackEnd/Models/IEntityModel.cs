@@ -11,5 +11,7 @@ namespace N2K_BackboneBackEnd.Models
 
     public interface IEntityModelVersioningDB { }
 
+    public interface IEntityModelReleasesDB { }
+
     public interface IEntityModelBackboneReadOnlyDB { }
 }

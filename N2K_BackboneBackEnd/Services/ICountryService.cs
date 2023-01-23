@@ -14,5 +14,7 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<CountriesChangesView>> GetPendingLevelAsync();
         Task<List<SitesWithChangesView>> GetSiteLevelAsync(SiteChangeStatus? status);
         Task<List<CountriesSiteCountView>> GetSiteCountAsync();
+        Task<List<CountriesChangesView>> GetConsolidatedCountries();
+        Task<List<ClosedCountriesView>> GetClosedAndDiscardedCountriesAsync();
     }
 }

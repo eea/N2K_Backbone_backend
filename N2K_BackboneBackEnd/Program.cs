@@ -35,6 +35,8 @@ builder.Services.AddScoped<IEULoginService, EULoginService>();
 builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 builder.Services.AddScoped<IUnionListService, UnionListService>();
+builder.Services.AddScoped<IReleaseService, ReleaseService>();
+builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
 
 builder.Services.AddResponseCompression(options =>
 {
@@ -56,6 +58,17 @@ builder.Services.AddDbContext<N2KBackboneContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
 });
 
+builder.Services.AddDbContext<N2KReleasesContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_ReleasesBackEndContext"));
+});
+
+builder.Services.AddDbContext<N2K_VersioningContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_VersioningBackEndContext"));
+});
+
+
 builder.Services.Configure<FormOptions>(o =>
 {
     o.ValueLengthLimit = int.MaxValue;
@@ -63,10 +76,7 @@ builder.Services.Configure<FormOptions>(o =>
     o.MemoryBufferThreshold = int.MaxValue;
 });
 
-builder.Services.AddDbContext<N2K_VersioningContext>(options =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_VersioningBackEndContext"));
-});
+
 
 
 builder.Services.AddControllersWithViews();

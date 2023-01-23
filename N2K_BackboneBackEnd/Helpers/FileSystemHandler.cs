@@ -70,8 +70,8 @@ namespace N2K_BackboneBackEnd.Helpers
         public async Task<int> DeleteFileAsync(string fileName)
         {
             await Task.Delay(1);
-            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-            var filesUrl = string.Format("{0}{1}/", remoteUrl, _attachedFilesConfig.JustificationFolder);
+            var remoteUrl = _attachedFilesConfig.PublicFilesUrl; //  _pathToSave + "/" +  _attachedFilesConfig.FilesRootPath + (!_attachedFilesConfig.FilesRootPath.EndsWith("/") ? "/" : "");
+            var filesUrl = string.Format("{0}/{1}/", remoteUrl, _attachedFilesConfig.JustificationFolder);
             fileName = fileName.Replace(filesUrl, "");
 
             var fullPath = Path.Combine(_pathToSave, fileName);
@@ -84,8 +84,9 @@ namespace N2K_BackboneBackEnd.Helpers
         public async Task<int> DeleteUnionListsFilesAsync()
         {
             await Task.Delay(1);
-            var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-            var filesUrl = string.Format("{0}{1}/", remoteUrl, _attachedFilesConfig.JustificationFolder);
+            var remoteUrl = _pathToSave + "/" + _attachedFilesConfig.FilesRootPath + (!_attachedFilesConfig.FilesRootPath.EndsWith("/") ? "/" : "");
+            //var remoteUrl = _attachedFilesConfig.UploadTargetFolder + (!_attachedFilesConfig.UploadTargetFolder.EndsWith("/") ? "/" : "");
+            var filesUrl = _pathToSave; //  string.Format("{0}{1}/", remoteUrl, _attachedFilesConfig.JustificationFolder);
 
             string[] files = Directory.GetFiles(filesUrl);
             foreach (string file in files)

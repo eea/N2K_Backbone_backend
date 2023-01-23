@@ -70,11 +70,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         public async Task<Sites>? HarvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
         {
             Sites? bbSite = null;
-
             try
             {
-
-
                 bbSite = await harvestSiteCode(pVSite, pEnvelope);
                 _dataContext.Set<Sites>().Add(bbSite);
                 //To await the site be stored in the table before use it
@@ -83,6 +80,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
 
                 //Get the data for all related tables                                
+                _dataContext.Set<Respondents>().AddRange(await harvestRespondents(pVSite, bbSite.Version));
                 _dataContext.Set<BioRegions>().AddRange(await harvestBioregions(pVSite, bbSite.Version));
                 _dataContext.Set<NutsBySite>().AddRange(await harvestNutsBySite(pVSite, bbSite.Version));
                 _dataContext.Set<Models.backbone_db.IsImpactedBy>().AddRange(await harvestIsImpactedBy(pVSite, bbSite.Version));
@@ -205,6 +203,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.N2KVersioningVersion = pEnvelope.VersionId;
                 bbSite.DateConfSCI = pVSite.DATE_CONF_SCI;
                 bbSite.Priority = isHarvestingSitePriority;
+                bbSite.DatePropSCI = pVSite.DATE_PROP_SCI;
+                bbSite.DateSpa = pVSite.DATE_SPA;
+                bbSite.DateSac = pVSite.DATE_SAC;
                 return bbSite;
             }
             catch (Exception ex)
@@ -230,7 +231,18 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<BioRegions> items = new List<BioRegions>();
             try
             {
-                elements = await _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
+                //elements = await _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
+                //Chaged to support a multiple primary codes exception (Site, version and Bioregion)
+                elements = await _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).GroupBy(s => s.BIOREGID).Select(bb => new BelongsToBioRegion
+                {
+                    COUNTRYCODE = bb.First().COUNTRYCODE,
+                    VERSIONID = bb.First().VERSIONID,
+                    COUNTRYVERSIONID = bb.First().COUNTRYVERSIONID,
+                    SITECODE = bb.First().SITECODE,
+                    BIOREGID = bb.First().BIOREGID,
+                    PERCENTAGE = bb.Sum(c => c.PERCENTAGE),
+                }).ToListAsync();
+
                 foreach (BelongsToBioRegion element in elements)
                 {
                     //SystemLog.write(SystemLog.errorLevel.Debug, "Site/Version/BioRegion: " + pVSite.SITECODE + "-" + pVSite.VERSIONID.ToString() + "/" + pVersion.ToString() + "/"+ element.BIOREGID.ToString(), "HarvestedService - harvestBioregions", "");
@@ -772,6 +784,37 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             return changes;
         }
 
+
+        private async Task<List<Respondents>>? harvestRespondents(NaturaSite pVSite, int pVersion)
+        {
+            try
+            {
+                List<Contact> vContact = _versioningContext.Set<Contact>().Where(v => (v.COUNTRYCODE == pVSite.COUNTRYCODE) && (v.COUNTRYVERSIONID == pVSite.COUNTRYVERSIONID)).ToList();
+                List<Respondents> items = new List<Respondents>();
+                foreach (Contact contact in vContact)
+                {
+                    Respondents respondent = new Respondents();
+                    respondent.SiteCode = contact.SITECODE;
+                    respondent.Version = pVersion;
+                    respondent.locatorName = contact.LOCATOR_NAME;
+                    respondent.addressArea = contact.ADDRESS_AREA;
+                    respondent.postName = contact.POST_NAME;
+                    respondent.postCode = contact.POSTCODE;
+                    respondent.thoroughfare = contact.THOROUGHFARE;
+                    respondent.addressUnstructured = contact.UNSTRUCTURED_ADD;
+                    respondent.name = contact.CONTACT_NAME;
+                    respondent.Email = contact.EMAIL;
+                    respondent.AdminUnit = contact.ADMIN_UNIT;
+                    respondent.LocatorDesignator = contact.LOCATOR_DESIGNATOR;
+                    items.Add(respondent);
+                }
+                return items;
+            }
+            catch (Exception ex){
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestRespondents", "");
+                return null;
+            }
+        }
 
     }
 }

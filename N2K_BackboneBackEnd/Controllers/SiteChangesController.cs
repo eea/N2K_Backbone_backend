@@ -490,7 +490,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteCodes;
-                response.Count = await _siteChangesService.GetPendingChangesByCountry(country,_cache);
+                response.Count =  await _siteChangesService.GetPendingChangesByCountry(country,_cache);
                 return Ok(response);
             }
             catch (Exception ex)

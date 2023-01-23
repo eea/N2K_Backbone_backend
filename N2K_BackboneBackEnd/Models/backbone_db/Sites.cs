@@ -25,6 +25,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public Boolean? JustificationProvided { get; set; }
         public DateTime? DateConfSCI { get; set; }
         public Boolean? Priority { get; set; }
+        public DateTime? DatePropSCI { get; set; }
+        public DateTime? DateSpa { get; set; }
+        public DateTime? DateSac { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {

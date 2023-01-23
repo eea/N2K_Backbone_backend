@@ -24,7 +24,9 @@ namespace N2K_BackboneBackEnd.Enumerations
         [DataMember]
         Closed = 8,
         [DataMember]
-        DataLoaded = 9
+        DataLoaded = 9,
+        [DataMember]
+        Error = 10
 
     }
 }

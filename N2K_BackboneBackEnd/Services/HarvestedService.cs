@@ -101,6 +101,13 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
+        public async Task<List<HarvestingExpanded>> GetOnlyClosedEnvelopes()
+        {
+            List<HarvestingExpanded> result = await _dataContext.Set<HarvestingExpanded>().FromSqlRaw($"exec dbo.spGetOnlyClosedEnvelopes").AsNoTracking().ToListAsync();
+
+            return result;
+        }
+
         public async Task<List<EnvelopesToHarvest>> GetPreHarvestedEnvelopes()
         {
             IQueryable<EnvelopesToHarvest> changes = _dataContext.Set<EnvelopesToHarvest>().FromSqlRaw($"exec dbo.spGetPreHarvestedEnvelopes");
@@ -630,30 +637,21 @@ namespace N2K_BackboneBackEnd.Services
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
             try
             {
-                //TimeLog.setTimeStamp("Harvesting process ", "Init");
-
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
-                    //remove version from database
-                    await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
-
+                    //Not necessary 
+                    //await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
                     DateTime SubmissionDate = envelope.SubmissionDate; //getOptimalDate(envelope);
-
                     //create a new entry in the processed envelopes table to register that a new one is being harvested
                     ProcessedEnvelopes envelopeToProcess = new ProcessedEnvelopes
                     {
                         Country = envelope.CountryCode
-                        ,
-                        Version = envelope.VersionId
-                        ,
-                        ImportDate = envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
-                        ,
-                        Status = HarvestingStatus.Harvesting
-                        ,
-                        Importer = "TEST"
-                        ,
-                        N2K_VersioningDate = SubmissionDate // envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
+                        ,Version = envelope.VersionId
+                        ,ImportDate = envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
+                        ,Status = HarvestingStatus.Harvesting
+                        ,Importer = "AUTOIMPORT"
+                        ,N2K_VersioningDate = SubmissionDate // envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
                     };
                     try
                     {
@@ -661,12 +659,14 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
                         _dataContext.SaveChanges();
 
-
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
+                        
+                        //This is not the best place. We need to have the site created before to have the correct site version for the respondants
+                        //List<Contact> vContact = _versioningContext.Set<Contact>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
+                        //_dataContext.Set<Respondents>().AddRange(await HarvestRespondents(vContact, envelope));
 
                         List<Sites> bbSites = new List<Sites>();
-
                         foreach (NaturaSite vSite in vSites)
                         {
                             try
@@ -691,20 +691,15 @@ namespace N2K_BackboneBackEnd.Services
                             }
                             catch (DbUpdateException ex)
                             {
-                                RefusedSites.addAsRefused(vSite, envelope, ex);
+                                SystemLog.write(SystemLog.errorLevel.Error, ex, "Harvest - DbUpdateException for Site " + vSite.SITECODE + "/" + vSite.VERSIONID.ToString(), "");
+                                throw;
                             }
                             catch (Exception ex)
                             {
-                                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSites - Start - Site " + vSite.SITECODE + "/" + vSite.VERSIONID.ToString(), "");
-                                //RefusedSites.addAsRefused(vSite);
-                                //rollback(envelope.CountryCode, envelope.VersionId);
-                                //break;
+                                SystemLog.write(SystemLog.errorLevel.Error, ex, "Harvest - Site " + vSite.SITECODE + "/" + vSite.VERSIONID.ToString(), "");
+                                //This envolpe should be marked as wrong one and should move to the next
+                                throw;
                             }
-                            finally
-                            {
-
-                            }
-
                         }
                         //set the enevelope as successfully completed
                         envelopeToProcess.Status = HarvestingStatus.DataLoaded;
@@ -722,15 +717,15 @@ namespace N2K_BackboneBackEnd.Services
                     catch (Exception ex)
                     {
                         SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                        //if there is an error reject the envelope
-                        _dataContext.Set<ProcessedEnvelopes>().Remove(envelopeToProcess);
+                        envelopeToProcess.Status = HarvestingStatus.Error;
+                        _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
                         result.Add(
                             new HarvestedEnvelope
                             {
                                 CountryCode = envelope.CountryCode,
                                 VersionId = envelope.VersionId,
                                 NumChanges = 0,
-                                Status = SiteChangeStatus.Rejected
+                                Status = SiteChangeStatus.Error //SiteChangeStatus.Error
                             }
                          );
                     }
@@ -739,25 +734,14 @@ namespace N2K_BackboneBackEnd.Services
                         //save the data of the site in backbone DB
                         _dataContext.SaveChanges();
                     }
-
-
-
-
                 }
                 return result;
             }
-
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return await Task.FromResult(new List<HarvestedEnvelope>());
             }
-            finally
-            {
-                //TimeLog.setTimeStamp("Harvesting process ", "End");
-            }
-
-
         }
 
 
@@ -889,36 +873,30 @@ namespace N2K_BackboneBackEnd.Services
                             SubmissionDate = vEnvelope.SubmissionDate
                         };
 
-                        ProcessedEnvelopes process = new ProcessedEnvelopes
-                        {
-                            Country = vEnvelope.Country,
-                            Version = Int32.Parse(vEnvelope.Id.ToString()),
-                            ImportDate = vEnvelope.SubmissionDate,
-                            Status = HarvestingStatus.Queued,
-                            Importer = "Automatic",
-                            N2K_VersioningDate = vEnvelope.SubmissionDate
-                        };
-
-                        _dataContext.Set<ProcessedEnvelopes>().Add(process);
-                        _dataContext.SaveChanges();
-
                         EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { envelope };
                         List<HarvestedEnvelope> bbEnvelope = await Harvest(_tempEnvelope);
                         List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(_tempEnvelope);
 
                         List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == _tempEnvelope[0].CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToListAsync();
 
-                        if (bbEnvelope.Count > 0 && envelopes.Count == 0)
+                        //Harvest proccess did its work successfully
+                        if (bbEnvelope.Count > 0)
                         {
-                            Task tabValidationTask = Validate(_tempEnvelope);
-                            Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
-                            //make sure they are all finished
-                            await Task.WhenAll(tabValidationTask, spatialValidationTask);
-                            //change the status of the whole process to PreHarvested
-                            await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested);
-                            bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
+                            //When there is no previous envelopes to resolve for this country
+                            if( envelopes.Count == 0)
+                            {
+                                Task tabValidationTask = Validate(_tempEnvelope);
+                                Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
+                                //make sure they are all finished
+                                await Task.WhenAll(tabValidationTask, spatialValidationTask);
+                                //change the status of the whole process to PreHarvested
+                                await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested);
+                                bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
+                            }
+                            
+                            bbEnvelopes.Add(bbEnvelope[0]);
                         }
-                        bbEnvelopes.Add(bbEnvelope[0]);
+                        
                     }
 
                     return bbEnvelopes;
@@ -1240,6 +1218,44 @@ namespace N2K_BackboneBackEnd.Services
 
             }
 
+        }
+
+        /// <summary>
+        ///  This method retrives the complete information for a Site in Versioning and stores it in BackBone.
+        ///  (Just the Site)
+        /// </summary>
+        /// <param name="pVSite">The definition ogf the versioning Site</param>
+        /// <param name="pEnvelope">The envelope to process</param>
+        /// <returns>Returns a BackBone Site object</returns>
+        private async Task<List<Respondents>>? HarvestRespondents(List<Contact> vContact, EnvelopesToProcess pEnvelope)
+        {
+            List<Respondents> items = new List<Respondents>();
+            foreach (Contact contact in vContact)
+            {
+                Respondents respondent = new Respondents();
+                try
+                {
+                    respondent.SiteCode = contact.SITECODE;
+                    respondent.Version = (int)contact.VERSIONID;
+                    respondent.locatorName = contact.LOCATOR_NAME;
+                    respondent.addressArea = contact.ADDRESS_AREA;
+                    respondent.postName = contact.POST_NAME;
+                    respondent.postCode = contact.POSTCODE;
+                    respondent.thoroughfare = contact.THOROUGHFARE;
+                    respondent.addressUnstructured = contact.UNSTRUCTURED_ADD;
+                    respondent.name = contact.CONTACT_NAME;
+                    respondent.Email = contact.EMAIL;
+                    respondent.AdminUnit = contact.ADMIN_UNIT;
+                    respondent.LocatorDesignator = contact.LOCATOR_DESIGNATOR;
+                    items.Add(respondent);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestRespondents", "");
+                    return null;
+                }
+            }
+            return items;
         }
 
     }
