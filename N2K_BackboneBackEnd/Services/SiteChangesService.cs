@@ -286,6 +286,7 @@ namespace N2K_BackboneBackEnd.Services
             ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == site.CountryCode && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
             var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(changes => changes.SiteCode == pSiteCode && changes.N2KVersioningVersion == harvestedEnvelope.Version).ToListAsync();
             changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
+            var aaaa = 1;
             if (changesDb != null)
             {
                 var a = "dfgfd";
