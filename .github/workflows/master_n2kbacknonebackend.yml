@@ -6,7 +6,7 @@ name: Build and deploy ASP.Net Core app to Azure Web App - n2kbacknonebackend
 on:
   push:
     branches:
-      - master
+      - Development
   workflow_dispatch:
 
 jobs:
@@ -38,7 +38,7 @@ jobs:
     runs-on: windows-latest
     needs: build
     environment:
-      name: 'Production'
+      name: 'Demo'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
@@ -51,7 +51,7 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'n2kbacknonebackend'
-          slot-name: 'Production'
+          app-name: 'n2kbackboneback-dev'
+          slot-name: 'Demo'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_F4DE364224424045A021E15F3BD05145 }}
           package: .
