@@ -13,6 +13,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string Author { get; set; } = string.Empty;
         public DateTime Date { get; set; }
         public string Action { get; set; } = string.Empty;
+        public Boolean? Deleted { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {

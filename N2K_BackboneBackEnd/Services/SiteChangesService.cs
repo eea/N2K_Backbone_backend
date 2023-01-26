@@ -798,7 +798,8 @@ namespace N2K_BackboneBackEnd.Services
                             Version = modifiedSiteCode.VersionId,
                             Author = GlobalData.Username,
                             Date = DateTime.Now,
-                            Action = "Accept Changes"
+                            Action = "Accept Changes",
+                            Deleted = false
                         };
                         _dataContext.Set<SiteActivities>().Add(activity);
                         await _dataContext.SaveChangesAsync();
@@ -872,7 +873,8 @@ namespace N2K_BackboneBackEnd.Services
                             Version = modifiedSiteCode.VersionId,
                             Author = GlobalData.Username,
                             Date = DateTime.Now,
-                            Action = "Reject Changes"
+                            Action = "Reject Changes",
+                            Deleted = false
                         };
                         _dataContext.Set<SiteActivities>().Add(activity);
                         await _dataContext.SaveChangesAsync();
@@ -930,23 +932,50 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     try
                     {
+                        //Was this site edited after being accepted?
                         SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                        //Was this site edited after being rejected?
+                        List<SiteActivities> activityCheck = await _dataContext.Set<SiteActivities>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Action == "User edition after rejection of version " + modifiedSiteCode.VersionId && e.Deleted == false).ToListAsync();
 
                         SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
                         SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
+                        SqlParameter paramOldVersion = new SqlParameter("@oldVersion", modifiedSiteCode.VersionId);
+                        SqlParameter paramNewVersion2 = null;
+                        Sites siteToDelete = null;
+                        int previousCurrent = 0;
 
                         if (change != null)
                         {
-                            int previousCurrent = _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
+                            previousCurrent = _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
+                            List<SiteActivities> activityDelete = await _dataContext.Set<SiteActivities>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition" && e.Deleted == false).ToListAsync();
+                            activityDelete.ForEach(s => s.Deleted = true);
 
-                            SqlParameter paramOldVersion = new SqlParameter("@oldVersion", modifiedSiteCode.VersionId);
                             SqlParameter paramNewVersion1 = new SqlParameter("@newVersion", change.VersionReferenceId);
-                            SqlParameter paramNewVersion2 = new SqlParameter("@newVersion", previousCurrent);
 
                             //Add comments and docs to the soon to be pending version
                             await _dataContext.Database.ExecuteSqlRawAsync(
                                 "exec spCopyJustificationFilesAndStatusChanges @sitecode, @oldVersion, @newVersion",
                                 paramSiteCode, paramOldVersion, paramNewVersion1);
+
+                            //Find edited version
+                            siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
+
+                            paramVersionId = new SqlParameter("@version", change.VersionReferenceId);
+                        }
+
+                        if (activityCheck != null && activityCheck.Count > 0)
+                        {
+                            Sites previousSite = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefaultAsync();
+                            previousCurrent = previousSite.Version;
+                            activityCheck.ForEach(s => s.Deleted = true);
+
+                             //Find edited version
+                            siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Current == true).FirstOrDefaultAsync();
+                        }
+
+                        if (change != null || (activityCheck != null && activityCheck.Count > 0))
+                        {
+                            paramNewVersion2 = new SqlParameter("@newVersion", previousCurrent);
 
                             //Add comments and docs to the previous current version
                             await _dataContext.Database.ExecuteSqlRawAsync(
@@ -954,24 +983,22 @@ namespace N2K_BackboneBackEnd.Services
                                 paramSiteCode, paramOldVersion, paramNewVersion2);
 
                             //Delete edited version
-                            Sites siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
                             _dataContext.Set<Sites>().Remove(siteToDelete);
                             await _dataContext.SaveChangesAsync();
-
-                            paramVersionId = new SqlParameter("@version", change.VersionReferenceId);
                         }
 
                         await _dataContext.Database.ExecuteSqlRawAsync(
-                                "exec spMoveSiteCodeToPending @sitecode, @version",
-                                paramSiteCode,
-                                paramVersionId);
+                            "exec spMoveSiteCodeToPending @sitecode, @version",
+                            paramSiteCode,
+                            paramVersionId);
                         SiteActivities activity = new SiteActivities
                         {
                             SiteCode = modifiedSiteCode.SiteCode,
                             Version = modifiedSiteCode.VersionId,
                             Author = GlobalData.Username,
                             Date = DateTime.Now,
-                            Action = "Back to Pending"
+                            Action = "Back to Pending",
+                            Deleted = false
                         };
                         _dataContext.Set<SiteActivities>().Add(activity);
                         await _dataContext.SaveChangesAsync();

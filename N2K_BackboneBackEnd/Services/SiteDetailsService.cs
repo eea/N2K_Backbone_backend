@@ -455,7 +455,16 @@ namespace N2K_BackboneBackEnd.Services
         {
             var username = GlobalData.Username;
             Sites site = null;
-            SiteChangeDb change = null;
+            SiteChangeDb change = null, reject = null;
+            SiteActivities activityCheck = null, activity = new SiteActivities
+            {
+                SiteCode = changeEdition.SiteCode,
+                Version = changeEdition.Version,
+                Author = GlobalData.Username,
+                Date = DateTime.Now,
+                Action = "User edition",
+                Deleted = false
+            };
             SqlParameter param_sitecode = null;
             SqlParameter param_version = null;
             SqlParameter param_name = null;
@@ -469,16 +478,21 @@ namespace N2K_BackboneBackEnd.Services
 
             try
             {
-                //Verify the site & version exists
-                site = _dataContext.Set<Sites>().Single(x => x.SiteCode == changeEdition.SiteCode && x.Version == changeEdition.Version);
+                //Verify the site & current version exists
+                site = _dataContext.Set<Sites>().Single(x => x.SiteCode == changeEdition.SiteCode && x.Current == true);
+                activity.Version = site.Version;
 
                 if (site != null)
                 {
-
-                    change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                    //Was the site previously edited?
+                    change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == site.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                    //Is the sender site Rejected?
+                    reject = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version && e.Status == SiteChangeStatus.Rejected).FirstOrDefaultAsync();
+                    //Was it edited after rejection?
+                    activityCheck = await _dataContext.Set<SiteActivities>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Action == "User edition after rejection of version " + changeEdition.Version && e.Deleted == false).FirstOrDefaultAsync();
 
                     param_sitecode = new SqlParameter("@sitecode", changeEdition.SiteCode);
-                    param_version = new SqlParameter("@version", changeEdition.Version);
+                    param_version = new SqlParameter("@version", site.Version);
                     param_name = new SqlParameter("@name", changeEdition.SiteName is null ? DBNull.Value : changeEdition.SiteName);
                     param_sitetype = new SqlParameter("@sitetype", changeEdition.SiteType is null ? DBNull.Value : changeEdition.SiteType);
                     param_area = new SqlParameter("@area", changeEdition.Area);
@@ -488,7 +502,12 @@ namespace N2K_BackboneBackEnd.Services
                     param_justif_required = new SqlParameter("@justif_required", changeEdition.JustificationRequired == null ? false : changeEdition.JustificationRequired);
                     param_justif_provided = new SqlParameter("@justif_provided", changeEdition.JustificationProvided == null ? false : changeEdition.JustificationProvided);
 
-                    if (change == null)
+                    if (reject != null)
+                    {
+                        activity.Action = "User edition after rejection of version " + changeEdition.Version;
+                    }
+
+                    if (change == null || (reject != null && activityCheck == null))
                     {
                         await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSites " +
                             "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
@@ -540,20 +559,9 @@ namespace N2K_BackboneBackEnd.Services
                                 }
                             }
                         }
-                        SiteActivities activity = new SiteActivities
-                        {
-                            SiteCode = changeEdition.SiteCode,
-                            Version = changeEdition.Version,
-                            Author = GlobalData.Username,
-                            Date = DateTime.Now,
-                            Action = "User edition"
-                        };
                         _dataContext.Set<SiteActivities>().Add(activity);
                         await _dataContext.SaveChangesAsync();
                     }
-                }
-                else {
-                    
                 }
             }
             catch(System.InvalidOperationException iex)
