@@ -1201,5 +1201,9 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
+        private string ping() {
+            return "pong";
+        }
+
     }
 }
