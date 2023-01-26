@@ -467,6 +467,8 @@ namespace N2K_BackboneBackEnd.Services
             SqlParameter param_justif_required = null;
             SqlParameter param_justif_provided = null;
 
+            SiteChangeStatus? siteStatus;
+
             try
             {
                 //Verify the site & version exists
@@ -474,8 +476,13 @@ namespace N2K_BackboneBackEnd.Services
 
                 if (site != null)
                 {
+                    //Store the status of the site to change
+                    siteStatus = (SiteChangeStatus?)site.CurrentStatus;
 
-                    change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                    List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version).ToListAsync();
+                    //Store the level of the changes and the status of them
+                    Level level = (Level)changes.Max(a => a.Level);
+                    SiteChangeStatus status = (SiteChangeStatus)changes.FirstOrDefault().Status;
 
                     param_sitecode = new SqlParameter("@sitecode", changeEdition.SiteCode);
                     param_version = new SqlParameter("@version", changeEdition.Version);
@@ -488,22 +495,29 @@ namespace N2K_BackboneBackEnd.Services
                     param_justif_required = new SqlParameter("@justif_required", changeEdition.JustificationRequired == null ? false : changeEdition.JustificationRequired);
                     param_justif_provided = new SqlParameter("@justif_provided", changeEdition.JustificationProvided == null ? false : changeEdition.JustificationProvided);
 
+                    change = changes.Where(e => e.ChangeType == "User edition").FirstOrDefault();
+                    
                     if (change == null)
                     {
                         await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSites " +
                             "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
                             , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
+
+                        //Get the new version form the database
+                        site = await _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefaultAsync();
                     }
                     else
                     {
+                        //Is the same version than the previous
                         await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spUpdateSites " +
                             "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
                             , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
                     }
 
-                    site = await _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefaultAsync();
+                    //To prevent the faillure of the spCloneSites procedure
                     if (site != null)
                     {
+                        //Add the bioregions to the new site o the edited site
                         if (changeEdition.BioRegion != null && changeEdition.BioRegion != "string" && changeEdition.BioRegion != "")
                         {
                             string[] bioregions = changeEdition.BioRegion.Split(",");
@@ -521,29 +535,51 @@ namespace N2K_BackboneBackEnd.Services
                             await _dataContext.SaveChangesAsync();
                         }
 
-                        //remove the cache 
-                        System.Reflection.PropertyInfo? field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                        if (field != null)
+                        string listName = "";
+                        List<SiteCodeView> cachedlist = new List<SiteCodeView>();
+                        //If the site was in rejected status take out from the cache list
+                        if (status == SiteChangeStatus.Rejected)
                         {
-                            var collection = field.GetValue(cache) as System.Collections.ICollection;
-                            var items = new List<string>();
-                            if (collection != null)
+                            listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes", site.CountryCode, status.ToString(), level.ToString());
+                            if (cache.TryGetValue(listName, out cachedlist))
                             {
-                                foreach (var item in collection)
+                                SiteCodeView element = cachedlist.Where(x => x.SiteCode == site.SiteCode).FirstOrDefault();
+                                if (element != null)
                                 {
-                                    var methodInfo = item.GetType().GetProperty("Key");
-                                    var val = (methodInfo.GetValue(item) != null) ? methodInfo.GetValue(item).ToString() : "";
-                                    if (val != null && val.StartsWith(string.Format("{0}_{1}_{2}_", GlobalData.Username, "list_codes", site.CountryCode)))
-                                    {
-                                        cache.Remove(val);
-                                    }
+                                    cachedlist.Remove(element);
                                 }
                             }
+
+                        }
+                        
+                        listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes", site.CountryCode, SiteChangeStatus.Accepted.ToString(), level.ToString());
+                        cachedlist = new List<SiteCodeView>();
+                        //It doesn't matter if is new or is an uddate, get the cached list of Accepted
+                        if (cache.TryGetValue(listName, out cachedlist))
+                        {
+                            SiteCodeView element = cachedlist.Where(x => x.SiteCode == site.SiteCode).FirstOrDefault();
+                            if (element != null)
+                            {
+                                //Exists, so update it
+                                element.Name = site.Name;
+                                element.Version = site.Version;
+                            }
+                            else
+                            {
+                                //Doesn't exist, so append it
+                                element = new SiteCodeView();
+                                element.Name = site.Name;
+                                element.Version = site.Version;
+                                element.SiteCode = site.SiteCode;
+
+                                cachedlist.Add(element);
+                            }
+                        }
+                        else { 
+                            //If the Accepted list is not create? Is it an option?
+                        
                         }
                     }
-                }
-                else {
-                    
                 }
             }
             catch(System.InvalidOperationException iex)
@@ -590,5 +626,6 @@ namespace N2K_BackboneBackEnd.Services
         }
 
         #endregion
+
     }
 }
