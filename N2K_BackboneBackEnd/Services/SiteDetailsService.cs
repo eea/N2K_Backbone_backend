@@ -455,7 +455,16 @@ namespace N2K_BackboneBackEnd.Services
         {
             var username = GlobalData.Username;
             Sites site = null;
-            SiteChangeDb change = null;
+            SiteChangeDb change = null, reject = null;
+            SiteActivities activityCheck = null, activity = new SiteActivities
+            {
+                SiteCode = changeEdition.SiteCode,
+                Version = changeEdition.Version,
+                Author = GlobalData.Username,
+                Date = DateTime.Now,
+                Action = "User edition",
+                Deleted = false
+            };
             SqlParameter param_sitecode = null;
             SqlParameter param_version = null;
             SqlParameter param_name = null;
@@ -467,25 +476,23 @@ namespace N2K_BackboneBackEnd.Services
             SqlParameter param_justif_required = null;
             SqlParameter param_justif_provided = null;
 
-            SiteChangeStatus? siteStatus;
-
             try
             {
-                //Verify the site & version exists
-                site = _dataContext.Set<Sites>().Single(x => x.SiteCode == changeEdition.SiteCode && x.Version == changeEdition.Version);
+                //Verify the site & current version exists
+                site = _dataContext.Set<Sites>().Single(x => x.SiteCode == changeEdition.SiteCode && x.Current == true);
+                activity.Version = site.Version;
 
                 if (site != null)
                 {
-                    //Store the status of the site to change
-                    siteStatus = (SiteChangeStatus?)site.CurrentStatus;
-
-                    List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version).ToListAsync();
-                    //Store the level of the changes and the status of them
-                    Level level = (Level)changes.Max(a => a.Level);
-                    SiteChangeStatus status = (SiteChangeStatus)changes.FirstOrDefault().Status;
+                    //Was the site previously edited?
+                    change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == site.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                    //Is the sender site Rejected?
+                    reject = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version && e.Status == SiteChangeStatus.Rejected).FirstOrDefaultAsync();
+                    //Was it edited after rejection?
+                    activityCheck = await _dataContext.Set<SiteActivities>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Action == "User edition after rejection of version " + changeEdition.Version && e.Deleted == false).FirstOrDefaultAsync();
 
                     param_sitecode = new SqlParameter("@sitecode", changeEdition.SiteCode);
-                    param_version = new SqlParameter("@version", changeEdition.Version);
+                    param_version = new SqlParameter("@version", site.Version);
                     param_name = new SqlParameter("@name", changeEdition.SiteName is null ? DBNull.Value : changeEdition.SiteName);
                     param_sitetype = new SqlParameter("@sitetype", changeEdition.SiteType is null ? DBNull.Value : changeEdition.SiteType);
                     param_area = new SqlParameter("@area", changeEdition.Area);
@@ -495,29 +502,27 @@ namespace N2K_BackboneBackEnd.Services
                     param_justif_required = new SqlParameter("@justif_required", changeEdition.JustificationRequired == null ? false : changeEdition.JustificationRequired);
                     param_justif_provided = new SqlParameter("@justif_provided", changeEdition.JustificationProvided == null ? false : changeEdition.JustificationProvided);
 
-                    change = changes.Where(e => e.ChangeType == "User edition").FirstOrDefault();
-                    
-                    if (change == null)
+                    if (reject != null)
+                    {
+                        activity.Action = "User edition after rejection of version " + changeEdition.Version;
+                    }
+
+                    if (change == null || (reject != null && activityCheck == null))
                     {
                         await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSites " +
                             "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
                             , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
-
-                        //Get the new version form the database
-                        site = await _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefaultAsync();
                     }
                     else
                     {
-                        //Is the same version than the previous
                         await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spUpdateSites " +
                             "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
                             , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
                     }
 
-                    //To prevent the faillure of the spCloneSites procedure
+                    site = await _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefaultAsync();
                     if (site != null)
                     {
-                        //Add the bioregions to the new site o the edited site
                         if (changeEdition.BioRegion != null && changeEdition.BioRegion != "string" && changeEdition.BioRegion != "")
                         {
                             string[] bioregions = changeEdition.BioRegion.Split(",");
@@ -535,50 +540,27 @@ namespace N2K_BackboneBackEnd.Services
                             await _dataContext.SaveChangesAsync();
                         }
 
-                        string listName = "";
-                        List<SiteCodeView> cachedlist = new List<SiteCodeView>();
-                        //If the site was in rejected status take out from the cache list
-                        if (status == SiteChangeStatus.Rejected)
+                        //remove the cache 
+                        System.Reflection.PropertyInfo? field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        if (field != null)
                         {
-                            listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes", site.CountryCode, status.ToString(), level.ToString());
-                            if (cache.TryGetValue(listName, out cachedlist))
+                            var collection = field.GetValue(cache) as System.Collections.ICollection;
+                            var items = new List<string>();
+                            if (collection != null)
                             {
-                                SiteCodeView element = cachedlist.Where(x => x.SiteCode == site.SiteCode).FirstOrDefault();
-                                if (element != null)
+                                foreach (var item in collection)
                                 {
-                                    cachedlist.Remove(element);
+                                    var methodInfo = item.GetType().GetProperty("Key");
+                                    var val = (methodInfo.GetValue(item) != null) ? methodInfo.GetValue(item).ToString() : "";
+                                    if (val != null && val.StartsWith(string.Format("{0}_{1}_{2}_", GlobalData.Username, "list_codes", site.CountryCode)))
+                                    {
+                                        cache.Remove(val);
+                                    }
                                 }
                             }
-
                         }
-                        
-                        listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes", site.CountryCode, SiteChangeStatus.Accepted.ToString(), level.ToString());
-                        cachedlist = new List<SiteCodeView>();
-                        //It doesn't matter if is new or is an uddate, get the cached list of Accepted
-                        if (cache.TryGetValue(listName, out cachedlist))
-                        {
-                            SiteCodeView element = cachedlist.Where(x => x.SiteCode == site.SiteCode).FirstOrDefault();
-                            if (element != null)
-                            {
-                                //Exists, so update it
-                                element.Name = site.Name;
-                                element.Version = site.Version;
-                            }
-                            else
-                            {
-                                //Doesn't exist, so append it
-                                element = new SiteCodeView();
-                                element.Name = site.Name;
-                                element.Version = site.Version;
-                                element.SiteCode = site.SiteCode;
-
-                                cachedlist.Add(element);
-                            }
-                        }
-                        else { 
-                            //If the Accepted list is not create? Is it an option?
-                        
-                        }
+                        _dataContext.Set<SiteActivities>().Add(activity);
+                        await _dataContext.SaveChangesAsync();
                     }
                 }
             }
@@ -626,6 +608,5 @@ namespace N2K_BackboneBackEnd.Services
         }
 
         #endregion
-
     }
 }
