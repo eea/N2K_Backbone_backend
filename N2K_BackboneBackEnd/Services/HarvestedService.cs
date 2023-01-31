@@ -591,6 +591,17 @@ namespace N2K_BackboneBackEnd.Services
                     _dataContext.Set<Sites>().Update(stored);
                     _dataContext.Set<Sites>().Update(harvesting);
                     await _dataContext.SaveChangesAsync();
+
+                    //Add justification files and comments from the current to the new version
+                    Sites current = _dataContext.Set<Sites>().Single(x => x.SiteCode == harvestingSite.SiteCode && x.Current == true);
+                    if (current != null)
+                    {
+                        SqlParameter paramSitecode = new SqlParameter("@sitecode", harvestingSite.SiteCode);
+                        SqlParameter paramOldVersion = new SqlParameter("@oldVersion", current.Version);
+                        SqlParameter paramNewVersion = new SqlParameter("@newVersion", harvestingSite.VersionId);
+                        await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCopyJustificationFilesAndStatusChanges  @sitecode, @oldVersion, @newVersion",
+                                paramSitecode, paramOldVersion, paramNewVersion);
+                    }
                 }
                 else
                 {
