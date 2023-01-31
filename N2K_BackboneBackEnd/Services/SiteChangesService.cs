@@ -331,17 +331,27 @@ namespace N2K_BackboneBackEnd.Services
             IQueryable<SiteCodeVersion> changes = _dataContext
                 .Set<SiteCodeVersion>()
                 .FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryNonPending]  @country", param1);
-            var result = new List<SiteCodeView>();
-            result = (await changes.ToListAsync()).Select(x =>
-                 new SiteCodeView
-                 {
-                     SiteCode = x.SiteCode,
-                     Version = x.Version,
-                     Name = x.Name,
-                     EditedBy = GlobalData.Username,
-                     EditedDate = DateTime.Now
-                 }
-            ).ToList();
+            List<SiteCodeView> result = new List<SiteCodeView>();
+            List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
+                            param1).ToListAsync();
+            foreach(var change in (await changes.ToListAsync()))
+            {
+                SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
+                if(activity == null)
+                {
+                    SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                    activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
+                }
+                SiteCodeView temp = new SiteCodeView
+                {
+                    SiteCode = change.SiteCode,
+                    Version = change.Version,
+                    Name = change.Name,
+                    EditedBy = activity is null ? null : activity.Author,
+                    EditedDate = activity is null ? null : activity.Date
+                };
+                result.Add(temp);
+            }
 
             return result;
         }
