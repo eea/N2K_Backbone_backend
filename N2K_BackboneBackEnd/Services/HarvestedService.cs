@@ -658,11 +658,16 @@ namespace N2K_BackboneBackEnd.Services
                     ProcessedEnvelopes envelopeToProcess = new ProcessedEnvelopes
                     {
                         Country = envelope.CountryCode
-                        ,Version = envelope.VersionId
-                        ,ImportDate = envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
-                        ,Status = HarvestingStatus.Harvesting
-                        ,Importer = "AUTOIMPORT"
-                        ,N2K_VersioningDate = SubmissionDate // envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
+                        ,
+                        Version = envelope.VersionId
+                        ,
+                        ImportDate = envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
+                        ,
+                        Status = HarvestingStatus.Harvesting
+                        ,
+                        Importer = "AUTOIMPORT"
+                        ,
+                        N2K_VersioningDate = SubmissionDate // envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
                     };
                     try
                     {
@@ -672,7 +677,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
-                        
+
                         //This is not the best place. We need to have the site created before to have the correct site version for the respondants
                         //List<Contact> vContact = _versioningContext.Set<Contact>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
                         //_dataContext.Set<Respondents>().AddRange(await HarvestRespondents(vContact, envelope));
@@ -894,7 +899,7 @@ namespace N2K_BackboneBackEnd.Services
                         if (bbEnvelope.Count > 0)
                         {
                             //When there is no previous envelopes to resolve for this country
-                            if( envelopes.Count == 0)
+                            if (envelopes.Count == 0)
                             {
                                 Task tabValidationTask = Validate(_tempEnvelope);
                                 Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
@@ -904,10 +909,10 @@ namespace N2K_BackboneBackEnd.Services
                                 await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested);
                                 bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
                             }
-                            
+
                             bbEnvelopes.Add(bbEnvelope[0]);
                         }
-                        
+
                     }
 
                     return bbEnvelopes;
@@ -1042,6 +1047,19 @@ namespace N2K_BackboneBackEnd.Services
                                 //change the status of the whole process to PreHarvested
                                 await ChangeStatus(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested);
                             }
+                        }
+
+                        if (toStatus == HarvestingStatus.Closed)
+                        {
+                            HarvestedEnvelope bbEnvelope = new HarvestedEnvelope
+                            {
+                                VersionId = version,
+                                CountryCode = country,
+                                NumChanges = 0,
+                                Status = SiteChangeStatus.Closed
+                            };
+                            //accept sites with no changes
+                            await AcceptIdenticalSites(bbEnvelope);
                         }
 
                         envelope.Status = toStatus;
@@ -1267,6 +1285,38 @@ namespace N2K_BackboneBackEnd.Services
                 }
             }
             return items;
+        }
+
+        /// <summary>
+        /// Method to accept sites with no changes
+        /// </summary>
+        /// <param name="envelope">Envelope to process</param>
+        public async Task<HarvestedEnvelope> AcceptIdenticalSites(HarvestedEnvelope envelope)
+        {
+            try
+            {
+                List<Sites>? sites = await _dataContext.Set<Sites>().Where(e => e.CountryCode == envelope.CountryCode && e.N2KVersioningVersion == envelope.VersionId).ToListAsync();
+
+                foreach (Sites? site in sites)
+                {
+                    SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == site.SiteCode && e.Version == site.Version).FirstOrDefaultAsync();
+                    if (change == null)
+                    {
+                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", site.SiteCode);
+                        SqlParameter paramVersionId = new SqlParameter("@version", site.Version);
+
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spAcceptSiteCodeChanges @sitecode, @version",
+                                paramSiteCode,
+                                paramVersionId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "EnvelopeProcess - Start - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "");
+            }
+            return envelope;
         }
 
     }
