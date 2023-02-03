@@ -476,8 +476,6 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 //Verify the site & current version exists
-
-
                 site = _dataContext.Set<Sites>().Single(x => x.SiteCode == changeEdition.SiteCode && x.Current == true);
 
 
@@ -601,7 +599,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (System.InvalidOperationException iex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, "The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")", "SaveEdition", "");
+                SystemLog.write(SystemLog.errorLevel.Error, "The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")" , "SaveEdition", "");
                 throw new Exception("The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")");
             }
             catch (Exception ex)
