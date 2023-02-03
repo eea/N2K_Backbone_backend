@@ -458,8 +458,8 @@ namespace N2K_BackboneBackEnd.Services
             SiteChangeDb change = null, reject = null;
             SiteActivities activityCheck = null;
             SiteActivities activity = null;
-            SiteChangeStatus status;
-            Level level;
+            SiteChangeStatus status = SiteChangeStatus.Accepted; //Added generic value since null is not an option
+            Level level = Level.Critical; //Added generic value since null is not an option
             List<SiteCodeView> cachedlist = null;
 
             SqlParameter param_sitecode = null;
@@ -476,8 +476,6 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 //Verify the site & current version exists
-                
-               
                 site = _dataContext.Set<Sites>().Single(x => x.SiteCode == changeEdition.SiteCode && x.Current == true);
 
 
@@ -499,8 +497,11 @@ namespace N2K_BackboneBackEnd.Services
 
                     //Loading the neccesary list for the changes of sent version
                     List<SiteChangeDb> deletionChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version).ToListAsync();
-                    status = (SiteChangeStatus)deletionChanges.FirstOrDefault().Status;
-                    level = (Level)deletionChanges.Max(a => a.Level);
+                    if (deletionChanges.Count > 0)
+                    {
+                        status = (SiteChangeStatus)deletionChanges.FirstOrDefault().Status;
+                        level = (Level)deletionChanges.Max(a => a.Level);
+                    }
 
                     List<SiteChangeDb> changes = deletionChanges;
                     if (site.Version != changeEdition.Version)
@@ -591,11 +592,12 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
-                else {
+                else
+                {
                     throw new Exception("The status for this Site (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ") is wrong");
                 }
             }
-            catch(System.InvalidOperationException iex)
+            catch (System.InvalidOperationException iex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, "The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")" , "SaveEdition", "");
                 throw new Exception("The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")");
