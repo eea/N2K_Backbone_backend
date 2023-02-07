@@ -313,18 +313,6 @@ namespace N2K_BackboneBackEnd.Services
             return changeDetailVM;
         }
 
-        public async Task<List<SiteCodeView>> GetReferenceSiteCodes(string country)
-        {
-            return (await _dataContext.Set<Sites>().AsNoTracking().Where(s => s.CountryCode == country && s.Current == true).ToListAsync()).Select(x =>
-                 new SiteCodeView
-                 {
-                     SiteCode = x.SiteCode,
-                     Version = x.Version,
-                     Name = x.Name
-                 }
-            ).ToList();
-        }
-
         public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country)
         {
             SqlParameter param1 = new SqlParameter("@country", country);
@@ -360,8 +348,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             string listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes",
                     country,
-                    string.IsNullOrEmpty(status.ToString()) ? string.Empty : status.ToString(),
-                    string.IsNullOrEmpty(level.ToString()) ? string.Empty : level.ToString()
+                    status.ToString(),
+                    level.ToString()
                    );
             //if there has been a change in the status refresh the changed sitecodes cache
             if (refresh) cache.Remove(listName);
@@ -374,8 +362,8 @@ namespace N2K_BackboneBackEnd.Services
             else
             {
                 SqlParameter param1 = new SqlParameter("@country", country);
-                SqlParameter param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : String.Empty);
-                SqlParameter param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : String.Empty);
+                SqlParameter param2 = new SqlParameter("@status", status.ToString());
+                SqlParameter param3 = new SqlParameter("@level", level.ToString());
 
                 IQueryable<SiteCodeVersion> changes = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryAndStatusAndLevel]  @country, @status, @level",
                             param1, param2, param3);
