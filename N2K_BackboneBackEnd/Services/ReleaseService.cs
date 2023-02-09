@@ -475,7 +475,7 @@ namespace N2K_BackboneBackEnd.Services
             SqlParameter param9 = new SqlParameter("@creator", GlobalData.Username);
             SqlParameter param10 = new SqlParameter("@final", isOfficial);
             SqlParameter param11 = new SqlParameter("@release", releaseID.First().ID);
-            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final, @release ", param8, param9, param10, param11);
+            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewReleaseUnionList  @name, @creator, @final, @release ", param8, param9, param10, param11);
 
             return await GetReleaseHeadersByBioRegion(null);
         }
