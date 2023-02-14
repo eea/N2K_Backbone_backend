@@ -30,7 +30,7 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<ServiceResponse<string>>> GetLoginUrl (string redirectionUrl)
         {
 
-            var stringUrl = redirectionUrl.Replace("##", "/");
+            var stringUrl = redirectionUrl.Replace("##", "/").Replace("%2F", "/");
             var response = new ServiceResponse<string>();
             try
             {              
@@ -61,7 +61,7 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpGet("GetLoginUrlByCodeChallenge/redirectionUrl={redirectionUrl}&code_challenge={code_challenge}")]
         public async Task<ActionResult<ServiceResponse<string>>> GetLoginUrl(string redirectionUrl,string code_challenge)
         {
-            var stringUrl = redirectionUrl.Replace("##", "/");
+            var stringUrl = redirectionUrl.Replace("##", "/").Replace("%2F", "/");
             var response = new ServiceResponse<string>();
             try
             {
@@ -88,7 +88,7 @@ namespace N2K_BackboneBackEnd.Controllers
         public async Task<ActionResult<ServiceResponse<string>>> GetToken(string redirectionUrl, string code, string code_verifier)
         {            
             var response = new ServiceResponse<string>();
-            var stringUrl = redirectionUrl.Replace("##", "/");
+            var stringUrl = redirectionUrl.Replace("##", "/").Replace("%2F", "/");
             try
             {
                 var url = await _euLoginService.GetToken(stringUrl, code, code_verifier);
