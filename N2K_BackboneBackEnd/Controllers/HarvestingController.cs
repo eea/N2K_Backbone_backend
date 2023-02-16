@@ -7,6 +7,7 @@ using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -21,11 +22,13 @@ namespace N2K_BackboneBackEnd.Controllers
 
         private readonly IHarvestedService _harvestedService;
         private readonly IMapper _mapper;
+        private IMemoryCache _cache;
 
-        public HarvestingController(IHarvestedService harvestedService, IMapper mapper)
+        public HarvestingController(IHarvestedService harvestedService, IMapper mapper, IMemoryCache cache)
         {
             _harvestedService = harvestedService;
             _mapper = mapper;
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
 
@@ -274,7 +277,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
-                var siteChanges = await _harvestedService.FullHarvest();
+                var siteChanges = await _harvestedService.FullHarvest(_cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -303,7 +306,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<ProcessedEnvelopes>();
             try
             {
-                var siteChanges = await _harvestedService.ChangeStatus(country, version, toStatus);
+                var siteChanges = await _harvestedService.ChangeStatus(country, version, toStatus, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;

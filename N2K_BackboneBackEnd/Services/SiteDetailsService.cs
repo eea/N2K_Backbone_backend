@@ -577,7 +577,7 @@ namespace N2K_BackboneBackEnd.Services
                         //In case of Rejected status, the site must remain in the list of rejecteds
                         if (status == SiteChangeStatus.Accepted)
                         {
-                            String listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes", site.CountryCode, SiteChangeStatus.Accepted.ToString(), level.ToString());
+                            String listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", site.CountryCode, SiteChangeStatus.Accepted.ToString(), level.ToString());
                             cachedlist = new List<SiteCodeView>();
                             if (cache.TryGetValue(listName, out cachedlist))
                             {
