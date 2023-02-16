@@ -346,7 +346,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false)
         {
-            string listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes",
+            string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes",
                     country,
                     status.ToString(),
                     level.ToString()
@@ -1211,7 +1211,7 @@ namespace N2K_BackboneBackEnd.Services
 
 
             //Site comes from this list
-            string listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes", pSite.SiteCode.Substring(0, 2), pListNameFrom.ToString(), pLevel.ToString());
+            string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", pSite.SiteCode.Substring(0, 2), pListNameFrom.ToString(), pLevel.ToString());
             if (pCache.TryGetValue(listName, out cachedlist))
             {
                 SiteCodeView element = cachedlist.Where(cl => cl.SiteCode == pSite.SiteCode).FirstOrDefault();
@@ -1221,7 +1221,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
             }
             //Site goes to that list
-            listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes", pSite.SiteCode.Substring(0, 2), pStatus.ToString(), pLevel.ToString());
+            listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", pSite.SiteCode.Substring(0, 2), pStatus.ToString(), pLevel.ToString());
             if (pCache.TryGetValue(listName, out cachedlist))
             {
                 SiteCodeView element = cachedlist.Where(cl => cl.SiteCode == pSite.SiteCode).FirstOrDefault();

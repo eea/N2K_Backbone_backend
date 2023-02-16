@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using System.Diagnostics.Metrics;
 using System;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -866,7 +867,7 @@ namespace N2K_BackboneBackEnd.Services
         /// In order to execute the all steps of the process of the harvest from Versioning
         /// </summary>
         /// <returns>A list of the evelopes processed</returns>
-        public async Task<List<HarvestedEnvelope>> FullHarvest()
+        public async Task<List<HarvestedEnvelope>> FullHarvest(IMemoryCache cache)
         {
             try
             {
@@ -906,7 +907,7 @@ namespace N2K_BackboneBackEnd.Services
                                 //make sure they are all finished
                                 await Task.WhenAll(tabValidationTask, spatialValidationTask);
                                 //change the status of the whole process to PreHarvested
-                                await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested);
+                                await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested, cache);
                                 bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
                             }
 
@@ -981,7 +982,7 @@ namespace N2K_BackboneBackEnd.Services
         /// <param name="version"></param>
         /// <param name="toStatus"></param>
         /// <returns></returns>
-        public async Task<ProcessedEnvelopes> ChangeStatus(string country, int version, HarvestingStatus toStatus)
+        public async Task<ProcessedEnvelopes> ChangeStatus(string country, int version, HarvestingStatus toStatus, IMemoryCache cache)
         {
             string sqlToExecute = "exec dbo.";
             try
@@ -1045,7 +1046,7 @@ namespace N2K_BackboneBackEnd.Services
                                 //make sure they are all finished
                                 await Task.WhenAll(tabValidationTask, spatialValidationTask);
                                 //change the status of the whole process to PreHarvested
-                                await ChangeStatus(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested);
+                                await ChangeStatus(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested, cache);
                             }
                         }
 
@@ -1060,6 +1061,29 @@ namespace N2K_BackboneBackEnd.Services
                             };
                             //accept sites with no changes
                             await AcceptIdenticalSites(bbEnvelope);
+                        }
+
+                        if (toStatus == HarvestingStatus.Harvested || toStatus == HarvestingStatus.Closed)
+                        {
+                            //Remove country site changes cache
+                            var field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                            var collection = field.GetValue(cache) as System.Collections.ICollection;
+                            if (collection != null)
+                            {
+                                foreach (var item in collection)
+                                {
+                                    var methodInfo = item.GetType().GetProperty("Key");
+                                    string listName = methodInfo.GetValue(item).ToString();
+
+                                    if (!string.IsNullOrEmpty(listName))
+                                    {
+                                        if (listName.IndexOf(country) != -1)
+                                        {
+                                            cache.Remove(listName);
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         envelope.Status = toStatus;
