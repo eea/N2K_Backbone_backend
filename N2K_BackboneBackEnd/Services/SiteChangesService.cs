@@ -322,13 +322,14 @@ namespace N2K_BackboneBackEnd.Services
             List<SiteCodeView> result = new List<SiteCodeView>();
             List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                             param1).ToListAsync();
-            foreach(var change in (await changes.ToListAsync()))
+            foreach (var change in (await changes.ToListAsync()))
             {
                 SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
-                if(activity == null)
+                if (activity == null)
                 {
                     SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
-                    activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
+                    if (editionChange != null)
+                        activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                 }
                 SiteCodeView temp = new SiteCodeView
                 {
@@ -979,7 +980,7 @@ namespace N2K_BackboneBackEnd.Services
                         SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
                         SqlParameter paramOldVersion = new SqlParameter("@oldVersion", modifiedSiteCode.VersionId);
                         SqlParameter paramNewVersion2 = null;
-                        
+
                         Sites siteToDelete = null;
                         int previousCurrent = -1;//The 0 value can be a version
 
@@ -994,8 +995,8 @@ namespace N2K_BackboneBackEnd.Services
                             //Select the max version for the site with the currentsatatus accepted, but not the version of the change and the referenced version
                             previousCurrent = _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
                             //Search the previous activities
-                            List<SiteActivities> activityDelete = activities.Where(e => (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition" ).ToList();
-                            
+                            List<SiteActivities> activityDelete = activities.Where(e => (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition").ToList();
+
                             //mark the result as activities deleted
                             activityDelete.ForEach(s => s.Deleted = true);
 
@@ -1016,13 +1017,13 @@ namespace N2K_BackboneBackEnd.Services
                             mySiteView.Name = previousName;
                         }
                         //Was this site edited after being rejected?
-                        List<SiteActivities> activityCheck = activities.Where(e => e.Action == "User edition after rejection of version " + modifiedSiteCode.VersionId ).ToList();
+                        List<SiteActivities> activityCheck = activities.Where(e => e.Action == "User edition after rejection of version " + modifiedSiteCode.VersionId).ToList();
                         if (activityCheck != null && activityCheck.Count > 0)
                         {
                             //Get the site max accepted version for the last package but not the current nor the present version 
                             Sites previousSite = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefaultAsync();
                             previousCurrent = previousSite.Version;
-                            
+
                             //mark the result as activities deleted
                             activityCheck.ForEach(s => s.Deleted = true);
 
@@ -1044,7 +1045,7 @@ namespace N2K_BackboneBackEnd.Services
                             await _dataContext.SaveChangesAsync();
                         }
                         #endregion
-                        
+
                         await _dataContext.Database.ExecuteSqlRawAsync(
                             "exec spMoveSiteCodeToPending @sitecode, @version",
                             paramSiteCode,
