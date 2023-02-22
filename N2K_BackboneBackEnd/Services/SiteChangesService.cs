@@ -384,7 +384,7 @@ namespace N2K_BackboneBackEnd.Services
                         .SetSize(40000);
                 cache.Set(listName, result, cacheEntryOptions);
             }
-            return result;
+            return result.OrderBy(o => o.SiteCode).ToList();
         }
 
         public async Task<int> GetPendingChangesByCountry(string? country, IMemoryCache cache)
