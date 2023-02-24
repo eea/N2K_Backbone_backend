@@ -1091,13 +1091,18 @@ namespace N2K_BackboneBackEnd.Services
                 ////GetSiteCodesByStatusAndLevelAndCountry
                 ////get the country and the level of the first site code. The other codes will have the same level
                 ////refresh the chache
-                //if (result.Count > 0)
-                //{
-                //    //refresh the cache of site codes
-                //    List<SiteCodeView> mockresult = null;
-                //    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, true);
-                //    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
-                //}
+                if (result.Count > 0)
+                {
+                    var country = (result.First().SiteCode).Substring(0, 2);
+                    var site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
+                    Level level = (Level)site.Max(a => a.Level);
+                    var status = site.FirstOrDefault().Status;
+
+                    //refresh the cache of site codes
+                    List<SiteCodeView> mockresult = null;
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, true);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                }
                 return result;
             }
             catch (Exception ex)
