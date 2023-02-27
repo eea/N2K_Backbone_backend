@@ -9,7 +9,7 @@ namespace N2K_BackboneBackEnd.Services
 {
     public interface ISiteChangesService
     {
-        Task<List<SiteChangeDb>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache,  int page = 1, int pageLimit = 0);
+        Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache,  int page = 1, int pageLimit = 0);
 
         Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion);
 
