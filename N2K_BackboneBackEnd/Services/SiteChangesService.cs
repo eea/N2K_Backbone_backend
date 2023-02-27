@@ -51,7 +51,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<SiteChangeDb>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0)
+        public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0)
         {
             var startRow = (page - 1) * pageLimit;
             var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache));
@@ -111,12 +111,14 @@ namespace N2K_BackboneBackEnd.Services
             orderedChanges = orderedChangesEnum.ToList();
 
 
-            var result = new List<SiteChangeDb>();
+            var result = new List<SiteChangeDbEdition>();
             var siteCode = string.Empty;
+            List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
+                            param1).ToListAsync();
             foreach (var sCode in orderedChanges)
             {
                 //load all the changes for each of the site codes ordered by level
-                var siteChange = new SiteChangeDb();
+                var siteChange = new SiteChangeDbEdition();
                 var count = 0;
                 if (sCode.ChangeList == null) continue;
                 foreach (var change in sCode.ChangeList)
@@ -143,6 +145,15 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Status = null;
                         siteChange.Tags = "";
                         siteChange.Version = change.Version;
+                        SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
+                        if (activity == null)
+                        {
+                            SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                            if (editionChange != null)
+                                activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
+                        }
+                        siteChange.EditedBy = activity is null ? null : activity.Author;
+                        siteChange.EditedDate = activity is null ? null : activity.Date;
                         var changeView = new SiteChangeView
                         {
                             ChangeId = change.ChangeId,
