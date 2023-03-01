@@ -599,7 +599,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (System.InvalidOperationException iex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, "The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")" , "SaveEdition", "");
+                SystemLog.write(SystemLog.errorLevel.Error, "The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")", "SaveEdition", "");
                 throw new Exception("The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")");
             }
             catch (Exception ex)
@@ -611,7 +611,7 @@ namespace N2K_BackboneBackEnd.Services
             return "OK";
         }
 
-        public async Task<ChangeEditionViewModel?> GetReferenceEditInfo(string siteCode)
+        public async Task<ChangeEditionViewModelOriginal?> GetReferenceEditInfo(string siteCode)
         {
             SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
             List<ChangeEditionDb> list = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.[spGetReferenceEditInfo]  @sitecode",
@@ -623,7 +623,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             else
             {
-                return new ChangeEditionViewModel
+                ChangeEditionViewModelOriginal result = new ChangeEditionViewModelOriginal
                 {
                     Area = changeEdition.Area,
                     BioRegion = !string.IsNullOrEmpty(changeEdition.BioRegion) ? changeEdition.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>(),
@@ -637,6 +637,26 @@ namespace N2K_BackboneBackEnd.Services
                     JustificationRequired = changeEdition.JustificationRequired,
                     JustificationProvided = changeEdition.JustificationProvided
                 };
+                SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == siteCode && e.Version == changeEdition.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                if (change != null)
+                {
+                    SqlParameter param2 = new SqlParameter("@version", change.VersionReferenceId);
+                    List<ChangeEditionDb> listOriginal = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.[spGetOriginalEditInfo]  @sitecode, @version",
+                                        param1, param2).ToListAsync();
+                    ChangeEditionDb changeEditionOriginal = listOriginal.FirstOrDefault();
+                    if (changeEditionOriginal != null)
+                    {
+                        result.OriginalArea = changeEdition.Area == changeEditionOriginal.Area ? null : changeEditionOriginal.Area;
+                        if (changeEdition.BioRegion != changeEditionOriginal.BioRegion)
+                            result.OriginalBioRegion = !string.IsNullOrEmpty(changeEditionOriginal.BioRegion) ? changeEditionOriginal.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>();
+                        result.OriginalCentreX = changeEdition.CentreX == changeEditionOriginal.CentreX ? null : changeEditionOriginal.CentreX;
+                        result.OriginalCentreY = changeEdition.CentreY == changeEditionOriginal.CentreY ? null : changeEditionOriginal.CentreY;
+                        result.OriginalLength = changeEdition.Length == changeEditionOriginal.Length ? null : changeEditionOriginal.Length;
+                        result.OriginalSiteName = changeEdition.SiteName == changeEditionOriginal.SiteName ? null : changeEditionOriginal.SiteName;
+                        result.OriginalSiteType = changeEdition.SiteType == changeEditionOriginal.SiteType ? null : changeEditionOriginal.SiteType;
+                    }
+                }
+                return result;
             }
         }
 
