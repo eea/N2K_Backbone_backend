@@ -26,7 +26,7 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<int> DeleteFile(long justificationId, IMemoryCache cache, bool temporal = false);
         Task<string> SaveEdition(ChangeEditionDb changeEdition, IMemoryCache cache);
-        Task<ChangeEditionViewModel?> GetReferenceEditInfo(string siteCode);
+        Task<ChangeEditionViewModelOriginal?> GetReferenceEditInfo(string siteCode);
     }
 
 
