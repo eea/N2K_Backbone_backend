@@ -623,13 +623,13 @@ namespace N2K_BackboneBackEnd.Services
             }
             else
             {
-                ChangeEditionViewModelOriginal result = new ChangeEditionViewModelOriginal
+                ChangeEditionViewModelOriginal result = new ChangeEditionViewModelOriginal()
                 {
-                    Area = changeEdition.Area,
+                    Area = changeEdition.Area is null ? null : changeEdition.Area,
                     BioRegion = !string.IsNullOrEmpty(changeEdition.BioRegion) ? changeEdition.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>(),
-                    CentreX = changeEdition.CentreX,
-                    CentreY = changeEdition.CentreY,
-                    Length = changeEdition.Length,
+                    CentreX = changeEdition.CentreX is null ? null : changeEdition.CentreX,
+                    CentreY = changeEdition.CentreY is null ? null : changeEdition.CentreY,
+                    Length = changeEdition.Length is null ? null : changeEdition.Length,
                     SiteCode = changeEdition.SiteCode,
                     SiteName = changeEdition.SiteName,
                     SiteType = changeEdition.SiteType,
