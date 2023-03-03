@@ -523,10 +523,10 @@ namespace N2K_BackboneBackEnd.Services
                     param_version = new SqlParameter("@version", site.Version);
                     param_name = new SqlParameter("@name", changeEdition.SiteName is null ? DBNull.Value : changeEdition.SiteName);
                     param_sitetype = new SqlParameter("@sitetype", changeEdition.SiteType is null ? DBNull.Value : changeEdition.SiteType);
-                    param_area = new SqlParameter("@area", changeEdition.Area);
-                    param_length = new SqlParameter("@length", changeEdition.Length);
-                    param_centrex = new SqlParameter("@centrex", changeEdition.CentreX);
-                    param_centrey = new SqlParameter("@centrey", changeEdition.CentreY);
+                    param_area = new SqlParameter("@area", changeEdition.Area is null ? DBNull.Value : changeEdition.Area);
+                    param_length = new SqlParameter("@length", changeEdition.Length is null ? DBNull.Value : changeEdition.Length);
+                    param_centrex = new SqlParameter("@centrex", changeEdition.CentreX is null ? DBNull.Value : changeEdition.CentreX);
+                    param_centrey = new SqlParameter("@centrey", changeEdition.CentreY is null ? DBNull.Value : changeEdition.CentreY);
                     param_justif_required = new SqlParameter("@justif_required", changeEdition.JustificationRequired == null ? false : changeEdition.JustificationRequired);
                     param_justif_provided = new SqlParameter("@justif_provided", changeEdition.JustificationProvided == null ? false : changeEdition.JustificationProvided);
 
