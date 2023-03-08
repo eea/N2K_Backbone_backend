@@ -151,6 +151,10 @@ namespace N2K_BackboneBackEnd.Services
                             SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
                             if (editionChange != null)
                                 activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
+                            if (activity == null)
+                            {
+                                activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Action == "User edition after rejection of version " + change.Version).FirstOrDefault();
+                            }
                         }
                         siteChange.EditedBy = activity is null ? null : activity.Author;
                         siteChange.EditedDate = activity is null ? null : activity.Date;
