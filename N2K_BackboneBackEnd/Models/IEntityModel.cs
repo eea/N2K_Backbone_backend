@@ -7,7 +7,9 @@ namespace N2K_BackboneBackEnd.Models
         static void  OnModelCreating(ModelBuilder builder) { }
     }
 
-    public interface IEntityModelBackboneDB { }
+    public interface IEntityModelBackboneDB {
+        public void SaveRecord();
+    }
 
     public interface IEntityModelVersioningDB { }
 
