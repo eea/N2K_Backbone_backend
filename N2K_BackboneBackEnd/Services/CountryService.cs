@@ -3,7 +3,6 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
-using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.ServiceResponse;
@@ -27,19 +26,17 @@ namespace N2K_BackboneBackEnd.Services
 
         private readonly N2KBackboneContext _dataContext;
         private readonly IEnumerable<Countries> _countries;
-        
 
         public CountryService(N2KBackboneContext dataContext)
         {
             _dataContext = dataContext;
             _countries = _dataContext.Set<Countries>().AsNoTracking().ToList();
-
         }
 
         public async Task<List<CountriesWithDataView>> GetWithDataAsync()
         {
 
-            var changes = _dataContext.Set<SiteChangeDb>().AsNoTracking().Select(ch => new CountryVersion { Country = ch.Country, Version = ch.N2KVersioningVersion.Value }).Distinct();
+            var changes = _dataContext.Set<SiteChangeDb>().Select(ch => new CountryVersion { Country = ch.Country, Version = ch.N2KVersioningVersion.Value }).Distinct();
             var countries = _dataContext.Set<CountriesWithDataView>();
 
             var aux = (from ch in await changes.ToListAsync()
@@ -58,63 +55,6 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<Countries>> GetAsync()
         {
-
-            //_dataContext.ChangeTracker.AutoDetectChangesEnabled = false;
-            List<Respondents> items = new List<Respondents>();
-            //SqlConnection conn = new SqlConnection(this._dataContext.Database.GetConnectionString());
-            //conn.Open();
-
-            DateTime start1 = DateTime.Now;
-            for (int i = 0; i < 1000; i++)
-            {
-                try
-                {
-                    Respondents respondent = new Respondents( this._dataContext.Database.GetConnectionString());
-                    DateTime start = DateTime.Now;
-                    respondent.SiteCode = string.Format("123{0}", i);
-                    respondent.Version = 0;
-                    respondent.locatorName = "";
-                    respondent.addressArea = "";
-                    respondent.postName = "";
-                    respondent.postCode = "fdgfdkjshdf";
-                    respondent.thoroughfare = "";
-                    respondent.addressUnstructured = "";
-                    respondent.name = "";
-                    respondent.Email = "";
-                    respondent.AdminUnit = "";
-                    respondent.LocatorDesignator = "";
-
-                    respondent.SaveRecord();
-                    items.Add(respondent);
-
-                    //_dataContext.Set<Respondents>().AddRange(items);
-                    //await _dataContext.SaveChangesAsync();
-                    //_dataContext.SaveChanges();
-                    items.Clear();
-                    var diff = DateTime.Now - start;
-                    Console.WriteLine(string.Format("{0}=> {1}", i, diff.TotalMilliseconds.ToString()));
-                    Console.WriteLine("****************");
-
-                }
-                catch (Exception ex)
-                {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestRespondents", "");
-                    //return null;
-                    Console.WriteLine(string.Format("{0} Error ", i));
-                    items.Clear();
-                }
-            }
-            //conn.Close();
-            //conn.Dispose();
-            Console.WriteLine("////////////");
-            var diff1 = DateTime.Now - start1;
-            Console.WriteLine(string.Format("Total=> {0}", diff1.TotalMilliseconds.ToString()));
-            Console.WriteLine("/////");
-
-            _dataContext.ChangeTracker.AutoDetectChangesEnabled = true;
-
-            return null;
-
             List<Countries> result = new List<Countries>();
 
             return await _dataContext.Set<Countries>()

@@ -1,10 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Enumerations;
 using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class Sites : IEntityModel, IEntityModelBackboneDB
+    public class Sites : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
@@ -28,6 +29,82 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public DateTime? DatePropSCI { get; set; }
         public DateTime? DateSpa { get; set; }
         public DateTime? DateSac { get; set; }
+
+        private readonly string dbConnection = "";
+
+        public Sites() { }
+
+        public Sites(string db)
+        {
+            dbConnection = db;
+        }
+
+
+        public void SaveRecord()
+        {
+            //string dbConnection = db;
+            SqlConnection conn = null;
+            SqlCommand cmd = null;
+
+            conn = new SqlConnection(this.dbConnection);
+            conn.Open();
+            cmd = conn.CreateCommand();
+            SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
+            SqlParameter param2 = new SqlParameter("@Version", this.Version);
+            SqlParameter param3 = new SqlParameter("@Current", this.Current);
+            SqlParameter param4 = new SqlParameter("@Name", this.Name);
+            SqlParameter param5 = new SqlParameter("@CompilationDate", this.CompilationDate);
+            SqlParameter param6 = new SqlParameter("@ModifyTS", this.ModifyTS);
+            SqlParameter param7 = new SqlParameter("@CurrentStatus", this.CurrentStatus);
+            SqlParameter param8 = new SqlParameter("@CountryCode", this.CountryCode);
+            SqlParameter param9 = new SqlParameter("@SiteType", this.SiteType);
+            SqlParameter param10 = new SqlParameter("@AltitudeMin", this.AltitudeMin);
+            SqlParameter param11 = new SqlParameter("@AltitudeMax", this.AltitudeMax);
+            SqlParameter param12 = new SqlParameter("@N2KVersioningVersion", this.N2KVersioningVersion);
+            SqlParameter param13 = new SqlParameter("@N2KVersioningRef", this.N2KVersioningRef);
+            SqlParameter param14 = new SqlParameter("@Area", this.Area);
+            SqlParameter param15 = new SqlParameter("@Length", this.Length);
+            SqlParameter param16 = new SqlParameter("@JustificationRequired", this.JustificationRequired);
+            SqlParameter param17 = new SqlParameter("@JustificationProvided", this.JustificationProvided);
+            SqlParameter param18 = new SqlParameter("@DateConfSCI", this.DateConfSCI);
+            SqlParameter param19 = new SqlParameter("@Priority", this.Priority);
+            SqlParameter param20 = new SqlParameter("@DatePropSCI", this.DatePropSCI);
+            SqlParameter param21 = new SqlParameter("@DateSpa", this.DateSpa);
+            SqlParameter param22 = new SqlParameter("@DateSac", this.DateSac);
+
+            cmd.CommandText = "INSERT INTO [Sites] (  " +
+                "[SiteCode],[Version],[Current],[Name],[CompilationDate],[ModifyTS],[CurrentStatus],[CountryCode],[SiteType],[AltitudeMin],[AltitudeMax],[N2KVersioningVersion],[N2KVersioningRef],[Area],[Length],[JustificationRequired],[JustificationProvided],[DateConfSCI],[Priority],[DatePropSCI],[DateSpa],[DateSac]) " +
+                " VALUES (@SiteCode,@Version,@Current,@Name,@CompilationDate,@ModifyTS,@CurrentStatus,@CountryCode,@SiteType,@AltitudeMin,@AltitudeMax,@N2KVersioningVersion,@N2KVersioningRef,@Area,@Length,@JustificationRequired,@JustificationProvided,@DateConfSCI,@Priority,@DatePropSCI,@DateSpa,@DateSac) ";
+
+            cmd.Parameters.Add(param1);
+            cmd.Parameters.Add(param2);
+            cmd.Parameters.Add(param3);
+            cmd.Parameters.Add(param4);
+            cmd.Parameters.Add(param5);
+            cmd.Parameters.Add(param6);
+            cmd.Parameters.Add(param7);
+            cmd.Parameters.Add(param8);
+            cmd.Parameters.Add(param9);
+            cmd.Parameters.Add(param10);
+            cmd.Parameters.Add(param11);
+            cmd.Parameters.Add(param12);
+            cmd.Parameters.Add(param13);
+            cmd.Parameters.Add(param14);
+            cmd.Parameters.Add(param15);
+            cmd.Parameters.Add(param16);
+            cmd.Parameters.Add(param17);
+            cmd.Parameters.Add(param18);
+            cmd.Parameters.Add(param19);
+            cmd.Parameters.Add(param20);
+            cmd.Parameters.Add(param21);
+            cmd.Parameters.Add(param22);
+
+            cmd.ExecuteNonQuery();
+
+            cmd.Dispose();
+            conn.Dispose();
+        }
+
 
         public static void OnModelCreating(ModelBuilder builder)
         {

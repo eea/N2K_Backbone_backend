@@ -23,18 +23,13 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? AdminUnit { get; set; }
         public string? LocatorDesignator { get; set; }
 
-        private readonly string dbConnection = "";
 
-        private readonly SingletonDB _singletonDB;
+        private readonly string dbConnection = "";
 
         public Respondents () { }
 
-
         public Respondents(string db) {
             dbConnection = db;
-
-            //_singletonDB = SingletonDB.Instance ;
-           
         }
 
 
@@ -46,7 +41,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
             conn = new SqlConnection(this.dbConnection);
             conn.Open();
-            //_singletonDB.DBConnection().Open();
             cmd = conn.CreateCommand();
             SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
             SqlParameter param2 = new SqlParameter("@Version", this.Version);
@@ -60,7 +54,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param10 = new SqlParameter("@Email", this.Email);
             SqlParameter param11 = new SqlParameter("@AdminUnit", this.AdminUnit);
             SqlParameter param12 = new SqlParameter("@LocatorDesignator", this.LocatorDesignator);
-
 
             cmd.CommandText = "INSERT INTO [Respondents] (  " +
                 "[SiteCode], [Version],[locatorName],[addressArea],[postName],[postCode],[thoroughfare],[addressUnstructured] ,[name] ,[Email] ,[AdminUnit] ,[LocatorDesignator]) " +
@@ -79,15 +72,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             cmd.Parameters.Add(param11);
             cmd.Parameters.Add(param12);
 
-
-
             cmd.ExecuteNonQuery();
             
             cmd.Dispose();
             conn.Dispose();
-
-
-
         }
 
 
