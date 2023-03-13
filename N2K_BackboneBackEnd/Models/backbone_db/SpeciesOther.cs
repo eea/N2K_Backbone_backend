@@ -1,5 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Data.Common;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
@@ -29,6 +32,82 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public Boolean? NonPersistence { get; set; }
         public string? DataQuality { get; set; }
         public string? SpecieType { get; set; }
+
+        public SpeciesOther() { }
+
+        public SpeciesOther(string db)
+        {
+            dbConnection = db;
+        }
+
+
+        public void SaveRecord()
+        {
+            //string dbConnection = db;
+            SqlConnection conn = null;
+            SqlCommand cmd = null;
+
+            conn = new SqlConnection(this.dbConnection);
+            conn.Open();
+            cmd = conn.CreateCommand();
+            SqlParameter param1 = new SqlParameter("@Id", this.Id);
+            SqlParameter param2 = new SqlParameter("@SiteCode", this.SiteCode);
+            SqlParameter param3 = new SqlParameter("@Version", this.Version);
+            SqlParameter param4 = new SqlParameter("@SpecieCode", this.SpecieCode);
+            SqlParameter param5 = new SqlParameter("@PopulationMin", this.PopulationMin);
+            SqlParameter param6 = new SqlParameter("@PopulationMax", this.PopulationMax);
+            SqlParameter param7 = new SqlParameter("@Group", this.Group);
+            SqlParameter param8 = new SqlParameter("@SensitiveInfo", this.SensitiveInfo);
+            SqlParameter param9 = new SqlParameter("@Resident", this.Resident);
+            SqlParameter param10 = new SqlParameter("@Breeding", this.Breeding);
+            SqlParameter param11 = new SqlParameter("@Winter", this.Winter);
+            SqlParameter param12 = new SqlParameter("@Path", this.Path);
+            SqlParameter param13 = new SqlParameter("@AbundaceCategory", this.AbundaceCategory);
+            SqlParameter param14 = new SqlParameter("@Motivation", this.Motivation);
+            SqlParameter param15 = new SqlParameter("@PopulationType", this.PopulationType);
+            SqlParameter param16 = new SqlParameter("@CountingUnit", this.CountingUnit);
+            SqlParameter param17 = new SqlParameter("@Population", this.Population);
+            SqlParameter param18 = new SqlParameter("@Insolation", this.Insolation);
+            SqlParameter param19 = new SqlParameter("@Conservation", this.Conservation);
+            SqlParameter param20 = new SqlParameter("@Global", this.Global);
+            SqlParameter param21 = new SqlParameter("@NonPersistence", this.NonPersistence);
+            SqlParameter param22 = new SqlParameter("@DataQuality", this.DataQuality);
+            SqlParameter param23 = new SqlParameter("@SpecieType", this.SpecieType);
+
+
+            cmd.CommandText = "INSERT INTO [SpeciesOther] (  " +
+               " [Id] ,[SiteCode],[Version] ,[SpecieCode],[PopulationMin],[PopulationMax],[Group],[SensitiveInfo],[Resident],[Breeding],[Winter],[Path],[AbundaceCategory],[Motivation],[PopulationType],[CountingUnit],[Population] ,[Insolation] ,[Conservation],[Global],[NonPersistence] ,[DataQuality],[SpecieType] " +
+                " VALUES (@Id, @SiteCode,@Version,@SpecieCode,@PopulationMin,@PopulationMax,@Group,@SensitiveInfo,@Resident,@Breeding,@Winter,@Path,@AbundaceCategory,@Motivation,@PopulationType,@CountingUnit,@Population,@Insolation,@Conservation,@Global,@NonPersistence,@DataQuality, @SpecieType) ";
+
+            cmd.Parameters.Add(param1);
+            cmd.Parameters.Add(param2);
+            cmd.Parameters.Add(param3);
+            cmd.Parameters.Add(param4);
+            cmd.Parameters.Add(param5);
+            cmd.Parameters.Add(param6);
+            cmd.Parameters.Add(param7);
+            cmd.Parameters.Add(param8);
+            cmd.Parameters.Add(param9);
+            cmd.Parameters.Add(param10);
+            cmd.Parameters.Add(param11);
+            cmd.Parameters.Add(param12);
+            cmd.Parameters.Add(param13);
+            cmd.Parameters.Add(param14);
+            cmd.Parameters.Add(param15);
+            cmd.Parameters.Add(param16);
+            cmd.Parameters.Add(param17);
+            cmd.Parameters.Add(param18);
+            cmd.Parameters.Add(param19);
+            cmd.Parameters.Add(param20);
+            cmd.Parameters.Add(param21);
+            cmd.Parameters.Add(param22);
+            cmd.Parameters.Add(param23);
+
+            cmd.ExecuteNonQuery();
+
+            cmd.Dispose();
+            conn.Dispose();
+        }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
