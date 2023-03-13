@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class Respondents : IEntityModel, IEntityModelBackboneDB
+    public class Respondents : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
         [Key]
         public long ID { get; }
