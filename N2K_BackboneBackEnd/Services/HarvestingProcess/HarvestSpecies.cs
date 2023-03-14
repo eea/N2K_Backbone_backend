@@ -75,12 +75,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     {
                         //Use the specie name as a code
                         item.SpecieCode = element.SPECIESNAMECLEAN;
-                        _dataContext.Set<SpeciesOther>().Add(item.getSpeciesOther());
                         item.getSpeciesOther().SaveRecord();
                     }
                     else
                     {
-                        _dataContext.Set<Species>().Add(item.getSpecies());
+                        item.getSpecies().SaveRecord();
                     }
 
 
@@ -142,7 +141,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     }
                     else
                     {
-                        item.getSpeciesOther().SaveRecord();
+                        item.getSpecies().SaveRecord();
                     }
                 }
 
