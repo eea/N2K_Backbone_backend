@@ -690,6 +690,8 @@ namespace N2K_BackboneBackEnd.Services
                                 _ThereAreChanges = true;
                                 //complete the data of the site and add it to the DB
                                 //TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
+                                Console.WriteLine("Start site");
+                                var start = DateTime.Now;
                                 HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
                                 Sites bbSite = await siteCode.HarvestSite(vSite, envelope);
                                 if (bbSite != null)
@@ -702,7 +704,7 @@ namespace N2K_BackboneBackEnd.Services
 
                                     _ThereAreChanges = false;
                                 }
-
+                                Console.WriteLine(String.Format("End site {0}",(DateTime.Now - start).TotalSeconds));
                             }
                             catch (DbUpdateException ex)
                             {
