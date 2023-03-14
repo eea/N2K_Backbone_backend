@@ -50,34 +50,33 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             conn = new SqlConnection(this.dbConnection);
             conn.Open();
             cmd = conn.CreateCommand();
-            SqlParameter param1 = new SqlParameter("@Id", this.id);
-            SqlParameter param2 = new SqlParameter("@SiteCode", this.SiteCode);
-            SqlParameter param3 = new SqlParameter("@Version", this.Version);
-            SqlParameter param4 = new SqlParameter("@SpecieCode", this.SpecieCode);
-            SqlParameter param5 = new SqlParameter("@PopulationMin", this.PopulationMin);
-            SqlParameter param6 = new SqlParameter("@PopulationMax", this.PopulationMax);
-            SqlParameter param7 = new SqlParameter("@Group", this.Group);
-            SqlParameter param8 = new SqlParameter("@SensitiveInfo", this.SensitiveInfo);
-            SqlParameter param9 = new SqlParameter("@Resident", this.Resident);
-            SqlParameter param10 = new SqlParameter("@Breeding", this.Breeding);
-            SqlParameter param11 = new SqlParameter("@Winter", this.Winter);
-            SqlParameter param12 = new SqlParameter("@Path", this.Path);
-            SqlParameter param13 = new SqlParameter("@AbundaceCategory", this.AbundaceCategory);
-            SqlParameter param14 = new SqlParameter("@Motivation", this.Motivation);
-            SqlParameter param15 = new SqlParameter("@PopulationType", this.PopulationType);
-            SqlParameter param16 = new SqlParameter("@CountingUnit", this.CountingUnit);
-            SqlParameter param17 = new SqlParameter("@Population", this.Population);
-            SqlParameter param18 = new SqlParameter("@Insolation", this.Insolation);
-            SqlParameter param19 = new SqlParameter("@Conservation", this.Conservation);
-            SqlParameter param20 = new SqlParameter("@Global", this.Global);
-            SqlParameter param21 = new SqlParameter("@NonPersistence", this.NonPersistence);
-            SqlParameter param22 = new SqlParameter("@DataQuality", this.DataQuality);
-            SqlParameter param23 = new SqlParameter("@SpecieType", this.SpecieType);
+            SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
+            SqlParameter param2 = new SqlParameter("@Version", this.Version);
+            SqlParameter param3 = new SqlParameter("@SpecieCode", this.SpecieCode);
+            SqlParameter param4 = new SqlParameter("@PopulationMin", this.PopulationMin);
+            SqlParameter param5 = new SqlParameter("@PopulationMax", this.PopulationMax);
+            SqlParameter param6 = new SqlParameter("@Group", this.Group);
+            SqlParameter param7 = new SqlParameter("@SensitiveInfo", this.SensitiveInfo);
+            SqlParameter param8 = new SqlParameter("@Resident", this.Resident);
+            SqlParameter param9 = new SqlParameter("@Breeding", this.Breeding);
+            SqlParameter param10 = new SqlParameter("@Winter", this.Winter);
+            SqlParameter param11 = new SqlParameter("@Path", this.Path);
+            SqlParameter param12 = new SqlParameter("@AbundaceCategory", this.AbundaceCategory);
+            SqlParameter param13 = new SqlParameter("@Motivation", this.Motivation);
+            SqlParameter param14 = new SqlParameter("@PopulationType", this.PopulationType);
+            SqlParameter param15 = new SqlParameter("@CountingUnit", this.CountingUnit);
+            SqlParameter param16 = new SqlParameter("@Population", this.Population);
+            SqlParameter param17 = new SqlParameter("@Insolation", this.Insolation);
+            SqlParameter param18 = new SqlParameter("@Conservation", this.Conservation);
+            SqlParameter param19 = new SqlParameter("@Global", this.Global);
+            SqlParameter param20 = new SqlParameter("@NonPersistence", this.NonPersistence);
+            SqlParameter param21 = new SqlParameter("@DataQuality", this.DataQuality);
+            SqlParameter param22 = new SqlParameter("@SpecieType", this.SpecieType);
 
 
             cmd.CommandText = "INSERT INTO [SpeciesOther] (  " +
-               " [Id] ,[SiteCode],[Version] ,[SpecieCode],[PopulationMin],[PopulationMax],[Group],[SensitiveInfo],[Resident],[Breeding],[Winter],[Path],[AbundaceCategory],[Motivation],[PopulationType],[CountingUnit],[Population] ,[Insolation] ,[Conservation],[Global],[NonPersistence] ,[DataQuality],[SpecieType] " +
-                " VALUES (@Id, @SiteCode,@Version,@SpecieCode,@PopulationMin,@PopulationMax,@Group,@SensitiveInfo,@Resident,@Breeding,@Winter,@Path,@AbundaceCategory,@Motivation,@PopulationType,@CountingUnit,@Population,@Insolation,@Conservation,@Global,@NonPersistence,@DataQuality, @SpecieType) ";
+               " [SiteCode],[Version] ,[SpecieCode],[PopulationMin],[PopulationMax],[Group],[SensitiveInfo],[Resident],[Breeding],[Winter],[Path],[AbundaceCategory],[Motivation],[PopulationType],[CountingUnit],[Population] ,[Insolation] ,[Conservation],[Global],[NonPersistence] ,[DataQuality],[SpecieType] " +
+                " VALUES ( @SiteCode,@Version,@SpecieCode,@PopulationMin,@PopulationMax,@Group,@SensitiveInfo,@Resident,@Breeding,@Winter,@Path,@AbundaceCategory,@Motivation,@PopulationType,@CountingUnit,@Population,@Insolation,@Conservation,@Global,@NonPersistence,@DataQuality, @SpecieType) ";
 
             cmd.Parameters.Add(param1);
             cmd.Parameters.Add(param2);
@@ -101,7 +100,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             cmd.Parameters.Add(param20);
             cmd.Parameters.Add(param21);
             cmd.Parameters.Add(param22);
-            cmd.Parameters.Add(param23);
 
             cmd.ExecuteNonQuery();
 

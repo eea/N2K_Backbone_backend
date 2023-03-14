@@ -48,26 +48,25 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             conn = new SqlConnection(this.dbConnection);
             conn.Open();
             cmd = conn.CreateCommand();
-            SqlParameter param1 = new SqlParameter("@id", this.id);
-            SqlParameter param2 = new SqlParameter("@SiteCode", this.SiteCode);
-            SqlParameter param3 = new SqlParameter("@Version", this.Version);
-            SqlParameter param4 = new SqlParameter("@HabitatCode", this.HabitatCode);
-            SqlParameter param5 = new SqlParameter("@CoverHA", this.CoverHA);
-            SqlParameter param6 = new SqlParameter("@PriorityForm", this.PriorityForm);
-            SqlParameter param7 = new SqlParameter("@Representativity", this.Representativity);
-            SqlParameter param8 = new SqlParameter("@DataQty", this.DataQty);
-            SqlParameter param9 = new SqlParameter("@Conservation", this.Conservation);
-            SqlParameter param10 = new SqlParameter("@GlobalAssesments", this.GlobalAssesments);
-            SqlParameter param11 = new SqlParameter("@RelativeSurface", this.RelativeSurface);
-            SqlParameter param12 = new SqlParameter("@Percentage", this.Percentage);
-            SqlParameter param13 = new SqlParameter("@ConsStatus", this.ConsStatus);
-            SqlParameter param14 = new SqlParameter("@Caves", this.Caves);
-            SqlParameter param15 = new SqlParameter("@PF", this.PF);
-            SqlParameter param16 = new SqlParameter("@NonPresenciInSite", this.NonPresenciInSite);
+            SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
+            SqlParameter param2 = new SqlParameter("@Version", this.Version);
+            SqlParameter param3 = new SqlParameter("@HabitatCode", this.HabitatCode);
+            SqlParameter param4 = new SqlParameter("@CoverHA", this.CoverHA);
+            SqlParameter param5 = new SqlParameter("@PriorityForm", this.PriorityForm);
+            SqlParameter param6 = new SqlParameter("@Representativity", this.Representativity);
+            SqlParameter param7 = new SqlParameter("@DataQty", this.DataQty);
+            SqlParameter param8 = new SqlParameter("@Conservation", this.Conservation);
+            SqlParameter param9 = new SqlParameter("@GlobalAssesments", this.GlobalAssesments);
+            SqlParameter param10 = new SqlParameter("@RelativeSurface", this.RelativeSurface);
+            SqlParameter param11 = new SqlParameter("@Percentage", this.Percentage);
+            SqlParameter param12 = new SqlParameter("@ConsStatus", this.ConsStatus);
+            SqlParameter param13 = new SqlParameter("@Caves", this.Caves);
+            SqlParameter param14 = new SqlParameter("@PF", this.PF);
+            SqlParameter param15 = new SqlParameter("@NonPresenciInSite", this.NonPresenciInSite);
 
             cmd.CommandText = "INSERT INTO [Habitats] (  " +
-                "[id],[SiteCode],[Version],[HabitatCode],[CoverHA],[PriorityForm],[Representativity],[DataQty],[Conservation],[GlobalAssesments],[RelativeSurface],[Percentage],[ConsStatus],[Caves],[PF],[NonPresenciInSite]" +
-                " VALUES (@id,@SiteCode,@Version,@HabitatCode,@CoverHA,@PriorityForm,@Representativity,@DataQty,@Conservation,@GlobalAssesments,@RelativeSurface,@Percentage,@ConsStatus,@Caves,@PF,@NonPresenciInSite ";
+                "[SiteCode],[Version],[HabitatCode],[CoverHA],[PriorityForm],[Representativity],[DataQty],[Conservation],[GlobalAssesments],[RelativeSurface],[Percentage],[ConsStatus],[Caves],[PF],[NonPresenciInSite]" +
+                " VALUES (@SiteCode,@Version,@HabitatCode,@CoverHA,@PriorityForm,@Representativity,@DataQty,@Conservation,@GlobalAssesments,@RelativeSurface,@Percentage,@ConsStatus,@Caves,@PF,@NonPresenciInSite ";
 
             cmd.Parameters.Add(param1);
             cmd.Parameters.Add(param2);
@@ -84,7 +83,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             cmd.Parameters.Add(param13);
             cmd.Parameters.Add(param14);
             cmd.Parameters.Add(param15);
-            cmd.Parameters.Add(param16);
 
             cmd.ExecuteNonQuery();
 
