@@ -673,8 +673,7 @@ namespace N2K_BackboneBackEnd.Services
                     try
                     {
                         //add the envelope to the DB
-                        _dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
-                        _dataContext.SaveChanges();
+                        envelopeToProcess.SaveRecord();
 
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
@@ -701,7 +700,6 @@ namespace N2K_BackboneBackEnd.Services
                                     HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
                                     await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
 
-                                    _dataContext.SaveChanges();
                                     _ThereAreChanges = false;
                                 }
 

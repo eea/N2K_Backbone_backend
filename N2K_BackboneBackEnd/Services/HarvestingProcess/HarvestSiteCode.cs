@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using DocumentFormat.OpenXml.Office.CustomUI;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
@@ -73,21 +74,44 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 bbSite = await harvestSiteCode(pVSite, pEnvelope);
-                _dataContext.Set<Sites>().Add(bbSite);
+                bbSite.SaveRecord();
                 //To await the site be stored in the table before use it
                 //Some traces show errors about conflicted with the FOREIGN KEY constraint and the table dbo.Sites.
-                await _dataContext.SaveChangesAsync();
 
 
-                //Get the data for all related tables                                
-                _dataContext.Set<Respondents>().AddRange(await harvestRespondents(pVSite, bbSite.Version));
-                _dataContext.Set<BioRegions>().AddRange(await harvestBioregions(pVSite, bbSite.Version));
-                _dataContext.Set<NutsBySite>().AddRange(await harvestNutsBySite(pVSite, bbSite.Version));
-                _dataContext.Set<Models.backbone_db.IsImpactedBy>().AddRange(await harvestIsImpactedBy(pVSite, bbSite.Version));
-                _dataContext.Set<Models.backbone_db.HasNationalProtection>().AddRange(await harvestHasNationalProtection(pVSite, bbSite.Version));
-                _dataContext.Set<Models.backbone_db.DetailedProtectionStatus>().AddRange(await harvestDetailedProtectionStatus(pVSite, bbSite.Version));
-                _dataContext.Set<SiteLargeDescriptions>().AddRange(await harvestSiteLargeDescriptions(pVSite, bbSite.Version));
-                _dataContext.Set<SiteOwnerType>().AddRange(await harvestSiteOwnerType(pVSite, bbSite.Version));
+                //Get the data for all related tables
+                foreach (Respondents item in await harvestRespondents(pVSite, bbSite.Version))
+                {
+                    item.SaveRecord();
+                }
+                foreach (BioRegions item in await harvestBioregions(pVSite, bbSite.Version))
+                {
+                    item.SaveRecord();
+                }
+                foreach (NutsBySite item in await harvestNutsBySite(pVSite, bbSite.Version))
+                {
+                    item.SaveRecord();
+                }
+                foreach (Models.backbone_db.IsImpactedBy item in await harvestIsImpactedBy(pVSite, bbSite.Version))
+                {
+                    item.SaveRecord();
+                }
+                foreach (Models.backbone_db.HasNationalProtection item in await harvestHasNationalProtection(pVSite, bbSite.Version))
+                {
+                    item.SaveRecord();
+                }
+                foreach (Models.backbone_db.DetailedProtectionStatus item in await harvestDetailedProtectionStatus(pVSite, bbSite.Version))
+                {
+                    item.SaveRecord();
+                }
+                foreach (SiteLargeDescriptions item in await harvestSiteLargeDescriptions(pVSite, bbSite.Version))
+                {
+                    item.SaveRecord();
+                }
+                foreach (SiteOwnerType item in await harvestSiteOwnerType(pVSite, bbSite.Version))
+                {
+                    item.SaveRecord();
+                }
                 //TimeLog.setTimeStamp("Site " + pVSite.SITECODE + " - " + pVSite.VERSIONID.ToString(), "Processed");
 
                 return bbSite;
