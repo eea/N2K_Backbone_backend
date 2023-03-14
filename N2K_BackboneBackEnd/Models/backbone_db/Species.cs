@@ -5,7 +5,7 @@ using System.Data.Common;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class Species : IEntityModel, IEntityModelBackboneDB
+    public class Species : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
         [Key]
         public long id { get; set; }

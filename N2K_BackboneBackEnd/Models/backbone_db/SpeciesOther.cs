@@ -1,12 +1,11 @@
-﻿using DocumentFormat.OpenXml.Office2010.Excel;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.Data.Common;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class SpeciesOther :IEntityModel, IEntityModelBackboneDB
+    public class SpeciesOther :IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
         public long id { get; set; }
         public string SiteCode { get; set; }

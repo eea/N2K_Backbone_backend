@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class Habitats : IEntityModel, IEntityModelBackboneDB
+    public class Habitats : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
         public long id { get; set; }
         public string SiteCode { get; set; } = string.Empty;

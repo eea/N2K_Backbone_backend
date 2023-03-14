@@ -7,7 +7,7 @@ using System.Reflection.Metadata;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class DescribeSites : IEntityModel, IEntityModelBackboneDB
+    public class DescribeSites : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
