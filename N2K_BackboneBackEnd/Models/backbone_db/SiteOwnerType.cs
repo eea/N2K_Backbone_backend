@@ -1,11 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class SiteOwnerType : IEntityModel, IEntityModelBackboneDB
+    public class SiteOwnerType : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
@@ -13,6 +14,47 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         [Column(TypeName = "decimal(18, 2)")]
         public decimal? Percent { get; set; }
+
+        private readonly string dbConnection = "";
+
+        public SiteOwnerType() { }
+
+        public SiteOwnerType(string db)
+        {
+            dbConnection = db;
+        }
+
+
+        public void SaveRecord()
+        {
+            //string dbConnection = db;
+            SqlConnection conn = null;
+            SqlCommand cmd = null;
+
+            conn = new SqlConnection(this.dbConnection);
+            conn.Open();
+            cmd = conn.CreateCommand();
+            SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
+            SqlParameter param2 = new SqlParameter("@Version", this.Version);
+            SqlParameter param3 = new SqlParameter("@Type", this.Type);
+            SqlParameter param4 = new SqlParameter("@Percent", this.Percent);
+
+            cmd.CommandText = "INSERT INTO [SiteOwnerType] (  " +
+                "[SiteCode],[Version],[Type],[Percent]) " +
+                " VALUES (@SiteCode,@Version,@Type,@Percent) ";
+
+            cmd.Parameters.Add(param1);
+            cmd.Parameters.Add(param2);
+            cmd.Parameters.Add(param3);
+            cmd.Parameters.Add(param4);
+
+            cmd.ExecuteNonQuery();
+
+            cmd.Dispose();
+            conn.Dispose();
+        }
+
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SiteOwnerType>()
