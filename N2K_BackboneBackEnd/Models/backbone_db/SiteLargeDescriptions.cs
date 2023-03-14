@@ -18,7 +18,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? ManagPlanUrl { get; set; }
         public string? ManagStatus { get; set; }
 
-        private readonly string dbConnection = "";
+        private string dbConnection = "";
 
         public SiteLargeDescriptions() { }
 
@@ -28,9 +28,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         }
 
 
-        public void SaveRecord()
+        public void SaveRecord(string db)
         {
-            //string dbConnection = db;
+            this.dbConnection = db;
             SqlConnection conn = null;
             SqlCommand cmd = null;
 

@@ -74,7 +74,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 bbSite = await harvestSiteCode(pVSite, pEnvelope);
-                bbSite.SaveRecord();
+                bbSite.SaveRecord(this._dataContext.Database.GetConnectionString());
                 //To await the site be stored in the table before use it
                 //Some traces show errors about conflicted with the FOREIGN KEY constraint and the table dbo.Sites.
 
@@ -82,35 +82,35 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //Get the data for all related tables
                 foreach (Respondents item in await harvestRespondents(pVSite, bbSite.Version))
                 {
-                    item.SaveRecord();
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
                 foreach (BioRegions item in await harvestBioregions(pVSite, bbSite.Version))
                 {
-                    item.SaveRecord();
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
                 foreach (NutsBySite item in await harvestNutsBySite(pVSite, bbSite.Version))
                 {
-                    item.SaveRecord();
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
                 foreach (Models.backbone_db.IsImpactedBy item in await harvestIsImpactedBy(pVSite, bbSite.Version))
                 {
-                    item.SaveRecord();
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
                 foreach (Models.backbone_db.HasNationalProtection item in await harvestHasNationalProtection(pVSite, bbSite.Version))
                 {
-                    item.SaveRecord();
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
                 foreach (Models.backbone_db.DetailedProtectionStatus item in await harvestDetailedProtectionStatus(pVSite, bbSite.Version))
                 {
-                    item.SaveRecord();
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
                 foreach (SiteLargeDescriptions item in await harvestSiteLargeDescriptions(pVSite, bbSite.Version))
                 {
-                    item.SaveRecord();
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
                 foreach (SiteOwnerType item in await harvestSiteOwnerType(pVSite, bbSite.Version))
                 {
-                    item.SaveRecord();
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
                 //TimeLog.setTimeStamp("Site " + pVSite.SITECODE + " - " + pVSite.VERSIONID.ToString(), "Processed");
 

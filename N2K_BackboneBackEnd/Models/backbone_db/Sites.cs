@@ -30,7 +30,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public DateTime? DateSpa { get; set; }
         public DateTime? DateSac { get; set; }
 
-        private readonly string dbConnection = "";
+        private string dbConnection = "";
 
         public Sites() { }
 
@@ -40,9 +40,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         }
 
 
-        public void SaveRecord()
+        public void SaveRecord(string db)
         {
-            //string dbConnection = db;
+            this.dbConnection = db;
             SqlConnection conn = null;
             SqlCommand cmd = null;
 

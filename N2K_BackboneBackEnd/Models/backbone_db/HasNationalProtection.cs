@@ -15,7 +15,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         [Column(TypeName = "decimal(18, 2)")]
         public decimal? Percentage { get; set; }
 
-        private readonly string dbConnection = "";
+        private string dbConnection = "";
 
         public HasNationalProtection() { }
 
@@ -25,9 +25,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         }
 
 
-        public void SaveRecord()
+        public void SaveRecord(string db)
         {
-            //string dbConnection = db;
+            this.dbConnection = db;
             SqlConnection conn = null;
             SqlCommand cmd = null;
 

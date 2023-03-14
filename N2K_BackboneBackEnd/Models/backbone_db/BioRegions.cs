@@ -13,7 +13,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public Boolean? isMarine { get; set; }
 
 
-        private readonly string dbConnection = "";
+        private string dbConnection = "";
 
         public BioRegions() { }
 
@@ -23,9 +23,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         }
 
 
-        public void SaveRecord()
+        public void SaveRecord(string db)
         {
-            //string dbConnection = db;
+            this.dbConnection = db;
             SqlConnection conn = null;
             SqlCommand cmd = null;
 
