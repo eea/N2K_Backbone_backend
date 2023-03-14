@@ -51,7 +51,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             conn = new SqlConnection(this.dbConnection);
             conn.Open();
             cmd = conn.CreateCommand();
-            SqlParameter param1 = new SqlParameter("@Id", this.Id);
+            SqlParameter param1 = new SqlParameter("@Id", this.id);
             SqlParameter param2 = new SqlParameter("@SiteCode", this.SiteCode);
             SqlParameter param3 = new SqlParameter("@Version", this.Version);
             SqlParameter param4 = new SqlParameter("@SpecieCode", this.SpecieCode);
