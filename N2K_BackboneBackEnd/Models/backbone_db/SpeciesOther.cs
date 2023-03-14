@@ -32,7 +32,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? DataQuality { get; set; }
         public string? SpecieType { get; set; }
 
-        private readonly string dbConnection = "";
+        private string dbConnection = "";
         public SpeciesOther() { }
 
         public SpeciesOther(string db)

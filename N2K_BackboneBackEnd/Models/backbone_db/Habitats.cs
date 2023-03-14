@@ -29,7 +29,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public int? NonPresenciInSite { get; set; }
 
 
-        private readonly string dbConnection = "";
+        private string dbConnection = "";
 
         public Habitats() { }
 

@@ -15,7 +15,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         
         public decimal? Percentage { get; set; }
 
-        private readonly string dbConnection = "";
+        private string dbConnection = "";
         public DescribeSites() { }
 
         public DescribeSites(string db)

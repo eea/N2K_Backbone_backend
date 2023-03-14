@@ -75,11 +75,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     {
                         //Use the specie name as a code
                         item.SpecieCode = element.SPECIESNAMECLEAN;
-                        item.getSpeciesOther().SaveRecord();
+                        item.getSpeciesOther().SaveRecord(this._dataContext.Database.GetConnectionString());
                     }
                     else
                     {
-                        item.getSpecies().SaveRecord();
+                        item.getSpecies().SaveRecord(this._dataContext.Database.GetConnectionString());
                     }
 
 
@@ -137,11 +137,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         //Replace the code (which is Null or empty or no stored in the system)
                         //item.SiteCode = element.SITECODE;
                         item.SpecieCode = (element.SPECIESNAMECLEAN != null) ? element.SPECIESNAMECLEAN : element.SPECIESNAME;
-                        item.getSpeciesOther().SaveRecord();
+                        item.getSpeciesOther().SaveRecord(this._dataContext.Database.GetConnectionString());
                     }
                     else
                     {
-                        item.getSpecies().SaveRecord();
+                        item.getSpecies().SaveRecord(this._dataContext.Database.GetConnectionString());
                     }
                 }
 

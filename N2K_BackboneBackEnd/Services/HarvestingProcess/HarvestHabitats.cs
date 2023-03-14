@@ -104,7 +104,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.PF = Convert.ToString(element.PF); // ??? PENDING The same as PriorityForm
                     item.NonPresenciInSite = Convert.ToInt32(element.NONPRESENCEINSITE); // ???
 
-                    item.SaveRecord(); 
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString()); 
                 }
 
                 Console.WriteLine("=>End habitat harvest by country...");
@@ -147,7 +147,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.PF = Convert.ToString(element.PF); // ??? PENDING The same as PriorityForm
                     item.NonPresenciInSite = Convert.ToInt32(element.NONPRESENCEINSITE); // ???
 
-                    item.SaveRecord();
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
 
                 return 1;
@@ -181,7 +181,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.HabitatCode = element.HABITATCODE;
                     item.Percentage = element.PERCENTAGECOVER;
 
-                    item.SaveRecord();
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
 
                 Console.WriteLine("=>End describeSites harvest by country...");
@@ -212,7 +212,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.HabitatCode = element.HABITATCODE;
                     item.Percentage = element.PERCENTAGECOVER;
 
-                    item.SaveRecord() ;
+                    item.SaveRecord(this._dataContext.Database.GetConnectionString()) ;
                 }
 
                 Console.WriteLine("=>End describeSites harvest by site...");
