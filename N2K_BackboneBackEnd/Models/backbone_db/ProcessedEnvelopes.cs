@@ -45,13 +45,12 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param2 = new SqlParameter("@Version", this.Version);
             SqlParameter param3 = new SqlParameter("@ImportDate", this.ImportDate);
             SqlParameter param4 = new SqlParameter("@Importer", this.Importer);
-            SqlParameter param5 = new SqlParameter("@Id", this.Id);
-            SqlParameter param6 = new SqlParameter("@Status", this.Status);
-            SqlParameter param7 = new SqlParameter("@N2K_VersioningDate", this.N2K_VersioningDate);
+            SqlParameter param5 = new SqlParameter("@Status", this.Status);
+            SqlParameter param6 = new SqlParameter("@N2K_VersioningDate", this.N2K_VersioningDate);
 
             cmd.CommandText = "INSERT INTO [ProcessedEnvelopes] (  " +
-                "[Country],[Version],[ImportDate],[Importer],[Id],[Status],[N2K_VersioningDate]) " +
-                " VALUES (@Country,@Version,@ImportDate,@Importer,@Id,@Status,@N2K_VersioningDate) ";
+                "[Country],[Version],[ImportDate],[Importer],[Status],[N2K_VersioningDate]) " +
+                " VALUES (@Country,@Version,@ImportDate,@Importer,@Status,@N2K_VersioningDate) ";
 
             cmd.Parameters.Add(param1);
             cmd.Parameters.Add(param2);
@@ -59,7 +58,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             cmd.Parameters.Add(param4);
             cmd.Parameters.Add(param5);
             cmd.Parameters.Add(param6);
-            cmd.Parameters.Add(param7);
 
             cmd.ExecuteNonQuery();
 
