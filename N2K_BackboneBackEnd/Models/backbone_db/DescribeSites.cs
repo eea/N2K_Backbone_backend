@@ -36,7 +36,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
             SqlParameter param2 = new SqlParameter("@Version", this.Version);
             SqlParameter param3 = new SqlParameter("@HabitatCode", this.HabitatCode);
-            SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage);
+            SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage is null ? DBNull.Value : this.Percentage);
 
             cmd.CommandText = "INSERT INTO [DescribeSites] (  " +
                 "[SiteCode],[Version],[HabitatCode],[Percentage]" +
