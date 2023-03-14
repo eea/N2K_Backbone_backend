@@ -42,18 +42,18 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             conn = new SqlConnection(this.dbConnection);
             conn.Open();
             cmd = conn.CreateCommand();
-            SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
+            SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode is null ? DBNull.Value : this.SiteCode);
             SqlParameter param2 = new SqlParameter("@Version", this.Version);
-            SqlParameter param3 = new SqlParameter("@locatorName", this.locatorName);
-            SqlParameter param4 = new SqlParameter("@addressArea", this.addressArea);
-            SqlParameter param5 = new SqlParameter("@postName", this.postName);
-            SqlParameter param6 = new SqlParameter("@postCode", this.postCode);
-            SqlParameter param7 = new SqlParameter("@thoroughfare", this.thoroughfare);
-            SqlParameter param8 = new SqlParameter("@addressUnstructured", this.addressUnstructured);
-            SqlParameter param9 = new SqlParameter("@name", this.name);
-            SqlParameter param10 = new SqlParameter("@Email", this.Email);
-            SqlParameter param11 = new SqlParameter("@AdminUnit", this.AdminUnit);
-            SqlParameter param12 = new SqlParameter("@LocatorDesignator", this.LocatorDesignator);
+            SqlParameter param3 = new SqlParameter("@locatorName", this.locatorName is null ? DBNull.Value : this.locatorName);
+            SqlParameter param4 = new SqlParameter("@addressArea", this.addressArea is null ? DBNull.Value : this.addressArea);
+            SqlParameter param5 = new SqlParameter("@postName", this.postName is null ? DBNull.Value : this.postName);
+            SqlParameter param6 = new SqlParameter("@postCode", this.postCode is null ? DBNull.Value : this.postCode);
+            SqlParameter param7 = new SqlParameter("@thoroughfare", this.thoroughfare is null ? DBNull.Value : this.thoroughfare);
+            SqlParameter param8 = new SqlParameter("@addressUnstructured", this.addressUnstructured is null ? DBNull.Value : this.addressUnstructured);
+            SqlParameter param9 = new SqlParameter("@name", this.name is null ? DBNull.Value : this.name);
+            SqlParameter param10 = new SqlParameter("@Email", this.Email is null ? DBNull.Value : this.Email);
+            SqlParameter param11 = new SqlParameter("@AdminUnit", this.AdminUnit is null ? DBNull.Value : this.AdminUnit);
+            SqlParameter param12 = new SqlParameter("@LocatorDesignator", this.LocatorDesignator is null ? DBNull.Value : this.LocatorDesignator);
 
             cmd.CommandText = "INSERT INTO [Respondents] (  " +
                 "[SiteCode], [Version],[locatorName],[addressArea],[postName],[postCode],[thoroughfare],[addressUnstructured] ,[name] ,[Email] ,[AdminUnit] ,[LocatorDesignator]) " +

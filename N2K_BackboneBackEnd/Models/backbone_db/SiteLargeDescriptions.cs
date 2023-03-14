@@ -39,15 +39,15 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             cmd = conn.CreateCommand();
             SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
             SqlParameter param2 = new SqlParameter("@Version", this.Version);
-            SqlParameter param3 = new SqlParameter("@Quality", this.Quality);
-            SqlParameter param4 = new SqlParameter("@Vulnarab", this.Vulnarab);
-            SqlParameter param5 = new SqlParameter("@Designation", this.Designation);
-            SqlParameter param6 = new SqlParameter("@ManagPlan", this.ManagPlan);
-            SqlParameter param7 = new SqlParameter("@Documentation", this.Documentation);
-            SqlParameter param8 = new SqlParameter("@OtherCharact", this.OtherCharact);
-            SqlParameter param9 = new SqlParameter("@ManagConservMeasures", this.ManagConservMeasures);
-            SqlParameter param10 = new SqlParameter("@ManagPlanUrl", this.ManagPlanUrl);
-            SqlParameter param11 = new SqlParameter("@ManagStatus", this.ManagStatus);
+            SqlParameter param3 = new SqlParameter("@Quality", this.Quality is null ? DBNull.Value : this.Quality);
+            SqlParameter param4 = new SqlParameter("@Vulnarab", this.Vulnarab is null ? DBNull.Value : this.Vulnarab);
+            SqlParameter param5 = new SqlParameter("@Designation", this.Designation is null ? DBNull.Value : this.Designation);
+            SqlParameter param6 = new SqlParameter("@ManagPlan", this.ManagPlan is null ? DBNull.Value : this.ManagPlan);
+            SqlParameter param7 = new SqlParameter("@Documentation", this.Documentation is null ? DBNull.Value : this.Documentation);
+            SqlParameter param8 = new SqlParameter("@OtherCharact", this.OtherCharact is null ? DBNull.Value : this.OtherCharact);
+            SqlParameter param9 = new SqlParameter("@ManagConservMeasures", this.ManagConservMeasures is null ? DBNull.Value : this.ManagConservMeasures);
+            SqlParameter param10 = new SqlParameter("@ManagPlanUrl", this.ManagPlanUrl is null ? DBNull.Value : this.ManagPlanUrl);
+            SqlParameter param11 = new SqlParameter("@ManagStatus", this.ManagStatus is null ? DBNull.Value : this.ManagStatus);
 
             cmd.CommandText = "INSERT INTO [SiteLargeDescriptions] (  " +
                 "[SiteCode],[Version],[Quality],[Vulnarab],[Designation],[ManagPlan],[Documentation],[OtherCharact],[ManagConservMeasures],[ManagPlanUrl],[ManagStatus]) " +

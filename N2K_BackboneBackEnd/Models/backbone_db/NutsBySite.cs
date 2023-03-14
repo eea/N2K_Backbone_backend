@@ -33,7 +33,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
             SqlParameter param2 = new SqlParameter("@Version", this.Version);
             SqlParameter param3 = new SqlParameter("@NutId", this.NutId);
-            SqlParameter param4 = new SqlParameter("@CoverPercentage", this.CoverPercentage);
+            SqlParameter param4 = new SqlParameter("@CoverPercentage", this.CoverPercentage is null ? DBNull.Value : this.CoverPercentage);
 
             cmd.CommandText = "INSERT INTO [NutsBySite] (  " +
                 "[SiteCode],[Version],[NutId],[CoverPercentage]) " +

@@ -34,13 +34,13 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             conn = new SqlConnection(this.dbConnection);
             conn.Open();
             cmd = conn.CreateCommand();
-            SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
-            SqlParameter param2 = new SqlParameter("@Version", this.Version);
-            SqlParameter param3 = new SqlParameter("@DesignationCode", this.DesignationCode);
-            SqlParameter param4 = new SqlParameter("@Name", this.Name);
-            SqlParameter param5 = new SqlParameter("@OverlapCode", this.OverlapCode);
-            SqlParameter param6 = new SqlParameter("@OverlapPercentage", this.OverlapPercentage);
-            SqlParameter param7 = new SqlParameter("@Convention", this.Convention);
+            SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode is null ? DBNull.Value : this.SiteCode);
+            SqlParameter param2 = new SqlParameter("@Version", this.Version is null ? DBNull.Value : this.Version);
+            SqlParameter param3 = new SqlParameter("@DesignationCode", this.DesignationCode is null ? DBNull.Value : this.DesignationCode);
+            SqlParameter param4 = new SqlParameter("@Name", this.Name is null ? DBNull.Value : this.Name);
+            SqlParameter param5 = new SqlParameter("@OverlapCode", this.OverlapCode is null ? DBNull.Value : this.OverlapCode);
+            SqlParameter param6 = new SqlParameter("@OverlapPercentage", this.OverlapPercentage is null ? DBNull.Value : this.OverlapPercentage);
+            SqlParameter param7 = new SqlParameter("@Convention", this.Convention is null ? DBNull.Value : this.Convention);
 
             cmd.CommandText = "INSERT INTO [DetailedProtectionStatus] (  " +
                 "[SiteCode],[Version],[DesignationCode],[Name],[OverlapCode],[OverlapPercentage],[Convention]) " +

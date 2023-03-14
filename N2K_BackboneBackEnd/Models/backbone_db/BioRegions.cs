@@ -35,8 +35,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
             SqlParameter param2 = new SqlParameter("@Version", this.Version);
             SqlParameter param3 = new SqlParameter("@BGRID", this.BGRID);
-            SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage);
-            SqlParameter param5 = new SqlParameter("@isMarine", this.isMarine);
+            SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage is null ? DBNull.Value : this.Percentage);
+            SqlParameter param5 = new SqlParameter("@isMarine", this.isMarine is null ? DBNull.Value : this.isMarine);
 
             cmd.CommandText = "INSERT INTO [BioRegions] (  " +
                 "[SiteCode],[Version],[BGRID],[Percentage],[isMarine]) " +

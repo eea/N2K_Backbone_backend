@@ -34,10 +34,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             conn = new SqlConnection(this.dbConnection);
             conn.Open();
             cmd = conn.CreateCommand();
-            SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
-            SqlParameter param2 = new SqlParameter("@Version", this.Version);
-            SqlParameter param3 = new SqlParameter("@DesignatedCode", this.DesignatedCode);
-            SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage);
+            SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode is null ? DBNull.Value : this.SiteCode);
+            SqlParameter param2 = new SqlParameter("@Version", this.Version is null ? DBNull.Value : this.Version);
+            SqlParameter param3 = new SqlParameter("@DesignatedCode", this.DesignatedCode is null ? DBNull.Value : this.DesignatedCode);
+            SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage is null ? DBNull.Value : this.Percentage);
 
             cmd.CommandText = "INSERT INTO [Sites] (  " +
                 "[SiteCode],[Version],[DesignatedCode],[Percentage]) " +
