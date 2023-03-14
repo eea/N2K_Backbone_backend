@@ -673,7 +673,7 @@ namespace N2K_BackboneBackEnd.Services
                     try
                     {
                         //add the envelope to the DB
-                        envelopeToProcess.SaveRecord();
+                        envelopeToProcess.SaveRecord(this._dataContext.Database.GetConnectionString());
 
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();

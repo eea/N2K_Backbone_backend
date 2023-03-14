@@ -22,7 +22,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public DateTime N2K_VersioningDate { get; set; }
 
 
-        private readonly string dbConnection = "";
+        private string dbConnection = "";
 
         public ProcessedEnvelopes() { }
 
@@ -32,9 +32,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         }
 
 
-        public void SaveRecord()
+        public void SaveRecord(string db)
         {
-            //string dbConnection = db;
+            this.dbConnection = db;
             SqlConnection conn = null;
             SqlCommand cmd = null;
 
