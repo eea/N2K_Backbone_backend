@@ -57,7 +57,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
             cmd.CommandText = "INSERT INTO [Respondents] (  " +
                 "[SiteCode], [Version],[locatorName],[addressArea],[postName],[postCode],[thoroughfare],[addressUnstructured] ,[name] ,[Email] ,[AdminUnit] ,[LocatorDesignator]) " +
-                " VALUES (@SiteCode,@Version,@locatorName,@addressArea,@postName      ,@postCode      ,@thoroughfare      ,@addressUnstructured      ,@name      ,@Email      ,@AdminUnit      ,@LocatorDesignator) ";
+                " VALUES (@SiteCode,@Version,@locatorName,@addressArea,@postName,@postCode,@thoroughfare,@addressUnstructured,@name,@Email,@AdminUnit,@LocatorDesignator) ";
 
             cmd.Parameters.Add(param1);
             cmd.Parameters.Add(param2);

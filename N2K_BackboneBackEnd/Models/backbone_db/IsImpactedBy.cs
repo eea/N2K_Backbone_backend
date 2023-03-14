@@ -18,7 +18,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? PollutionCode { get; set; }
         public string? Ocurrence { get; set; }
         public string? ImpactType { get; set; }
-        public long Id { get; set; }
 
         private string dbConnection = "";
 
@@ -51,11 +50,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param10 = new SqlParameter("@PollutionCode", this.PollutionCode);
             SqlParameter param11 = new SqlParameter("@Ocurrence", this.Ocurrence);
             SqlParameter param12 = new SqlParameter("@ImpactType", this.ImpactType);
-            SqlParameter param13 = new SqlParameter("@Id", this.Id);
 
             cmd.CommandText = "INSERT INTO [IsImpactedBy] (  " +
-                "[SiteCode],[Version],[ActivityCode],[InOut],[Intensity],[PercentageAff],[Influence],[StartDate],[EndDate],[PollutionCode],[Ocurrence],[ImpactType],[Id]) " +
-                " VALUES (@SiteCode,@Version,@ActivityCode,@InOut,@Intensity,@PercentageAff,@Influence,@StartDate,@EndDate,@PollutionCode,@Ocurrence,@ImpactType,@Id) ";
+                "[SiteCode],[Version],[ActivityCode],[InOut],[Intensity],[PercentageAff],[Influence],[StartDate],[EndDate],[PollutionCode],[Ocurrence],[ImpactType]) " +
+                " VALUES (@SiteCode,@Version,@ActivityCode,@InOut,@Intensity,@PercentageAff,@Influence,@StartDate,@EndDate,@PollutionCode,@Ocurrence,@ImpactType) ";
 
             cmd.Parameters.Add(param1);
             cmd.Parameters.Add(param2);
@@ -69,7 +67,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             cmd.Parameters.Add(param10);
             cmd.Parameters.Add(param11);
             cmd.Parameters.Add(param12);
-            cmd.Parameters.Add(param13);
 
             cmd.ExecuteNonQuery();
 

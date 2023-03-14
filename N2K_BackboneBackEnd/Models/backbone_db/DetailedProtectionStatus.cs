@@ -38,14 +38,13 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param2 = new SqlParameter("@Version", this.Version);
             SqlParameter param3 = new SqlParameter("@DesignationCode", this.DesignationCode);
             SqlParameter param4 = new SqlParameter("@Name", this.Name);
-            SqlParameter param5 = new SqlParameter("@ID", this.ID);
-            SqlParameter param6 = new SqlParameter("@OverlapCode", this.OverlapCode);
-            SqlParameter param7 = new SqlParameter("@OverlapPercentage", this.OverlapPercentage);
-            SqlParameter param8 = new SqlParameter("@Convention", this.Convention);
+            SqlParameter param5 = new SqlParameter("@OverlapCode", this.OverlapCode);
+            SqlParameter param6 = new SqlParameter("@OverlapPercentage", this.OverlapPercentage);
+            SqlParameter param7 = new SqlParameter("@Convention", this.Convention);
 
             cmd.CommandText = "INSERT INTO [DetailedProtectionStatus] (  " +
-                "[SiteCode],[Version],[DesignationCode],[Name],[ID],[OverlapCode],[OverlapPercentage],[Convention]) " +
-                " VALUES (@SiteCode,@Version,@DesignationCode,@Name,@ID,@OverlapCode,@OverlapPercentage,@Convention) ";
+                "[SiteCode],[Version],[DesignationCode],[Name],[OverlapCode],[OverlapPercentage],[Convention]) " +
+                " VALUES (@SiteCode,@Version,@DesignationCode,@Name,@OverlapCode,@OverlapPercentage,@Convention) ";
 
             cmd.Parameters.Add(param1);
             cmd.Parameters.Add(param2);
@@ -54,7 +53,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             cmd.Parameters.Add(param5);
             cmd.Parameters.Add(param6);
             cmd.Parameters.Add(param7);
-            cmd.Parameters.Add(param8);
 
             cmd.ExecuteNonQuery();
 
