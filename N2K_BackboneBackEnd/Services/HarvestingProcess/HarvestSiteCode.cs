@@ -813,7 +813,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
             try
             {
-                List<Contact> vContact = _versioningContext.Set<Contact>().Where(v => (v.COUNTRYCODE == pVSite.COUNTRYCODE) && (v.COUNTRYVERSIONID == pVSite.COUNTRYVERSIONID)).ToList();
+                List<Contact> vContact = _versioningContext.Set<Contact>().Where(v => (v.SITECODE == pVSite.SITECODE) && (v.COUNTRYVERSIONID == pVSite.COUNTRYVERSIONID)).ToList();
                 List<Respondents> items = new List<Respondents>();
                 foreach (Contact contact in vContact)
                 {
