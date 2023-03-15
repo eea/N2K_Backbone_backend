@@ -22,7 +22,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public int? N2KVersioningRef { get; set; }
         public double? Area { get; set; }
         public double? Length { get; set; }
-        public Boolean? JustificationRequired { get; set;}
+        public Boolean? JustificationRequired { get; set; }
         public Boolean? JustificationProvided { get; set; }
         public DateTime? DateConfSCI { get; set; }
         public Boolean? Priority { get; set; }

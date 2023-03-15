@@ -39,8 +39,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage is null ? DBNull.Value : this.Percentage);
 
             cmd.CommandText = "INSERT INTO [DescribeSites] (  " +
-                "[SiteCode],[Version],[HabitatCode],[Percentage]" +
-                " VALUES (@SiteCode,@Version,@HabitatCode,@Percentage";
+                "[SiteCode],[Version],[HabitatCode],[Percentage]) " +
+                " VALUES (@SiteCode,@Version,@HabitatCode,@Percentage) ";
 
             cmd.Parameters.Add(param1);
             cmd.Parameters.Add(param2);

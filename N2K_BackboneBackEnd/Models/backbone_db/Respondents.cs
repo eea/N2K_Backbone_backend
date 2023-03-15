@@ -56,7 +56,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param12 = new SqlParameter("@LocatorDesignator", this.LocatorDesignator is null ? DBNull.Value : this.LocatorDesignator);
 
             cmd.CommandText = "INSERT INTO [Respondents] (  " +
-                "[SiteCode], [Version],[locatorName],[addressArea],[postName],[postCode],[thoroughfare],[addressUnstructured] ,[name] ,[Email] ,[AdminUnit] ,[LocatorDesignator]) " +
+                "[SiteCode],[Version],[locatorName],[addressArea],[postName],[postCode],[thoroughfare],[addressUnstructured],[name],[Email],[AdminUnit],[LocatorDesignator]) " +
                 " VALUES (@SiteCode,@Version,@locatorName,@addressArea,@postName,@postCode,@thoroughfare,@addressUnstructured,@name,@Email,@AdminUnit,@LocatorDesignator) ";
 
             cmd.Parameters.Add(param1);

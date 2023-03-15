@@ -39,7 +39,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param3 = new SqlParameter("@DesignatedCode", this.DesignatedCode is null ? DBNull.Value : this.DesignatedCode);
             SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage is null ? DBNull.Value : this.Percentage);
 
-            cmd.CommandText = "INSERT INTO [Sites] (  " +
+            cmd.CommandText = "INSERT INTO [HasNationalProtection] (  " +
                 "[SiteCode],[Version],[DesignatedCode],[Percentage]) " +
                 " VALUES (@SiteCode,@Version,@DesignatedCode,@Percentage) ";
 

@@ -65,7 +65,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param15 = new SqlParameter("@NonPresenciInSite", this.NonPresenciInSite is null ? DBNull.Value : this.NonPresenciInSite);
 
             cmd.CommandText = "INSERT INTO [Habitats] (  " +
-                "[SiteCode],[Version],[HabitatCode],[CoverHA],[PriorityForm],[Representativity],[DataQty],[Conservation],[GlobalAssesments],[RelativeSurface],[Percentage],[ConsStatus],[Caves],[PF],[NonPresenciInSite]" +
+                "[SiteCode],[Version],[HabitatCode],[CoverHA],[PriorityForm],[Representativity],[DataQty],[Conservation],[GlobalAssesments],[RelativeSurface],[Percentage],[ConsStatus],[Caves],[PF],[NonPresenciInSite]) " +
                 " VALUES (@SiteCode,@Version,@HabitatCode,@CoverHA,@PriorityForm,@Representativity,@DataQty,@Conservation,@GlobalAssesments,@RelativeSurface,@Percentage,@ConsStatus,@Caves,@PF,@NonPresenciInSite) ";
 
             cmd.Parameters.Add(param1);

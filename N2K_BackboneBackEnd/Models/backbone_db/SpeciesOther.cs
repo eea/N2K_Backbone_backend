@@ -60,23 +60,24 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             SqlParameter param8 = new SqlParameter("@Resident", this.Resident is null ? DBNull.Value : this.Resident);
             SqlParameter param9 = new SqlParameter("@Breeding", this.Breeding is null ? DBNull.Value : this.Breeding);
             SqlParameter param10 = new SqlParameter("@Winter", this.Winter is null ? DBNull.Value : this.Winter);
-            SqlParameter param11 = new SqlParameter("@Path", this.Path is null ? DBNull.Value : this.Path);
-            SqlParameter param12 = new SqlParameter("@AbundaceCategory", this.AbundaceCategory is null ? DBNull.Value : this.AbundaceCategory);
-            SqlParameter param13 = new SqlParameter("@Motivation", this.Motivation is null ? DBNull.Value : this.Motivation);
-            SqlParameter param14 = new SqlParameter("@PopulationType", this.PopulationType is null ? DBNull.Value : this.PopulationType);
-            SqlParameter param15 = new SqlParameter("@CountingUnit", this.CountingUnit is null ? DBNull.Value : this.CountingUnit);
-            SqlParameter param16 = new SqlParameter("@Population", this.Population is null ? DBNull.Value : this.Population);
-            SqlParameter param17 = new SqlParameter("@Insolation", this.Insolation is null ? DBNull.Value : this.Insolation);
-            SqlParameter param18 = new SqlParameter("@Conservation", this.Conservation is null ? DBNull.Value : this.Conservation);
-            SqlParameter param19 = new SqlParameter("@Global", this.Global is null ? DBNull.Value : this.Global);
-            SqlParameter param20 = new SqlParameter("@NonPersistence", this.NonPersistence is null ? DBNull.Value : this.NonPersistence);
-            SqlParameter param21 = new SqlParameter("@DataQuality", this.DataQuality is null ? DBNull.Value : this.DataQuality);
-            SqlParameter param22 = new SqlParameter("@SpecieType", this.SpecieType is null ? DBNull.Value : this.SpecieType);
+            SqlParameter param11 = new SqlParameter("@Staging", this.Staging is null ? DBNull.Value : this.Staging);
+            SqlParameter param12 = new SqlParameter("@Path", this.Path is null ? DBNull.Value : this.Path);
+            SqlParameter param13 = new SqlParameter("@AbundaceCategory", this.AbundaceCategory is null ? DBNull.Value : this.AbundaceCategory);
+            SqlParameter param14 = new SqlParameter("@Motivation", this.Motivation is null ? DBNull.Value : this.Motivation);
+            SqlParameter param15 = new SqlParameter("@PopulationType", this.PopulationType is null ? DBNull.Value : this.PopulationType);
+            SqlParameter param16 = new SqlParameter("@CountingUnit", this.CountingUnit is null ? DBNull.Value : this.CountingUnit);
+            SqlParameter param17 = new SqlParameter("@Population", this.Population is null ? DBNull.Value : this.Population);
+            SqlParameter param18 = new SqlParameter("@Insolation", this.Insolation is null ? DBNull.Value : this.Insolation);
+            SqlParameter param19 = new SqlParameter("@Conservation", this.Conservation is null ? DBNull.Value : this.Conservation);
+            SqlParameter param20 = new SqlParameter("@Global", this.Global is null ? DBNull.Value : this.Global);
+            SqlParameter param21 = new SqlParameter("@NonPersistence", this.NonPersistence is null ? DBNull.Value : this.NonPersistence);
+            SqlParameter param22 = new SqlParameter("@DataQuality", this.DataQuality is null ? DBNull.Value : this.DataQuality);
+            SqlParameter param23 = new SqlParameter("@SpecieType", this.SpecieType is null ? DBNull.Value : this.SpecieType);
 
 
             cmd.CommandText = "INSERT INTO [SpeciesOther] (  " +
-               " [SiteCode],[Version] ,[SpecieCode],[PopulationMin],[PopulationMax],[Group],[SensitiveInfo],[Resident],[Breeding],[Winter],[Path],[AbundaceCategory],[Motivation],[PopulationType],[CountingUnit],[Population] ,[Insolation] ,[Conservation],[Global],[NonPersistence] ,[DataQuality],[SpecieType] " +
-                " VALUES ( @SiteCode,@Version,@SpecieCode,@PopulationMin,@PopulationMax,@Group,@SensitiveInfo,@Resident,@Breeding,@Winter,@Path,@AbundaceCategory,@Motivation,@PopulationType,@CountingUnit,@Population,@Insolation,@Conservation,@Global,@NonPersistence,@DataQuality, @SpecieType) ";
+                "[SiteCode],[Version],[SpecieCode],[PopulationMin],[PopulationMax],[Group],[SensitiveInfo],[Resident],[Breeding],[Winter],[Staging],[Path],[AbundaceCategory],[Motivation],[PopulationType],[CountingUnit],[Population],[Insolation],[Conservation],[Global],[NonPersistence],[DataQuality],[SpecieType]) " +
+                " VALUES (@SiteCode,@Version,@SpecieCode,@PopulationMin,@PopulationMax,@Group,@SensitiveInfo,@Resident,@Breeding,@Winter,@Staging,@Path,@AbundaceCategory,@Motivation,@PopulationType,@CountingUnit,@Population,@Insolation,@Conservation,@Global,@NonPersistence,@DataQuality,@SpecieType) ";
 
             cmd.Parameters.Add(param1);
             cmd.Parameters.Add(param2);
@@ -100,6 +101,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             cmd.Parameters.Add(param20);
             cmd.Parameters.Add(param21);
             cmd.Parameters.Add(param22);
+            cmd.Parameters.Add(param23);
 
             cmd.ExecuteNonQuery();
 

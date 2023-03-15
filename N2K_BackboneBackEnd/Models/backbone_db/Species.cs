@@ -77,8 +77,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
 
             cmd.CommandText = "INSERT INTO [Species] (  " +
-               "[SiteCode],[Version] ,[SpecieCode],[PopulationMin],[PopulationMax],[Group],[SensitiveInfo],[Resident],[Breeding],[Winter],[Staging,[Path],[AbundaceCategory],[Motivation],[PopulationType],[CountingUnit],[Population] ,[Insolation] ,[Conservation],[Global],[NonPersistence] ,[DataQuality],[SpecieType] " +
-                " VALUES ( @SiteCode,@Version,@SpecieCode,@PopulationMin,@PopulationMax,@Group,@SensitiveInfo,@Resident,@Breeding,@Winter,@Staging,@Path,@AbundaceCategory,@Motivation,@PopulationType,@CountingUnit,@Population,@Insolation,@Conservation,@Global,@NonPersistence,@DataQuality, @SpecieType) ";
+                "[SiteCode],[Version],[SpecieCode],[PopulationMin],[PopulationMax],[Group],[SensitiveInfo],[Resident],[Breeding],[Winter],[Staging],[Path],[AbundaceCategory],[Motivation],[PopulationType],[CountingUnit],[Population],[Insolation],[Conservation],[Global],[NonPersistence],[DataQuality],[SpecieType]) " +
+                " VALUES (@SiteCode,@Version,@SpecieCode,@PopulationMin,@PopulationMax,@Group,@SensitiveInfo,@Resident,@Breeding,@Winter,@Staging,@Path,@AbundaceCategory,@Motivation,@PopulationType,@CountingUnit,@Population,@Insolation,@Conservation,@Global,@NonPersistence,@DataQuality,@SpecieType) ";
 
             cmd.Parameters.Add(param1);
             cmd.Parameters.Add(param2);
