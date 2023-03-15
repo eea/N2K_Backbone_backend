@@ -66,7 +66,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
             cmd.CommandText = "INSERT INTO [Habitats] (  " +
                 "[SiteCode],[Version],[HabitatCode],[CoverHA],[PriorityForm],[Representativity],[DataQty],[Conservation],[GlobalAssesments],[RelativeSurface],[Percentage],[ConsStatus],[Caves],[PF],[NonPresenciInSite]" +
-                " VALUES (@SiteCode,@Version,@HabitatCode,@CoverHA,@PriorityForm,@Representativity,@DataQty,@Conservation,@GlobalAssesments,@RelativeSurface,@Percentage,@ConsStatus,@Caves,@PF,@NonPresenciInSite ";
+                " VALUES (@SiteCode,@Version,@HabitatCode,@CoverHA,@PriorityForm,@Representativity,@DataQty,@Conservation,@GlobalAssesments,@RelativeSurface,@Percentage,@ConsStatus,@Caves,@PF,@NonPresenciInSite) ";
 
             cmd.Parameters.Add(param1);
             cmd.Parameters.Add(param2);
