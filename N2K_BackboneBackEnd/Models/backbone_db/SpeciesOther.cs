@@ -134,7 +134,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Respondents - SaveBulkRecord", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SpeciesOther - SaveBulkRecord", "");
             }
         }
 
