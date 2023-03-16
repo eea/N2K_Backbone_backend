@@ -1,8 +1,10 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using N2K_BackboneBackEnd.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
@@ -27,31 +29,58 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public void SaveRecord(string db)
         {
-            this.dbConnection = db;
-            SqlConnection conn = null;
-            SqlCommand cmd = null;
+            try
+            {
+                this.dbConnection = db;
+                SqlConnection conn = null;
+                SqlCommand cmd = null;
 
-            conn = new SqlConnection(this.dbConnection);
-            conn.Open();
-            cmd = conn.CreateCommand();
-            SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode is null ? DBNull.Value : this.SiteCode);
-            SqlParameter param2 = new SqlParameter("@Version", this.Version is null ? DBNull.Value : this.Version);
-            SqlParameter param3 = new SqlParameter("@DesignatedCode", this.DesignatedCode is null ? DBNull.Value : this.DesignatedCode);
-            SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage is null ? DBNull.Value : this.Percentage);
+                conn = new SqlConnection(this.dbConnection);
+                conn.Open();
+                cmd = conn.CreateCommand();
+                SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode is null ? DBNull.Value : this.SiteCode);
+                SqlParameter param2 = new SqlParameter("@Version", this.Version is null ? DBNull.Value : this.Version);
+                SqlParameter param3 = new SqlParameter("@DesignatedCode", this.DesignatedCode is null ? DBNull.Value : this.DesignatedCode);
+                SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage is null ? DBNull.Value : this.Percentage);
 
-            cmd.CommandText = "INSERT INTO [HasNationalProtection] (  " +
-                "[SiteCode],[Version],[DesignatedCode],[Percentage]) " +
-                " VALUES (@SiteCode,@Version,@DesignatedCode,@Percentage) ";
+                cmd.CommandText = "INSERT INTO [HasNationalProtection] (  " +
+                    "[SiteCode],[Version],[DesignatedCode],[Percentage]) " +
+                    " VALUES (@SiteCode,@Version,@DesignatedCode,@Percentage) ";
 
-            cmd.Parameters.Add(param1);
-            cmd.Parameters.Add(param2);
-            cmd.Parameters.Add(param3);
-            cmd.Parameters.Add(param4);
+                cmd.Parameters.Add(param1);
+                cmd.Parameters.Add(param2);
+                cmd.Parameters.Add(param3);
+                cmd.Parameters.Add(param4);
 
-            cmd.ExecuteNonQuery();
+                cmd.ExecuteNonQuery();
 
-            cmd.Dispose();
-            conn.Dispose();
+                cmd.Dispose();
+                conn.Dispose();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HasNationalProtection - SaveRecord", "");
+            }
+        }
+
+        public static void SaveBulkRecord(string db, List<HasNationalProtection> listData)
+        {
+            try
+            {
+                if (listData.Count > 0)
+                {
+                    using (var copy = new SqlBulkCopy(db))
+                    {
+                        copy.DestinationTableName = "HasNationalProtection";
+                        DataTable data = TypeConverters.PrepareDataForBulkCopy<HasNationalProtection>(listData, copy);
+                        copy.WriteToServer(data);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HasNationalProtection - SaveBulkRecord", "");
+            }
         }
 
 
