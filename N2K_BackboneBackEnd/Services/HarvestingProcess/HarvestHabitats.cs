@@ -60,12 +60,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Starting");
-                Console.WriteLine("=>Start full habitat harvest by site...");
+                //Console.WriteLine("=>Start full habitat harvest by site...");
 
                 await HarvestHabitatsBySite(pSiteCode, pSiteVersion, pVersion);
                 await HarvestDescribeSitesBySite(pSiteCode, pSiteVersion, pVersion);
 
-                Console.WriteLine("=>End full habitat harvest by site...");
+                //Console.WriteLine("=>End full habitat harvest by site...");
                 //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
                 return 1;
             }
@@ -200,7 +200,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<DescribesSites> elements = null;
             try
             {
-                Console.WriteLine("=>Start describeSites harvest by site...");
+                //Console.WriteLine("=>Start describeSites harvest by site...");
 
                 elements = await _versioningContext.Set<DescribesSites>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
 
@@ -215,7 +215,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.SaveRecord(this._dataContext.Database.GetConnectionString()) ;
                 }
 
-                Console.WriteLine("=>End describeSites harvest by site...");
+                //Console.WriteLine("=>End describeSites harvest by site...");
                 return 1;
             }
             catch (Exception ex)

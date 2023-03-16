@@ -652,6 +652,9 @@ namespace N2K_BackboneBackEnd.Services
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
+                    Console.WriteLine(String.Format("Start envelope harvest {0} - {1}", envelope.CountryCode, envelope.VersionId));
+                    SystemLog.write(SystemLog.errorLevel.Info, String.Format("Start envelope harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "HarvestedService - _Harvest", "");
+                    var startEnvelope = DateTime.Now;
                     //Not necessary 
                     //await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
                     DateTime SubmissionDate = envelope.SubmissionDate; //getOptimalDate(envelope);
@@ -691,7 +694,7 @@ namespace N2K_BackboneBackEnd.Services
                                 _ThereAreChanges = true;
                                 //complete the data of the site and add it to the DB
                                 //TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
-                                Console.WriteLine("Start site");
+                                Console.WriteLine(String.Format("Start site {0}", vSite.SITECODE));
                                 var start = DateTime.Now;
                                 HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
                                 Sites bbSite = await siteCode.HarvestSite(vSite, envelope);
@@ -752,6 +755,8 @@ namespace N2K_BackboneBackEnd.Services
                         //save the data of the site in backbone DB
                         _dataContext.SaveChanges();
                     }
+                    SystemLog.write(SystemLog.errorLevel.Info, String.Format("End envelope {0}", (DateTime.Now - startEnvelope).TotalSeconds), "HarvestedService - _Harvest", "");
+                    Console.WriteLine(String.Format("End envelope {0}", (DateTime.Now - startEnvelope).TotalSeconds));
                 }
                 return result;
             }

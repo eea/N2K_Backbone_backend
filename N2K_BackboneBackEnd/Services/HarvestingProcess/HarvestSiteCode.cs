@@ -80,38 +80,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
 
                 //Get the data for all related tables
-                foreach (Respondents item in await harvestRespondents(pVSite, bbSite.Version))
-                {
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
-                }
-                foreach (BioRegions item in await harvestBioregions(pVSite, bbSite.Version))
-                {
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
-                }
-                foreach (NutsBySite item in await harvestNutsBySite(pVSite, bbSite.Version))
-                {
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
-                }
-                foreach (Models.backbone_db.IsImpactedBy item in await harvestIsImpactedBy(pVSite, bbSite.Version))
-                {
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
-                }
-                foreach (Models.backbone_db.HasNationalProtection item in await harvestHasNationalProtection(pVSite, bbSite.Version))
-                {
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
-                }
-                foreach (Models.backbone_db.DetailedProtectionStatus item in await harvestDetailedProtectionStatus(pVSite, bbSite.Version))
-                {
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
-                }
-                foreach (SiteLargeDescriptions item in await harvestSiteLargeDescriptions(pVSite, bbSite.Version))
-                {
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
-                }
-                foreach (SiteOwnerType item in await harvestSiteOwnerType(pVSite, bbSite.Version))
-                {
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
-                }
+                Respondents.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestRespondents(pVSite, bbSite.Version));
+                BioRegions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestBioregions(pVSite, bbSite.Version));
+                NutsBySite.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestNutsBySite(pVSite, bbSite.Version));
+                Models.backbone_db.IsImpactedBy.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestIsImpactedBy(pVSite, bbSite.Version));
+                Models.backbone_db.HasNationalProtection.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestHasNationalProtection(pVSite, bbSite.Version));
+                Models.backbone_db.DetailedProtectionStatus.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestDetailedProtectionStatus(pVSite, bbSite.Version));
+                SiteLargeDescriptions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestSiteLargeDescriptions(pVSite, bbSite.Version));
+                SiteOwnerType.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestSiteOwnerType(pVSite, bbSite.Version));
                 //TimeLog.setTimeStamp("Site " + pVSite.SITECODE + " - " + pVSite.VERSIONID.ToString(), "Processed");
 
                 return bbSite;
