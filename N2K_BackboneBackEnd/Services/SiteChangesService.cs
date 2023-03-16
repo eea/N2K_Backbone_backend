@@ -830,7 +830,7 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.Name = changes.First().SiteName;
 
                         //Alter cached listd. They come from pendign and goes to accepted
-                        swapSiteInListCache(cache, status, level, SiteChangeStatus.Pending, mySiteView);
+                        await swapSiteInListCache(cache, status, level, SiteChangeStatus.Pending, mySiteView);
 
 
                         modifiedSiteCode.OK = 1;
@@ -923,7 +923,7 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.Name = changes.First().SiteName;
 
                         //Alter cached listd. They come from pendign and goes to accepted
-                        swapSiteInListCache(cache, status, level, SiteChangeStatus.Pending, mySiteView);
+                       await swapSiteInListCache(cache, status, level, SiteChangeStatus.Pending, mySiteView);
 
 
                         modifiedSiteCode.OK = 1;
@@ -1081,7 +1081,7 @@ namespace N2K_BackboneBackEnd.Services
                         SiteChangeStatus status = (SiteChangeStatus)changes.FirstOrDefault().Status;
 
                         //Alter cached list. It comes from Removed or Accepted list and goes to Pending list
-                        swapSiteInListCache(cache, SiteChangeStatus.Pending, level, status, mySiteView);
+                        await swapSiteInListCache(cache, SiteChangeStatus.Pending, level, status, mySiteView);
 
 
                         modifiedSiteCode.OK = 1;
