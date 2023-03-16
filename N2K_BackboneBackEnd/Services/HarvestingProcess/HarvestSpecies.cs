@@ -1,5 +1,4 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
@@ -43,7 +42,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
 
                 elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
-             
+
                 foreach (ContainsSpecies element in elements)
                 {
 
@@ -358,7 +357,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         changes.Add(siteChange);
                     }
                 }
-                
+
                 //speciesother check
                 foreach (SpeciesToHarvest harvestingSpecies in speciesOtherVersioning)
                 {

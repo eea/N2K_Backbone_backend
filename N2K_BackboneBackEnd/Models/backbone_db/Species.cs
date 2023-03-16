@@ -12,7 +12,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     public class Species : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
         [Key]
-        public long id { get; set; }
+        public long Id { get; set; }
         public string SiteCode { get; set; }
         public int Version { get; set; }
         public string SpecieCode { get; set; }
@@ -144,7 +144,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             builder.Entity<Species>()
                 .ToTable("Species")
-                .HasKey(c => new { c.id });
+                .HasKey(c => new { c.Id });
         }
     }
 }

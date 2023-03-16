@@ -687,6 +687,15 @@ namespace N2K_BackboneBackEnd.Services
                         //_dataContext.Set<Respondents>().AddRange(await HarvestRespondents(vContact, envelope));
 
                         List<Sites> bbSites = new List<Sites>();
+                        HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
+                        //siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+                        //siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+                        foreach (NaturaSite vSite in vSites)
+                        {
+                            Sites? bbSite = await siteCode.harvestSiteCode(vSite, envelope);
+                            bbSites.Add(bbSite);
+                        }
+                        Sites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), bbSites);
                         foreach (NaturaSite vSite in vSites)
                         {
                             try
@@ -696,8 +705,8 @@ namespace N2K_BackboneBackEnd.Services
                                 //TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 Console.WriteLine(String.Format("Start site {0}", vSite.SITECODE));
                                 var start = DateTime.Now;
-                                HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
-                                Sites bbSite = await siteCode.HarvestSite(vSite, envelope);
+                                Sites bbSite = bbSites.Where(s => s.SiteCode == vSite.SITECODE).FirstOrDefault();
+                                bbSite = await siteCode.HarvestSite(vSite, envelope, bbSite);
                                 if (bbSite != null)
                                 {
                                     HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
@@ -708,7 +717,7 @@ namespace N2K_BackboneBackEnd.Services
 
                                     _ThereAreChanges = false;
                                 }
-                                Console.WriteLine(String.Format("End site {0}",(DateTime.Now - start).TotalSeconds));
+                                Console.WriteLine(String.Format("End site {0}", (DateTime.Now - start).TotalSeconds));
                             }
                             catch (DbUpdateException ex)
                             {

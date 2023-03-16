@@ -27,6 +27,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
         }
 
+        public List<HabitatPriority> habitatPriority = new List<HabitatPriority>();
+        public List<SpeciePriority> speciesPriority = new List<SpeciePriority>();
+
         /// <summary>
         /// This mehtod calls for teh process to harvest the complete data for all sites 
         /// reported in the envelopment reported by the MS
@@ -68,17 +71,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The definition ogf the versioning Site</param>
         /// <param name="pEnvelope">The envelope to process</param>
         /// <returns>Returns a BackBone Site object</returns>
-        public async Task<Sites>? HarvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
+        public async Task<Sites>? HarvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope, Sites? bbSite)
         {
-            Sites? bbSite = null;
             try
             {
-                bbSite = await harvestSiteCode(pVSite, pEnvelope);
-                bbSite.SaveRecord(this._dataContext.Database.GetConnectionString());
-                //To await the site be stored in the table before use it
-                //Some traces show errors about conflicted with the FOREIGN KEY constraint and the table dbo.Sites.
-
-
                 //Get the data for all related tables
                 Respondents.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestRespondents(pVSite, bbSite.Version));
                 BioRegions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestBioregions(pVSite, bbSite.Version));
@@ -91,7 +87,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //TimeLog.setTimeStamp("Site " + pVSite.SITECODE + " - " + pVSite.VERSIONID.ToString(), "Processed");
 
                 return bbSite;
-
             }
             catch (Exception ex)
             {
@@ -113,7 +108,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The definition ogf the versioning Site</param>
         /// <param name="pEnvelope">The envelope to process</param>
         /// <returns>Returns a BackBone Site object</returns>
-        private async Task<Sites>? harvestSiteCode(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
+        public async Task<Sites>? harvestSiteCode(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
         {
             //Tomamos el valor más alto que tiene en el campo Version para ese SiteCode. Por defecto es -1 para cuando no existe 
             //por que le vamos a sumar un 1 lo cual dejaría en 0
@@ -121,60 +116,56 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             int versionNext = -1;
 
             #region SitePriority
-            //Get the lists of priority habitats and species
-            List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-            List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+            //SqlParameter param3 = new SqlParameter("@site", pVSite.SITECODE);
+            //SqlParameter param4 = new SqlParameter("@versionId", pVSite.VERSIONID);
 
-            SqlParameter param3 = new SqlParameter("@site", pVSite.SITECODE);
-            SqlParameter param4 = new SqlParameter("@versionId", pVSite.VERSIONID);
+            //List<HabitatToHarvest> habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+            //                        param3, param4).ToListAsync();
+            //List<SpeciesToHarvest> speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+            //                param3, param4).ToListAsync();
 
-            List<HabitatToHarvest> habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
-                                    param3, param4).ToListAsync();
-            List<SpeciesToHarvest> speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
-                            param3, param4).ToListAsync();
+            ////These booleans declare whether or not each site is a priority
+            //Boolean isHarvestingSitePriority = false;
 
-            //These booleans declare whether or not each site is a priority
-            Boolean isHarvestingSitePriority = false;
+            //foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
+            //{
+            //    HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
+            //    if (priorityCount != null)
+            //    {
+            //        if (priorityCount.Priority == 2)
+            //        {
+            //            if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true)
+            //            {
+            //                isHarvestingSitePriority = true;
+            //                break;
+            //            }
+            //        }
+            //        else
+            //        {
+            //            if (harvestingHabitat.Representativity.ToUpper() != "D")
+            //            {
+            //                isHarvestingSitePriority = true;
+            //                break;
+            //            }
+            //        }
+            //    }
+            //}
 
-            foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
-            {
-                HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
-                if (priorityCount != null)
-                {
-                    if (priorityCount.Priority == 2)
-                    {
-                        if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true)
-                        {
-                            isHarvestingSitePriority = true;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        if (harvestingHabitat.Representativity.ToUpper() != "D")
-                        {
-                            isHarvestingSitePriority = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!isHarvestingSitePriority)
-            {
-                foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
-                {
-                    SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
-                    if (priorityCount != null)
-                    {
-                        if (harvestingSpecies.Population.ToUpper() != "D")
-                        {
-                            isHarvestingSitePriority = true;
-                            break;
-                        }
-                    }
-                }
-            }
+            //if (!isHarvestingSitePriority)
+            //{
+            //    foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
+            //    {
+            //        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+            //        if (priorityCount != null)
+            //        {
+            //            if (harvestingSpecies.Population.ToUpper() != "D")
+            //            {
+            //                isHarvestingSitePriority = true;
+            //                break;
+            //            }
+            //        }
+            //    }
+            //}
             #endregion
 
             try
@@ -202,7 +193,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.N2KVersioningRef = Int32.Parse(pVSite.VERSIONID.ToString());
                 bbSite.N2KVersioningVersion = pEnvelope.VersionId;
                 bbSite.DateConfSCI = pVSite.DATE_CONF_SCI;
-                bbSite.Priority = isHarvestingSitePriority;
+                bbSite.Priority = null;
                 bbSite.DatePropSCI = pVSite.DATE_PROP_SCI;
                 bbSite.DateSpa = pVSite.DATE_SPA;
                 bbSite.DateSac = pVSite.DATE_SAC;
