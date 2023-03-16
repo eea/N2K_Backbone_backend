@@ -1,10 +1,12 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
+using System.Collections.Generic;
 
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 {
@@ -84,7 +86,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 Console.WriteLine("=>Start habitat harvest by country...");
                 elements = await _versioningContext.Set<ContainsHabitat>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
-
+                List<Models.backbone_db.Habitats> items = new List<Models.backbone_db.Habitats>();
                 foreach (ContainsHabitat element in elements)
                 {
                     Habitats item = new Habitats();
@@ -103,10 +105,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.Caves = Convert.ToString(element.CAVES); // ???
                     item.PF = Convert.ToString(element.PF); // ??? PENDING The same as PriorityForm
                     item.NonPresenciInSite = Convert.ToInt32(element.NONPRESENCEINSITE); // ???
+                    items.Add(item);
 
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString()); 
                 }
-
+                Habitats.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), items);
                 Console.WriteLine("=>End habitat harvest by country...");
                 return 1;
             }
@@ -127,7 +129,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
 
                 elements = await _versioningContext.Set<ContainsHabitat>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
-
+                List<Models.backbone_db.Habitats> items = new List<Models.backbone_db.Habitats>();
                 foreach (ContainsHabitat element in elements)
                 {
                     Habitats item = new Habitats();
@@ -146,10 +148,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.Caves = Convert.ToString(element.CAVES); // ???
                     item.PF = Convert.ToString(element.PF); // ??? PENDING The same as PriorityForm
                     item.NonPresenciInSite = Convert.ToInt32(element.NONPRESENCEINSITE); // ???
-
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
+                    items.Add(item);
                 }
-
+                Habitats.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), items);
                 return 1;
             }
             catch (Exception ex)
@@ -169,10 +170,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             List<DescribesSites> elements = null;
             try
             {
+
                 Console.WriteLine("=>Start describeSites harvest by country...");
 
                 elements = await _versioningContext.Set<DescribesSites>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
-
+                List<Models.backbone_db.DescribeSites> items = new List<Models.backbone_db.DescribeSites>();
                 foreach (DescribesSites element in elements)
                 {
                     DescribeSites item = new DescribeSites();
@@ -180,9 +182,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.Version = pVersion;
                     item.HabitatCode = element.HABITATCODE;
                     item.Percentage = element.PERCENTAGECOVER;
-
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString());
+                    items.Add(item);
+                    //item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
+                DescribeSites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), items);
 
                 Console.WriteLine("=>End describeSites harvest by country...");
                 return 1;
@@ -203,7 +206,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //Console.WriteLine("=>Start describeSites harvest by site...");
 
                 elements = await _versioningContext.Set<DescribesSites>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
-
+                List<Models.backbone_db.DescribeSites> items = new List<Models.backbone_db.DescribeSites>();
                 foreach (DescribesSites element in elements)
                 {
                     DescribeSites item = new DescribeSites();
@@ -211,10 +214,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.Version = pVersion;
                     item.HabitatCode = element.HABITATCODE;
                     item.Percentage = element.PERCENTAGECOVER;
-
-                    item.SaveRecord(this._dataContext.Database.GetConnectionString()) ;
+                    items.Add(item);
                 }
-
+                DescribeSites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), items);
                 //Console.WriteLine("=>End describeSites harvest by site...");
                 return 1;
             }

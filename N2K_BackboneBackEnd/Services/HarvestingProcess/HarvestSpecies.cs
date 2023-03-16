@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
@@ -42,7 +43,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
 
                 elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
-
+             
                 foreach (ContainsSpecies element in elements)
                 {
 
@@ -103,6 +104,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 //TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
                 elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
+                List<Models.backbone_db.Species> itemsSpecies = new List<Models.backbone_db.Species>();
+                List<Models.backbone_db.SpeciesOther> itemsSpeciesOthers = new List<Models.backbone_db.SpeciesOther>();
                 foreach (ContainsSpecies element in elements)
                 {
 
@@ -137,14 +140,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         //Replace the code (which is Null or empty or no stored in the system)
                         //item.SiteCode = element.SITECODE;
                         item.SpecieCode = (element.SPECIESNAMECLEAN != null) ? element.SPECIESNAMECLEAN : element.SPECIESNAME;
-                        item.getSpeciesOther().SaveRecord(this._dataContext.Database.GetConnectionString());
+                        itemsSpeciesOthers.Add(item.getSpeciesOther());
                     }
                     else
                     {
-                        item.getSpecies().SaveRecord(this._dataContext.Database.GetConnectionString());
+                        itemsSpecies.Add(item.getSpecies());
                     }
                 }
-
+                SpeciesOther.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), itemsSpeciesOthers);
+                Species.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), itemsSpecies);
                 return 1;
             }
             catch (Exception ex)
