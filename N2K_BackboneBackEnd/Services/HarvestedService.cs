@@ -257,7 +257,6 @@ namespace N2K_BackboneBackEnd.Services
 
                     try
                     {
-                        //_dataContext.SaveChanges();
                         SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
                     }
                     catch (Exception ex)
@@ -461,7 +460,6 @@ namespace N2K_BackboneBackEnd.Services
                     List<BioRegions> referencedBioRegions = await _dataContext.Set<BioRegions>().FromSqlRaw($"exec dbo.spGetReferenceBioRegionsBySiteCodeAndVersion  @site, @versionId",
                                     param3, param5).ToListAsync();
                     changes = await siteCode.ValidateBioRegions(bioRegionsVersioning, referencedBioRegions, changes, envelope, harvestingSite, storedSite, param3, param4, param5, processedEnvelope);
-
 
                     //HabitatChecking
                     List<HabitatToHarvest> habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
