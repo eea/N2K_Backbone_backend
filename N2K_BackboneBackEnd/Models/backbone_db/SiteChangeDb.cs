@@ -1,14 +1,20 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
+using N2K_BackboneBackEnd.Helpers;
+using N2K_BackboneBackEnd.Models.BackboneDB;
 using N2K_BackboneBackEnd.Models.ViewModel;
+using System.Data;
+using System.Data.Common;
+
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
 
-    public class SiteChangeDb : IEntityModel, IEntityModelBackboneDB
+    public class SiteChangeDb : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
       
         [Key]
@@ -57,6 +63,98 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
+        private string dbConnection = "";
+        public SiteChangeDb() { }
+
+        public SiteChangeDb(string db)
+        {
+            dbConnection = db;
+        }
+
+
+        public void SaveRecord(string db)
+        {
+            try
+            {
+                this.dbConnection = db;
+                SqlConnection conn = null;
+                SqlCommand cmd = null;
+
+                conn = new SqlConnection(this.dbConnection);
+                conn.Open();
+                cmd = conn.CreateCommand();
+                SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
+                SqlParameter param2 = new SqlParameter("@Version", this.Version);
+                SqlParameter param3 = new SqlParameter("@Country", this.Country is null ? DBNull.Value : this.Country);
+                SqlParameter param4 = new SqlParameter("@PopulationMin", this.Status is null ? DBNull.Value : this.Status);
+                SqlParameter param5 = new SqlParameter("@PopulationMax", this.Tags is null ? DBNull.Value : this.Tags);
+                SqlParameter param6 = new SqlParameter("@Group", this.Level is null ? DBNull.Value : this.Level);
+                SqlParameter param7 = new SqlParameter("@SensitiveInfo", this.ChangeCategory is null ? DBNull.Value : this.ChangeCategory);
+                SqlParameter param8 = new SqlParameter("@Resident", this.ChangeType is null ? DBNull.Value : this.ChangeType);
+                SqlParameter param9 = new SqlParameter("@Breeding", this.NewValue is null ? DBNull.Value : this.NewValue);
+                SqlParameter param10 = new SqlParameter("@Winter", this.OldValue is null ? DBNull.Value : this.OldValue);
+                SqlParameter param11 = new SqlParameter("@Staging", this.Detail is null ? DBNull.Value : this.Detail);
+                SqlParameter param12 = new SqlParameter("@Path", this.Code is null ? DBNull.Value : this.Code);
+                SqlParameter param13 = new SqlParameter("@AbundaceCategory", this.Section is null ? DBNull.Value : this.Section);
+                SqlParameter param14 = new SqlParameter("@Motivation", this.VersionReferenceId);
+                SqlParameter param15 = new SqlParameter("@PopulationType", this.FieldName is null ? DBNull.Value : this.FieldName);
+                SqlParameter param16 = new SqlParameter("@CountingUnit", this.ReferenceSiteCode is null ? DBNull.Value : this.ReferenceSiteCode);
+                SqlParameter param17 = new SqlParameter("@Population", this.N2KVersioningVersion is null ? DBNull.Value : this.N2KVersioningVersion);
+
+
+                cmd.CommandText = "INSERT INTO [Changes] (  " +
+                    "[SiteCode],[Version],[Country],[Status],[Tags] ,[Level],[ChangeCategory],[ChangeType],[NewValue],[OldValue] ,[Detail],[Code],[Section],[VersionReferenceId],[FieldName],[ReferenceSiteCode],[N2KVersioningVersion]) " +
+                    " VALUES (@SiteCode,@Version,@Country,@Status,@Tags,@Level,@ChangeCategory,@ChangeType,@NewValue,@OldValue,@Detail,@Code,@Section,@VersionReferenceId,@FieldName,@ReferenceSiteCode,@N2KVersioningVersion) ";
+
+                cmd.Parameters.Add(param1);
+                cmd.Parameters.Add(param2);
+                cmd.Parameters.Add(param3);
+                cmd.Parameters.Add(param4);
+                cmd.Parameters.Add(param5);
+                cmd.Parameters.Add(param6);
+                cmd.Parameters.Add(param7);
+                cmd.Parameters.Add(param8);
+                cmd.Parameters.Add(param9);
+                cmd.Parameters.Add(param10);
+                cmd.Parameters.Add(param11);
+                cmd.Parameters.Add(param12);
+                cmd.Parameters.Add(param13);
+                cmd.Parameters.Add(param14);
+                cmd.Parameters.Add(param15);
+                cmd.Parameters.Add(param16);
+                cmd.Parameters.Add(param17);
+
+                cmd.ExecuteNonQuery();
+
+                cmd.Dispose();
+                conn.Dispose();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangeDb - SaveRecord", "");
+            }
+        }
+
+        public static void SaveBulkRecord(string db, List<Changes> listData)
+        {
+            try
+            {
+                if (listData.Count > 0)
+                {
+                    using (var copy = new SqlBulkCopy(db))
+                    {
+                        copy.DestinationTableName = "Changes";
+                        DataTable data = TypeConverters.PrepareDataForBulkCopy<Changes>(listData, copy);
+                        copy.WriteToServer(data);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangeDb - SaveBulkRecord", "");
+            }
+        }
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SiteChangeDb>()
@@ -74,7 +172,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     }
 
 
-    public class SiteChangeDbNumsperLevel :  IEntityModel, IEntityModelBackboneDB
+    public class SiteChangeDbNumsperLevel :  IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
 
         public long ChangeId { get; set; }
@@ -106,6 +204,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? FieldName { get; set; }
         public string ReferenceSiteCode { get; set; } = String.Empty;
 
+        public int? N2KVersioningVersion { get; set; }
+
         public bool? HasGeometry { get; set; }
 
 
@@ -115,6 +215,97 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
+        private string dbConnection = "";
+
+        public SiteChangeDbNumsperLevel() { }
+
+        public SiteChangeDbNumsperLevel(string db)
+        {
+            dbConnection = db;
+        }
+
+        public void SaveRecord(string db)
+        {
+            try
+            {
+                this.dbConnection = db;
+                SqlConnection conn = null;
+                SqlCommand cmd = null;
+
+                conn = new SqlConnection(this.dbConnection);
+                conn.Open();
+                cmd = conn.CreateCommand();
+                SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
+                SqlParameter param2 = new SqlParameter("@Version", this.Version);
+                SqlParameter param3 = new SqlParameter("@Country", this.Country is null ? DBNull.Value : this.Country);
+                SqlParameter param4 = new SqlParameter("@PopulationMin", this.Status is null ? DBNull.Value : this.Status);
+                SqlParameter param5 = new SqlParameter("@PopulationMax", this.Tags is null ? DBNull.Value : this.Tags);
+                SqlParameter param6 = new SqlParameter("@Group", this.Level is null ? DBNull.Value : this.Level);
+                SqlParameter param7 = new SqlParameter("@SensitiveInfo", this.ChangeCategory is null ? DBNull.Value : this.ChangeCategory);
+                SqlParameter param8 = new SqlParameter("@Resident", this.ChangeType is null ? DBNull.Value : this.ChangeType);
+                SqlParameter param9 = new SqlParameter("@Breeding", this.NewValue is null ? DBNull.Value : this.NewValue);
+                SqlParameter param10 = new SqlParameter("@Winter", this.OldValue is null ? DBNull.Value : this.OldValue);
+                SqlParameter param11 = new SqlParameter("@Staging", this.Detail is null ? DBNull.Value : this.Detail);
+                SqlParameter param12 = new SqlParameter("@Path", this.Code is null ? DBNull.Value : this.Code);
+                SqlParameter param13 = new SqlParameter("@AbundaceCategory", this.Section is null ? DBNull.Value : this.Section);
+                SqlParameter param14 = new SqlParameter("@Motivation", this.VersionReferenceId);
+                SqlParameter param15 = new SqlParameter("@PopulationType", this.FieldName is null ? DBNull.Value : this.FieldName);
+                SqlParameter param16 = new SqlParameter("@CountingUnit", this.ReferenceSiteCode is null ? DBNull.Value : this.ReferenceSiteCode);
+                SqlParameter param17 = new SqlParameter("@Population", this.N2KVersioningVersion is null ? DBNull.Value : this.N2KVersioningVersion);
+
+
+                cmd.CommandText = "INSERT INTO [Changes] (  " +
+                    "[SiteCode],[Version],[Country],[Status],[Tags] ,[Level],[ChangeCategory],[ChangeType],[NewValue],[OldValue] ,[Detail],[Code],[Section],[VersionReferenceId],[FieldName],[ReferenceSiteCode],[N2KVersioningVersion]) " +
+                    " VALUES (@SiteCode,@Version,@Country,@Status,@Tags,@Level,@ChangeCategory,@ChangeType,@NewValue,@OldValue,@Detail,@Code,@Section,@VersionReferenceId,@FieldName,@ReferenceSiteCode,@N2KVersioningVersion) ";
+
+                cmd.Parameters.Add(param1);
+                cmd.Parameters.Add(param2);
+                cmd.Parameters.Add(param3);
+                cmd.Parameters.Add(param4);
+                cmd.Parameters.Add(param5);
+                cmd.Parameters.Add(param6);
+                cmd.Parameters.Add(param7);
+                cmd.Parameters.Add(param8);
+                cmd.Parameters.Add(param9);
+                cmd.Parameters.Add(param10);
+                cmd.Parameters.Add(param11);
+                cmd.Parameters.Add(param12);
+                cmd.Parameters.Add(param13);
+                cmd.Parameters.Add(param14);
+                cmd.Parameters.Add(param15);
+                cmd.Parameters.Add(param16);
+                cmd.Parameters.Add(param17);
+
+                cmd.ExecuteNonQuery();
+
+                cmd.Dispose();
+                conn.Dispose();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangeDbNumsperLevel - SaveRecord", "");
+            }
+        }
+
+        public static void SaveBulkRecord(string db, List<Changes> listData)
+        {
+            try
+            {
+                if (listData.Count > 0)
+                {
+                    using (var copy = new SqlBulkCopy(db))
+                    {
+                        copy.DestinationTableName = "Changes";
+                        DataTable data = TypeConverters.PrepareDataForBulkCopy<Changes>(listData, copy);
+                        copy.WriteToServer(data);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangeDbNumsperLevel - SaveBulkRecord", "");
+            }
+        }
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SiteChangeDbNumsperLevel>()
