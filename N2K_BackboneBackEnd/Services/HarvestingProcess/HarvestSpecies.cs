@@ -540,12 +540,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         changes.Add(siteChange);
                     }
                 }
+                SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSpecies - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
             }
-            SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
             return changes;
         }
 
