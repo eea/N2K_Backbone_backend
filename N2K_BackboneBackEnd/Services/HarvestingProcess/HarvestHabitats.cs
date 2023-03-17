@@ -559,7 +559,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         changes.Add(siteChange);
                     }
                 }
-                SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
             }
             catch (Exception ex)
             {
