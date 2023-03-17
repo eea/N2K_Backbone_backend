@@ -108,12 +108,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The definition ogf the versioning Site</param>
         /// <param name="pEnvelope">The envelope to process</param>
         /// <returns>Returns a BackBone Site object</returns>
-        public async Task<Sites>? harvestSiteCode(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
+        public Sites harvestSiteCode(NaturaSite pVSite, EnvelopesToProcess pEnvelope, int versionNext)
         {
             //Tomamos el valor más alto que tiene en el campo Version para ese SiteCode. Por defecto es -1 para cuando no existe 
             //por que le vamos a sumar un 1 lo cual dejaría en 0
             Sites bbSite = new Sites();
-            int versionNext = -1;
 
             #region SitePriority
             //SqlParameter param3 = new SqlParameter("@site", pVSite.SITECODE);
@@ -170,9 +169,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
             try
             {
-                versionNext = await _dataContext.Set<Sites>().Where(s => s.SiteCode == pVSite.SITECODE).OrderBy(s => s.Version).Select(s => s.Version).LastOrDefaultAsync();
                 bbSite.SiteCode = pVSite.SITECODE;
-                bbSite.Version = versionNext + 1;
+                bbSite.Version = versionNext;
                 bbSite.Current = false;
                 bbSite.Name = pVSite.SITENAME;
                 if (pVSite.DATE_COMPILATION.HasValue)
@@ -475,7 +473,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The object Versioning Site</param>
         /// <param name="pVersion">The version in BackBone</param>
         /// <returns>List of SiteOwnerType stored</returns>
-        private async Task<List<Models.backbone_db.SiteOwnerType>>? harvestSiteOwnerType(NaturaSite pVSite, int pVersion)
+        private async Task<List<Models.backbone_db.SiteOwnerType>>? harvestSiteOwnerType(NaturaSite pVSite, int pVersion, IList<Models.backbone_db.OwnerShipTypes> OwnerShipTypes)
         {
 
             List<Models.versioning_db.OwnerType> elements = null;

@@ -96,18 +96,21 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion)
+        public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion, IEnumerable<SpeciesTypes> _speciesTypes)
         {
             List<ContainsSpecies> elements = null;
             try
             {
+                var start = DateTime.Now;
+                //Console.WriteLine(String.Format("Start Species"));
+
                 //TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
                 elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
                 List<Models.backbone_db.Species> itemsSpecies = new List<Models.backbone_db.Species>();
                 List<Models.backbone_db.SpeciesOther> itemsSpeciesOthers = new List<Models.backbone_db.SpeciesOther>();
+
                 foreach (ContainsSpecies element in elements)
                 {
-
                     //Check id the specie code is null or not present in the catalog
                     SpecieBase item = new SpecieBase();
                     item.SiteCode = element.SITECODE;
@@ -134,7 +137,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.DataQuality = element.DATAQUALITY;
                     item.SpecieType = element.SPTYPE;
 
-                    if (element.SPECIESCODE is null || element.SPECIESCODE == "" || _dataContext.Set<SpeciesTypes>().Where(a => a.Code == element.SPECIESCODE && a.Active == true).Count() < 1)
+                    
+                    if (element.SPECIESCODE is null || element.SPECIESCODE == "" ||
+                        _speciesTypes.Where(a => a.Code == element.SPECIESCODE && a.Active == true).Count() < 1)
                     {
                         //Replace the code (which is Null or empty or no stored in the system)
                         //item.SiteCode = element.SITECODE;
@@ -144,10 +149,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     else
                     {
                         itemsSpecies.Add(item.getSpecies());
-                    }
+                    }                    
                 }
                 SpeciesOther.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), itemsSpeciesOthers);
                 Species.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), itemsSpecies);
+
                 return 1;
             }
             catch (Exception ex)

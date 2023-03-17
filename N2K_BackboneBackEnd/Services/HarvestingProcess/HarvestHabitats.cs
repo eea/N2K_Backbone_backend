@@ -55,14 +55,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion)
+        public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion,IList<DataQualityTypes> dataQualityTypes)
         {
             try
             {
                 //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Starting");
                 //Console.WriteLine("=>Start full habitat harvest by site...");
 
-                await HarvestHabitatsBySite(pSiteCode, pSiteVersion, pVersion);
+                await HarvestHabitatsBySite(pSiteCode, pSiteVersion, pVersion, dataQualityTypes);
                 await HarvestDescribeSitesBySite(pSiteCode, pSiteVersion, pVersion);
 
                 //Console.WriteLine("=>End full habitat harvest by site...");
@@ -119,7 +119,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        public async Task<int> HarvestHabitatsBySite(string pSiteCode, decimal pSiteVersion, int pVersion)
+        public async Task<int> HarvestHabitatsBySite(string pSiteCode, decimal pSiteVersion, int pVersion, IList<DataQualityTypes> dataQualityTypes )
         {
             List<ContainsHabitat> elements = null;
             try
@@ -136,8 +136,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.HabitatCode = element.HABITATCODE;
                     item.CoverHA = (decimal?)element.COVER_HA;
                     item.PriorityForm = element.PF;
-                    item.Representativity = element.REPRESENTATIVITY;
-                    item.DataQty = (element.DATAQUALITY != null) ? _dataContext.Set<DataQualityTypes>().Where(d => d.HabitatCode == element.DATAQUALITY).Select(d => d.Id).FirstOrDefault() : null;
+                    item.Representativity = element.REPRESENTATIVITY;                    
+                    item.DataQty = (element.DATAQUALITY != null) ? dataQualityTypes.Where(d => d.HabitatCode == element.DATAQUALITY).Select(d => d.Id).FirstOrDefault() : null;
                     //item.Conservation = element.CONSERVATION; // ??? PENDING
                     item.GlobalAssesments = element.GLOBALASSESMENT;
                     item.RelativeSurface = element.RELSURFACE;

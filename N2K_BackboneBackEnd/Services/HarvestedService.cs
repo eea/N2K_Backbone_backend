@@ -15,6 +15,7 @@ using N2K_BackboneBackEnd.Models.BackboneDB;
 using System.Diagnostics.Metrics;
 using System;
 using Microsoft.Extensions.Caching.Memory;
+using System.Collections.Generic;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -24,6 +25,17 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2K_VersioningContext _versioningContext;
         private readonly IOptions<ConfigSettings> _appSettings;
         private bool _ThereAreChanges = false;
+
+
+        private IList<SpeciesTypes> _speciesTypes= new List<SpeciesTypes>();
+        private IList<DataQualityTypes> _dataQualityTypes= new List<DataQualityTypes>();
+        private IList<Models.backbone_db.OwnerShipTypes> _ownerShipTypes = new List<Models.backbone_db.OwnerShipTypes>();
+
+        private struct SiteVersion
+        {
+            public string SiteCode;
+            public int MaxVersion;
+        }
 
         /// <summary>
         /// Constructor 
@@ -647,6 +659,10 @@ namespace N2K_BackboneBackEnd.Services
         private async Task<List<HarvestedEnvelope>> _Harvest(EnvelopesToProcess[] envelopeIDs, HarvestingStatus finalStatus)
         {
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
+            _speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
+            _dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
+            _ownerShipTypes = await _dataContext.Set<Models.backbone_db.OwnerShipTypes>().ToListAsync();
+
             try
             {
                 //for each envelope to process
@@ -688,32 +704,78 @@ namespace N2K_BackboneBackEnd.Services
 
                         List<Sites> bbSites = new List<Sites>();
                         HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
-                        //siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-                        //siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
-                        foreach (NaturaSite vSite in vSites)
+                        siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+                        siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+                        
+                        //create a list with the existing version per site in the current country
+                        //to avoid querying the db for every single site
+                        List<SiteVersion> versionsPerSite =await _dataContext.Set<Sites>().AsNoTracking().Where(v => v.CountryCode == envelope.CountryCode).GroupBy(a => a.SiteCode)
+                            .Select(g => new SiteVersion
+                            {
+                                SiteCode = g.Key,
+                                MaxVersion = g.Max(x => x.Version)
+                            }).ToListAsync();
+
+                        versionsPerSite.Clear();
+                        var start1 = DateTime.Now;
+                        //save to backbone database the site-versions  
+                        /*
+                        Parallel.ForEach(vSites, vSite =>
                         {
-                            Sites? bbSite = await siteCode.harvestSiteCode(vSite, envelope);
-                            bbSites.Add(bbSite);
-                        }
+                            int versionNext = 0;
+                            SiteVersion? _versionPerSite = versionsPerSite.FirstOrDefault(s => s.SiteCode == vSite.SITECODE);
+                            if (_versionPerSite != null)
+                                versionNext = _versionPerSite.Value.MaxVersion + 1;
+
+                            Sites? bbSite = siteCode.harvestSiteCode(vSite, envelope, versionNext);
+                            if (bbSite != null) bbSites.Add(bbSite);
+                        });
+                        */
+                        /*
+                        foreach (NaturaSite vSite in vSites)
+                            {
+                                int versionNext = 0;
+                                SiteVersion? _versionPerSite = versionsPerSite.FirstOrDefault(s => s.SiteCode == vSite.SITECODE);
+                                if (_versionPerSite != null)
+                                    versionNext = _versionPerSite.Value.MaxVersion + 1;
+
+                                Sites? bbSite = siteCode.harvestSiteCode(vSite, envelope, versionNext);
+                                if (bbSite != null) bbSites.Add(bbSite);
+                            }
+                        */
+                        Console.WriteLine(String.Format("End site {0}", (DateTime.Now - start1).TotalSeconds));
+                        //save all sitecode-version in bulk mode
                         Sites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), bbSites);
+
+                        var count = 0;
                         foreach (NaturaSite vSite in vSites)
                         {
                             try
                             {
+                                count++;
+
+                                //if (vSite.SITECODE != "DE4142401") continue;
+                                if (count > 300) break;
+
                                 _ThereAreChanges = true;
                                 //complete the data of the site and add it to the DB
                                 //TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 Console.WriteLine(String.Format("Start site {0}", vSite.SITECODE));
                                 var start = DateTime.Now;
                                 Sites bbSite = bbSites.Where(s => s.SiteCode == vSite.SITECODE).FirstOrDefault();
-                                bbSite = await siteCode.HarvestSite(vSite, envelope, bbSite);
+                                bbSite = await siteCode.HarvestSite(vSite, envelope, bbSite,_ownerShipTypes);
+
+                                //Console.WriteLine(String.Format("End harvest -> {0}", (DateTime.Now - start).TotalSeconds));
+
                                 if (bbSite != null)
                                 {
                                     HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
-                                    await species.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
-
+                                    await species.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version, _speciesTypes);
+                                    //Console.WriteLine(String.Format("End species -> {0}", (DateTime.Now - start).TotalSeconds));
+                                    
                                     HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
-                                    await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version);
+                                    await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version, _dataQualityTypes);
+                                    //Console.WriteLine(String.Format("End Habitats -> {0}", (DateTime.Now - start).TotalSeconds));
 
                                     _ThereAreChanges = false;
                                 }
@@ -773,6 +835,12 @@ namespace N2K_BackboneBackEnd.Services
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
                 return await Task.FromResult(new List<HarvestedEnvelope>());
+            }
+            finally
+            {
+                _speciesTypes.Clear();
+                _dataQualityTypes.Clear();
+                _ownerShipTypes.Clear();
             }
         }
 
