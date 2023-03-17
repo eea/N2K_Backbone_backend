@@ -973,9 +973,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             //var country = (changedSiteStatus.First().SiteCode).Substring(0, 2);
             //var site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == changedSiteStatus.First().SiteCode && site.Version == changedSiteStatus.First().VersionId).ToListAsync();
-            //Level level = (Level)site.Max(a => a.Level);
-            //var status = site.FirstOrDefault().Status;
-
+            Level level = Level.Critical;
+            SiteChangeStatus? status = SiteChangeStatus.Accepted;
 
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
             try
@@ -1080,12 +1079,12 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.Set<SiteActivities>().Add(activity);
                         await _dataContext.SaveChangesAsync();
 
-                        //Get the previous lavel and status to find the proper cached lists
-                        Level level = (Level)changes.Max(a => a.Level);
-                        SiteChangeStatus status = (SiteChangeStatus)changes.FirstOrDefault().Status;
+                        //Get the previous level and status to find the proper cached lists
+                        level = (Level)changes.Max(a => a.Level);
+                        status = (SiteChangeStatus)changes.FirstOrDefault().Status;
 
                         //Alter cached list. It comes from Removed or Accepted list and goes to Pending list
-                        swapSiteInListCache(cache, SiteChangeStatus.Pending, level, status, mySiteView);
+                        await swapSiteInListCache(cache, SiteChangeStatus.Pending, level, status, mySiteView);
 
 
                         modifiedSiteCode.OK = 1;
@@ -1105,13 +1104,10 @@ namespace N2K_BackboneBackEnd.Services
 
                 ////GetSiteCodesByStatusAndLevelAndCountry
                 ////get the country and the level of the first site code. The other codes will have the same level
-                ////refresh the chache
+                ////refresh the cache
                 if (result.Count > 0)
                 {
                     var country = (result.First().SiteCode).Substring(0, 2);
-                    var site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
-                    Level level = (Level)site.Max(a => a.Level);
-                    var status = site.FirstOrDefault().Status;
 
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;
