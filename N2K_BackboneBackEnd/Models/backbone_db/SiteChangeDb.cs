@@ -135,7 +135,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
         }
 
-        public static void SaveBulkRecord(string db, List<Changes> listData)
+        public static void SaveBulkRecord(string db, List<SiteChangeDb> listData)
         {
             try
             {
@@ -144,7 +144,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     using (var copy = new SqlBulkCopy(db))
                     {
                         copy.DestinationTableName = "Changes";
-                        DataTable data = TypeConverters.PrepareDataForBulkCopy<Changes>(listData, copy);
+                        DataTable data = TypeConverters.PrepareDataForBulkCopy<SiteChangeDb>(listData, copy);
                         copy.WriteToServer(data);
                     }
                 }
@@ -287,7 +287,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
         }
 
-        public static void SaveBulkRecord(string db, List<Changes> listData)
+        public static void SaveBulkRecord(string db, List<SiteChangeDb> listData)
         {
             try
             {
@@ -296,7 +296,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     using (var copy = new SqlBulkCopy(db))
                     {
                         copy.DestinationTableName = "Changes";
-                        DataTable data = TypeConverters.PrepareDataForBulkCopy<Changes>(listData, copy);
+                        DataTable data = TypeConverters.PrepareDataForBulkCopy<SiteChangeDb>(listData, copy);
                         copy.WriteToServer(data);
                     }
                 }

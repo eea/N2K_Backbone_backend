@@ -545,6 +545,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSpecies - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
             }
+            SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
             return changes;
         }
 
