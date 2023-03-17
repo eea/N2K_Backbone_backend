@@ -731,9 +731,9 @@ namespace N2K_BackboneBackEnd.Services
                             if (bbSite != null) bbSites.Add(bbSite);
                         });
                         */
-                        /*
+                        
                         foreach (NaturaSite vSite in vSites)
-                            {
+                        { 
                                 int versionNext = 0;
                                 SiteVersion? _versionPerSite = versionsPerSite.FirstOrDefault(s => s.SiteCode == vSite.SITECODE);
                                 if (_versionPerSite != null)
@@ -741,8 +741,8 @@ namespace N2K_BackboneBackEnd.Services
 
                                 Sites? bbSite = siteCode.harvestSiteCode(vSite, envelope, versionNext);
                                 if (bbSite != null) bbSites.Add(bbSite);
-                            }
-                        */
+                        }
+                        
                         Console.WriteLine(String.Format("End site {0}", (DateTime.Now - start1).TotalSeconds));
                         //save all sitecode-version in bulk mode
                         Sites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), bbSites);

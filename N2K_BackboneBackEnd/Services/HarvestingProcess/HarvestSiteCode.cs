@@ -71,7 +71,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The definition ogf the versioning Site</param>
         /// <param name="pEnvelope">The envelope to process</param>
         /// <returns>Returns a BackBone Site object</returns>
-        public async Task<Sites>? HarvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope, Sites? bbSite)
+        public async Task<Sites>? HarvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope, Sites? bbSite, IList<OwnerShipTypes> ownerShipTypes)
         {
             try
             {
@@ -83,7 +83,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 Models.backbone_db.HasNationalProtection.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestHasNationalProtection(pVSite, bbSite.Version));
                 Models.backbone_db.DetailedProtectionStatus.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestDetailedProtectionStatus(pVSite, bbSite.Version));
                 SiteLargeDescriptions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestSiteLargeDescriptions(pVSite, bbSite.Version));
-                SiteOwnerType.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestSiteOwnerType(pVSite, bbSite.Version));
+                SiteOwnerType.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestSiteOwnerType(pVSite, bbSite.Version, ownerShipTypes));
                 //TimeLog.setTimeStamp("Site " + pVSite.SITECODE + " - " + pVSite.VERSIONID.ToString(), "Processed");
 
                 return bbSite;
