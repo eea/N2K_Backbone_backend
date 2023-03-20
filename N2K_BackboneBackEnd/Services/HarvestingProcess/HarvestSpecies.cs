@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
+using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
@@ -114,16 +115,41 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 List<Models.backbone_db.Species> itemsSpecies = new List<Models.backbone_db.Species>();
                 List<Models.backbone_db.SpeciesOther> itemsSpeciesOthers = new List<Models.backbone_db.SpeciesOther>();
 
-                /*
                 versioningConn = new SqlConnection(versioningDB);
                 SqlParameter param1 = new SqlParameter("@SITECODE", pSiteCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", pSiteVersion);
                 SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
 
-                String queryString = @"select SITECODE as SiteCode, @NEWVERSION as Version,
+                String queryString = @"select SITECODE as SiteCode, @NEWVERSION as Version,				
+                    SPECIESCODE as SpecieCode,
+					CASE WHEN  LOWERBOUND IS NOT NULL then CAST(LOWERBOUND AS int) ELSE NULL END PopulationMin,
+					CASE WHEN  UPPERBOUND IS NOT NULL then CAST(UPPERBOUND AS int) ELSE NULL END PopulationMax,
+					CASE WHEN  SENSITIVE IS NOT NULL then 
+						CASE WHEN SENSITIVE =1 THEN CAST(1 as BIT) ELSE CAST(0 as BIT) END
+					ELSE NULL END as SensitiveInfo,
+                    RESIDENT as Resident,
+                    BREEDING as Breeding,
+                    WINTER as Winter ,
+                    STAGING as  Staging,
+                    --PATH as Path,  -- // ??? PENDING
+                    ABUNDANCECATEGORY as AbundaceCategory,
+                    Motivation ,
+                    POPULATION_TYPE as PopulationType ,
+                    CountingUnit,
+                    Population,
+                    ISOLATIONFACTOR as Insolation,
+                    Conservation ,
+                    GLOBALIMPORTANCE as Global ,
+					--item.NonPersistence = (element.NONPRESENCEINSITE != null) ? ((element.NONPRESENCEINSITE == 1) ? true : false) : null;
 
-                                       from ContainsSpecies
-                                       where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+					CASE WHEN  NONPRESENCEINSITE IS NOT NULL then 
+						CASE WHEN NONPRESENCEINSITE =1 THEN CAST(1 as BIT) ELSE CAST(0 as BIT) END
+					ELSE NULL END as NonPersistence,
+                    DataQuality ,
+                    SPTYPE as SpecieType
+
+                         from ContainsSpecies
+                         where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
@@ -134,8 +160,50 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 while (reader.Read())
                 {
-                    //Check id the specie code is null or not present in the catalog
                     SpecieBase item = new SpecieBase();
+                    /*
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    item.Version = pVersion;
+                    item.SpecieCode = element.SPECIESCODE;
+                    item.PopulationMin = (element.LOWERBOUND != null) ? Int32.Parse(element.LOWERBOUND) : null;
+                    item.PopulationMax = (element.UPPERBOUND != null) ? Int32.Parse(element.UPPERBOUND) : null;
+                    //item.Group = element.GROUP; // PENDING
+                    item.SensitiveInfo = (element.LOWERBOUND != null) ? ((element.SENSITIVE == 1) ? true : false) : null;
+                    item.Resident = element.RESIDENT;
+                    item.Breeding = element.BREEDING;
+                    item.Winter = element.WINTER;
+                    item.Staging = element.STAGING;
+                    //item.Path = element.PATH; // ??? PENDING
+                    item.AbundaceCategory = element.ABUNDANCECATEGORY;
+                    item.Motivation = element.MOTIVATION;
+                    item.PopulationType = element.POPULATION_TYPE;
+                    item.CountingUnit = element.COUNTINGUNIT;
+                    item.Population = element.POPULATION;
+                    item.Insolation = element.ISOLATIONFACTOR;
+                    item.Conservation = element.CONSERVATION;
+                    item.Global = element.GLOBALIMPORTANCE;
+                    item.NonPersistence = (element.NONPRESENCEINSITE != null) ? ((element.NONPRESENCEINSITE == 1) ? true : false) : null;
+                    item.DataQuality = element.DATAQUALITY;
+                    item.SpecieType = element.SPTYPE;
+
+
+                    if (item.SiteCode is null || item.SpecieCode == "" ||
+                        _speciesTypes.Where(a => a.Code == item.SiteCode && a.Active == true).Count() < 1)
+                    {
+                        //Replace the code (which is Null or empty or no stored in the system)
+                        //item.SiteCode = element.SITECODE;
+                        item.SpecieCode = (element.SPECIESNAMECLEAN != null) ? element.SPECIESNAMECLEAN : element.SPECIESNAME;
+                        itemsSpeciesOthers.Add(item.getSpeciesOther());
+                    }
+                    else
+                    {
+                        itemsSpecies.Add(item.getSpecies());
+                    }
+                    */
+
+
+                    /*
+                    //Check id the specie code is null or not present in the catalog
                     item.SiteCode = element.SITECODE;
                     item.Version = pVersion;
                     item.SpecieCode = element.SPECIESCODE;
@@ -173,8 +241,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     {
                         itemsSpecies.Add(item.getSpecies());
                     }                    
+                    */
                 }
-                */
+
 
                 List<Species> _listed1 = (List<Species>)_siteItems[typeof(List<Species>)];
                 _listed1.AddRange(itemsSpecies);

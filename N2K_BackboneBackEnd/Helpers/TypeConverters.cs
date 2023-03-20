@@ -1,4 +1,6 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using Microsoft.Data.SqlClient;
 using System.ComponentModel;
 using System.Data;
 
@@ -6,11 +8,18 @@ namespace N2K_BackboneBackEnd.Helpers
 {
     public static class TypeConverters
     {
-        public static DataTable PrepareDataForBulkCopy<T>(this IList<T> data, SqlBulkCopy copy)
+
+        public static T CheckNull<T>(object obj)
+        {
+            return obj == DBNull.Value ? default(T) : (T)obj;
+        }
+
+
+        public static System.Data.DataTable PrepareDataForBulkCopy<T>(this IList<T> data, SqlBulkCopy copy)
         {
             PropertyDescriptorCollection properties =
                 TypeDescriptor.GetProperties(typeof(T));
-            DataTable table = new DataTable();
+            System.Data.DataTable table = new System.Data.DataTable();
             foreach (PropertyDescriptor prop in properties)
             {
                 table.Columns.Add(prop.Name, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType);

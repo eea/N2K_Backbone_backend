@@ -337,7 +337,8 @@ namespace N2K_BackboneBackEnd.Services
 
                     try
                     {
-                        SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
+                        var a = 1;
+                        //SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
                     }
                     catch (Exception ex)
                     {
@@ -486,10 +487,11 @@ namespace N2K_BackboneBackEnd.Services
 
                 try
                 {
+                    var a = 1;
                     //processedEnvelope.Status = HarvestingStatus.Harvested;
-                    SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
+                    //SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
                     //_dataContext.Update<ProcessedEnvelopes>(processedEnvelope);
-                    await _dataContext.SaveChangesAsync();
+                    //await _dataContext.SaveChangesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -833,7 +835,7 @@ namespace N2K_BackboneBackEnd.Services
                                 bbSite = await siteCode.HarvestSite(vSite, envelope, bbSite, _ownerShipTypes, _versioningContext, _siteItems);
 
                                 //Console.WriteLine(String.Format("End harvest -> {0}", (DateTime.Now - start).TotalSeconds));
-                                /*                                
+
                                 if (bbSite != null)
                                 {
                                     HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
@@ -846,7 +848,6 @@ namespace N2K_BackboneBackEnd.Services
 
                                     _ThereAreChanges = false;
                                 }
-                                */
                                 //Console.WriteLine(String.Format("End site {0}", (DateTime.Now - start).TotalSeconds));
                             }
                             catch (DbUpdateException ex)
