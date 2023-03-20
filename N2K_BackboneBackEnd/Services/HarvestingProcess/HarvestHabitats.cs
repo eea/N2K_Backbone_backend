@@ -2,9 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
+using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
+using System.Xml.Linq;
 
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 {
@@ -33,15 +35,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestByCountry(string pCountryCode, int pCountryVersion, int pVersion)
+        public async Task<int> HarvestByCountry(NaturaSite pVSite, EnvelopesToProcess pEnvelope, Sites? bbSite, IList<OwnerShipTypes> ownerShipTypes, N2K_VersioningContext versioningContext, IDictionary<Type, object> _siteItems)
         {
             try
             {
                 //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
                 Console.WriteLine("=>Start full habitat harvest by country...");
-
-                await HarvestHabitatsByCountry(pCountryCode, pCountryVersion, pVersion);
-                await HarvestDescribeSitesByCountry(pCountryCode, pCountryVersion, pVersion);
+                string versioningDB = versioningContext.Database.GetConnectionString();
+                await HarvestHabitatsByCountry(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
+                await HarvestDescribeSitesByCountry(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
 
                 Console.WriteLine("=>End full habitat harvest by country...");
                 //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
@@ -55,15 +57,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion,IList<DataQualityTypes> dataQualityTypes, IDictionary<Type, object> _siteItems)
+        public async Task<int> HarvestBySite(NaturaSite pVSite, EnvelopesToProcess pEnvelope, Sites? bbSite, IList<OwnerShipTypes> ownerShipTypes, N2K_VersioningContext versioningContext, IDictionary<Type, object> _siteItems)
         {
             try
             {
                 //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Starting");
                 //Console.WriteLine("=>Start full habitat harvest by site...");
-
-                await HarvestHabitatsBySite(pSiteCode, pSiteVersion, pVersion, dataQualityTypes, _siteItems);
-                await HarvestDescribeSitesBySite(pSiteCode, pSiteVersion, pVersion, _siteItems);
+                string versioningDB = versioningContext.Database.GetConnectionString();
+                await HarvestHabitatsBySite(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
+                await HarvestDescribeSitesBySite(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
 
                 //Console.WriteLine("=>End full habitat harvest by site...");
                 //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
@@ -77,145 +79,180 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestHabitatsByCountry(string pCountryCode, int pCountryVersion, int pVersion)
+        public async Task<int> HarvestHabitatsByCountry(NaturaSite pVSite, int pVersion, string backboneDb, string versioningDB, IDictionary<Type, object> _siteItems)
         {
             List<ContainsHabitat> elements = null;
+            List<Habitats> items = new List<Habitats>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
             try
             {
-                Console.WriteLine("=>Start habitat harvest by country...");
-                elements = await _versioningContext.Set<ContainsHabitat>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
-                List<Models.backbone_db.Habitats> items = new List<Models.backbone_db.Habitats>();
-                foreach (ContainsHabitat element in elements)
+                versioningConn = new SqlConnection(versioningDB);
+                SqlParameter param1 = new SqlParameter("@SITECODE", pVSite.SITECODE);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
+                SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
+
+                String queryString = @"select COUNTRYCODE as CountryCode,VERSIONID as Version,COUNTRYVERSIONID as CountryVersionId ,SITECODE as SiteCode,HABITATCODE as HabitatCode,PERCENTAGECOVER as PercentageCover,REPRESENTATIVITY as Representativity,RELSURFACE as RelSurface,CONSSTATUS as ConsStatus,GLOBALASSESMENT as GlobalAssesment,STARTDATE as StartDate,ENDDATE as EndDate,RID as Rid,NONPRESENCEINSITE as NonPresenceSite,CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
+                                       from CONTAINSHABITAT
+                                       where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+                command.Parameters.Add(param3);
+                reader = await command.ExecuteReaderAsync();
+
+                while (reader.Read())
                 {
                     Habitats item = new Habitats();
-                    item.SiteCode = element.SITECODE;
+                    item.SiteCode = reader["SiteCode"].ToString();
                     item.Version = pVersion;
-                    item.HabitatCode = element.HABITATCODE;
-                    item.CoverHA = (decimal?)element.COVER_HA;
-                    item.PriorityForm = element.PF;
-                    item.Representativity = element.REPRESENTATIVITY;
-                    item.DataQty = Convert.ToInt32(element.DATAQUALITY);
-                    //item.Conservation = element.CONSERVATION; // ??? PENDING
-                    item.GlobalAssesments = element.GLOBALASSESMENT;
-                    item.RelativeSurface = element.RELSURFACE;
-                    item.Percentage = (decimal?)element.PERCENTAGECOVER;
-                    item.ConsStatus = element.CONSSTATUS;
-                    item.Caves = Convert.ToString(element.CAVES); // ???
-                    item.PF = Convert.ToString(element.PF); // ??? PENDING The same as PriorityForm
-                    item.NonPresenciInSite = Convert.ToInt32(element.NONPRESENCEINSITE); // ???
-                    items.Add(item);
-
-                }
-                Habitats.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), items);
-                Console.WriteLine("=>End habitat harvest by country...");
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine("=>End habitat harvest by country with error...");
-                return 0;
-            }
-
-        }
-
-        public async Task<int> HarvestHabitatsBySite(string pSiteCode, decimal pSiteVersion, int pVersion, IList<DataQualityTypes> dataQualityTypes, IDictionary<Type, object> _siteItems)
-        {
-            List<ContainsHabitat> elements = null;
-            try
-            {
-                //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
-
-                elements = await _versioningContext.Set<ContainsHabitat>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
-                List<Models.backbone_db.Habitats> items = new List<Models.backbone_db.Habitats>();
-                foreach (ContainsHabitat element in elements)
-                {
-                    Habitats item = new Habitats();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.HabitatCode = element.HABITATCODE;
-                    item.CoverHA = (decimal?)element.COVER_HA;
-                    item.PriorityForm = element.PF;
-                    item.Representativity = element.REPRESENTATIVITY;                    
-                    item.DataQty = (element.DATAQUALITY != null) ? dataQualityTypes.Where(d => d.HabitatCode == element.DATAQUALITY).Select(d => d.Id).FirstOrDefault() : null;
-                    //item.Conservation = element.CONSERVATION; // ??? PENDING
-                    item.GlobalAssesments = element.GLOBALASSESMENT;
-                    item.RelativeSurface = element.RELSURFACE;
-                    item.Percentage = (decimal?)element.PERCENTAGECOVER;
-                    item.ConsStatus = element.CONSSTATUS;
-                    item.Caves = Convert.ToString(element.CAVES); // ???
-                    item.PF = Convert.ToString(element.PF); // ??? PENDING The same as PriorityForm
-                    item.NonPresenciInSite = Convert.ToInt32(element.NONPRESENCEINSITE); // ???
+                    item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]);
+                    item.CoverHA = TypeConverters.CheckNull<decimal>(reader["Cover_HA"]);
+                    item.PriorityForm = TypeConverters.CheckNull<bool>(reader["PF"]);
+                    item.Representativity = TypeConverters.CheckNull<string>(reader["Representativity"]);
+                    item.DataQty = Convert.ToInt32(TypeConverters.CheckNull<string>(reader["DataQuality"]));
+                    item.GlobalAssesments = TypeConverters.CheckNull<string>(reader["GlobalAssesment"]);
+                    item.RelativeSurface = TypeConverters.CheckNull<string>(reader["RelSurface"]);
+                    item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]);
+                    item.ConsStatus = TypeConverters.CheckNull<string>(reader["ConsStatus"]);
+                    item.Caves = Convert.ToString(TypeConverters.CheckNull<string>(reader["Caves"])); // ???
+                    item.PF = Convert.ToString(TypeConverters.CheckNull<string>(reader["PF"])); // ??? PENDING The same as PriorityForm
+                    item.NonPresenciInSite = Convert.ToInt32(TypeConverters.CheckNull<string>(reader["NonPresenceSite"])); // ???TypeConverters.CheckNull<string>(reader["PercentageCover"]);
                     items.Add(item);
                 }
 
                 List<Habitats> _listed = (List<Habitats>)_siteItems[typeof(List<Habitats>)];
                 _listed.AddRange(items);
                 _siteItems[typeof(List<Habitats>)] = _listed;
-
                 return 1;
+
+
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestHabitats - HarvestBySite", "");
-                throw ex;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestHabitatsByCountry", "");
+                return 0;
             }
             finally
             {
-                //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
-            }
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
 
+            }
         }
 
-        public async Task<int> HarvestDescribeSitesByCountry(string pCountryCode, int pCountryVersion, int pVersion)
+        public async Task<int> HarvestHabitatsBySite(NaturaSite pVSite, int pVersion, string backboneDb, string versioningDB, IDictionary<Type, object> _siteItems)
         {
-            List<DescribesSites> elements = null;
+            List<ContainsHabitat> elements = null;
+            List<Habitats> items = new List<Habitats>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
             try
             {
+                versioningConn = new SqlConnection(versioningDB);
+                SqlParameter param1 = new SqlParameter("@SITECODE", pVSite.SITECODE);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
+                SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
 
-                Console.WriteLine("=>Start describeSites harvest by country...");
+                String queryString = @"select COUNTRYCODE as CountryCode,VERSIONID as Version,COUNTRYVERSIONID as CountryVersionId ,SITECODE as SiteCode,HABITATCODE as HabitatCode,PERCENTAGECOVER as PercentageCover,REPRESENTATIVITY as Representativity,RELSURFACE as RelSurface,CONSSTATUS as ConsStatus,GLOBALASSESMENT as GlobalAssesment,STARTDATE as StartDate,ENDDATE as EndDate,RID as Rid,NONPRESENCEINSITE as NonPresenceSite,CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
+                                       from CONTAINSHABITAT
+                                       where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
-                elements = await _versioningContext.Set<DescribesSites>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
-                List<Models.backbone_db.DescribeSites> items = new List<Models.backbone_db.DescribeSites>();
-                foreach (DescribesSites element in elements)
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+                command.Parameters.Add(param3);
+                reader = await command.ExecuteReaderAsync();
+
+                while (reader.Read())
                 {
-                    DescribeSites item = new DescribeSites();
-                    item.SiteCode = element.SITECODE;
+                    Habitats item = new Habitats();
+                    item.SiteCode = reader["SiteCode"].ToString();
                     item.Version = pVersion;
-                    item.HabitatCode = element.HABITATCODE;
-                    item.Percentage = element.PERCENTAGECOVER;
+                    item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]);
+                    item.CoverHA = TypeConverters.CheckNull<decimal>(reader["Cover_HA"]);
+                    item.PriorityForm = TypeConverters.CheckNull<bool>(reader["PF"]);
+                    item.Representativity = TypeConverters.CheckNull<string>(reader["Representativity"]);
+                    item.DataQty = Convert.ToInt32(TypeConverters.CheckNull<string>(reader["DataQuality"]));
+                    item.GlobalAssesments = TypeConverters.CheckNull<string>(reader["GlobalAssesment"]);
+                    item.RelativeSurface = TypeConverters.CheckNull<string>(reader["RelSurface"]);
+                    item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]);
+                    item.ConsStatus = TypeConverters.CheckNull<string>(reader["ConsStatus"]);
+                    item.Caves = Convert.ToString(TypeConverters.CheckNull<string>(reader["Caves"])); // ???
+                    item.PF = Convert.ToString(TypeConverters.CheckNull<string>(reader["PF"])); // ??? PENDING The same as PriorityForm
+                    item.NonPresenciInSite = Convert.ToInt32(TypeConverters.CheckNull<string>(reader["NonPresenceSite"])); // ???TypeConverters.CheckNull<string>(reader["PercentageCover"]);
                     items.Add(item);
-                    //item.SaveRecord(this._dataContext.Database.GetConnectionString());
                 }
-                DescribeSites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), items);
 
-                Console.WriteLine("=>End describeSites harvest by country...");
+                List<Habitats> _listed = (List<Habitats>)_siteItems[typeof(List<Habitats>)];
+                _listed.AddRange(items);
+                _siteItems[typeof(List<Habitats>)] = _listed;
                 return 1;
+
+
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine("=>End describeSites harvest by country with error...");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - HarvestHabitatsBySite", "");
                 return 0;
             }
+            finally
+            {
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
+
+            }
+
         }
 
-        public async Task<int> HarvestDescribeSitesBySite(string pSiteCode, decimal pSiteVersion, int pVersion, IDictionary<Type, object> _siteItems)
+        public async Task<int> HarvestDescribeSitesByCountry(NaturaSite pVSite, int pVersion, string backboneDb, string versioningDB, IDictionary<Type, object> _siteItems)
         {
-            List<DescribesSites> elements = null;
+            List<DescribeSites> items = new List<DescribeSites>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
             try
             {
-                //Console.WriteLine("=>Start describeSites harvest by site...");
+                versioningConn = new SqlConnection(versioningDB);
+                SqlParameter param1 = new SqlParameter("@SITECODE", pVSite.SITECODE);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
+                SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
 
-                elements = await _versioningContext.Set<DescribesSites>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
-                List<Models.backbone_db.DescribeSites> items = new List<Models.backbone_db.DescribeSites>();
-                foreach (DescribesSites element in elements)
+                String queryString = @"select COUNTRYCODE as CountryCode, VERSIONID as  Version, COUNTRYVERSIONID as CountryVersionID, SITECODE as SiteCode, HABITATCODE as HabitatCode, PERCENTAGECOVER as PercentageCover, RID 
+                            from DESCRIBESSITES 
+                            where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+
+                
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+                command.Parameters.Add(param3);
+
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
                 {
                     DescribeSites item = new DescribeSites();
-                    item.SiteCode = element.SITECODE;
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]); ;
                     item.Version = pVersion;
-                    item.HabitatCode = element.HABITATCODE;
-                    item.Percentage = element.PERCENTAGECOVER;
+                    item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]); ;
+                    item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]); ;
                     items.Add(item);
                 }
 
@@ -223,17 +260,84 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 _listed.AddRange(items);
                 _siteItems[typeof(List<DescribeSites>)] = _listed;
 
-                //Console.WriteLine("=>End describeSites harvest by site...");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine("=>End describeSites harvest by site with error...");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestDescribeSitesByCountry", "");
                 return 0;
+            }
+            finally
+            {
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    command.Dispose();
+                    await reader.DisposeAsync();
+                }
             }
         }
 
+        public async Task<int> HarvestDescribeSitesBySite(NaturaSite pVSite, int pVersion, string backboneDb, string versioningDB, IDictionary<Type, object> _siteItems)
+        {
+            List<DescribeSites> items = new List<DescribeSites>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            try
+            {
+                versioningConn = new SqlConnection(versioningDB);
+
+                SqlParameter param1 = new SqlParameter("@SITECODE", pVSite.SITECODE);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
+                SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
+
+                String queryString = @"select COUNTRYCODE as CountryCode, VERSIONID as  Version, COUNTRYVERSIONID as CountryVersionID, SITECODE as SiteCode, HABITATCODE as HabitatCode, PERCENTAGECOVER as PercentageCover, RID 
+                            from DESCRIBESSITES 
+                            where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+                command.Parameters.Add(param3);
+
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+                    DescribeSites item = new DescribeSites();
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]); ;
+                    item.Version = pVersion;
+                    item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]); ;
+                    item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]); ;
+                    items.Add(item);
+                }
+
+                List<DescribeSites> _listed = (List<DescribeSites>)_siteItems[typeof(List<DescribeSites>)];
+                _listed.AddRange(items);
+                _siteItems[typeof(List<DescribeSites>)] = _listed;
+
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestDescribeSitesBySite", "");
+                return 0;
+            }
+            finally
+            {
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    command.Dispose();
+                    await reader.DisposeAsync();
+                }
+            }
+        }
+        
         public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
         {
             Console.WriteLine("==>Start HarvestHabitats validate...");
