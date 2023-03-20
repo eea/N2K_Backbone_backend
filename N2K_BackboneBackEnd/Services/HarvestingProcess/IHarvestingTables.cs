@@ -3,7 +3,6 @@
     public interface IHarvestingTables
     {
 
-       static string GetHello() => throw new NotImplementedException();
        Task<int> Harvest(string countryCode, int versionId);
        Task<int> ValidateChanges(string countryCode, int newVersionId, int referenceVersionID);
     }

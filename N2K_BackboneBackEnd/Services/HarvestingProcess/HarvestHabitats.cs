@@ -55,15 +55,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion,IList<DataQualityTypes> dataQualityTypes)
+        public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion,IList<DataQualityTypes> dataQualityTypes, IDictionary<Type, object> _siteItems)
         {
             try
             {
                 //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Starting");
                 //Console.WriteLine("=>Start full habitat harvest by site...");
 
-                await HarvestHabitatsBySite(pSiteCode, pSiteVersion, pVersion, dataQualityTypes);
-                await HarvestDescribeSitesBySite(pSiteCode, pSiteVersion, pVersion);
+                await HarvestHabitatsBySite(pSiteCode, pSiteVersion, pVersion, dataQualityTypes, _siteItems);
+                await HarvestDescribeSitesBySite(pSiteCode, pSiteVersion, pVersion, _siteItems);
 
                 //Console.WriteLine("=>End full habitat harvest by site...");
                 //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "End");
@@ -119,7 +119,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        public async Task<int> HarvestHabitatsBySite(string pSiteCode, decimal pSiteVersion, int pVersion, IList<DataQualityTypes> dataQualityTypes )
+        public async Task<int> HarvestHabitatsBySite(string pSiteCode, decimal pSiteVersion, int pVersion, IList<DataQualityTypes> dataQualityTypes, IDictionary<Type, object> _siteItems)
         {
             List<ContainsHabitat> elements = null;
             try
@@ -148,7 +148,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.NonPresenciInSite = Convert.ToInt32(element.NONPRESENCEINSITE); // ???
                     items.Add(item);
                 }
-                Habitats.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), items);
+
+                List<Habitats> _listed = (List<Habitats>)_siteItems[typeof(List<Habitats>)];
+                _listed.AddRange(items);
+                _siteItems[typeof(List<Habitats>)] = _listed;
+
                 return 1;
             }
             catch (Exception ex)
@@ -196,7 +200,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestDescribeSitesBySite(string pSiteCode, decimal pSiteVersion, int pVersion)
+        public async Task<int> HarvestDescribeSitesBySite(string pSiteCode, decimal pSiteVersion, int pVersion, IDictionary<Type, object> _siteItems)
         {
             List<DescribesSites> elements = null;
             try
@@ -214,7 +218,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.Percentage = element.PERCENTAGECOVER;
                     items.Add(item);
                 }
-                DescribeSites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), items);
+
+                List<DescribeSites> _listed = (List<DescribeSites>)_siteItems[typeof(List<DescribeSites>)];
+                _listed.AddRange(items);
+                _siteItems[typeof(List<DescribeSites>)] = _listed;
+
                 //Console.WriteLine("=>End describeSites harvest by site...");
                 return 1;
             }

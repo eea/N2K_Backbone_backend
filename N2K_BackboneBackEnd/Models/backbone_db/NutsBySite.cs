@@ -61,7 +61,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
         }
 
-        public static void SaveBulkRecord(string db, List<NutsBySite> listData)
+        public async static Task<int> SaveBulkRecord(string db, List<NutsBySite> listData)
         {
             try
             {
@@ -71,13 +71,15 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     {
                         copy.DestinationTableName = "NutsBySite";
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<NutsBySite>(listData, copy);
-                        copy.WriteToServer(data);
+                        await copy.WriteToServerAsync(data);
                     }
                 }
+                return 1;
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "NutsBySite - SaveBulkRecord", "");
+                return 0;
             }
         }
 

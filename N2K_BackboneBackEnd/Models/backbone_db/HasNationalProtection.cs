@@ -63,7 +63,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
         }
 
-        public static void SaveBulkRecord(string db, List<HasNationalProtection> listData)
+        public async static Task<int> SaveBulkRecord(string db, List<HasNationalProtection> listData)
         {
             try
             {
@@ -73,13 +73,15 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     {
                         copy.DestinationTableName = "HasNationalProtection";
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<HasNationalProtection>(listData, copy);
-                        copy.WriteToServer(data);
+                        await copy.WriteToServerAsync(data);
                     }
                 }
+                return 1;
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HasNationalProtection - SaveBulkRecord", "");
+                return 0;
             }
         }
 

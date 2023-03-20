@@ -69,7 +69,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
         }
 
-        public static void SaveBulkRecord(string db, List<DetailedProtectionStatus> listData)
+        public async static Task<int> SaveBulkRecord(string db, List<DetailedProtectionStatus> listData)
         {
             try
             {
@@ -79,13 +79,15 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     {
                         copy.DestinationTableName = "DetailedProtectionStatus";
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<DetailedProtectionStatus>(listData, copy);
-                        copy.WriteToServer(data);
+                        await copy.WriteToServerAsync(data);
                     }
                 }
+                return 1;
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "DetailedProtectionStatus - SaveBulkRecord", "");
+                return 1;
             }
         }
 

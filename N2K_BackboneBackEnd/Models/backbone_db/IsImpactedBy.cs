@@ -84,7 +84,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
         }
 
-        public static void SaveBulkRecord(string db, List<IsImpactedBy> listData)
+        public async static Task<int> SaveBulkRecord(string db, List<IsImpactedBy> listData)
         {
             try
             {
@@ -94,13 +94,15 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     {
                         copy.DestinationTableName = "IsImpactedBy";
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<IsImpactedBy>(listData, copy);
-                        copy.WriteToServer(data);
+                        await copy.WriteToServerAsync(data);
                     }
                 }
+                return 1;
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "IsImpactedBy - SaveBulkRecord", "");
+                return 0;
             }
         }
 

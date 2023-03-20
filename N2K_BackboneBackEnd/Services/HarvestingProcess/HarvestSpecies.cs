@@ -1,10 +1,12 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
+using NuGet.Packaging;
 
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 {
@@ -96,20 +98,41 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion, IEnumerable<SpeciesTypes> _speciesTypes)
+        public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion, IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB,IDictionary<Type, object> _siteItems)
         {
-            List<ContainsSpecies> elements = null;
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
             try
             {
                 var start = DateTime.Now;
                 //Console.WriteLine(String.Format("Start Species"));
 
                 //TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Processing");
-                elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.SITECODE == pSiteCode && s.VERSIONID == pSiteVersion).ToListAsync();
+
+                
                 List<Models.backbone_db.Species> itemsSpecies = new List<Models.backbone_db.Species>();
                 List<Models.backbone_db.SpeciesOther> itemsSpeciesOthers = new List<Models.backbone_db.SpeciesOther>();
 
-                foreach (ContainsSpecies element in elements)
+                /*
+                versioningConn = new SqlConnection(versioningDB);
+                SqlParameter param1 = new SqlParameter("@SITECODE", pSiteCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", pSiteVersion);
+                SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
+
+                String queryString = @"select SITECODE as SiteCode, @NEWVERSION as Version,
+
+                                       from ContainsSpecies
+                                       where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+                command.Parameters.Add(param3);
+                reader = await command.ExecuteReaderAsync();
+
+                while (reader.Read())
                 {
                     //Check id the specie code is null or not present in the catalog
                     SpecieBase item = new SpecieBase();
@@ -151,8 +174,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         itemsSpecies.Add(item.getSpecies());
                     }                    
                 }
-                SpeciesOther.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), itemsSpeciesOthers);
-                Species.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), itemsSpecies);
+                */
+
+                List<Species> _listed1 = (List<Species>)_siteItems[typeof(List<Species>)];
+                _listed1.AddRange(itemsSpecies);
+                _siteItems[typeof(List<Species>)] = _listed1;
+
+                List<SpeciesOther> _listed2 = (List<SpeciesOther>)_siteItems[typeof(List<SpeciesOther>)];
+                _listed2.AddRange(itemsSpeciesOthers);
+                _siteItems[typeof(List<SpeciesOther>)] = _listed2;
 
                 return 1;
             }
@@ -164,7 +194,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             finally
             {
-                //TimeLog.setTimeStamp("Species for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
             }
 
         }
