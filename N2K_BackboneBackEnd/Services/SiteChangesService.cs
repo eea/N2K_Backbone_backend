@@ -1090,6 +1090,7 @@ namespace N2K_BackboneBackEnd.Services
                         modifiedSiteCode.OK = 1;
                         modifiedSiteCode.Error = string.Empty;
                         modifiedSiteCode.Status = SiteChangeStatus.Pending;
+                        modifiedSiteCode.VersionId = change is null ? modifiedSiteCode.VersionId : change.VersionReferenceId;
                     }
                     catch (Exception ex)
                     {
