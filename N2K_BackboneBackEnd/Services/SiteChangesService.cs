@@ -11,6 +11,7 @@ using System.Data;
 using NuGet.Protocol;
 using N2K_BackboneBackEnd.Helpers;
 using System.Security.Policy;
+using System.Diagnostics;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -780,7 +781,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<ModifiedSiteCode>> AcceptChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
-
+            List<SiteActivities> siteActivities = new List<SiteActivities>();
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
             try
             {
@@ -817,7 +818,8 @@ namespace N2K_BackboneBackEnd.Services
                             Action = "Accept Changes",
                             Deleted = false
                         };
-                        _dataContext.Set<SiteActivities>().Add(activity);
+                        //_dataContext.Set<SiteActivities>().Add(activity);
+                        siteActivities.Add(activity);
                         await _dataContext.SaveChangesAsync();
 
                         Level level = (Level)changes.Max(a => a.Level);
@@ -861,6 +863,7 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Accepted, level, cache, true);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
+                SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
             catch (Exception ex)
@@ -874,6 +877,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
+            List<SiteActivities> siteActivities = new List<SiteActivities>();
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
             try
             {
@@ -909,9 +913,9 @@ namespace N2K_BackboneBackEnd.Services
                             Action = "Reject Changes",
                             Deleted = false
                         };
-                        _dataContext.Set<SiteActivities>().Add(activity);
-                        await _dataContext.SaveChangesAsync();
-
+                        //_dataContext.Set<SiteActivities>().Add(activity);
+                       // await _dataContext.SaveChangesAsync();
+                       siteActivities.Add(activity);
 
                         Level level = (Level)changes.Max(a => a.Level);
                         SiteChangeStatus status = (SiteChangeStatus)changes.FirstOrDefault().Status;
@@ -954,6 +958,7 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, true);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
+                SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
             catch (Exception ex)
@@ -972,7 +977,7 @@ namespace N2K_BackboneBackEnd.Services
             //Level level = (Level)site.Max(a => a.Level);
             //var status = site.FirstOrDefault().Status;
 
-
+            List<SiteActivities> siteActivities = new List<SiteActivities>();
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
             try
             {
@@ -1073,8 +1078,9 @@ namespace N2K_BackboneBackEnd.Services
                             Deleted = false
                         };
 
-                        _dataContext.Set<SiteActivities>().Add(activity);
-                        await _dataContext.SaveChangesAsync();
+                        //_dataContext.Set<SiteActivities>().Add(activity);
+                        //await _dataContext.SaveChangesAsync();
+                        siteActivities.Add(activity);
 
                         //Get the previous lavel and status to find the proper cached lists
                         Level level = (Level)changes.Max(a => a.Level);
@@ -1114,6 +1120,7 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, true);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
+                SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
             catch (Exception ex)
