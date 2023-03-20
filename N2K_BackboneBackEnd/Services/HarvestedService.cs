@@ -337,8 +337,7 @@ namespace N2K_BackboneBackEnd.Services
 
                     try
                     {
-                        _dataContext.Set<SiteChangeDb>().AddRange(changes);
-                        _dataContext.SaveChanges();
+                        SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
                     }
                     catch (Exception ex)
                     {
@@ -488,7 +487,7 @@ namespace N2K_BackboneBackEnd.Services
                 try
                 {
                     //processedEnvelope.Status = HarvestingStatus.Harvested;
-                    _dataContext.Set<SiteChangeDb>().AddRange(changes);
+                    SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
                     //_dataContext.Update<ProcessedEnvelopes>(processedEnvelope);
                     await _dataContext.SaveChangesAsync();
                 }
