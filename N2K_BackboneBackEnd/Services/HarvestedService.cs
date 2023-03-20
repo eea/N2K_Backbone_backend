@@ -151,6 +151,106 @@ namespace N2K_BackboneBackEnd.Services
                 {
 
                 }
+                try
+                {
+                    List<NutsBySite> _listed = (List<NutsBySite>)_siteItems[typeof(List<NutsBySite>)];
+                    //await NutsBySite.SaveBulkRecord(db, _listed);
+
+                }
+                catch
+                {
+
+                }
+                try
+                {
+                    List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy> _listed = (List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy>)_siteItems[typeof(List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy>)];
+                    //await IsImpactedBy.SaveBulkRecord(db, _listed);
+
+                }
+                catch
+                {
+
+                }
+                try
+                {
+                    List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection> _listed = (List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection>)_siteItems[typeof(List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection>)];
+                    //await HasNationalProtection.SaveBulkRecord(db, _listed);
+
+                }
+                catch
+                {
+
+                }
+                try
+                {
+                    List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus> _listed = (List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>)_siteItems[typeof(List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>)];
+                    //await DetailedProtectionStatus.SaveBulkRecord(db, _listed);
+
+                }
+                catch
+                {
+
+                }
+                try
+                {
+                    List<SiteLargeDescriptions> _listed = (List<SiteLargeDescriptions>)_siteItems[typeof(List<SiteLargeDescriptions>)];
+                    //await SiteLargeDescriptions.SaveBulkRecord(db, _listed);
+
+                }
+                catch
+                {
+
+                }
+                try
+                {
+                    List<SiteOwnerType> _listed = (List<SiteOwnerType>)_siteItems[typeof(List<SiteOwnerType>)];
+                    //await SiteOwnerType.SaveBulkRecord(db, _listed);
+
+                }
+                catch
+                {
+
+                }
+                try
+                {
+                    List<Habitats> _listed = (List<Habitats>)_siteItems[typeof(List<Habitats>)];
+                    //await Habitats.SaveBulkRecord(db, _listed);
+
+                }
+                catch
+                {
+
+                }
+                try
+                {
+                    List<DescribeSites> _listed = (List<DescribeSites>)_siteItems[typeof(List<DescribeSites>)];
+                    //await DescribeSites.SaveBulkRecord(db, _listed);
+
+                }
+                catch
+                {
+
+                }
+                try
+                {
+                    List<SpeciesOther> _listed = (List<SpeciesOther>)_siteItems[typeof(List<SpeciesOther>)];
+                    //await SpeciesOther.SaveBulkRecord(db, _listed);
+
+                }
+                catch
+                {
+
+                }
+                try
+                {
+                    List<Species> _listed = (List<Species>)_siteItems[typeof(List<Species>)];
+                    //await Species.SaveBulkRecord(db, _listed);
+
+                }
+                catch
+                {
+
+                }
 
                 return 1;
             }
