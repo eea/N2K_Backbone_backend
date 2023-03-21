@@ -8,9 +8,9 @@ namespace N2K_BackboneBackEnd.Models
         public int VersionId { get; set; }
         public string? SiteName { get; set; }
         public DateTime? DateConfSCI { get; set; }
-        public double? AreaHa { get; set; }
+        public decimal? AreaHa { get; set; }
         //public string? PriorityLevel { get; set; }
-        public double? LengthKm { get; set; }
+        public decimal? LengthKm { get; set; }
         public string? SiteType { get; set; }
         public string? CountryCode { get; set; }
         public int? N2KVersioningVersion { get; set; }
