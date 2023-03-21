@@ -919,14 +919,16 @@ namespace N2K_BackboneBackEnd.Services
                         Sites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), bbSites);
 
                         HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
-                        await species.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _speciesTypes, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), bbSites,_siteItems);
+                        await species.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _speciesTypes, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), bbSites);
                         Console.WriteLine(String.Format("END species country {0}", (DateTime.Now - start1).TotalSeconds));
 
                         //Harvest habitats by country
                         HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
-                        await habitats.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), bbSites);
+                        await habitats.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes , bbSites);
                         Console.WriteLine(String.Format("END habitats country {0}", (DateTime.Now - start1).TotalSeconds));
 
+                        HarvestSiteCode sites =new HarvestSiteCode(_dataContext, _versioningContext);
+                        sites.HarvestSite(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes, _ownerShipTypes, bbSites);
 
                         var count = 0;
                         var startEnv = DateTime.Now;
@@ -936,35 +938,35 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 //if (count > 201) continue;
 
-                                _ThereAreChanges = true;
+                                //_ThereAreChanges = true;
                                 //complete the data of the site and add it to the DB
                                 //TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 //Console.WriteLine(String.Format("Start site {0}", vSite.SITECODE));
-                                Sites bbSite = bbSites.Where(s => s.SiteCode == vSite.SITECODE).FirstOrDefault();
-                                bbSite = await siteCode.HarvestSite(vSite, envelope, bbSite, _ownerShipTypes, _versioningContext, _siteItems);
+                                //Sites bbSite = bbSites.Where(s => s.SiteCode == vSite.SITECODE).FirstOrDefault();
+                                //bbSite = await siteCode.HarvestSite(vSite, envelope, bbSite, _ownerShipTypes, _versioningContext, _siteItems);
                                 //Console.WriteLine(String.Format("End harvest -> {0}", (DateTime.Now - start).TotalSeconds));
-                                if (bbSite != null)
-                                {
-                                    //await species.HarvestBySite(vSite.SITECODE, bbSite.Version, _countrySpecies, _siteItems);
-                                    //var Task1= await species.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version, _speciesTypes, _versioningContext.Database.GetConnectionString(), _siteItems);
+                                //if (bbSite != null)
+                                //{
+                                //    await species.HarvestBySite(vSite.SITECODE, bbSite.Version, _countrySpecies, _siteItems);
+                                //    var Task1= await species.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version, _speciesTypes, _versioningContext.Database.GetConnectionString(), _siteItems);
 
-                                    //Console.WriteLine(String.Format("Start Habitats {0}", (DateTime.Now - start).TotalSeconds));
-                                    //HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
-                                    //await habitats.HarvestBySite(vSite, bbSite, _dataQualityTypes , _versioningContext,  _siteItems);
-                                    //Console.WriteLine(String.Format("End Habitats -> {0}", (DateTime.Now - start).TotalSeconds));
+                                //    Console.WriteLine(String.Format("Start Habitats {0}", (DateTime.Now - start).TotalSeconds));
+                                //    HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
+                                //    await habitats.HarvestBySite(vSite, bbSite, _dataQualityTypes , _versioningContext,  _siteItems);
+                                //    Console.WriteLine(String.Format("End Habitats -> {0}", (DateTime.Now - start).TotalSeconds));
 
-                                    //Console.WriteLine(String.Format("End habitats {0}", (DateTime.Now - start).TotalSeconds));
-                                    _ThereAreChanges = false;
-                                }
+                                //    Console.WriteLine(String.Format("End habitats {0}", (DateTime.Now - start).TotalSeconds));
+                                //    _ThereAreChanges = false;
+                                //}
                                 //Console.WriteLine(String.Format("End site {0}", (DateTime.Now - start).TotalSeconds));
-                                count++;
-                                if (count % 100 == 0)
-                                    Console.WriteLine(String.Format("**** Processed sites {0} **=> {1}", count, (DateTime.Now - startEnv).TotalSeconds));
-                                if (count > MaxSitesPerBulk)
-                                {
-                                    count = 0;
-                                    await SaveBulkItems(startEnv);
-                                }
+                                //count++;
+                                //if (count % 100 == 0)
+                                //    Console.WriteLine(String.Format("**** Processed sites {0} **=> {1}", count, (DateTime.Now - startEnv).TotalSeconds));
+                                //if (count > MaxSitesPerBulk)
+                                //{
+                                //    count = 0;
+                                //    await SaveBulkItems(startEnv);
+                                //}
 
                             }
                             catch (DbUpdateException ex)

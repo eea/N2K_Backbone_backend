@@ -36,14 +36,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  string versioningDB, string backboneDb, List<Sites> bbSites)
+        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  string versioningDB, string backboneDb, IList<DataQualityTypes> dataQualityTypes, List<Sites> bbSites)
         {
             try
             {
                 //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
                 Console.WriteLine("=>Start full habitat harvest by country...");
                 //string versioningDB = versioningContext.Database.GetConnectionString();
-                await HarvestHabitatsByCountry(countryCode, COUNTRYVERSIONID, versioningDB ,backboneDb, bbSites);
+                await HarvestHabitatsByCountry(countryCode, COUNTRYVERSIONID, versioningDB ,  backboneDb, dataQualityTypes, bbSites);
                 await HarvestDescribeSitesByCountry(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
 
                 Console.WriteLine("=>End full habitat harvest by country...");
@@ -80,7 +80,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestHabitatsByCountry(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
+        public async Task<int> HarvestHabitatsByCountry(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, IList<DataQualityTypes> dataQualityTypes, List<Sites> sites)
         {
             List<Habitats> items = new List<Habitats>();
             SqlConnection versioningConn = null;
@@ -134,17 +134,31 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
                     }
                     item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]);
-                    item.CoverHA = TypeConverters.CheckNull<decimal>(reader["Cover_HA"]);
+                    item.CoverHA = null;
+                    if (reader["Cover_HA"] != null)
+                        if (reader["Cover_HA"].ToString() != "")
+                            item.CoverHA = Convert.ToDecimal(TypeConverters.CheckNull<double>(reader["Cover_HA"]));
                     item.PriorityForm = TypeConverters.CheckNull<bool>(reader["PF"]);
                     item.Representativity = TypeConverters.CheckNull<string>(reader["Representativity"]);
-                    item.DataQty = Convert.ToInt32(TypeConverters.CheckNull<string>(reader["DataQuality"]));
+                    item.DataQty = null;
+                    if (reader["DataQuality"] != null)
+                        item.DataQty = dataQualityTypes.Where(d => d.HabitatCode == reader["DataQuality"].ToString()).Select(d => d.Id).FirstOrDefault();
                     item.GlobalAssesments = TypeConverters.CheckNull<string>(reader["GlobalAssesment"]);
                     item.RelativeSurface = TypeConverters.CheckNull<string>(reader["RelSurface"]);
-                    item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]);
+                    item.Percentage = null;
+                    if (reader["PercentageCover"] != null)
+                        if (reader["PercentageCover"].ToString() != "")
+                            item.Percentage = Convert.ToDecimal(TypeConverters.CheckNull<double>(reader["PercentageCover"]));
+
                     item.ConsStatus = TypeConverters.CheckNull<string>(reader["ConsStatus"]);
-                    item.Caves = Convert.ToString(TypeConverters.CheckNull<string>(reader["Caves"])); // ???
-                    item.PF = Convert.ToString(TypeConverters.CheckNull<string>(reader["PF"])); // ??? PENDING The same as PriorityForm
-                    item.NonPresenciInSite = Convert.ToInt32(TypeConverters.CheckNull<string>(reader["NonPresenceSite"])); // ???TypeConverters.CheckNull<string>(reader["PercentageCover"]);
+
+                    if (reader["Caves"] != null)
+                        item.Caves = TypeConverters.CheckNull<decimal>(reader["Caves"]).ToString(); // ???
+                    item.PF = TypeConverters.CheckNull<bool>(reader["PF"]).ToString(); // ??? PENDING The same as PriorityForm
+
+                    if (reader["NonPresenceSite"] != null)
+                        if (reader["NonPresenceSite"].ToString() != "")
+                            item.NonPresenciInSite = Convert.ToInt32(reader["NonPresenceSite"].ToString()); // ???TypeConverters.CheckNull<string>(reader["PercentageCover"]);
                     items.Add(item);
                 }
 
@@ -296,7 +310,7 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
                                        PERCENTAGECOVER as PercentageCover,
                                        RID 
                                        from DESCRIBESSITES 
-                                       where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                                       where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
                 Console.WriteLine(String.Format("Start describeSites Query -> {0}", (DateTime.Now - start).TotalSeconds));
 

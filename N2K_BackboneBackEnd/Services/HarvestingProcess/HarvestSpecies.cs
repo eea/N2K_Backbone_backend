@@ -99,7 +99,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }                
 
-        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB, string backboneDb, List<Sites> sites, IDictionary<Type, object> _siteItems)
+        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB, string backboneDb, List<Sites> sites)
         {
             SqlConnection versioningConn = null;
             SqlCommand command = null;
