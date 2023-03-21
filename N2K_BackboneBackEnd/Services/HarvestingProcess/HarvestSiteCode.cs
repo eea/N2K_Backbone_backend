@@ -248,7 +248,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 String queryString = @"select SITECODE as SiteCode,BIOREGID as BGRID, PERCENTAGE as Percentage
                                      from BelongsToBioRegion
-                                     where SITECODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                                     where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
                 command = new SqlCommand(queryString, versioningConn);
                 versioningConn.Open();
 
@@ -328,7 +328,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 String queryString = @"select SITECODE as SiteCode, NUTSCODE as NutId,
                             SUM(COVER) as CoverPercentage 
                             from NutsRegion 
-                            where SITECODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID
+                            where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID
                             group by SITECODE, VERSIONID, NUTSCODE";
 
                 versioningConn.Open();
@@ -407,7 +407,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         SITECODE as SiteCode,ACTIVITYCODE as ActivityCode,IN_OUT  as InOut,INTENSITY as Intensity,
                         PERCENTAGEAFF as PercentageAff, INFLUENCE as Influence ,STARTDATE as StartDate,ENDDATE as EndDate,POLLUTIONCODE as PollutionCode,OCCURRENCE as Ocurrence,IMPACTTYPE  as ImpactType                         
                             from IsImpactedBy 
-                            where SITECODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                            where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
@@ -499,7 +499,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 String queryString = @"SELECT 
                         SITECODE as SiteCode, DesignatedCode, Percentage
                             from HasNationalProtection 
-                            where SITECODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                            where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID",COUNTRYVERSIONID);
@@ -579,7 +579,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 String queryString = @"SELECT 
                         N2K_SITECODE as SiteCode,DesignationCode,OverlapCode,OVERLAPPERC as OverlapPercentage,Convention
                             from DetailedProtectionStatus 
-                            where N2K_SITECODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                            where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE",countryCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
@@ -659,7 +659,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         SITECODE as SiteCode,Quality, Vulnarab,Designation,MANAG_PLAN as ManagPlan,Documentation,
                         OtherCharact,MANAG_CONSERV_MEASURES as  ManagConservMeasures, MANAG_PLAN_URL as ManagPlanUrl,MANAG_STATUS as ManagStatus
                         from Description 
-                        where SITECODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
@@ -743,7 +743,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 String queryString = @"SELECT 
                         SITECODE,TYPE, SUM([PERCENT]) as [percent]
                         from OwnerType 
-                        where SITECODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID
+                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID
                         group by SITECODE, VERSIONID, Type";
 
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
@@ -1077,7 +1077,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 String queryString = @"select SITECODE as SiteCode,LOCATOR_NAME as locatorName,ADDRESS_AREA as addressArea,POST_NAME as postName,POSTCODE as postCode,THOROUGHFARE as thoroughfare,UNSTRUCTURED_ADD as addressUnstructured,CONTACT_NAME as name, EMAIL as Email, ADMIN_UNIT as AdminUnit,LOCATOR_DESIGNATOR as LocatorDesignator
                                        from CONTACT
-                                       where SITECODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                                       where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
 
                 Console.WriteLine(String.Format("Start respondents  Query -> {0}", (DateTime.Now - start).TotalSeconds));
