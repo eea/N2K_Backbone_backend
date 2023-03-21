@@ -121,7 +121,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
         }
 
-        public static void SaveBulkRecord(string db, List<Species> listData)
+        public async static Task<int> SaveBulkRecord(string db, List<Species> listData)
         {
             try
             {
@@ -131,13 +131,15 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     {
                         copy.DestinationTableName = "Species";
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<Species>(listData, copy);
-                        copy.WriteToServer(data);
+                        await copy.WriteToServerAsync(data);
                     }
                 }
+                return 1;
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "Species - SaveBulkRecord", "");
+                return 0;
             }
         }
         public static void OnModelCreating(ModelBuilder builder)

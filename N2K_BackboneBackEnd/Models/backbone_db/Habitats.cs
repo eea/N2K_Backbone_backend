@@ -98,7 +98,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "Habitats - SaveRecord", "");
                 }
     }
-        public static void SaveBulkRecord(string db, List<Habitats> listData)
+        public async static Task<int> SaveBulkRecord(string db, List<Habitats> listData)
         {
             try
             {
@@ -108,13 +108,15 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     {
                         copy.DestinationTableName = "Habitats";
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<Habitats>(listData, copy);
-                        copy.WriteToServer(data);
+                        copy.WriteToServerAsync(data);
                     }
                 }
+                return 1;
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "Habitats - SaveBulkRecord", "");
+                return 0;
             }
         }
         public static void OnModelCreating(ModelBuilder builder)

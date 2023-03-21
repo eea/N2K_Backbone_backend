@@ -18,6 +18,7 @@ using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Generic;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System.Drawing;
+using DocumentFormat.OpenXml.Bibliography;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -32,6 +33,7 @@ namespace N2K_BackboneBackEnd.Services
         private IList<SpeciesTypes> _speciesTypes= new List<SpeciesTypes>();
         private IList<DataQualityTypes> _dataQualityTypes= new List<DataQualityTypes>();
         private IList<Models.backbone_db.OwnerShipTypes> _ownerShipTypes = new List<Models.backbone_db.OwnerShipTypes>();
+        private IList<Models.backbone_db.SpecieBase> _countrySpecies = new List<Models.backbone_db.SpecieBase>();
 
         private IDictionary<Type, object> _siteItems = new Dictionary<Type, object>();
         private struct SiteVersion
@@ -104,8 +106,7 @@ namespace N2K_BackboneBackEnd.Services
             _siteItems.Add(typeof(List<Habitats>), new List<Habitats>());
             _siteItems.Add(typeof(List<DescribeSites>), new List<DescribeSites>());
             _siteItems.Add(typeof(List<SpeciesOther>), new List<SpeciesOther>());
-            _siteItems.Add(typeof(List<Species>), new List<Species>());
-            
+            _siteItems.Add(typeof(List<Species>), new List<Species>());         
         }
 
         private void ClearBulkItems()
@@ -122,140 +123,140 @@ namespace N2K_BackboneBackEnd.Services
             _siteItems[typeof(List<DescribeSites>)] = new List<DescribeSites>();
             _siteItems[typeof(List<SpeciesOther>)] = new List<SpeciesOther>();
             _siteItems[typeof(List<Species>)] = new List<Species>();
-
         }
 
-        private async Task<int> SaveBulkItems()
+        private async Task<int> SaveBulkItems(DateTime startTime)
         {
+            SystemLog.write(SystemLog.errorLevel.Info, String.Format("Start saving sites in bulk mode  {0}", (DateTime.Now - startTime).TotalSeconds), "HarvestedService - _SaveBulkItems", "");
+
             string db = _dataContext.Database.GetConnectionString();
             try
             {
                 try
                 {
                     List<Respondents> _listed = (List<Respondents>)_siteItems[typeof(List<Respondents>)];
-                    //await Respondents.SaveBulkRecord(db, _listed);
-                    
+                    await Respondents.SaveBulkRecord(db, _listed);                    
                 }
-                catch
+                catch (Exception ex)
                 {
-                    
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Respondents.SaveBulkRecord", "");
                 }
 
                 try
                 {
                     List<BioRegions> _listed = (List<BioRegions>)_siteItems[typeof(List<BioRegions>)];
-                    //await BioRegions.SaveBulkRecord(db, _listed);
+                    await BioRegions.SaveBulkRecord(db, _listed);
 
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - BioRegions.SaveBulkRecord", "");
                 }
                 try
                 {
                     List<NutsBySite> _listed = (List<NutsBySite>)_siteItems[typeof(List<NutsBySite>)];
-                    //await NutsBySite.SaveBulkRecord(db, _listed);
+                    await NutsBySite.SaveBulkRecord(db, _listed);
 
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - NutsBySite.SaveBulkRecord", "");
                 }
                 try
                 {
                     List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy> _listed = (List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy>)_siteItems[typeof(List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy>)];
-                    //await IsImpactedBy.SaveBulkRecord(db, _listed);
+                    await N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy.SaveBulkRecord(db, _listed);
 
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - IsImpactedBy.SaveBulkRecord", "");
                 }
                 try
                 {
                     List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection> _listed = (List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection>)_siteItems[typeof(List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection>)];
-                    //await HasNationalProtection.SaveBulkRecord(db, _listed);
+                    await N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection.SaveBulkRecord(db, _listed);
 
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HasNationalProtection.SaveBulkRecord", "");
                 }
                 try
                 {
                     List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus> _listed = (List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>)_siteItems[typeof(List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>)];
-                    //await DetailedProtectionStatus.SaveBulkRecord(db, _listed);
+                    await N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus.SaveBulkRecord(db, _listed);
 
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - DetailedProtectionStatus.SaveBulkRecord", "");
                 }
                 try
                 {
                     List<SiteLargeDescriptions> _listed = (List<SiteLargeDescriptions>)_siteItems[typeof(List<SiteLargeDescriptions>)];
-                    //await SiteLargeDescriptions.SaveBulkRecord(db, _listed);
+                    await SiteLargeDescriptions.SaveBulkRecord(db, _listed);
 
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Habitats.SaveBulkRecord", "");
                 }
                 try
                 {
                     List<SiteOwnerType> _listed = (List<SiteOwnerType>)_siteItems[typeof(List<SiteOwnerType>)];
-                    //await SiteOwnerType.SaveBulkRecord(db, _listed);
+                    await SiteOwnerType.SaveBulkRecord(db, _listed);
 
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Habitats.SaveBulkRecord", "");
                 }
                 try
                 {
                     List<Habitats> _listed = (List<Habitats>)_siteItems[typeof(List<Habitats>)];
-                    //await Habitats.SaveBulkRecord(db, _listed);
-
+                    await Habitats.SaveBulkRecord(db, _listed);
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Habitats.SaveBulkRecord", "");
                 }
                 try
                 {
                     List<DescribeSites> _listed = (List<DescribeSites>)_siteItems[typeof(List<DescribeSites>)];
-                    //await DescribeSites.SaveBulkRecord(db, _listed);
+                    await DescribeSites.SaveBulkRecord(db, _listed);
 
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - DescribeSites.SaveBulkRecord", "");
                 }
                 try
                 {
                     List<SpeciesOther> _listed = (List<SpeciesOther>)_siteItems[typeof(List<SpeciesOther>)];
-                    //await SpeciesOther.SaveBulkRecord(db, _listed);
+                    await SpeciesOther.SaveBulkRecord(db, _listed);
 
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - SpeciesOther.SaveBulkRecord", "");
                 }
+
                 try
                 {
                     List<Species> _listed = (List<Species>)_siteItems[typeof(List<Species>)];
-                    //await Species.SaveBulkRecord(db, _listed);
-
+                    await Species.SaveBulkRecord(db, _listed);
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Species.SaveBulkRecord", "");
                 }
-
+                SystemLog.write(SystemLog.errorLevel.Info, String.Format("End saving sites in bulk mode  {0}", (DateTime.Now - startTime).TotalSeconds), "HarvestedService - SaveBulkItems", "");
                 return 1;
             }
-            catch
+            catch (Exception ex)
             {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - SaveBulkItems", "");
                 return 0;
             }
 
@@ -843,6 +844,7 @@ namespace N2K_BackboneBackEnd.Services
             _speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
             _dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
             _ownerShipTypes = await _dataContext.Set<Models.backbone_db.OwnerShipTypes>().ToListAsync();
+            int MaxSitesPerBulk = 2000;
 
             try
             {
@@ -883,12 +885,16 @@ namespace N2K_BackboneBackEnd.Services
                         //This is not the best place. We need to have the site created before to have the correct site version for the respondants
                         //List<Contact> vContact = _versioningContext.Set<Contact>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
                         //_dataContext.Set<Respondents>().AddRange(await HarvestRespondents(vContact, envelope));
-
+                        DateTime start1 = DateTime.Now;
                         List<Sites> bbSites = new List<Sites>();
                         HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
                         siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
                         siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
-                        
+
+                        HarvestSpecies species= new HarvestSpecies(_dataContext, _versioningContext);
+                        _countrySpecies=await species.HarvestCountry(envelope.CountryCode, envelope.VersionId, _speciesTypes, _versioningContext.Database.GetConnectionString(), _siteItems);
+                        Console.WriteLine(String.Format("END species country {0}", (DateTime.Now - start1).TotalSeconds));
+
                         //create a list with the existing version per site in the current country
                         //to avoid querying the db for every single site
                         List<SiteVersion> versionsPerSite =await _dataContext.Set<Sites>().AsNoTracking().Where(v => v.CountryCode == envelope.CountryCode).GroupBy(a => a.SiteCode)
@@ -898,57 +904,62 @@ namespace N2K_BackboneBackEnd.Services
                                 MaxVersion = g.Max(x => x.Version)
                             }).ToListAsync();
 
-                        versionsPerSite.Clear();
-                        var start1 = DateTime.Now;
-                        //save to backbone database the site-versions  
-                        
 
+                        //save to backbone database the site-versions                          
                         foreach (NaturaSite vSite in vSites)
                         { 
                                 int versionNext = 0;
-                                SiteVersion? _versionPerSite = versionsPerSite.FirstOrDefault(s => s.SiteCode == vSite.SITECODE);
-                                if (_versionPerSite != null)
+                                if (versionsPerSite.Any(s => s.SiteCode == vSite.SITECODE))
+                                {
+                                    SiteVersion? _versionPerSite = versionsPerSite.FirstOrDefault(s => s.SiteCode == vSite.SITECODE);
                                     versionNext = _versionPerSite.Value.MaxVersion + 1;
-
+                                }
                                 Sites? bbSite = siteCode.harvestSiteCode(vSite, envelope, versionNext);
                                 if (bbSite != null) bbSites.Add(bbSite);
                         }
-                        
+                        versionsPerSite.Clear();
+
                         //save all sitecode-version in bulk mode
                         Sites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), bbSites);
-
+                         
                         var count = 0;
+                        var startEnv = DateTime.Now;
                         foreach (NaturaSite vSite in vSites)
                         {
                             try
                             {
-                               count++;
-                                //if (vSite.SITECODE != "DE4029302") continue;
-                               if (count > 300) continue;
+                                //if (count > 201) continue;
 
                                 _ThereAreChanges = true;
                                 //complete the data of the site and add it to the DB
                                 //TimeLog.setTimeStamp("Site " + vSite.SITECODE + " - " + vSite.VERSIONID.ToString(), "Init");
                                 //Console.WriteLine(String.Format("Start site {0}", vSite.SITECODE));
-                                var start = DateTime.Now;
                                 Sites bbSite = bbSites.Where(s => s.SiteCode == vSite.SITECODE).FirstOrDefault();
                                 bbSite = await siteCode.HarvestSite(vSite, envelope, bbSite, _ownerShipTypes, _versioningContext, _siteItems);
-
                                 //Console.WriteLine(String.Format("End harvest -> {0}", (DateTime.Now - start).TotalSeconds));
-
                                 if (bbSite != null)
                                 {
-                                    HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
-                                    await species.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version, _speciesTypes, _versioningContext.Database.GetConnectionString(), _siteItems);
-                                    //Console.WriteLine(String.Format("End species -> {0}", (DateTime.Now - start).TotalSeconds));
+                                    await species.HarvestBySite(vSite.SITECODE, bbSite.Version, _countrySpecies, _siteItems);
+                                    //var Task1= await species.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version, _speciesTypes, _versioningContext.Database.GetConnectionString(), _siteItems);
 
-                                    //HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
-                                    //await habitats.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version, _dataQualityTypes, _siteItems);
+                                    //Console.WriteLine(String.Format("Start Habitats {0}", (DateTime.Now - start).TotalSeconds));
+                                    HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
+                                    await habitats.HarvestBySite(vSite, bbSite, _dataQualityTypes , _versioningContext,  _siteItems);
                                     //Console.WriteLine(String.Format("End Habitats -> {0}", (DateTime.Now - start).TotalSeconds));
 
+                                    //Console.WriteLine(String.Format("End habitats {0}", (DateTime.Now - start).TotalSeconds));
                                     _ThereAreChanges = false;
                                 }
                                 //Console.WriteLine(String.Format("End site {0}", (DateTime.Now - start).TotalSeconds));
+                                count++;
+                                if (count % 100 == 0)
+                                    Console.WriteLine(String.Format("**** Processed sites {0} **=> {1}", count, (DateTime.Now - startEnv).TotalSeconds));
+                                if (count > MaxSitesPerBulk)
+                                {
+                                    count = 0;
+                                    await SaveBulkItems(startEnv);
+                                }
+
                             }
                             catch (DbUpdateException ex)
                             {
@@ -962,7 +973,7 @@ namespace N2K_BackboneBackEnd.Services
                                 throw;
                             }
                         }
-                        //await SaveBulkItems();
+                        await SaveBulkItems(startEnv);
 
                         //set the enevelope as successfully completed
                         envelopeToProcess.Status = HarvestingStatus.DataLoaded;
@@ -997,6 +1008,7 @@ namespace N2K_BackboneBackEnd.Services
                         //save the data of the site in backbone DB
                         _dataContext.SaveChanges();
                     }
+                    _countrySpecies.Clear();
                     SystemLog.write(SystemLog.errorLevel.Info, String.Format("End envelope {0}", (DateTime.Now - startEnvelope).TotalSeconds), "HarvestedService - _Harvest", "");
                     Console.WriteLine(String.Format("End envelope {0}", (DateTime.Now - startEnvelope).TotalSeconds));
                 }

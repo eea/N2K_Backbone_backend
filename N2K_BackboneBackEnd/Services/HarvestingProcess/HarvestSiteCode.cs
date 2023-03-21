@@ -82,19 +82,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
             try
             {
-                /*
+                
                 //Get the data for all related tables
-                Respondents.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestRespondents(pVSite, bbSite.Version));
-                BioRegions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestBioregions(pVSite, bbSite.Version));
-                NutsBySite.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestNutsBySite(pVSite, bbSite.Version));
-                Models.backbone_db.IsImpactedBy.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestIsImpactedBy(pVSite, bbSite.Version));
-                Models.backbone_db.HasNationalProtection.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestHasNationalProtection(pVSite, bbSite.Version));
-                Models.backbone_db.DetailedProtectionStatus.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestDetailedProtectionStatus(pVSite, bbSite.Version));
-                SiteLargeDescriptions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestSiteLargeDescriptions(pVSite, bbSite.Version));
-                SiteOwnerType.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestSiteOwnerType(pVSite, bbSite.Version, ownerShipTypes));
-                //TimeLog.setTimeStamp("Site " + pVSite.SITECODE + " - " + pVSite.VERSIONID.ToString(), "Processed");
-                */
                 string versioningDB = versioningContext.Database.GetConnectionString();
+
                 await harvestRespondents(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
                 await harvestBioregions(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB,  _siteItems);
                 await harvestNutsBySite(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
@@ -103,25 +94,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 await harvestDetailedProtectionStatus(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
                 await harvestSiteLargeDescriptions(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
                 await harvestSiteOwnerType(pVSite, bbSite.Version, ownerShipTypes, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
-
-                /*                              
-                Task RespondentsTask= harvestRespondents(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
-                Task BioRegionsTask= harvestBioregions(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB,  _siteItems);
-                Task NutsBySitesTask=  harvestNutsBySite(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
-                Task IsImpactedByTask = harvestIsImpactedBy(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
-                Task HasNationalProtectionTask =  harvestHasNationalProtection(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
-                Task DetailedProtectionStatusTask = harvestDetailedProtectionStatus(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
-                Task SiteLargeDescriptionsTask = harvestSiteLargeDescriptions(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
-                Task SiteOwnerTypeTask = harvestSiteOwnerType(pVSite, bbSite.Version, ownerShipTypes,  this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
-                */
-
-                //BioRegions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestBioregions(pVSite, bbSite.Version));
-                //Respondents.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await harvestRespondents(pVSite, bbSite.Version));
-                /*
-                await Task.WhenAll(BioRegionsTask, RespondentsTask, NutsBySitesTask,
-                                  IsImpactedByTask, HasNationalProtectionTask,
-                DetailedProtectionStatusTask, SiteLargeDescriptionsTask, SiteOwnerTypeTask);
-                */
 
                 //BioRegions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await BioRegionsTask);
                 //Respondents.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await RespondentsTask);
@@ -319,8 +291,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     versioningConn.Close();
                     versioningConn.Dispose();
-                    command.Dispose();
-                    await reader.DisposeAsync();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
                 }
             }
             return 1;
@@ -389,8 +361,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     versioningConn.Close();
                     versioningConn.Dispose();
-                    command.Dispose();
-                    await reader.DisposeAsync();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
                 }
             }
         }
@@ -466,8 +438,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     versioningConn.Close();
                     versioningConn.Dispose();
-                    command.Dispose();
-                    await reader.DisposeAsync();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
                 }
             }
    
@@ -532,8 +504,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     versioningConn.Close();
                     versioningConn.Dispose();
-                    command.Dispose();
-                    await reader.DisposeAsync();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
                 }
             }
 
@@ -600,8 +572,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     versioningConn.Close();
                     versioningConn.Dispose();
-                    command.Dispose();
-                    await reader.DisposeAsync();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
                 }
             }
 
