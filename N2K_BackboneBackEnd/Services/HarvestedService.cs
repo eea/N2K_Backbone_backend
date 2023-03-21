@@ -844,6 +844,12 @@ namespace N2K_BackboneBackEnd.Services
             _speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
             _dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
             _ownerShipTypes = await _dataContext.Set<Models.backbone_db.OwnerShipTypes>().ToListAsync();
+
+            //save in memory the fixed codes like priority species and habitat codes
+            HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
+            siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+            siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+
             int MaxSitesPerBulk = 2000;
 
             try
@@ -882,18 +888,9 @@ namespace N2K_BackboneBackEnd.Services
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
 
-                        //This is not the best place. We need to have the site created before to have the correct site version for the respondants
-                        //List<Contact> vContact = _versioningContext.Set<Contact>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
-                        //_dataContext.Set<Respondents>().AddRange(await HarvestRespondents(vContact, envelope));
+                        //save in memory the fixed codes like priority species and habitat codes
                         DateTime start1 = DateTime.Now;
                         List<Sites> bbSites = new List<Sites>();
-                        HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
-                        siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-                        siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
-
-                        HarvestSpecies species= new HarvestSpecies(_dataContext, _versioningContext);
-                        _countrySpecies=await species.HarvestCountry(envelope.CountryCode, envelope.VersionId, _speciesTypes, _versioningContext.Database.GetConnectionString(), _siteItems);
-                        Console.WriteLine(String.Format("END species country {0}", (DateTime.Now - start1).TotalSeconds));
 
                         //create a list with the existing version per site in the current country
                         //to avoid querying the db for every single site
@@ -903,7 +900,6 @@ namespace N2K_BackboneBackEnd.Services
                                 SiteCode = g.Key,
                                 MaxVersion = g.Max(x => x.Version)
                             }).ToListAsync();
-
 
                         //save to backbone database the site-versions                          
                         foreach (NaturaSite vSite in vSites)
@@ -921,7 +917,12 @@ namespace N2K_BackboneBackEnd.Services
 
                         //save all sitecode-version in bulk mode
                         Sites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), bbSites);
-                         
+
+                        HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
+                        await species.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _speciesTypes, _versioningContext.Database.GetConnectionString(), bbSites,_siteItems);
+                        Console.WriteLine(String.Format("END species country {0}", (DateTime.Now - start1).TotalSeconds));
+
+
                         var count = 0;
                         var startEnv = DateTime.Now;
                         foreach (NaturaSite vSite in vSites)
@@ -939,7 +940,7 @@ namespace N2K_BackboneBackEnd.Services
                                 //Console.WriteLine(String.Format("End harvest -> {0}", (DateTime.Now - start).TotalSeconds));
                                 if (bbSite != null)
                                 {
-                                    await species.HarvestBySite(vSite.SITECODE, bbSite.Version, _countrySpecies, _siteItems);
+                                    //await species.HarvestBySite(vSite.SITECODE, bbSite.Version, _countrySpecies, _siteItems);
                                     //var Task1= await species.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version, _speciesTypes, _versioningContext.Database.GetConnectionString(), _siteItems);
 
                                     //Console.WriteLine(String.Format("Start Habitats {0}", (DateTime.Now - start).TotalSeconds));

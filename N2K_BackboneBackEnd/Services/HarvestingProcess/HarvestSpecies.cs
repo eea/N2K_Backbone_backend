@@ -97,20 +97,18 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 return 0;
             }
 
-        }
+        }                
 
-        
-
-        public async Task<IList<Models.backbone_db.SpecieBase>> HarvestCountry(string countryCode, decimal COUNTRYVERSIONID,  IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB, IDictionary<Type, object> _siteItems)
+        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB, List<Sites> sites, IDictionary<Type, object> _siteItems)
         {
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
-            List<Models.backbone_db.SpecieBase> _countrySpecies =  new List<Models.backbone_db.SpecieBase>();
             var start = DateTime.Now;
             try
             {
-                List<Models.backbone_db.SpecieBase> itemsSpecies = new List<Models.backbone_db.SpecieBase>();
+                List<Models.backbone_db.Species> itemsSpecies = new List<Models.backbone_db.Species>();
+                List<Models.backbone_db.SpeciesOther> itemsSpeciesOthers = new List<Models.backbone_db.SpeciesOther>();
 
 
                 versioningConn = new SqlConnection(versioningDB);
@@ -164,6 +162,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     SpecieBase item = new SpecieBase();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
                     item.Version = 0;
+                    if (sites.Any(s=> s.SiteCode== item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s=>s.SiteCode== item.SiteCode).Version;
+                    }
                     item.SpecieCode = TypeConverters.CheckNull<string>(reader["SpecieCode"]);
                     item.PopulationMin = TypeConverters.CheckNull<int?>(reader["PopulationMin"]);
                     item.PopulationMax = TypeConverters.CheckNull<int?>(reader["PopulationMax"]);
@@ -192,22 +194,31 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         //Replace the code (which is Null or empty or no stored in the system)
                         //item.SiteCode = element.SITECODE;
                         item.SpecieCode = (reader["SPECIESNAMECLEAN"] != null) ? reader["SPECIESNAMECLEAN"].ToString() : reader["SPECIESNAME"].ToString();
-                        item.Other = true;
+                        itemsSpeciesOthers.Add(item.getSpeciesOther());
                     }
                     else
                     {
-                        item.Other = false;
+                        itemsSpecies.Add(item.getSpecies());
                     }
-                    _countrySpecies.Add(item);
                 }
+
                 Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
-                return _countrySpecies;
+
+                List<Species> _listed1 = (List<Species>)_siteItems[typeof(List<Species>)];
+                _listed1.AddRange(itemsSpecies);
+                _siteItems[typeof(List<Species>)] = _listed1;
+
+                List<SpeciesOther> _listed2 = (List<SpeciesOther>)_siteItems[typeof(List<SpeciesOther>)];
+                _listed2.AddRange(itemsSpeciesOthers);
+                _siteItems[typeof(List<SpeciesOther>)] = _listed2;
+                Console.WriteLine(String.Format("End save to list species -> {0}", (DateTime.Now - start).TotalSeconds));
+                return 1;
 
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSpecies - HarvestBySite", "");
-                return _countrySpecies;
+                return 0;
             }
             finally
             {
