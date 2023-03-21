@@ -36,15 +36,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestByCountry(NaturaSite pVSite, EnvelopesToProcess pEnvelope, Sites? bbSite, IList<OwnerShipTypes> ownerShipTypes, N2K_VersioningContext versioningContext, IDictionary<Type, object> _siteItems)
+        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  string versioningDB, string backboneDb, List<Sites> bbSites)
         {
             try
             {
                 //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
                 Console.WriteLine("=>Start full habitat harvest by country...");
-                string versioningDB = versioningContext.Database.GetConnectionString();
-                await HarvestHabitatsByCountry(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
-                await HarvestDescribeSitesByCountry(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
+                //string versioningDB = versioningContext.Database.GetConnectionString();
+                await HarvestHabitatsByCountry(countryCode, COUNTRYVERSIONID, versioningDB ,backboneDb, bbSites);
+                await HarvestDescribeSitesByCountry(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
 
                 Console.WriteLine("=>End full habitat harvest by country...");
                 //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
@@ -80,36 +80,59 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestHabitatsByCountry(NaturaSite pVSite, int pVersion, string backboneDb, string versioningDB, IDictionary<Type, object> _siteItems)
+        public async Task<int> HarvestHabitatsByCountry(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<ContainsHabitat> elements = null;
             List<Habitats> items = new List<Habitats>();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
+            var start = DateTime.Now;
             try
             {
                 versioningConn = new SqlConnection(versioningDB);
-                SqlParameter param1 = new SqlParameter("@SITECODE", pVSite.SITECODE);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
-                SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
-                String queryString = @"select COUNTRYCODE as CountryCode,VERSIONID as Version,COUNTRYVERSIONID as CountryVersionId ,SITECODE as SiteCode,HABITATCODE as HabitatCode,PERCENTAGECOVER as PercentageCover,REPRESENTATIVITY as Representativity,RELSURFACE as RelSurface,CONSSTATUS as ConsStatus,GLOBALASSESMENT as GlobalAssesment,STARTDATE as StartDate,ENDDATE as EndDate,RID as Rid,NONPRESENCEINSITE as NonPresenceSite,CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
+                String queryString = @"select COUNTRYCODE as CountryCode,
+                                        VERSIONID as Version,
+                                        COUNTRYVERSIONID as CountryVersionId ,
+                                        SITECODE as SiteCode,
+                                        HABITATCODE as HabitatCode,
+                                        PERCENTAGECOVER as PercentageCover,
+                                        REPRESENTATIVITY as Representativity,
+                                        RELSURFACE as RelSurface,
+                                        CONSSTATUS as ConsStatus,
+                                        GLOBALASSESMENT as GlobalAssesment,
+                                        STARTDATE as StartDate,
+                                        ENDDATE as EndDate,
+                                        RID as Rid,
+                                        NONPRESENCEINSITE as NonPresenceSite,
+                                        CAVES as Caves ,
+                                        DATAQUALITY as DataQuality,
+                                        COVER_HA as Cover_HA,
+                                        PF
                                        from CONTAINSHABITAT
-                                       where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                                       where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
+
+                Console.WriteLine(String.Format("Start habitats Query -> {0}", (DateTime.Now - start).TotalSeconds));
                 versioningConn.Open();
+
                 command = new SqlCommand(queryString, versioningConn);
                 command.Parameters.Add(param1);
                 command.Parameters.Add(param2);
-                command.Parameters.Add(param3);
-                reader = await command.ExecuteReaderAsync();
 
+                reader = await command.ExecuteReaderAsync();
+                Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
                 while (reader.Read())
                 {
                     Habitats item = new Habitats();
-                    item.SiteCode = reader["SiteCode"].ToString();
-                    item.Version = pVersion;
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    item.Version = 0;
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                    }
                     item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]);
                     item.CoverHA = TypeConverters.CheckNull<decimal>(reader["Cover_HA"]);
                     item.PriorityForm = TypeConverters.CheckNull<bool>(reader["PF"]);
@@ -125,11 +148,19 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     items.Add(item);
                 }
 
-                List<Habitats> _listed = (List<Habitats>)_siteItems[typeof(List<Habitats>)];
-                _listed.AddRange(items);
-                _siteItems[typeof(List<Habitats>)] = _listed;
-                return 1;
+                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
 
+                try
+                {
+                    await Habitats.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - Habitats.SaveBulkRecord", "");
+                }
+                Console.WriteLine(String.Format("End save to list habitats -> {0}", (DateTime.Now - start).TotalSeconds));
+                
+                return 1;
 
             }
             catch (Exception ex)
@@ -139,6 +170,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             finally
             {
+                items.Clear();
                 if (versioningConn != null)
                 {
                     versioningConn.Close();
@@ -241,45 +273,64 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
 
         }
 
-        public async Task<int> HarvestDescribeSitesByCountry(NaturaSite pVSite, int pVersion, string backboneDb, string versioningDB, IDictionary<Type, object> _siteItems)
+        public async Task<int> HarvestDescribeSitesByCountry(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
             List<DescribeSites> items = new List<DescribeSites>();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
+
+            var start = DateTime.Now;
+
             try
             {
                 versioningConn = new SqlConnection(versioningDB);
-                SqlParameter param1 = new SqlParameter("@SITECODE", pVSite.SITECODE);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
-                SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
-                String queryString = @"select COUNTRYCODE as CountryCode, VERSIONID as  Version, COUNTRYVERSIONID as CountryVersionID, SITECODE as SiteCode, HABITATCODE as HabitatCode, PERCENTAGECOVER as PercentageCover, RID 
-                            from DESCRIBESSITES 
-                            where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                String queryString = @"select COUNTRYCODE as CountryCode,
+                                       VERSIONID as  Version,
+                                       COUNTRYVERSIONID as CountryVersionID,
+                                       SITECODE as SiteCode,
+                                       HABITATCODE as HabitatCode,
+                                       PERCENTAGECOVER as PercentageCover,
+                                       RID 
+                                       from DESCRIBESSITES 
+                                       where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
-                
+                Console.WriteLine(String.Format("Start describeSites Query -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
                 command.Parameters.Add(param1);
                 command.Parameters.Add(param2);
-                command.Parameters.Add(param3);
 
                 reader = await command.ExecuteReaderAsync();
+                Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
+
                 while (reader.Read())
                 {
                     DescribeSites item = new DescribeSites();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]); ;
-                    item.Version = pVersion;
+                    item.Version = 0;
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                    }
                     item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]); ;
                     item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]); ;
                     items.Add(item);
                 }
-
-                List<DescribeSites> _listed = (List<DescribeSites>)_siteItems[typeof(List<DescribeSites>)];
-                _listed.AddRange(items);
-                _siteItems[typeof(List<DescribeSites>)] = _listed;
+                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                try
+                {
+                    await DescribeSites.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - DescribeSites.SaveBulkRecord", "");
+                }
+                Console.WriteLine(String.Format("End save to list describe sites -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 return 1;
             }
@@ -290,12 +341,13 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
             }
             finally
             {
+                items.Clear();
                 if (versioningConn != null)
                 {
                     versioningConn.Close();
                     versioningConn.Dispose();
-                    command.Dispose();
-                    await reader.DisposeAsync();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
                 }
             }
         }

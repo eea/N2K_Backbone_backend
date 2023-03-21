@@ -922,6 +922,12 @@ namespace N2K_BackboneBackEnd.Services
                         await species.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _speciesTypes, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), bbSites,_siteItems);
                         Console.WriteLine(String.Format("END species country {0}", (DateTime.Now - start1).TotalSeconds));
 
+                        //Harvest habitats by country
+                        HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
+                        await habitats.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), bbSites);
+                        Console.WriteLine(String.Format("END habitats country {0}", (DateTime.Now - start1).TotalSeconds));
+
+
                         var count = 0;
                         var startEnv = DateTime.Now;
                         foreach (NaturaSite vSite in vSites)
@@ -943,8 +949,8 @@ namespace N2K_BackboneBackEnd.Services
                                     //var Task1= await species.HarvestBySite(vSite.SITECODE, vSite.VERSIONID, bbSite.Version, _speciesTypes, _versioningContext.Database.GetConnectionString(), _siteItems);
 
                                     //Console.WriteLine(String.Format("Start Habitats {0}", (DateTime.Now - start).TotalSeconds));
-                                    HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
-                                    await habitats.HarvestBySite(vSite, bbSite, _dataQualityTypes , _versioningContext,  _siteItems);
+                                    //HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
+                                    //await habitats.HarvestBySite(vSite, bbSite, _dataQualityTypes , _versioningContext,  _siteItems);
                                     //Console.WriteLine(String.Format("End Habitats -> {0}", (DateTime.Now - start).TotalSeconds));
 
                                     //Console.WriteLine(String.Format("End habitats {0}", (DateTime.Now - start).TotalSeconds));
