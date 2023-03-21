@@ -1189,9 +1189,9 @@ namespace N2K_BackboneBackEnd.Services
                 bbSite.SiteType = pVSite.SITETYPE;
                 bbSite.AltitudeMin = pVSite.ALTITUDE_MIN;
                 bbSite.AltitudeMax = pVSite.ALTITUDE_MAX;
-                bbSite.Area = (double?)pVSite.AREAHA;
+                bbSite.Area = pVSite.AREAHA;
                 bbSite.CountryCode = pEnvelope.CountryCode;
-                bbSite.Length = (double?)pVSite.LENGTHKM;
+                bbSite.Length = pVSite.LENGTHKM;
                 bbSite.N2KVersioningRef = Int32.Parse(pVSite.VERSIONID.ToString());
                 bbSite.N2KVersioningVersion = pEnvelope.VersionId;
                 return bbSite;
