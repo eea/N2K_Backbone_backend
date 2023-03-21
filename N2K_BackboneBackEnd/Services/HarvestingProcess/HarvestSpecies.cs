@@ -105,12 +105,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             SqlCommand command = null;
             SqlDataReader reader = null;
             var start = DateTime.Now;
+            List<Models.backbone_db.Species> itemsSpecies = new List<Models.backbone_db.Species>();
+            List<Models.backbone_db.SpeciesOther> itemsSpeciesOthers = new List<Models.backbone_db.SpeciesOther>();
             try
             {
-                List<Models.backbone_db.Species> itemsSpecies = new List<Models.backbone_db.Species>();
-                List<Models.backbone_db.SpeciesOther> itemsSpeciesOthers = new List<Models.backbone_db.SpeciesOther>();
-
-
                 versioningConn = new SqlConnection(versioningDB);
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
@@ -204,14 +202,27 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
 
-                List<Species> _listed1 = (List<Species>)_siteItems[typeof(List<Species>)];
-                _listed1.AddRange(itemsSpecies);
-                _siteItems[typeof(List<Species>)] = _listed1;
+                try
+                {
+                    await SpeciesOther.SaveBulkRecord(versioningDB, itemsSpeciesOthers);
 
-                List<SpeciesOther> _listed2 = (List<SpeciesOther>)_siteItems[typeof(List<SpeciesOther>)];
-                _listed2.AddRange(itemsSpeciesOthers);
-                _siteItems[typeof(List<SpeciesOther>)] = _listed2;
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - SpeciesOther.SaveBulkRecord", "");
+                }
+
+                try
+                {
+                    await Species.SaveBulkRecord(versioningDB, itemsSpecies);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Species.SaveBulkRecord", "");
+                }
+
                 Console.WriteLine(String.Format("End save to list species -> {0}", (DateTime.Now - start).TotalSeconds));
+
                 return 1;
 
             }
@@ -222,6 +233,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             finally
             {
+                itemsSpeciesOthers.Clear();
+                itemsSpecies.Clear();
                 if (versioningConn != null)
                 {
                     versioningConn.Close();

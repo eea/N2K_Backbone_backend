@@ -863,7 +863,7 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Accepted, level, cache, true);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
-                SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
+                //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
             catch (Exception ex)
@@ -958,7 +958,7 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, true);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
-                SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
+                //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
             catch (Exception ex)
@@ -1120,7 +1120,7 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, true);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
-                SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
+                //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
             catch (Exception ex)
