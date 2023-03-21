@@ -919,9 +919,8 @@ namespace N2K_BackboneBackEnd.Services
                         Sites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), bbSites);
 
                         HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
-                        await species.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _speciesTypes, _versioningContext.Database.GetConnectionString(), bbSites,_siteItems);
+                        await species.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _speciesTypes, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), bbSites,_siteItems);
                         Console.WriteLine(String.Format("END species country {0}", (DateTime.Now - start1).TotalSeconds));
-
 
                         var count = 0;
                         var startEnv = DateTime.Now;

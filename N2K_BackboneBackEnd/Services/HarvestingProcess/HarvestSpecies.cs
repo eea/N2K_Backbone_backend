@@ -99,7 +99,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }                
 
-        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB, List<Sites> sites, IDictionary<Type, object> _siteItems)
+        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB, string backboneDb, List<Sites> sites, IDictionary<Type, object> _siteItems)
         {
             SqlConnection versioningConn = null;
             SqlCommand command = null;
@@ -204,7 +204,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 try
                 {
-                    await SpeciesOther.SaveBulkRecord(versioningDB, itemsSpeciesOthers);
+                    await SpeciesOther.SaveBulkRecord(backboneDb, itemsSpeciesOthers);
 
                 }
                 catch (Exception ex)
@@ -214,7 +214,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 try
                 {
-                    await Species.SaveBulkRecord(versioningDB, itemsSpecies);
+                    await Species.SaveBulkRecord( backboneDb, itemsSpecies);
                 }
                 catch (Exception ex)
                 {
