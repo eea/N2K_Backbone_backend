@@ -883,8 +883,8 @@ namespace N2K_BackboneBackEnd.Services
                     try
                     {
                         //add the envelope to the DB
-                        _dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
-                        _dataContext.SaveChanges();
+                        //_dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
+                        //_dataContext.SaveChanges();
 
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();

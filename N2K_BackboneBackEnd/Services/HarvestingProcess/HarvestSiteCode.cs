@@ -579,7 +579,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 String queryString = @"SELECT 
                         N2K_SITECODE as SiteCode,DesignationCode,OverlapCode,OVERLAPPERC as OverlapPercentage,Convention
                             from DetailedProtectionStatus 
-                            where SITECODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                            where N2K_SITECODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE",countryCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
