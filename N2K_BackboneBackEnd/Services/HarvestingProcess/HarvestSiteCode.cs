@@ -263,7 +263,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         item.Percentage = decimal.ToDouble(TypeConverters.CheckNull<decimal>(reader["Percentage"]));
                     items.Add(item);
                 }
-                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
                 {
                     await BioRegions.SaveBulkRecord(backboneDb, items);
@@ -272,7 +272,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedSiteCode - BioRegions.SaveBulkRecord", "");
                 }
-                Console.WriteLine(String.Format("End save to list bioregions -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End save to list bioregions -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 return 1;
             }
@@ -343,7 +343,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                     items.Add(item);
                 }
-                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
                 {
                     await NutsBySite.SaveBulkRecord(backboneDb, items);
@@ -353,7 +353,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - NutsBySite.SaveBulkRecord", "");
                 }
 
-                Console.WriteLine(String.Format("End save to list nuts by site -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End save to list nuts by site -> {0}", (DateTime.Now - start).TotalSeconds));
                 return 1;
             }
             catch (Exception ex)
@@ -446,7 +446,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - IsImpactedBy.SaveBulkRecord", "");
                 }
-                Console.WriteLine(String.Format("End save to list IsImpactedBy -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End save to list IsImpactedBy -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 return 1;
             }
@@ -515,7 +515,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     items.Add(item);
                 }
 
-                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
                 {
                     await Models.backbone_db.HasNationalProtection.SaveBulkRecord(backboneDb, items);
@@ -524,7 +524,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - HasNationalProtection.SaveBulkRecord", "");
                 }
-                Console.WriteLine(String.Format("End save to list HasNationalProtection -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End save to list HasNationalProtection -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 return 1;
             }
@@ -605,7 +605,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - DetailedProtectionStatus.SaveBulkRecord", "");
                 }
-                Console.WriteLine(String.Format("End save to list DetailedProtectionStatus -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End save to list DetailedProtectionStatus -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 return 1;
             }
@@ -682,7 +682,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                     items.Add(item);
                 }
-                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
                 {
                     await Models.backbone_db.SiteLargeDescriptions.SaveBulkRecord(backboneDb, items);
@@ -691,7 +691,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - SiteLargeDescriptions.SaveBulkRecord", "");
                 }
-                Console.WriteLine(String.Format("End save to list Site Large Description -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End save to list Site Large Description -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 return 1;
             }
