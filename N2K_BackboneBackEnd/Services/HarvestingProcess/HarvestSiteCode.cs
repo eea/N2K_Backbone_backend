@@ -1,22 +1,12 @@
-﻿using DocumentFormat.OpenXml.Office.CustomUI;
-using DocumentFormat.OpenXml.Office2010.CustomUI;
-using DocumentFormat.OpenXml.Spreadsheet;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
-using NuGet.Packaging;
-using System.Collections.Generic;
-using System.Web.Http.Controllers;
-using System.Xml.Linq;
 
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 {
@@ -419,7 +409,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 reader = await command.ExecuteReaderAsync();
 
-                Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 while (reader.Read())
                 {
@@ -447,7 +437,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     items.Add(item);
                 }
 
-                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
                 {
                     await Models.backbone_db.IsImpactedBy.SaveBulkRecord(backboneDb, items);
@@ -1080,14 +1070,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
 
-                Console.WriteLine(String.Format("Start respondents  Query -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("Start respondents  Query -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
                 command.Parameters.Add(param1);
                 command.Parameters.Add(param2);
                 reader = await command.ExecuteReaderAsync();
-                Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 while (reader.Read())
                 {
@@ -1110,7 +1100,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     respondent.LocatorDesignator = TypeConverters.CheckNull<string>(reader["LocatorDesignator"]);
                     items.Add(respondent);
                 }
-                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
                 {
                     await Respondents.SaveBulkRecord(backboneDb, items);
@@ -1119,7 +1109,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - DescribeSites.SaveBulkRecord", "");
                 }
-                Console.WriteLine(String.Format("End save to list describe sites -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End save to list describe sites -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 return 1;
             }

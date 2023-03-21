@@ -115,7 +115,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
 
-                Console.WriteLine(String.Format("Start habitats Query -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("Start habitats Query -> {0}", (DateTime.Now - start).TotalSeconds));
                 versioningConn.Open();
 
                 command = new SqlCommand(queryString, versioningConn);
@@ -123,7 +123,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 command.Parameters.Add(param2);
 
                 reader = await command.ExecuteReaderAsync();
-                Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
                 while (reader.Read())
                 {
                     Habitats item = new Habitats();
@@ -162,7 +162,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     items.Add(item);
                 }
 
-                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 try
                 {
@@ -172,7 +172,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - Habitats.SaveBulkRecord", "");
                 }
-                Console.WriteLine(String.Format("End save to list habitats -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End save to list habitats -> {0}", (DateTime.Now - start).TotalSeconds));
                 
                 return 1;
 
@@ -312,7 +312,7 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
                                        from DESCRIBESSITES 
                                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
-                Console.WriteLine(String.Format("Start describeSites Query -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("Start describeSites Query -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
@@ -320,7 +320,7 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
                 command.Parameters.Add(param2);
 
                 reader = await command.ExecuteReaderAsync();
-                Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 while (reader.Read())
                 {
@@ -335,7 +335,7 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
                     item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]); ;
                     items.Add(item);
                 }
-                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
                 {
                     await DescribeSites.SaveBulkRecord(backboneDb, items);
@@ -344,7 +344,7 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
                 {
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - DescribeSites.SaveBulkRecord", "");
                 }
-                Console.WriteLine(String.Format("End save to list describe sites -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End save to list describe sites -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 return 1;
             }

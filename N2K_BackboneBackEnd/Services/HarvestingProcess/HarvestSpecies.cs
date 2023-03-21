@@ -146,7 +146,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     FROM ContainsSpecies
                     WHERE COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
-                Console.WriteLine(String.Format("Start species Query -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("Start species Query -> {0}", (DateTime.Now - start).TotalSeconds));
                 versioningConn.Open();
 
                 command = new SqlCommand(queryString, versioningConn);
@@ -154,7 +154,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 command.Parameters.Add(param2);
 
                 reader = await command.ExecuteReaderAsync();
-                Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
                 while (reader.Read())
                 {
                     SpecieBase item = new SpecieBase();
@@ -221,12 +221,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Species.SaveBulkRecord", "");
                 }
 
-                Console.WriteLine(String.Format("End save to list species -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End save to list species -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 return 1;
 
             }
             catch (Exception ex)
+
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSpecies - HarvestBySite", "");
                 return 0;
@@ -285,136 +286,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
 }
 
-
-/*
-public async Task<int> HarvestBySite(string pSiteCode, decimal pSiteVersion, int pVersion, IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB,IDictionary<Type, object> _siteItems)
-{
-    SqlConnection versioningConn = null;
-    SqlCommand command = null;
-    SqlDataReader reader = null;
-    var start = DateTime.Now;
-    try
-    {
-        List<Models.backbone_db.Species> itemsSpecies = new List<Models.backbone_db.Species>();
-        List<Models.backbone_db.SpeciesOther> itemsSpeciesOthers = new List<Models.backbone_db.SpeciesOther>();
-
-        versioningConn = new SqlConnection(versioningDB);
-        SqlParameter param1 = new SqlParameter("@SITECODE", pSiteCode);
-        SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", pSiteVersion);
-        SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
-
-        String queryString = @"select SITECODE as SiteCode, @NEWVERSION as Version,				
-            SPECIESCODE as SpecieCode,
-            CASE WHEN  LOWERBOUND IS NOT NULL then CAST(LOWERBOUND AS int) ELSE NULL END PopulationMin,
-            CASE WHEN  UPPERBOUND IS NOT NULL then CAST(UPPERBOUND AS int) ELSE NULL END PopulationMax,
-            CASE WHEN  SENSITIVE IS NOT NULL then 
-                CASE WHEN SENSITIVE =1 THEN CAST(1 as BIT) ELSE CAST(0 as BIT) END
-            ELSE NULL END as SensitiveInfo,
-            RESIDENT as Resident,
-            BREEDING as Breeding,
-            WINTER as Winter ,
-            STAGING as  Staging,
-            --PATH as Path,  -- // ??? PENDING
-            ABUNDANCECATEGORY as AbundaceCategory,
-            Motivation ,
-            POPULATION_TYPE as PopulationType ,
-            CountingUnit,
-            Population,
-            ISOLATIONFACTOR as Insolation,
-            Conservation ,
-            GLOBALIMPORTANCE as Global ,
-            --item.NonPersistence = (element.NONPRESENCEINSITE != null) ? ((element.NONPRESENCEINSITE == 1) ? true : false) : null;
-
-            CASE WHEN  NONPRESENCEINSITE IS NOT NULL then 
-                CASE WHEN NONPRESENCEINSITE =1 THEN CAST(1 as BIT) ELSE CAST(0 as BIT) END
-            ELSE NULL END as NonPersistence,
-            DataQuality ,
-            SPTYPE as SpecieType,
-            SPECIESNAMECLEAN,
-            SPECIESNAME
-
-            FROM ContainsSpecies
-            WHERE SITECODE=@SITECODE and VERSIONID=@COUNTRYVERSIONID";
-
-        Console.WriteLine(String.Format("Start species Query -> {0}", (DateTime.Now - start).TotalSeconds));
-        versioningConn.Open();
-
-        command = new SqlCommand(queryString, versioningConn);
-        command.Parameters.Add(param1);
-        command.Parameters.Add(param2);
-        command.Parameters.Add(param3);
-        reader = await command.ExecuteReaderAsync();
-        Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
-        while (reader.Read())
-        {
-            SpecieBase item = new SpecieBase();
-            item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
-            item.Version = pVersion;
-            item.SpecieCode = TypeConverters.CheckNull<string>(reader["SpecieCode"]);
-            item.PopulationMin = TypeConverters.CheckNull<int?>(reader["PopulationMin"]);
-            item.PopulationMax = TypeConverters.CheckNull<int?>(reader["PopulationMax"]);
-            //item.Group = element.GROUP; // PENDING
-            item.SensitiveInfo = TypeConverters.CheckNull<bool?>(reader["SensitiveInfo"]);
-            item.Resident = TypeConverters.CheckNull<string>(reader["Resident"]);
-            item.Breeding = TypeConverters.CheckNull<string>(reader["Breeding"]);
-            item.Winter = TypeConverters.CheckNull<string>(reader["Winter"]);
-            item.Staging = TypeConverters.CheckNull<string>(reader["Staging"]);
-            //item.Path = element.PATH; // ??? PENDING
-            item.AbundaceCategory = TypeConverters.CheckNull<string>(reader["AbundaceCategory"]);
-            item.Motivation = TypeConverters.CheckNull<string>(reader["Motivation"]);
-            item.PopulationType = TypeConverters.CheckNull<string>(reader["PopulationType"]);
-            item.CountingUnit = TypeConverters.CheckNull<string>(reader["CountingUnit"]);
-            item.Population = TypeConverters.CheckNull<string>(reader["Population"]);
-            item.Insolation = TypeConverters.CheckNull<string>(reader["Insolation"]);
-            item.Conservation = TypeConverters.CheckNull<string>(reader["Conservation"]);
-            item.Global = TypeConverters.CheckNull<string>(reader["Global"]);
-            item.NonPersistence = TypeConverters.CheckNull<bool>(reader["NonPersistence"]);
-            item.DataQuality = TypeConverters.CheckNull<string>(reader["DataQuality"]);
-            item.SpecieType = TypeConverters.CheckNull<string>(reader["SpecieType"]);
-
-            if (reader["SiteCode"] is null || reader["SpecieCode"].ToString() == "" ||
-                _speciesTypes.Where(a => a.Code == item.SiteCode && a.Active == true).Count() < 1)
-            {
-                //Replace the code (which is Null or empty or no stored in the system)
-                //item.SiteCode = element.SITECODE;
-                item.SpecieCode = (reader["SPECIESNAMECLEAN"] != null) ? reader["SPECIESNAMECLEAN"].ToString() : reader["SPECIESNAME"].ToString();
-                itemsSpeciesOthers.Add(item.getSpeciesOther());
-            }
-            else
-            {
-                itemsSpecies.Add(item.getSpecies());
-            }
-        }
-        Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
-
-        List<Species> _listed1 = (List<Species>)_siteItems[typeof(List<Species>)];
-        _listed1.AddRange(itemsSpecies);
-        _siteItems[typeof(List<Species>)] = _listed1;
-
-        List<SpeciesOther> _listed2 = (List<SpeciesOther>)_siteItems[typeof(List<SpeciesOther>)];
-        _listed2.AddRange(itemsSpeciesOthers);
-        _siteItems[typeof(List<SpeciesOther>)] = _listed2;
-        Console.WriteLine(String.Format("End save to list species -> {0}", (DateTime.Now - start).TotalSeconds));
-        return 1;
-    }
-    catch (Exception ex)
-    {
-        SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSpecies - HarvestBySite", "");
-
-        return 0;
-    }
-    finally
-    {
-        if (versioningConn != null)
-        {
-            versioningConn.Close();
-            versioningConn.Dispose();
-            if (command != null) command.Dispose();                    
-            if (reader != null) await reader.DisposeAsync();
-        }
-    }
-}
-*/
 
 public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
         {

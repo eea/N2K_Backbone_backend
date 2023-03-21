@@ -883,8 +883,8 @@ namespace N2K_BackboneBackEnd.Services
                     try
                     {
                         //add the envelope to the DB
-                        //_dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
-                        //_dataContext.SaveChanges();
+                        _dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
+                        _dataContext.SaveChanges();
 
                         //Get the sites submitted in the envelope
                         List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
@@ -929,8 +929,9 @@ namespace N2K_BackboneBackEnd.Services
                         Console.WriteLine(String.Format("END habitats country {0}", (DateTime.Now - start1).TotalSeconds));
 
                         HarvestSiteCode sites =new HarvestSiteCode(_dataContext, _versioningContext);
-                        sites.HarvestSite(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes, _ownerShipTypes, bbSites);
+                        await sites.HarvestSite(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes, _ownerShipTypes, bbSites);
 
+                        /*
                         var count = 0;
                         var startEnv = DateTime.Now;
                         foreach (NaturaSite vSite in vSites)
@@ -982,7 +983,8 @@ namespace N2K_BackboneBackEnd.Services
                                 throw;
                             }
                         }
-                        await SaveBulkItems(startEnv);
+                        */
+                        //await SaveBulkItems(startEnv);
 
                         //set the enevelope as successfully completed
                         envelopeToProcess.Status = HarvestingStatus.DataLoaded;
