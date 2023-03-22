@@ -19,8 +19,7 @@ namespace N2K_BackboneBackEnd.Helpers
         public static System.Data.DataTable PrepareDataForBulkCopy<T>(this IList<T> data, SqlBulkCopy copy)
         {
             IList<string> notMappedFields = new List<string>();
-            PropertyDescriptorCollection properties =
-                TypeDescriptor.GetProperties(typeof(T));
+            PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(typeof(T));
             System.Data.DataTable table = new System.Data.DataTable();
             //check if the field has a NotMapped attribute.
             //if so, do not include it in the output datatable
@@ -38,8 +37,16 @@ namespace N2K_BackboneBackEnd.Helpers
                 }
                 if (!notMapped)
                 {
-                    table.Columns.Add(prop.Name, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType);
+                    if (prop.Name == "Level" || prop.Name == "Status")
+                    {
+                        table.Columns.Add(prop.Name, typeof(String));
+                    }
+                    else
+                    {
+                        table.Columns.Add(prop.Name, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType);
+                    }
                     copy.ColumnMappings.Add(prop.Name, prop.Name);
+
                 }
             }
         
@@ -49,7 +56,17 @@ namespace N2K_BackboneBackEnd.Helpers
                 foreach (PropertyDescriptor prop in properties) {
                     if (!notMappedFields.Contains(prop.Name))
                     {                     
-                        row[prop.Name] = prop.GetValue(item) ?? DBNull.Value;
+                        if (prop.Name == "Level" || prop.Name == "Status")
+                        {
+                            if (prop.GetValue(item) == DBNull.Value)
+                            {
+                                row[prop.Name] = DBNull.Value;
+                            }
+                            else 
+                                row[prop.Name] = prop.GetValue(item).ToString();
+                        }
+                        else
+                            row[prop.Name] = prop.GetValue(item) ?? DBNull.Value;
                     }
                 }
                 table.Rows.Add(row);

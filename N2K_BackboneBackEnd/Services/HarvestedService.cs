@@ -1117,7 +1117,8 @@ namespace N2K_BackboneBackEnd.Services
                                 //Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
                                 //make sure they are all finished
 
-                                //await Task.WhenAll(tabValidationTask, spatialValidationTask);
+                                //await Task.When
+                                //All(tabValidationTask, spatialValidationTask);
                                 //change the status of the whole process to PreHarvested
                                 await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested, cache);
                                 bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
