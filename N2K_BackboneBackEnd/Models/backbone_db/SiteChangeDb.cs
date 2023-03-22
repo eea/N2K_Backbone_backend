@@ -9,14 +9,15 @@ using N2K_BackboneBackEnd.Models.BackboneDB;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using System.Data;
 using System.Data.Common;
-
+using System.ComponentModel;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
 
     public class SiteChangeDb : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
-      
+
         [Key]
         public long ChangeId { get; set; }
 
@@ -52,7 +53,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public int? N2KVersioningVersion { get; set; }
 
         [NotMapped]
-        public bool? JustificationRequired { get; set;  }
+        public bool? JustificationRequired { get; set; }
         [NotMapped]
         public bool? JustificationProvided { get; set; }
 
@@ -64,6 +65,67 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
         private string dbConnection = "";
+
+        private static System.Data.DataTable PrepareDataForBulkCopy(IList<SiteChangeDb> data, SqlBulkCopy copy)
+        {
+            IList<string> notMappedFields = new List<string>();
+            PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(typeof(SiteChangeDb));
+            System.Data.DataTable table = new System.Data.DataTable();
+            //check if the field has a NotMapped attribute.
+            //if so, do not include it in the output datatable
+            foreach (PropertyDescriptor prop in properties)
+            {
+                var notMapped = false;
+                foreach (var attr in prop.Attributes)
+                {
+                    if (attr.ToString().IndexOf("NotMappedAttribute") > -1)
+                    {
+                        notMapped = true;
+                        notMappedFields.Add(prop.Name);
+                        break;
+                    }
+                }
+                if (!notMapped)
+                {
+                    if (prop.Name == "Level" || prop.Name == "Status")
+                    {
+                        table.Columns.Add(prop.Name, typeof(String));
+                    }
+                    else
+                    {
+                        table.Columns.Add(prop.Name, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType);
+                    }
+                    copy.ColumnMappings.Add(prop.Name, prop.Name);
+
+                }
+            }
+
+            foreach (SiteChangeDb item in data)
+            {
+                DataRow row = table.NewRow();
+                foreach (PropertyDescriptor prop in properties)
+                {
+                    if (!notMappedFields.Contains(prop.Name))
+                    {
+                        if (prop.Name == "Level" || prop.Name == "Status")
+                        {
+                            if (prop.GetValue(item) == DBNull.Value)
+                            {
+                                row[prop.Name] = DBNull.Value;
+                            }
+                            else
+                                row[prop.Name] = prop.GetValue(item).ToString();
+                        }
+                        else
+                            row[prop.Name] = prop.GetValue(item) ?? DBNull.Value;
+                    }
+                }
+                table.Rows.Add(row);
+            }
+            return table;
+        }
+    
+
         public SiteChangeDb() { }
 
         public SiteChangeDb(string db)
@@ -144,7 +206,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     using (var copy = new SqlBulkCopy(db))
                     {
                         copy.DestinationTableName = "Changes";
-                        DataTable data = TypeConverters.PrepareDataForBulkCopy<SiteChangeDb>(listData, copy);
+                        DataTable data = PrepareDataForBulkCopy(listData, copy);
                         await copy.WriteToServerAsync(data);
                     }
                 }
