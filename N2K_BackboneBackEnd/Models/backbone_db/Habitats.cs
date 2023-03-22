@@ -108,7 +108,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     {
                         copy.DestinationTableName = "Habitats";
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<Habitats>(listData, copy);
-                        copy.WriteToServerAsync(data);
+                        await copy.WriteToServerAsync(data);
                     }
                 }
                 return 1;
