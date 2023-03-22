@@ -1214,11 +1214,18 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         if (envelope.Status == HarvestingStatus.DataLoaded)
                         {
-                            await Validate(new EnvelopesToProcess[] { new EnvelopesToProcess
+                            Task tabValidationTask = Validate(new EnvelopesToProcess[] { new EnvelopesToProcess
                             {
                                 CountryCode = country,
                                 VersionId = version
                             } });
+                            Task spatialValidationTask = ValidateSpatialData(new EnvelopesToProcess[] { new EnvelopesToProcess
+                            {
+                                CountryCode = country,
+                                VersionId = version
+                            } });
+                            //make sure they are all finished
+                            await Task.WhenAll(tabValidationTask, spatialValidationTask);
                         }
 
                         SqlParameter param1 = new SqlParameter("@country", country);
@@ -1257,10 +1264,13 @@ namespace N2K_BackboneBackEnd.Services
                                     SubmissionDate = DateTime.Now
                                 };
                                 EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { nextEnvelopeToValidate };
-                                Task tabValidationTask = Validate(_tempEnvelope);
-                                Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
-                                //make sure they are all finished
-                                await Task.WhenAll(tabValidationTask, spatialValidationTask);
+                                if (nextEnvelope.Status != HarvestingStatus.DataLoaded)
+                                {
+                                    Task tabValidationTask = Validate(_tempEnvelope);
+                                    Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
+                                    //make sure they are all finished
+                                    await Task.WhenAll(tabValidationTask, spatialValidationTask);
+                                }
                                 //change the status of the whole process to PreHarvested
                                 await ChangeStatus(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested, cache);
                             }

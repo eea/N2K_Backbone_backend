@@ -152,6 +152,10 @@ namespace N2K_BackboneBackEnd.Services
                             SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
                             if (editionChange != null)
                                 activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
+                            if (activity == null)
+                            {
+                                activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Action == "User edition after rejection of version " + change.Version).FirstOrDefault();
+                            }
                         }
                         siteChange.EditedBy = activity is null ? null : activity.Author;
                         siteChange.EditedDate = activity is null ? null : activity.Date;
@@ -974,8 +978,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             //var country = (changedSiteStatus.First().SiteCode).Substring(0, 2);
             //var site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == changedSiteStatus.First().SiteCode && site.Version == changedSiteStatus.First().VersionId).ToListAsync();
-            //Level level = (Level)site.Max(a => a.Level);
-            //var status = site.FirstOrDefault().Status;
+            Level level = Level.Critical;
+            SiteChangeStatus? status = SiteChangeStatus.Accepted;
 
             List<SiteActivities> siteActivities = new List<SiteActivities>();
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
@@ -1082,9 +1086,9 @@ namespace N2K_BackboneBackEnd.Services
                         //await _dataContext.SaveChangesAsync();
                         siteActivities.Add(activity);
 
-                        //Get the previous lavel and status to find the proper cached lists
-                        Level level = (Level)changes.Max(a => a.Level);
-                        SiteChangeStatus status = (SiteChangeStatus)changes.FirstOrDefault().Status;
+                        //Get the previous level and status to find the proper cached lists
+                        level = (Level)changes.Max(a => a.Level);
+                        status = (SiteChangeStatus)changes.FirstOrDefault().Status;
 
                         //Alter cached list. It comes from Removed or Accepted list and goes to Pending list
                         await swapSiteInListCache(cache, SiteChangeStatus.Pending, level, status, mySiteView);
@@ -1093,6 +1097,7 @@ namespace N2K_BackboneBackEnd.Services
                         modifiedSiteCode.OK = 1;
                         modifiedSiteCode.Error = string.Empty;
                         modifiedSiteCode.Status = SiteChangeStatus.Pending;
+                        modifiedSiteCode.VersionId = change is null ? modifiedSiteCode.VersionId : change.VersionReferenceId;
                     }
                     catch (Exception ex)
                     {
@@ -1107,13 +1112,10 @@ namespace N2K_BackboneBackEnd.Services
 
                 ////GetSiteCodesByStatusAndLevelAndCountry
                 ////get the country and the level of the first site code. The other codes will have the same level
-                ////refresh the chache
+                ////refresh the cache
                 if (result.Count > 0)
                 {
                     var country = (result.First().SiteCode).Substring(0, 2);
-                    var site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
-                    Level level = (Level)site.Max(a => a.Level);
-                    var status = site.FirstOrDefault().Status;
 
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;

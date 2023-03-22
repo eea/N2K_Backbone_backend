@@ -8,10 +8,10 @@ namespace N2K_BackboneBackEnd.Models
     {
         public string? OriginalSiteName { get; set; }
         public string? OriginalSiteType { get; set; }
-        public double? OriginalArea { get; set; }
-        public double? OriginalLength { get; set; }
-        public double? OriginalCentreX { get; set; }
-        public double? OriginalCentreY { get; set; }
+        public decimal? OriginalArea { get; set; }
+        public decimal? OriginalLength { get; set; }
+        public decimal? OriginalCentreX { get; set; }
+        public decimal? OriginalCentreY { get; set; }
         public List<int>? OriginalBioRegion { get; set; }
         public static void OnModelCreating(ModelBuilder builder)
         {
