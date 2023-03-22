@@ -17,7 +17,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 var jwtSecurityToken = handler.ReadJwtToken(token);
                 email = jwtSecurityToken.Claims.First(claim => claim.Type == "email").Value;
             }
-            catch (Exception e) { }
+            catch  { }
             return email;
         }
     }

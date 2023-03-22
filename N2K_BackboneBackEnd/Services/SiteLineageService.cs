@@ -31,6 +31,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<SiteLineage>> GetSiteLineageAsync(string siteCode)
         {
+            await Task.Delay(1);
             List<SiteLineage> result = new List<SiteLineage>();
 
             int siteNumber = Int32.Parse(siteCode.Substring(siteCode.Length - 7));

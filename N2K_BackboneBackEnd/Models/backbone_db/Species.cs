@@ -13,7 +13,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     {
         [Key]
         public long Id { get; set; }
-        public string SiteCode { get; set; }
+        public string SiteCode { get; set; } = "";
         public int Version { get; set; }
         public string SpecieCode { get; set; }
         public int? PopulationMin { get; set; }

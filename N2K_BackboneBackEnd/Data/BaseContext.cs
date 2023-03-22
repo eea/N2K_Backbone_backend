@@ -63,7 +63,7 @@ namespace N2K_BackboneBackEnd.Data
             }
             catch (Exception ex)
             {
-
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "mySaveChangesFailed", "Entityframework");
             }
             //SystemLog.write(SystemLog.errorLevel.Error, ((DbUpdateException)e.Exception).Entries[0].Entity.GetType().Name, "", "");
 

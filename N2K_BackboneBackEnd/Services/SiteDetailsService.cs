@@ -599,7 +599,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (System.InvalidOperationException iex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, "The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")", "SaveEdition", "");
+                SystemLog.write(SystemLog.errorLevel.Error,string.Format("The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ") {0}",iex.Message)    , "SaveEdition", "");
                 throw new Exception("The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")");
             }
             catch (Exception ex)

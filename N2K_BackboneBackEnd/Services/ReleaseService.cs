@@ -87,6 +87,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<Releases> ConvertUnionListHeaderToReleases(UnionListHeader unionListHeader)
         {
+            await Task.Delay(1);
             Releases releaseHeader = new Releases();
 
             releaseHeader.ID = unionListHeader.idULHeader;

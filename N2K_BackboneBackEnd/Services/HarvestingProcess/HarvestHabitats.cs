@@ -52,7 +52,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                Console.WriteLine("=>End full habitat harvest by country with error...");
+                Console.WriteLine(String.Format("=>End full habitat harvest by country with error... {0}",ex.Message) );
                 //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
                 return 0;
             }
@@ -74,7 +74,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                Console.WriteLine("=>End full habitat harvest by site with error...");
+                Console.WriteLine(string.Format("=>End full habitat harvest by site with error... {0}",ex.Message) );
                 //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
                 return 0;
             }
@@ -198,7 +198,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         public async Task<int> HarvestHabitatsBySite(NaturaSite pVSite, int pVersion, string backboneDb, string versioningDB, IList<DataQualityTypes> dataQualityTypes, IDictionary<Type, object> _siteItems)
         {
-            List<ContainsHabitat> elements = null;
             List<Habitats> items = new List<Habitats>();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
@@ -437,6 +436,7 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
         {
             try
             {
+                await Task.Delay(1);
                 //For each habitat in Versioning compare it with that habitat in backboneDB
                 foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
                 {

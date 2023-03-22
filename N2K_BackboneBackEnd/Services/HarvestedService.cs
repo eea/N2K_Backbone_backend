@@ -32,20 +32,6 @@ namespace N2K_BackboneBackEnd.Services
             public int MaxVersion;
         }
 
-        /// <summary>
-        /// Constructor 
-        /// </summary>
-        /// <param name="dataContext">>Context for the BackBone database</param>
-        /// <param name="versioningContext">Context for the Versioning database</param>
-        public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext)
-        {
-            _dataContext = dataContext;
-            _versioningContext = versioningContext;
-
-            InitialiseBulkItems();
-
-          
-        }
 
         /// <summary>
         /// Constructor 
@@ -347,6 +333,7 @@ namespace N2K_BackboneBackEnd.Services
         /// <returns>The SiteChange status based on the envelope status</returns>
         public async Task<HarvestingStatus> GetSiteChangeStatus(HarvestingStatus envelopeStatus)
         {
+            await Task.Delay(1);
             return envelopeStatus == HarvestingStatus.Harvested ? HarvestingStatus.Pending : envelopeStatus;
         }
 
@@ -510,7 +497,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                //SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSingleSiteGeodata", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSingleSiteGeodata", "");
             }
             finally
             {
@@ -997,7 +984,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
-                catch (Exception ex) { }
+                catch  { }
             }
             return returnDate;
         }
@@ -1156,31 +1143,22 @@ namespace N2K_BackboneBackEnd.Services
             {
                 case 0:
                     return HarvestingStatus.Pending;
-                    break;
                 case 1:
                     return HarvestingStatus.Accepted;
-                    break;
                 case 2:
                     return HarvestingStatus.Rejected;
-                    break;
                 case 3:
                     return HarvestingStatus.Harvested;
-                    break;
                 case 4:
                     return HarvestingStatus.Harvesting;
-                    break;
                 case 5:
                     return HarvestingStatus.Queued;
-                    break;
                 case 6:
                     return HarvestingStatus.PreHarvested;
-                    break;
                 case 7:
                     return HarvestingStatus.Discarded;
-                    break;
                 case 8:
                     return HarvestingStatus.Closed;
-                    break;
                 default:
                     throw new Exception("No statuts definition found");
             }
@@ -1505,6 +1483,7 @@ namespace N2K_BackboneBackEnd.Services
         /// <returns>Returns a BackBone Site object</returns>
         private async Task<List<Respondents>>? HarvestRespondents(List<Contact> vContact, EnvelopesToProcess pEnvelope)
         {
+            await Task.Delay(1);
             List<Respondents> items = new List<Respondents>();
             foreach (Contact contact in vContact)
             {

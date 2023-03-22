@@ -91,7 +91,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
                 return 1;
             }
-            catch (Exception ex)
+            catch
             {
                 //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
                 return 0;

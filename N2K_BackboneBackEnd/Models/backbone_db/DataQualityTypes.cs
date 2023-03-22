@@ -9,9 +9,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     {
         [Key]
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string HabitatCode { get; set; }
-        public string SpeciesCode { get; set; }
+        public string? Name { get; set; }
+        public string? HabitatCode { get; set; }
+        public string? SpeciesCode { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {

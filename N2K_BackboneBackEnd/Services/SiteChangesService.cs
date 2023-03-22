@@ -776,7 +776,6 @@ namespace N2K_BackboneBackEnd.Services
                         Name = habName,
                         Fields = fields
                     };
-                    break;
             }
 
             return null;
@@ -870,7 +869,7 @@ namespace N2K_BackboneBackEnd.Services
                 //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
-            catch (Exception ex)
+            catch 
             {
                 throw;
             }
@@ -965,7 +964,7 @@ namespace N2K_BackboneBackEnd.Services
                 //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
-            catch (Exception ex)
+            catch
             {
                 throw;
             }
@@ -1125,7 +1124,7 @@ namespace N2K_BackboneBackEnd.Services
                 //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
-            catch (Exception ex)
+            catch
             {
                 throw;
             }
@@ -1170,7 +1169,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 return result;
             }
-            catch (Exception ex)
+            catch 
             {
                 throw;
             }
@@ -1214,7 +1213,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 return result;
             }
-            catch (Exception ex)
+            catch 
             {
                 throw;
             }

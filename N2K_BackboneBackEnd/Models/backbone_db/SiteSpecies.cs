@@ -6,7 +6,7 @@
     
     public class SiteSpecies
     {
-        public List<Species> CatalogedList { get; set; }
-        public List<SpeciesOther> UncatalogedList { get; set; }
+        public List<Species> CatalogedList { get; set; }= new List<Species>();
+        public List<SpeciesOther> UncatalogedList { get; set; }= new List<SpeciesOther>();
     }
 }

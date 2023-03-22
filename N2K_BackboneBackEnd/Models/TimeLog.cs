@@ -22,9 +22,9 @@ namespace N2K_BackboneBackEnd.Models
                 pDataContext.Set<ProcessTimeLog>().Add(ptl);
                 pDataContext.SaveChanges();
             }
-            catch (Exception ex)
+            catch
             {
-                ex = null;
+                
             }
             finally { 
             
@@ -35,6 +35,7 @@ namespace N2K_BackboneBackEnd.Models
         public static void setTimeStamp(string pProcessName, string pAction)
         {
             return;
+            /*
             SqlConnection conn=null;
             SqlCommand cmd = null;
             SqlParameter param1 = null;
@@ -79,7 +80,7 @@ namespace N2K_BackboneBackEnd.Models
                 }
                
             }
-
+            */
         }
 
     }
@@ -115,8 +116,7 @@ namespace N2K_BackboneBackEnd.Models
             try
             {
                ;
-
-                conn = new SqlConnection("Server=tcp:backbonedb.database.windows.net,1433;Initial Catalog=n2k_backbone;Persist Security Info=False;User ID=developers;Password=4@<H5~XbrSPZWR7L;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
+                conn = new SqlConnection(WebApplication.CreateBuilder().Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
                 conn.Open();
                 cmd = conn.CreateCommand();
                 param1 = new SqlParameter("@Level", pLevel);
@@ -135,9 +135,9 @@ namespace N2K_BackboneBackEnd.Models
                 cmd.ExecuteNonQuery();
 
             }
-            catch (Exception ex)
+            catch
             {
-                ex = null;
+
             }
             finally
             {
@@ -174,9 +174,9 @@ namespace N2K_BackboneBackEnd.Models
                 
                 
             }
-            catch (Exception ex)
+            catch
             {
-                ex = null;
+
             }
             finally
             {
@@ -207,9 +207,9 @@ namespace N2K_BackboneBackEnd.Models
 
 
             }
-            catch (Exception ex)
+            catch
             {
-                ex = null;
+
             }
             finally
             {
@@ -255,9 +255,9 @@ namespace N2K_BackboneBackEnd.Models
                 cmd.ExecuteNonQuery();
 
             }
-            catch (Exception ex)
+            catch 
             {
-                ex = null;
+
             }
             finally
             {

@@ -791,6 +791,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         public async Task<List<SiteChangeDb>> ValidateSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance, ProcessedEnvelopes? processedEnvelope)
         {
+            await Task.Delay(1);
             try
             {
                 if (harvestingSite.SiteName != storedSite.SiteName)
