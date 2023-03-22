@@ -247,47 +247,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestBySite(string pSiteCode,int pVersion, IList<Models.backbone_db.SpecieBase> countrySpecies, IDictionary<Type, object> _siteItems)
-        {
-            try
-            {
-                await Task.Delay(1);
-                var itemsSpecies = countrySpecies.Where(cp => cp.SiteCode == pSiteCode && cp.Other == false)
-                    .Select(c => { c.Version = pVersion; return c; })
-                    .Select(c => c.getSpecies()).ToList();
 
-                if (itemsSpecies.Count > 0)
-                {
-                    var tt = 1;
-                }
+        
 
-                List<SpeciesOther> itemsSpeciesOthers = countrySpecies.Where(cp => cp.SiteCode == pSiteCode && cp.Other == true)
-                    .Select(c => { c.Version = pVersion; return c; })
-                    .Select(c => c.getSpeciesOther()).ToList();
-
-                List<Species>  _listed1 = (List<Species>)_siteItems[typeof(List<Species>)];
-                _listed1.AddRange(_listed1);
-                _siteItems[typeof(List<Species>)] = _listed1;
-
-                List<SpeciesOther> _listed2 = (List<SpeciesOther>)_siteItems[typeof(List<SpeciesOther>)];
-                _listed2.AddRange(itemsSpeciesOthers);
-                _siteItems[typeof(List<SpeciesOther>)] = _listed2;
-
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSpecies - HarvestBySite", "");
-
-                return 0;
-            }
-
-
-
-}
-
-
-public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
+        public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
         {
             Console.WriteLine("==>Start species validate...");
             await Task.Delay(2000);

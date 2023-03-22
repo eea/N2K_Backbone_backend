@@ -87,7 +87,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "DetailedProtectionStatus - SaveBulkRecord", "");
-                return 1;
+                return 0;
             }
         }
 

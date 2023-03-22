@@ -904,7 +904,7 @@ namespace N2K_BackboneBackEnd.Services
                         versionsPerSite.Clear();
 
                         //save all sitecode-version in bulk mode
-                        Sites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), bbSites);
+                        await Sites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), bbSites);
 
                         HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
                         await species.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _speciesTypes, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), bbSites);
