@@ -60,7 +60,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public bool? HasGeometry { get; set; }
 
 
-
+        [NotMapped]
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
         private string dbConnection = "";

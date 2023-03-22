@@ -429,13 +429,12 @@ namespace N2K_BackboneBackEnd.Services
 
                     try
                     {
-                        var a = 1;
-                        //SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
+                        SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
                     }
                     catch (Exception ex)
                     {
                         SystemLog.write(SystemLog.errorLevel.Error, ex, "Save Changes", "");
-                        break;
+                        throw ex;
                     }
 
                     await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE ChangeId NOT IN (SELECT MAX(ChangeId) AS MaxRecordID FROM dbo.Changes GROUP BY SiteCode, Version, ChangeType, Code)");
