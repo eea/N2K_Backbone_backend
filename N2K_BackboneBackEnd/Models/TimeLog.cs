@@ -116,7 +116,7 @@ namespace N2K_BackboneBackEnd.Models
             {
                ;
 
-                conn = new SqlConnection(WebApplication.CreateBuilder().Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
+                conn = new SqlConnection("Server=tcp:backbonedb.database.windows.net,1433;Initial Catalog=n2k_backbone;Persist Security Info=False;User ID=developers;Password=4@<H5~XbrSPZWR7L;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
                 conn.Open();
                 cmd = conn.CreateCommand();
                 param1 = new SqlParameter("@Level", pLevel);

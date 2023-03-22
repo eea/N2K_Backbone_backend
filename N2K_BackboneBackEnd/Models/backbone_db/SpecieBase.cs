@@ -27,6 +27,8 @@
         public string? DataQuality { get; set; }
         public string? SpecieType { get; set; }
 
+        public bool? Other { get; set; }
+
         public Species getSpecies() { 
             Species specie = new Species();
             specie.SiteCode = this.SiteCode;

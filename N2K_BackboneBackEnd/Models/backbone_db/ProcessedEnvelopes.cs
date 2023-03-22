@@ -20,6 +20,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         
         public DateTime N2K_VersioningDate { get; set; }
 
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<ProcessedEnvelopes>()

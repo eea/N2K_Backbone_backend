@@ -6,10 +6,10 @@ namespace N2K_BackboneBackEnd.Enumerations
     public enum Level
     {
         [DataMember]
-        Info,
+        Info = 0,
         [DataMember]
-        Warning,
+        Warning = 1,
         [DataMember]
-        Critical
+        Critical= 2
     }
 }
