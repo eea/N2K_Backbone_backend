@@ -135,7 +135,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
         }
 
-        public static void SaveBulkRecord(string db, List<SiteChangeDb> listData)
+        public static async Task<int> SaveBulkRecord(string db, List<SiteChangeDb> listData)
         {
             try
             {
@@ -145,13 +145,15 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     {
                         copy.DestinationTableName = "Changes";
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<SiteChangeDb>(listData, copy);
-                        copy.WriteToServer(data);
+                        await copy.WriteToServerAsync(data);
                     }
                 }
+                return 1;
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangeDb - SaveBulkRecord", "");
+                return 0;
             }
         }
 

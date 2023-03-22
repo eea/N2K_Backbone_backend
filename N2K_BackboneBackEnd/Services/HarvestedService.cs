@@ -429,7 +429,7 @@ namespace N2K_BackboneBackEnd.Services
 
                     try
                     {
-                        SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
+                        await SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
                     }
                     catch (Exception ex)
                     {
@@ -579,7 +579,6 @@ namespace N2K_BackboneBackEnd.Services
 
                 try
                 {
-                    var a = 1;
                     //processedEnvelope.Status = HarvestingStatus.Harvested;
                     //SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
                     //_dataContext.Update<ProcessedEnvelopes>(processedEnvelope);
@@ -1113,10 +1112,7 @@ namespace N2K_BackboneBackEnd.Services
                             //When there is no previous envelopes to resolve for this country
                             if (envelopes.Count == 0)
                             {
-                                
-
-                                await Validate(_tempEnvelope);
-
+                                                                
                                 //Task tabValidationTask = Validate(_tempEnvelope);
                                 //Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
                                 //make sure they are all finished
