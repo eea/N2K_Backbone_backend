@@ -405,7 +405,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.ChangeCategory = "Network general structure";
                             siteChange.ChangeType = "Site Deleted";
                             siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Level.Critical;
+                            siteChange.Level = Enumerations.Level.Critical;
                             siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status);
                             siteChange.Tags = string.Empty;
                             siteChange.NewValue = null;
@@ -735,7 +735,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.ChangeCategory = "Site General Info";
                         siteChange.ChangeType = "Site Losing Priority";
                         siteChange.Country = envelope.CountryCode;
-                        siteChange.Level = Level.Critical;
+                        siteChange.Level = Enumerations.Level.Critical;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(isHarvestingSitePriority);
@@ -756,7 +756,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.ChangeCategory = "Site General Info";
                         siteChange.ChangeType = "Site Getting Priority";
                         siteChange.Country = envelope.CountryCode;
-                        siteChange.Level = Level.Info;
+                        siteChange.Level = Enumerations.Level.Info;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                         siteChange.Tags = string.Empty;
                         siteChange.NewValue = Convert.ToString(isHarvestingSitePriority);
@@ -798,7 +798,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.ChangeCategory = "Network general structure";
                     siteChange.ChangeType = "Site Added";
                     siteChange.Country = envelope.CountryCode;
-                    siteChange.Level = Level.Info;
+                    siteChange.Level = Enumerations.Level.Info;
                     siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                     siteChange.Tags = string.Empty;
                     siteChange.NewValue = harvestingSite.SiteCode;
