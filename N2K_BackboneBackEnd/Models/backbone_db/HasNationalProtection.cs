@@ -72,6 +72,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     using (var copy = new SqlBulkCopy(db))
                     {
                         copy.DestinationTableName = "HasNationalProtection";
+                        copy.BulkCopyTimeout = 3000;
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<HasNationalProtection>(listData, copy);
                         await copy.WriteToServerAsync(data);
                     }

@@ -93,6 +93,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     using (var copy = new SqlBulkCopy(db))
                     {
                         copy.DestinationTableName = "IsImpactedBy";
+                        copy.BulkCopyTimeout = 3000;
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<IsImpactedBy>(listData, copy);
                         await copy.WriteToServerAsync(data);
                     }
