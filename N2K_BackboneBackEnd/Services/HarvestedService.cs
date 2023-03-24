@@ -895,12 +895,12 @@ namespace N2K_BackboneBackEnd.Services
 
                         HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
                         await species.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _speciesTypes, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), bbSites);
-                        Console.WriteLine(String.Format("END species country {0}", (DateTime.Now - start1).TotalSeconds));
+                        //Console.WriteLine(String.Format("END species country {0}", (DateTime.Now - start1).TotalSeconds));
 
                         //Harvest habitats by country
                         HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
                         await habitats.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes , bbSites);
-                        Console.WriteLine(String.Format("END habitats country {0}", (DateTime.Now - start1).TotalSeconds));
+                        //Console.WriteLine(String.Format("END habitats country {0}", (DateTime.Now - start1).TotalSeconds));
 
                         HarvestSiteCode sites =new HarvestSiteCode(_dataContext, _versioningContext);
                         await sites.HarvestSite(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes, _ownerShipTypes, bbSites);
