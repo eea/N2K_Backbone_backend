@@ -922,6 +922,7 @@ namespace N2K_BackboneBackEnd.Services
                     modifiedSiteCode.OK = 1;
                     modifiedSiteCode.Error = string.Empty;
                     modifiedSiteCode.Status = SiteChangeStatus.Rejected;
+                    result.Add(modifiedSiteCode);
 
                     //        SiteChangeDb? change = changes.Where(e => e.ChangeType == "Site Deleted").FirstOrDefault();
                     //        if (change != null)
@@ -992,22 +993,41 @@ namespace N2K_BackboneBackEnd.Services
                     //    }
                     //}
                     //get the country and the level of the first site code. The other codes will have the same level
+                }
+                    try
+                    {
+                        SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                        paramTable.Value = sitecodesfilter;
+                        paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spRejectSiteCodeChangesBulk @siteCodes",
+                                paramTable);
+
+                        SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
+                    }
+                    catch
+                    {
+
+                    }
+
                     //refresh the chache
                     if (result.Count > 0)
-                {
-                    var country = (result.First().SiteCode).Substring(0, 2);
-                    var site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
-                    Level level = (Level)site.Max(a => a.Level);
-                    var status = site.FirstOrDefault().Status;
+                    {
+                        var country = (result.First().SiteCode).Substring(0, 2);
+                        var site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
+                        Level level = (Level)site.Max(a => a.Level);
+                        var status = site.FirstOrDefault().Status;
 
-                    //refresh the cache of site codes
-                    List<SiteCodeView> mockresult = null;
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, true);
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                        //refresh the cache of site codes
+                        List<SiteCodeView> mockresult = null;
+                        mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, true);
+                        mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                    }
+                    //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
+                    return result;
                 }
-                //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
-                return result;
-            }
+            
             catch
             {
                 throw;
