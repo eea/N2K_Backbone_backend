@@ -127,6 +127,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     using (var copy = new SqlBulkCopy(db))
                     {
                         copy.DestinationTableName = "SpeciesOther";
+                        copy.BulkCopyTimeout = 3000;
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<SpeciesOther>(listData, copy);
                         await copy.WriteToServerAsync(data);
                     }
