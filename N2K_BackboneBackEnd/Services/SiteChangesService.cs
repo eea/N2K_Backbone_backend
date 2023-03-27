@@ -818,13 +818,6 @@ namespace N2K_BackboneBackEnd.Services
                         //Get all changes accepted
                         List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
 
-                        SiteChangeDb change = changes.Where(e => e.ChangeType == "Site Deleted").FirstOrDefault();
-                        if (change != null)
-                        {
-                            Sites siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
-                            siteToDelete.Current = false;
-                            await _dataContext.SaveChangesAsync();
-                        }
                         SiteActivities activity = new SiteActivities
                         {
                             SiteCode = modifiedSiteCode.SiteCode,
@@ -912,14 +905,6 @@ namespace N2K_BackboneBackEnd.Services
 
                         List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
 
-                        SiteChangeDb? change = changes.Where(e => e.ChangeType == "Site Deleted").FirstOrDefault();
-                        if (change != null)
-                        {
-                            Sites siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
-                            siteToDelete.CurrentStatus = SiteChangeStatus.Accepted;
-                            siteToDelete.Current = true;
-                            await _dataContext.SaveChangesAsync();
-                        }
                         SiteActivities activity = new SiteActivities
                         {
                             SiteCode = modifiedSiteCode.SiteCode,
