@@ -596,7 +596,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     items.Add(item);
                 }
 
-                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
                 {
                     await Models.backbone_db.DetailedProtectionStatus.SaveBulkRecord(backboneDb, items);

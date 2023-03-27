@@ -76,6 +76,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     using (var copy = new SqlBulkCopy(db))
                     {
                         copy.DestinationTableName = "SiteActivities";
+                        copy.BulkCopyTimeout = 3000;
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<SiteActivities>(listData, copy);
                         copy.WriteToServer(data);
                     }

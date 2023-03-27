@@ -41,12 +41,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
-                Console.WriteLine("=>Start full habitat harvest by country...");
+                //Console.WriteLine("=>Start full habitat harvest by country...");
                 //string versioningDB = versioningContext.Database.GetConnectionString();
                 await HarvestHabitatsByCountry(countryCode, COUNTRYVERSIONID, versioningDB ,  backboneDb, dataQualityTypes, bbSites);
                 await HarvestDescribeSitesByCountry(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
 
-                Console.WriteLine("=>End full habitat harvest by country...");
+                //Console.WriteLine("=>End full habitat harvest by country...");
                 //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
                 return 1;
             }

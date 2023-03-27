@@ -78,6 +78,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     using (var copy = new SqlBulkCopy(db))
                     {
                         copy.DestinationTableName = "DetailedProtectionStatus";
+                        copy.BulkCopyTimeout = 3000;
                         DataTable data = TypeConverters.PrepareDataForBulkCopy<DetailedProtectionStatus>(listData, copy);
                         await copy.WriteToServerAsync(data);
                     }
