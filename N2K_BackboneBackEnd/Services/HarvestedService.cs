@@ -1011,7 +1011,6 @@ namespace N2K_BackboneBackEnd.Services
                         SystemLog.write(SystemLog.errorLevel.Info, String.Format("Launched {0}",serverUrl), "HarvestSpatialData", "");
                         string content = await response.Result.Content.ReadAsStringAsync();                       
                         SystemLog.write(SystemLog.errorLevel.Info, "Harvest spatial completed", "HarvestSpatialData", "");
-                        var aaa = 1;
                         /*
                         result.Add(
                             new HarvestedEnvelope
