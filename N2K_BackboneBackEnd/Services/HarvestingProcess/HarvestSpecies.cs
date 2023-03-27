@@ -200,7 +200,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     }
                 }
 
-                Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 try
                 {
