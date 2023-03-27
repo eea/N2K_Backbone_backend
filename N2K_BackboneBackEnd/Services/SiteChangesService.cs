@@ -13,10 +13,6 @@ using N2K_BackboneBackEnd.Helpers;
 using System.Security.Policy;
 using System.Diagnostics;
 using N2K_BackboneBackEnd.Models.BackboneDB;
-using DocumentFormat.OpenXml.Vml.Spreadsheet;
-using Microsoft.AspNetCore.Components.Forms;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Bibliography;
 
 namespace N2K_BackboneBackEnd.Services
 {
