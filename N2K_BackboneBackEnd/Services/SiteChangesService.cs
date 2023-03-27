@@ -588,30 +588,43 @@ namespace N2K_BackboneBackEnd.Services
                     fields.Add("Reported", nullCase);
                 }
 
-                if (GetCodeName(changedItem) != String.Empty)
+                if (changeCategory == "Habitats" || changeCategory == "Species")
                 {
-                    catChange.ChangedCodesDetail.Add(
-                            new CodeChangeDetail
-                            {
-                                Code = changedItem.Code,
-                                Name = GetCodeName(changedItem),
-                                ChangeId = changedItem.ChangeId,
-                                Fields = fields
-                            }
+                    if (GetCodeName(changedItem) != String.Empty)
+                    {
+                        catChange.ChangedCodesDetail.Add(
+                                new CodeChangeDetail
+                                {
+                                    Code = changedItem.Code,
+                                    Name = GetCodeName(changedItem),
+                                    ChangeId = changedItem.ChangeId,
+                                    Fields = fields
+                                }
 
-                        );
+                            );
+                    }
+                    else
+                    {
+                        catChange.ChangedCodesDetail.Add(
+                                new CodeChangeDetail
+                                {
+                                    Code = "-",
+                                    Name = changedItem.Code,
+                                    ChangeId = changedItem.ChangeId,
+                                    Fields = fields
+                                }
+
+                            );
+                    }
                 }
                 else
                 {
                     catChange.ChangedCodesDetail.Add(
                             new CodeChangeDetail
                             {
-                                Code = "-",
-                                Name = changedItem.Code,
                                 ChangeId = changedItem.ChangeId,
                                 Fields = fields
                             }
-
                         );
                 }
             }
@@ -869,7 +882,7 @@ namespace N2K_BackboneBackEnd.Services
                 //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
-            catch 
+            catch
             {
                 throw;
             }
@@ -917,8 +930,8 @@ namespace N2K_BackboneBackEnd.Services
                             Deleted = false
                         };
                         //_dataContext.Set<SiteActivities>().Add(activity);
-                       // await _dataContext.SaveChangesAsync();
-                       siteActivities.Add(activity);
+                        // await _dataContext.SaveChangesAsync();
+                        siteActivities.Add(activity);
 
                         Level level = (Level)changes.Max(a => a.Level);
                         SiteChangeStatus status = (SiteChangeStatus)changes.FirstOrDefault().Status;
@@ -930,7 +943,7 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.Name = changes.First().SiteName;
 
                         //Alter cached listd. They come from pendign and goes to accepted
-                       await swapSiteInListCache(cache, status, level, SiteChangeStatus.Pending, mySiteView);
+                        await swapSiteInListCache(cache, status, level, SiteChangeStatus.Pending, mySiteView);
 
 
                         modifiedSiteCode.OK = 1;
@@ -1169,7 +1182,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 return result;
             }
-            catch 
+            catch
             {
                 throw;
             }
@@ -1213,7 +1226,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 return result;
             }
-            catch 
+            catch
             {
                 throw;
             }

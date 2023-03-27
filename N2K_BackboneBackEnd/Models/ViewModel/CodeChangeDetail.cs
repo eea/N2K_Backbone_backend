@@ -6,8 +6,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [Keyless]
     public class CodeChangeDetail : IEntityModel
     {
-        public string? Code { get; set; } = "";
-        public string? Name { get; set; } = "";
+        public string? Code { get; set; }
+        public string? Name { get; set; }
         public long ChangeId { get; set; }
 
         public Dictionary<string, string> Fields { get; set; } = new Dictionary<string, string>();
@@ -23,8 +23,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class CodeChangeDetailModify : CodeChangeDetail
     {
 
-        public string? Reported { get; set; }
-        public string? Reference { get; set; }    
+        public string? Reported { get; set; } = "";
+        public string? Reference { get; set; } = "";
 
         new public static void OnModelCreating(ModelBuilder builder)
         {
@@ -35,8 +35,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [Keyless]
     public class CodeChangeDetailAddedRemovedSpecies : CodeChangeDetail
     {
-        public string? Population { get; set; }
-        public string? SpeciesType { get; set; }
+        public string? Population { get; set; } = "";
+        public string? SpeciesType { get; set; } = "";
 
         new public static void OnModelCreating(ModelBuilder builder)
         {
@@ -47,8 +47,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [Keyless]
     public class CodeChangeDetailAddedRemovedHabitats : CodeChangeDetail
     {
-        public string? CoverHa { get; set; }
-        public string? RelSurface { get; set; }
+        public string? CoverHa { get; set; } = "";
+        public string? RelSurface { get; set; } = "";
 
         new public static void OnModelCreating(ModelBuilder builder)
         {
