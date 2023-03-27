@@ -13,6 +13,10 @@ using N2K_BackboneBackEnd.Helpers;
 using System.Security.Policy;
 using System.Diagnostics;
 using N2K_BackboneBackEnd.Models.BackboneDB;
+using DocumentFormat.OpenXml.Vml.Spreadsheet;
+using Microsoft.AspNetCore.Components.Forms;
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Bibliography;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -21,6 +25,13 @@ namespace N2K_BackboneBackEnd.Services
     public class SiteChangesService : ISiteChangesService
     {
 
+        private struct MyStruct
+        {
+            public string SiteCode { get; set; }
+            public string Name { get; set; }
+            public int Version { get; set; }
+            public N2K_BackboneBackEnd.Enumerations.Level Level { get; set; }
+        }
 
         private class OrderedChanges
         {
@@ -793,48 +804,79 @@ namespace N2K_BackboneBackEnd.Services
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
 
-                foreach (var modifiedSiteCode in changedSiteStatus)
+                changedSiteStatus.ToList().ForEach(cs =>
                 {
-                    sitecodesfilter.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId });
-                    SiteActivities activity = new SiteActivities
+                    sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.VersionId });
+                    cs.OK = 1;
+                    cs.Error = string.Empty;
+                    cs.Status = SiteChangeStatus.Accepted;
+                    result.Add(cs);
+
+                    siteActivities.Add(new SiteActivities
                     {
-                        SiteCode = modifiedSiteCode.SiteCode,
-                        Version = modifiedSiteCode.VersionId,
+                        SiteCode = cs.SiteCode,
+                        Version = cs.VersionId,
                         Author = GlobalData.Username,
                         Date = DateTime.Now,
                         Action = "Accept Changes",
                         Deleted = false
-                    };
-                    siteActivities.Add(activity);
-                    List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
-
-                    //        SiteChangeDb change = changes.Where(e => e.ChangeType == "Site Deleted").FirstOrDefault();
-                    //        if (change != null)
-                    //        {
-                    //            Sites siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
-                    //            siteToDelete.Current = false;
-                    //            await _dataContext.SaveChangesAsync();
-                    //        }
-
-                    Level level = (Level)changes.Max(a => a.Level);
+                    });
 
 
-                    //Create the listView
-                    SiteCodeView mySiteView = new SiteCodeView();
-                    mySiteView.SiteCode = changes.First().SiteCode;
-                    mySiteView.Version = changes.First().Version;
-                    mySiteView.Name = changes.First().SiteName;
+                });
+                
+                string queryString = @" 
+                        select  Changes.SiteCode,Changes.Version, Sites.Name as SiteName, Max(
+	                        case
+		                        when Level='Critical' then 2
+		                        when Level='Warning' then 1
+		                        when Level='Info' then 0
+                            end
+	                        ) as Level
+                        from 
+	                        [dbo].[Changes] inner join 
+	                        Sites ON   changes.sitecode= sites.sitecode and Changes.version=Sites.version 
+	                        inner join
+	                        @siteCodes T on  Changes.SiteCode= T.SiteCode and Changes.Version= T.Version
 
-                    //Alter cached listd. They come from pendign and goes to accepted
-                    await swapSiteInListCache(cache, SiteChangeStatus.Accepted, level, SiteChangeStatus.Pending, mySiteView);
+                        group by 
+	                        changes.SiteCode, Changes.version, Sites.name";
 
-                    modifiedSiteCode.OK = 1;
-                    modifiedSiteCode.Error = string.Empty;
-                    modifiedSiteCode.Status = SiteChangeStatus.Accepted;
-                    result.Add(modifiedSiteCode);
+                SqlConnection backboneConn = null;
+                SqlCommand command = null;
+                SqlDataReader reader = null;
+                try
+                {
 
+                    backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                    backboneConn.Open();
+                    command = new SqlCommand(queryString, backboneConn);
+                    SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                    paramTable1.Value = sitecodesfilter;
+                    paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                    command.Parameters.Add(paramTable1);
+                    reader = await command.ExecuteReaderAsync();
+                    while (reader.Read())
+                    {
+                        SiteCodeView mySiteView = new SiteCodeView();
+                        mySiteView.SiteCode = reader["SiteCode"].ToString();
+                        mySiteView.Version = int.Parse(reader["Version"].ToString());
+                        mySiteView.Name = reader["SiteName"].ToString();
+                        Level level;
+                        Enum.TryParse<Level>(reader["Level"].ToString(), out level);
+                        //Alter cached listd. They come from pendign and goes to accepted
+                        await swapSiteInListCache(cache, SiteChangeStatus.Accepted, level, SiteChangeStatus.Pending, mySiteView);
+                    }
                 }
-
+                catch  (Exception ex) {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "AcceptChanges", "");
+                }
+                finally
+                {
+                    if (reader!=null )  await reader.DisposeAsync();
+                    if (command!=null)  command.Dispose();
+                    if (backboneConn!= null)  backboneConn.Dispose();
+                }
 
                 try
                 {
@@ -867,7 +909,6 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Accepted, level, cache, true);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
-                //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
               }
             catch 
