@@ -600,30 +600,43 @@ namespace N2K_BackboneBackEnd.Services
                     fields.Add("Reported", nullCase);
                 }
 
-                if (GetCodeName(changedItem) != String.Empty)
+                if (changeCategory == "Habitats" || changeCategory == "Species")
                 {
-                    catChange.ChangedCodesDetail.Add(
-                            new CodeChangeDetail
-                            {
-                                Code = changedItem.Code,
-                                Name = GetCodeName(changedItem),
-                                ChangeId = changedItem.ChangeId,
-                                Fields = fields
-                            }
+                    if (GetCodeName(changedItem) != String.Empty)
+                    {
+                        catChange.ChangedCodesDetail.Add(
+                                new CodeChangeDetail
+                                {
+                                    Code = changedItem.Code,
+                                    Name = GetCodeName(changedItem),
+                                    ChangeId = changedItem.ChangeId,
+                                    Fields = fields
+                                }
 
-                        );
+                            );
+                    }
+                    else
+                    {
+                        catChange.ChangedCodesDetail.Add(
+                                new CodeChangeDetail
+                                {
+                                    Code = "-",
+                                    Name = changedItem.Code,
+                                    ChangeId = changedItem.ChangeId,
+                                    Fields = fields
+                                }
+
+                            );
+                    }
                 }
                 else
                 {
                     catChange.ChangedCodesDetail.Add(
                             new CodeChangeDetail
                             {
-                                Code = "-",
-                                Name = changedItem.Code,
                                 ChangeId = changedItem.ChangeId,
                                 Fields = fields
                             }
-
                         );
                 }
             }
@@ -812,15 +825,34 @@ namespace N2K_BackboneBackEnd.Services
                     cs.Status = SiteChangeStatus.Accepted;
                     result.Add(cs);
 
-                    siteActivities.Add(new SiteActivities
-                    {
-                        SiteCode = cs.SiteCode,
-                        Version = cs.VersionId,
-                        Author = GlobalData.Username,
-                        Date = DateTime.Now,
-                        Action = "Accept Changes",
-                        Deleted = false
-                    });
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spAcceptSiteCodeChanges @sitecode, @version",
+                                paramSiteCode,
+                                paramVersionId);
+
+
+                        //Get all changes accepted
+                        List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
+
+                        SiteChangeDb change = changes.Where(e => e.ChangeType == "Site Deleted").FirstOrDefault();
+                        if (change != null)
+                        {
+                            Sites siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
+                            siteToDelete.Current = false;
+                            await _dataContext.SaveChangesAsync();
+                        }
+                        SiteActivities activity = new SiteActivities
+                        {
+                            SiteCode = modifiedSiteCode.SiteCode,
+                            Version = modifiedSiteCode.VersionId,
+                            Author = GlobalData.Username,
+                            Date = DateTime.Now,
+                            Action = "Accept Changes",
+                            Deleted = false
+                        };
+                        //_dataContext.Set<SiteActivities>().Add(activity);
+                        siteActivities.Add(activity);
+                        await _dataContext.SaveChangesAsync();
 
 
                 });
@@ -910,7 +942,7 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
                 return result;
-              }
+            }
             catch 
             {
                 throw;
@@ -932,21 +964,39 @@ namespace N2K_BackboneBackEnd.Services
 
                 foreach (var modifiedSiteCode in changedSiteStatus)
                 {
-                    sitecodesfilter.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId });
-                    SiteActivities activity = new SiteActivities
+
+                    try
                     {
-                        SiteCode = modifiedSiteCode.SiteCode,
-                        Version = modifiedSiteCode.VersionId,
-                        Author = GlobalData.Username,
-                        Date = DateTime.Now,
-                        Action = "Reject Changes",
-                        Deleted = false
-                    };
-                    siteActivities.Add(activity);
+                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
+                        SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
 
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spRejectSiteCodeChanges @sitecode, @version",
+                                paramSiteCode,
+                                paramVersionId);
 
-                    List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
+                        List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
 
+                        SiteChangeDb? change = changes.Where(e => e.ChangeType == "Site Deleted").FirstOrDefault();
+                        if (change != null)
+                        {
+                            Sites siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
+                            siteToDelete.CurrentStatus = SiteChangeStatus.Accepted;
+                            siteToDelete.Current = true;
+                            await _dataContext.SaveChangesAsync();
+                        }
+                        SiteActivities activity = new SiteActivities
+                        {
+                            SiteCode = modifiedSiteCode.SiteCode,
+                            Version = modifiedSiteCode.VersionId,
+                            Author = GlobalData.Username,
+                            Date = DateTime.Now,
+                            Action = "Reject Changes",
+                            Deleted = false
+                        };
+                        //_dataContext.Set<SiteActivities>().Add(activity);
+                       // await _dataContext.SaveChangesAsync();
+                       siteActivities.Add(activity);
 
                     Level level = (Level)changes.Max(a => a.Level);
 
@@ -956,8 +1006,8 @@ namespace N2K_BackboneBackEnd.Services
                     mySiteView.Version = changes.First().Version;
                     mySiteView.Name = changes.First().SiteName;
 
-                    //Alter cached listd. They come from pendign and goes to reject
-                    await swapSiteInListCache(cache, SiteChangeStatus.Rejected, level, SiteChangeStatus.Pending, mySiteView);
+                        //Alter cached listd. They come from pendign and goes to accepted
+                       await swapSiteInListCache(cache, status, level, SiteChangeStatus.Pending, mySiteView);
 
 
                     modifiedSiteCode.OK = 1;
@@ -1274,7 +1324,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 return result;
             }
-            catch 
+            catch
             {
                 throw;
             }
@@ -1318,7 +1368,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 return result;
             }
-            catch 
+            catch
             {
                 throw;
             }

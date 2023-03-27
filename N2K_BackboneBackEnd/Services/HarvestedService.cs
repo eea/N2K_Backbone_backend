@@ -452,7 +452,7 @@ namespace N2K_BackboneBackEnd.Services
                     try
                     {
                         //TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
-
+                        client.Timeout = TimeSpan.FromHours(5);
                         Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                         string content = await response.Result.Content.ReadAsStringAsync();
                     }
@@ -1004,9 +1004,14 @@ namespace N2K_BackboneBackEnd.Services
                     try
                     {
                         //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
-
+                        client.Timeout = TimeSpan.FromHours(5);
+                        SystemLog.write(SystemLog.errorLevel.Info ,"Start harvest spatial", "HarvestSpatialData", "");
                         Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
-                        string content = await response.Result.Content.ReadAsStringAsync();
+                        var response1 = client.GetAsync(serverUrl);
+                        SystemLog.write(SystemLog.errorLevel.Info, String.Format("Launched {0}",serverUrl), "HarvestSpatialData", "");
+                        string content = await response.Result.Content.ReadAsStringAsync();                       
+                        SystemLog.write(SystemLog.errorLevel.Info, "Harvest spatial completed", "HarvestSpatialData", "");
+                        var aaa = 1;
                         /*
                         result.Add(
                             new HarvestedEnvelope
@@ -1075,7 +1080,6 @@ namespace N2K_BackboneBackEnd.Services
                 //List<ProcessedEnvelopes> pEnvelopes = new List<ProcessedEnvelopes>();
 
                 List<HarvestedEnvelope> bbEnvelopes = new List<HarvestedEnvelope>();
-
                 if (vEnvelopes.Count > 0)
                 {
                     foreach (Harvesting vEnvelope in vEnvelopes)
@@ -1086,7 +1090,6 @@ namespace N2K_BackboneBackEnd.Services
                             CountryCode = vEnvelope.Country,
                             SubmissionDate = vEnvelope.SubmissionDate
                         };
-
                         EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { envelope };
                         List<HarvestedEnvelope> bbEnvelope = await Harvest(_tempEnvelope);
                         List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(_tempEnvelope);
