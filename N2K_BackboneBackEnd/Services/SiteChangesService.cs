@@ -13,6 +13,7 @@ using N2K_BackboneBackEnd.Helpers;
 using System.Security.Policy;
 using System.Diagnostics;
 using N2K_BackboneBackEnd.Models.BackboneDB;
+using Microsoft.AspNetCore.Http;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -938,50 +939,80 @@ namespace N2K_BackboneBackEnd.Services
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
 
-
-                foreach (var modifiedSiteCode in changedSiteStatus)
+                changedSiteStatus.ToList().ForEach(cs =>
                 {
+                    sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.VersionId });
 
+                    cs.OK = 1;
+                    cs.Error = string.Empty;
+                    cs.Status = SiteChangeStatus.Rejected;
+                    result.Add(cs);
+
+                    siteActivities.Add(new SiteActivities
+                    {
+                        SiteCode = cs.SiteCode,
+                        Version = cs.VersionId,
+                        Author = GlobalData.Username,
+                        Date = DateTime.Now,
+                        Action = "Reject Changes",
+                        Deleted = false
+                    });
+                });
+                string queryString = @" 
+                        select  Changes.SiteCode,Changes.Version, Sites.Name as SiteName, Max(
+	                        case
+		                        when Level='Critical' then 2
+		                        when Level='Warning' then 1
+		                        when Level='Info' then 0
+                            end
+	                        ) as Level
+                        from 
+	                        [dbo].[Changes] inner join 
+	                        Sites ON   changes.sitecode= sites.sitecode and Changes.version=Sites.version 
+	                        inner join
+	                        @siteCodes T on  Changes.SiteCode= T.SiteCode and Changes.Version= T.Version
+
+                        group by 
+	                        changes.SiteCode, Changes.version, Sites.name";
+                    SqlConnection backboneConn = null;
+                    SqlCommand command = null;
+                    SqlDataReader reader = null;
                     try
                     {
-                        List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
-                        SiteActivities activity = new SiteActivities
+                        backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                        backboneConn.Open();
+                        command = new SqlCommand(queryString, backboneConn);
+                        SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                        paramTable1.Value = sitecodesfilter;
+                        paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                        command.Parameters.Add(paramTable1);
+                        reader = await command.ExecuteReaderAsync();
+                        while (reader.Read())
                         {
-                            SiteCode = modifiedSiteCode.SiteCode,
-                            Version = modifiedSiteCode.VersionId,
-                            Author = GlobalData.Username,
-                            Date = DateTime.Now,
-                            Action = "Reject Changes",
-                            Deleted = false
-                        };
-                        //_dataContext.Set<SiteActivities>().Add(activity);
-                        // await _dataContext.SaveChangesAsync();
-                        siteActivities.Add(activity);
-
-                        Level level = (Level)changes.Max(a => a.Level);
-
-                        //Create the listView
-                        SiteCodeView mySiteView = new SiteCodeView();
-                        mySiteView.SiteCode = changes.First().SiteCode;
-                        mySiteView.Version = changes.First().Version;
-                        mySiteView.Name = changes.First().SiteName;
-
-                        //Alter cached listd. They come from pendign and goes to rejected
-                        await swapSiteInListCache(cache, SiteChangeStatus.Rejected, level, SiteChangeStatus.Pending, mySiteView);
-
-                        modifiedSiteCode.OK = 1;
-                        modifiedSiteCode.Error = string.Empty;
-                        modifiedSiteCode.Status = SiteChangeStatus.Rejected;
-                        result.Add(modifiedSiteCode);
+                            SiteCodeView mySiteView = new SiteCodeView();
+                            mySiteView.SiteCode = reader["SiteCode"].ToString();
+                            mySiteView.Version = int.Parse(reader["Version"].ToString());
+                            mySiteView.Name = reader["SiteName"].ToString();
+                            Level level;
+                            Enum.TryParse<Level>(reader["Level"].ToString(), out level);
+                            //Alter cached listd. They come from pendign and goes to rejected
+                            await swapSiteInListCache(cache, SiteChangeStatus.Rejected, level, SiteChangeStatus.Pending, mySiteView);
+                        }
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        SystemLog.write(SystemLog.errorLevel.Error, ex, "RejectChanges", "");
 
                     }
-                    finally { }
+                    finally 
+                    {
+                        if (reader != null) await reader.DisposeAsync();
+                        if (command != null) command.Dispose();
+                        if (backboneConn != null) backboneConn.Dispose();
+                    }
 
 
-                }    
+                    
 
                 try
                 {
@@ -1013,7 +1044,6 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, true);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
-                //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
 
                 
