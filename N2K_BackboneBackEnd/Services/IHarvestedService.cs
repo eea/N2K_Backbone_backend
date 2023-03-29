@@ -29,7 +29,10 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs);
 
+        Task<List<HarvestedEnvelope>> HarvestSpatialData(EnvelopesToProcess[] envelopeIDs);
+
         Task<List<HarvestedEnvelope>> FullHarvest(IMemoryCache cache);
+
         Task<ProcessedEnvelopes> ChangeStatus(string country, int version, HarvestingStatus toStatus, IMemoryCache cache);
     }
 }

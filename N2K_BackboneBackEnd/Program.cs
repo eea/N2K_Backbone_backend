@@ -16,6 +16,8 @@ using System.Text;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Configuration;
 using Microsoft.Extensions.Options;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using N2K_BackboneBackEnd.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.ConfigureLogging(logging =>
@@ -42,6 +44,10 @@ builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 builder.Services.AddScoped<IUnionListService, UnionListService>();
 builder.Services.AddScoped<IReleaseService, ReleaseService>();
 builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
+builder.Services.AddScoped<ILongRunningService, LongRunningService>();
+
+builder.Services.AddHostedService<LongRunningBackgroundService>();
+builder.Services.AddSingleton<BackgroundWorkerQueue>();
 
 builder.Services.AddResponseCompression(options =>
 {
