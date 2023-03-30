@@ -344,7 +344,6 @@ namespace N2K_BackboneBackEnd.Services
         /// <returns>A list of the envelops with the result of the process</returns>
         public async Task<List<HarvestedEnvelope>> Validate(EnvelopesToProcess[] envelopeIDs)
         {
-            
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
             List<SiteChangeDb> changes = new List<SiteChangeDb>();
             //var latestVersions = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
@@ -361,6 +360,8 @@ namespace N2K_BackboneBackEnd.Services
             {
                 try
                 {
+                    SystemLog.write(SystemLog.errorLevel.Info, String.Format("Start validation harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "Validate", "");
+
                     SqlParameter param1 = new SqlParameter("@country", envelope.CountryCode);
                     SqlParameter param2 = new SqlParameter("@version", envelope.VersionId);
 
@@ -432,6 +433,7 @@ namespace N2K_BackboneBackEnd.Services
                     throw ex;
 
                 }
+                SystemLog.write(SystemLog.errorLevel.Info, String.Format("END validation harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "Validate", "");
             }
 
             return result;
