@@ -1078,18 +1078,6 @@ namespace N2K_BackboneBackEnd.Services
 
                 foreach (var modifiedSiteCode in changedSiteStatus)
                 {
-                    sitecodesfilter.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId });
-
-                    siteActivities.Add(new SiteActivities
-                    {
-                        SiteCode = modifiedSiteCode.SiteCode,
-                        Version = modifiedSiteCode.VersionId,
-                        Author = GlobalData.Username,
-                        Date = DateTime.Now,
-                        Action = "Back to Pending",
-                        Deleted = false
-                    });
-
                     try
                     {
                         List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
@@ -1182,6 +1170,16 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         #endregion
 
+                        siteActivities.Add(new SiteActivities
+                        {
+                            SiteCode = modifiedSiteCode.SiteCode,
+                            Version = modifiedSiteCode.VersionId,
+                            Author = GlobalData.Username,
+                            Date = DateTime.Now,
+                            Action = "Back to Pending",
+                            Deleted = false
+                        });
+
                         //Get the previous level and status to find the proper cached lists
                         level = (Level)changes.Max(a => a.Level);
                         status = (SiteChangeStatus)changes.FirstOrDefault().Status;
@@ -1194,6 +1192,8 @@ namespace N2K_BackboneBackEnd.Services
                         modifiedSiteCode.Error = string.Empty;
                         modifiedSiteCode.Status = SiteChangeStatus.Pending;
                         modifiedSiteCode.VersionId = change is null ? modifiedSiteCode.VersionId : change.VersionReferenceId;
+
+                        sitecodesfilter.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId });
                     }
                     catch (Exception ex)
                     {
