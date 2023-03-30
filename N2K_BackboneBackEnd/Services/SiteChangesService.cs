@@ -1166,6 +1166,9 @@ namespace N2K_BackboneBackEnd.Services
 
                             //Delete edited version
                             sitecodesdelete.Rows.Add(new Object[] { siteToDelete.SiteCode, siteToDelete.Version });
+
+                            //Save activities changes
+                            await _dataContext.SaveChangesAsync();
                         }
                         #endregion
 
