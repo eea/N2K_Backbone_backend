@@ -1072,6 +1072,10 @@ namespace N2K_BackboneBackEnd.Services
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
 
+                var sitecodesdelete = new DataTable("sitecodesdelete");
+                sitecodesdelete.Columns.Add("SiteCode", typeof(string));
+                sitecodesdelete.Columns.Add("Version", typeof(int));
+
                 foreach (var modifiedSiteCode in changedSiteStatus)
                 {
                     sitecodesfilter.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId });
@@ -1161,8 +1165,7 @@ namespace N2K_BackboneBackEnd.Services
                                 paramSiteCode, paramOldVersion, paramNewVersion2);
 
                             //Delete edited version
-                            _dataContext.Set<Sites>().Remove(siteToDelete);
-                            await _dataContext.SaveChangesAsync();
+                            sitecodesdelete.Rows.Add(new Object[] { siteToDelete.SiteCode, siteToDelete.Version });
                         }
                         #endregion
 
@@ -1193,8 +1196,17 @@ namespace N2K_BackboneBackEnd.Services
                 try
                 {
                     SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-                    paramTable.Value = sitecodesfilter;
+                    paramTable.Value = sitecodesdelete;
                     paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+
+                    if (sitecodesdelete.Rows.Count > 0)
+                    {
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spDeleteSitesBulk @siteCodes",
+                                paramTable);
+                    }
+
+                    paramTable.Value = sitecodesfilter;
 
                     await _dataContext.Database.ExecuteSqlRawAsync(
                             "exec spMoveSiteCodeToPendingBulk @siteCodes",
