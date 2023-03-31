@@ -14,6 +14,7 @@ using System.Security.Policy;
 using System.Diagnostics;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Http;
+using System.Runtime.CompilerServices;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -1057,6 +1058,55 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
+        private async Task<List<SiteActivities>> GetSiteActivities(DataTable sitecodesfilter)
+        {
+            List<SiteActivities> activities = new List<SiteActivities>();
+            string queryString = @" 
+                        select SiteCode, Version,Author, Date, Action,Deleted
+                        from 
+	                        [dbo].[SiteActivities] inner join 
+	                        Sites ON   SiteActivities.sitecode= sites.sitecode
+	                        inner join
+	                        @siteCodes T on  SiteActivities.SiteCode= T.SiteCode 
+                        where 
+                           SiteActivities.deleted=0 and SiteActivities.Action like 'User edition%'
+                        ";
+
+            SqlConnection backboneConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            try
+            {
+                backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                backboneConn.Open();
+                command = new SqlCommand(queryString, backboneConn);
+                SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable1.Value = sitecodesfilter;
+                paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                command.Parameters.Add(paramTable1);
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+                    SiteActivities act = new SiteActivities();
+                    act.SiteCode = reader
+
+                    activities.Add(act);
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load Activities", "");
+            }
+            finally
+            {
+                if (reader != null) await reader.DisposeAsync();
+                if (command != null) command.Dispose();
+                if (backboneConn != null) backboneConn.Dispose();
+            }
+            return activities;
+        }
+
+
         public async Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
             //var country = (changedSiteStatus.First().SiteCode).Substring(0, 2);
@@ -1076,11 +1126,32 @@ namespace N2K_BackboneBackEnd.Services
                 sitecodesdelete.Columns.Add("SiteCode", typeof(string));
                 sitecodesdelete.Columns.Add("Version", typeof(int));
 
+
+                changedSiteStatus.ToList().ForEach(cs =>
+                {
+                    sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.VersionId });
+
+                    siteActivities.Add(new SiteActivities
+                    {
+                        SiteCode = cs.SiteCode,
+                        Version = cs.VersionId,
+                        Author = GlobalData.Username,
+                        Date = DateTime.Now,
+                        Action = "Back to Pending",
+                        Deleted = false
+                    });
+                });
+
+
+                //List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
+                //get the activities already saved in the DB
+                List<SiteActivities>  _lstActivities = await GetSiteActivities(sitecodesfilter);
+
                 foreach (var modifiedSiteCode in changedSiteStatus)
                 {
                     try
                     {
-                        List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
+                        //List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
 
                         //Create the listView for the cached lists. By deafult this values
                         SiteCodeView mySiteView = new SiteCodeView();
@@ -1098,7 +1169,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         #region In case of user edition
 
-                        List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Action.StartsWith("User edition") && e.Deleted == false).ToListAsync();
+                        //List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Action.StartsWith("User edition") && e.Deleted == false).ToListAsync();
 
                         //Was this site edited after being accepted?
                         SiteChangeDb? change = changes.Where(e => e.ChangeType == "User edition").FirstOrDefault();
@@ -1107,7 +1178,7 @@ namespace N2K_BackboneBackEnd.Services
                             //Select the max version for the site with the currentsatatus accepted, but not the version of the change and the referenced version
                             previousCurrent = _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
                             //Search the previous activities
-                            List<SiteActivities> activityDelete = activities.Where(e => (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition").ToList();
+                            List<SiteActivities> activityDelete = _lstActivities.Where(e => e.SiteCode== modifiedSiteCode.SiteCode &&  (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition").ToList();
 
                             //mark the result as activities deleted
                             activityDelete.ForEach(s => s.Deleted = true);
@@ -1129,7 +1200,7 @@ namespace N2K_BackboneBackEnd.Services
                             mySiteView.Name = previousName;
                         }
                         //Was this site edited after being rejected?
-                        List<SiteActivities> activityCheck = activities.Where(e => e.Action == "User edition after rejection of version " + modifiedSiteCode.VersionId).ToList();
+                        List<SiteActivities> activityCheck = _lstActivities.Where(e => e.SiteCode== modifiedSiteCode.SiteCode &&   e.Action == "User edition after rejection of version " + modifiedSiteCode.VersionId).ToList();
                         if (activityCheck != null && activityCheck.Count > 0)
                         {
                             SiteChangeDb siteDeleted = changes.Where(e => e.ChangeType == "Site Deleted").FirstOrDefault();
@@ -1170,15 +1241,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         #endregion
 
-                        siteActivities.Add(new SiteActivities
-                        {
-                            SiteCode = modifiedSiteCode.SiteCode,
-                            Version = modifiedSiteCode.VersionId,
-                            Author = GlobalData.Username,
-                            Date = DateTime.Now,
-                            Action = "Back to Pending",
-                            Deleted = false
-                        });
+
 
                         //Get the previous level and status to find the proper cached lists
                         level = (Level)changes.Max(a => a.Level);
