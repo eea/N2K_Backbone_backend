@@ -1065,8 +1065,6 @@ namespace N2K_BackboneBackEnd.Services
                         select SiteCode, Version,Author, Date, Action,Deleted
                         from 
 	                        [dbo].[SiteActivities] inner join 
-	                        Sites ON   SiteActivities.sitecode= sites.sitecode
-	                        inner join
 	                        @siteCodes T on  SiteActivities.SiteCode= T.SiteCode 
                         where 
                            SiteActivities.deleted=0 and SiteActivities.Action like 'User edition%'
@@ -1188,6 +1186,10 @@ namespace N2K_BackboneBackEnd.Services
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
 
+                var sitecodeschanges = new DataTable("sitecodeschanges");
+                sitecodeschanges.Columns.Add("SiteCode", typeof(string));
+                sitecodeschanges.Columns.Add("Version", typeof(int));
+
                 var sitecodesdelete = new DataTable("sitecodesdelete");
                 sitecodesdelete.Columns.Add("SiteCode", typeof(string));
                 sitecodesdelete.Columns.Add("Version", typeof(int));
@@ -1195,7 +1197,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 changedSiteStatus.ToList().ForEach(cs =>
                 {
-                    sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.VersionId });
+                    sitecodeschanges.Rows.Add(new Object[] { cs.SiteCode, cs.VersionId });
 
                     siteActivities.Add(new SiteActivities
                     {
@@ -1211,9 +1213,9 @@ namespace N2K_BackboneBackEnd.Services
 
                 //List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
                 //get the activities already saved in the DB
-                List<SiteActivities> _lstActivities = await GetSiteActivities(sitecodesfilter);
+                List<SiteActivities> _lstActivities = await GetSiteActivities(sitecodeschanges);
                 //get the changes already saved in the DB
-                List<SiteChangeDb> _lstChanges = await GetChanges(sitecodesfilter);
+                List<SiteChangeDb> _lstChanges = await GetChanges(sitecodeschanges);
                 foreach (var modifiedSiteCode in changedSiteStatus)
                 {
                     try
@@ -1236,7 +1238,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         #region In case of user edition
 
-                        //List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Action.StartsWith("User edition") && e.Deleted == false).ToListAsync();
+                        List<SiteActivities> activities = _lstActivities.Where(e => e.SiteCode == modifiedSiteCode.SiteCode).ToList();
 
                         //Was this site edited after being accepted?
                         SiteChangeDb? change = changes.Where(e => e.ChangeType == "User edition").FirstOrDefault();
@@ -1245,7 +1247,7 @@ namespace N2K_BackboneBackEnd.Services
                             //Select the max version for the site with the currentsatatus accepted, but not the version of the change and the referenced version
                             previousCurrent = _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
                             //Search the previous activities
-                            List<SiteActivities> activityDelete = _lstActivities.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition").ToList();
+                            List<SiteActivities> activityDelete = activities.Where(e => (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition").ToList();
 
                             //mark the result as activities deleted
                             activityDelete.ForEach(s => s.Deleted = true);
@@ -1267,7 +1269,7 @@ namespace N2K_BackboneBackEnd.Services
                             mySiteView.Name = previousName;
                         }
                         //Was this site edited after being rejected?
-                        List<SiteActivities> activityCheck = _lstActivities.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Action == "User edition after rejection of version " + modifiedSiteCode.VersionId).ToList();
+                        List<SiteActivities> activityCheck = activities.Where(e => e.Action == "User edition after rejection of version " + modifiedSiteCode.VersionId).ToList();
                         if (activityCheck != null && activityCheck.Count > 0)
                         {
                             SiteChangeDb siteDeleted = changes.Where(e => e.ChangeType == "Site Deleted").FirstOrDefault();
