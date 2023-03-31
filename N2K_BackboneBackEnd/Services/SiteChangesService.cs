@@ -1304,9 +1304,6 @@ namespace N2K_BackboneBackEnd.Services
 
                             //Delete edited version
                             sitecodesdelete.Rows.Add(new Object[] { siteToDelete.SiteCode, siteToDelete.Version });
-
-                            //Save activities changes
-                            await _dataContext.SaveChangesAsync();
                         }
                         #endregion
 
@@ -1340,10 +1337,14 @@ namespace N2K_BackboneBackEnd.Services
 
                 try
                 {
+                    //Save activities changes
+                    await _dataContext.SaveChangesAsync();
+
                     SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
                     paramTable.Value = sitecodesdelete;
                     paramTable.TypeName = "[dbo].[SiteCodeFilter]";
 
+                    //Delete the clones of manual editions
                     if (sitecodesdelete.Rows.Count > 0)
                     {
                         await _dataContext.Database.ExecuteSqlRawAsync(
@@ -1357,6 +1358,7 @@ namespace N2K_BackboneBackEnd.Services
                             "exec spMoveSiteCodeToPendingBulk @siteCodes",
                             paramTable);
 
+                    //Save new avtivities
                     SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
                 }
                 catch
