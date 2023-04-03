@@ -1215,7 +1215,7 @@ namespace N2K_BackboneBackEnd.Services
                         Length = decimal.Parse(reader["Length"].ToString()),
                         JustificationRequired = bool.Parse(reader["JustificationRequired"].ToString()),
                         JustificationProvided = bool.Parse(reader["JustificationProvided"].ToString()),
-                        DateConfSCI = DateTime.Parse(reader["CountryCode"].ToString()),
+                        DateConfSCI = DateTime.Parse(reader["DateConfSCI"].ToString()),
                         Priority = bool.Parse(reader["Priority"].ToString()),
                         DatePropSCI = DateTime.Parse(reader["DatePropSCI"].ToString()),
                         DateSpa = DateTime.Parse(reader["DateSpa"].ToString()),
@@ -1261,6 +1261,13 @@ namespace N2K_BackboneBackEnd.Services
                 sitecodesdelete.Columns.Add("Version", typeof(int));
 
 
+                var JustificationFiles = new DataTable("JustificationFiles");
+                JustificationFiles.Columns.Add("SiteCode", typeof(string));
+                JustificationFiles.Columns.Add("OldVersion", typeof(int));
+                JustificationFiles.Columns.Add("NewVersion", typeof(int));
+
+
+
                 changedSiteStatus.ToList().ForEach(cs =>
                 {
                     sitecodeschanges.Rows.Add(new Object[] { cs.SiteCode, cs.VersionId });
@@ -1297,15 +1304,16 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.Version = modifiedSiteCode.VersionId;
                         mySiteView.Name = changes.First().SiteName;
 
-                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
-                        SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
-                        SqlParameter paramOldVersion = new SqlParameter("@oldVersion", modifiedSiteCode.VersionId);
-                        SqlParameter paramNewVersion2 = null;
+                        //SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
+                        //SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
+                        //SqlParameter paramOldVersion = new SqlParameter("@oldVersion", modifiedSiteCode.VersionId);
+                        //SqlParameter paramNewVersion2 = null;
 
-                        Sites siteToDelete = null;
+
+                        Sites? siteToDelete = null;
                         int previousCurrent = -1;//The 0 value can be a version
 
-                        #region In case of user edition
+                       #region In case of user edition
 
                         List<SiteActivities> activities = _lstActivities.Where(e => e.SiteCode == modifiedSiteCode.SiteCode).ToList();
 
@@ -1323,16 +1331,18 @@ namespace N2K_BackboneBackEnd.Services
 
 
                             //Add comments and docs to the soon to be pending version (the previous version referenced in the change)
-                            SqlParameter paramNewVersion1 = new SqlParameter("@newVersion", change.VersionReferenceId);
-                            await _dataContext.Database.ExecuteSqlRawAsync(
-                                "exec spCopyJustificationFilesAndStatusChanges @sitecode, @oldVersion, @newVersion",
-                                paramSiteCode, paramOldVersion, paramNewVersion1);
+                            //SqlParameter paramNewVersion1 = new SqlParameter("@newVersion", change.VersionReferenceId);
+                            //await _dataContext.Database.ExecuteSqlRawAsync(
+                            //    "exec spCopyJustificationFilesAndStatusChanges @sitecode, @oldVersion, @newVersion",
+                            //    paramSiteCode, paramOldVersion, paramNewVersion1);
+
+                            JustificationFiles.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId, change.VersionReferenceId });
 
                             //Find edited version in order to remove from the sites entity
                             siteToDelete =  _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefault();
 
                             //Change the version and the name for the previous version
-                            paramVersionId = new SqlParameter("@version", change.VersionReferenceId);
+                            //paramVersionId = new SqlParameter("@version", change.VersionReferenceId);
                             mySiteView.Version = change.VersionReferenceId; //points to the final version
                             string previousName = _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).Select(x => x.Name).First().ToString();
                             mySiteView.Name = previousName;
@@ -1364,12 +1374,13 @@ namespace N2K_BackboneBackEnd.Services
                         //In both cases
                         if (change != null || (activityCheck != null && activityCheck.Count > 0))
                         {
-                            paramNewVersion2 = new SqlParameter("@newVersion", previousCurrent);
+                            //paramNewVersion2 = new SqlParameter("@newVersion", previousCurrent);
 
                             //Add comments and docs to the previous current version
-                            await _dataContext.Database.ExecuteSqlRawAsync(
-                                "exec spCopyJustificationFilesAndStatusChanges @sitecode, @oldVersion, @newVersion",
-                                paramSiteCode, paramOldVersion, paramNewVersion2);
+                            //await _dataContext.Database.ExecuteSqlRawAsync(
+                            //    "exec spCopyJustificationFilesAndStatusChanges @sitecode, @oldVersion, @newVersion",
+                            //    paramSiteCode, paramOldVersion, paramNewVersion2);
+                            JustificationFiles.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, change.VersionReferenceId, previousCurrent });
 
                             //Delete edited version
                             sitecodesdelete.Rows.Add(new Object[] { siteToDelete.SiteCode, siteToDelete.Version });
@@ -1406,6 +1417,13 @@ namespace N2K_BackboneBackEnd.Services
 
                 try
                 {
+
+                    SqlParameter paramTable1 = new SqlParameter("@justificationFiles", System.Data.SqlDbType.Structured);
+                    paramTable1.Value = JustificationFiles;
+                    paramTable1.TypeName = "[dbo].[JustificationFilesAndStatusChanges]";
+                    await _dataContext.Database.ExecuteSqlRawAsync(
+                        "exec spCopyJustificationFilesAndStatusChangesBulk @justificationFiles",
+                        paramTable1);
                     //Save activities changes
                     await _dataContext.SaveChangesAsync();
 
