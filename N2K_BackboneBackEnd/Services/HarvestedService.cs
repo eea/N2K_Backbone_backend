@@ -9,6 +9,11 @@ using N2K_BackboneBackEnd.Services.HarvestingProcess;
 using N2K_BackboneBackEnd.Enumerations;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Caching.Memory;
+using System.Security.Policy;
+using DocumentFormat.OpenXml.Wordprocessing;
+using System.Net.Http.Headers;
+using Newtonsoft.Json.Linq;
+using System.Text;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -989,8 +994,7 @@ namespace N2K_BackboneBackEnd.Services
             return returnDate;
         }
 
-
-        private async Task<List<HarvestedEnvelope>> HarvestSpatialData(EnvelopesToProcess[] envelopeIDs)
+        public async Task<List<HarvestedEnvelope>> HarvestSpatialData(EnvelopesToProcess[] envelopeIDs)
         {
             try
             {
@@ -1003,15 +1007,46 @@ namespace N2K_BackboneBackEnd.Services
                     String serverUrl = String.Format(_appSettings.Value.fme_service_spatialload, envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
                     try
                     {
+                        Console.WriteLine("launching FME");
+
+                        await Task.Delay(15000);
+
                         //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
                         client.Timeout = TimeSpan.FromHours(5);
+                        String url = String.Format("{0}/fmerest/v3/transformations/submit/{1}/{2}",
+                           "https://fme.discomap.eea.europa.eu",
+                           "N2KBackbone",
+                           "test_notofocations.fmw");
+
+                        String body = string.Format(@"{{""publishedParameters"":[" +
+                            @"{{""name"":""CountryVersionId"",""value"":{0}}}," +
+                            @"{{""name"":""CountryCode"",""value"": ""{1}""}}]" +
+                            @"}}", envelope.VersionId, envelope.CountryCode);
+
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("fmetoken", "token=" + _appSettings.Value.fme_security_token);
+                        client.DefaultRequestHeaders.Accept
+                            .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));//ACCEPT header
+
+                        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
+                        request.Content = new StringContent(body,
+                                                            Encoding.UTF8,
+                                                            "application/json");//CONTENT-TYPE header
+
+                        var res = await client.SendAsync(request);
+                        var json = await res.Content.ReadAsStringAsync();
+                        JObject jResponse = JObject.Parse(json);
+                        string jobId = jResponse.GetValue("id").ToString();
+                        Console.WriteLine(string.Format(@"JobId {0} launched", jobId));
+                        /*
                         SystemLog.write(SystemLog.errorLevel.Info ,"Start harvest spatial", "HarvestSpatialData", "");
                         Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                         var response1 = client.GetAsync(serverUrl);
                         SystemLog.write(SystemLog.errorLevel.Info, String.Format("Launched {0}",serverUrl), "HarvestSpatialData", "");
                         string content = await response.Result.Content.ReadAsStringAsync();                       
                         SystemLog.write(SystemLog.errorLevel.Info, "Harvest spatial completed", "HarvestSpatialData", "");
-                        var aaa = 1;
+                        */
+
+
                         /*
                         result.Add(
                             new HarvestedEnvelope

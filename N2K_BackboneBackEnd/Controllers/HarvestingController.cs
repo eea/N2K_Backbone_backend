@@ -23,12 +23,14 @@ namespace N2K_BackboneBackEnd.Controllers
         private readonly IHarvestedService _harvestedService;
         private readonly IMapper _mapper;
         private IMemoryCache _cache;
+        private readonly BackgroundWorkerQueue _backgroundWorkerQueue;
 
-        public HarvestingController(IHarvestedService harvestedService, IMapper mapper, IMemoryCache cache)
+        public HarvestingController(IHarvestedService harvestedService, IMapper mapper, IMemoryCache cache, BackgroundWorkerQueue backgroundWorkerQueue)
         {
             _harvestedService = harvestedService;
             _mapper = mapper;
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+            _backgroundWorkerQueue = backgroundWorkerQueue;
         }
 
 
@@ -265,6 +267,42 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+        /// <summary>
+        /// Executes the process of the harvesting for a selected envelop (Country and Version)
+        /// </summary>
+        /// <returns></returns>
+        // POST api/<HarvestingController>
+        [Route("HarvestSpatialData")]
+        [HttpPost]
+        public async Task<ActionResult<int>> HarvestSpatialData([FromBody] EnvelopesToProcess[] envelopes)
+        {
+            var response = new ServiceResponse<int>();
+            try
+            {
+                await Task.Delay(1);
+                _backgroundWorkerQueue.QueueBackgroundWorkItem(async token =>
+                {
+                    await _harvestedService.HarvestSpatialData(envelopes);
+                    var aaa = 1;
+                });
+
+                response.Success = true;
+                response.Message = "";
+                response.Data = 1;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = 0;
+                return Ok(response);
+            }
+        }
+
 
         /// <summary>
         /// Execute an unattended load of the data from versioning
