@@ -1140,7 +1140,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         SiteCode = reader["SiteCode"].ToString(),
                         Version = int.Parse(reader["Version"].ToString()),
-                        Country = reader["Author"].ToString(),
+                        Country = reader["Country"].ToString(),
                         Tags = reader["Tags"].ToString(),
                         Level = (Level?)int.Parse(reader["Level"].ToString()),
                         ChangeCategory = reader["ChangeCategory"].ToString(),
@@ -1169,6 +1169,72 @@ namespace N2K_BackboneBackEnd.Services
                 if (backboneConn != null) backboneConn.Dispose();
             }
             return changes;
+        }
+
+        private async Task<List<Sites>> GetSites(DataTable sitecodesfilter)
+        {
+
+            List<Sites> sites = new List<Sites>();
+            string queryString = @" SELECT [SiteCode],[Version],[Current],[Name],[CompilationDate],[ModifyTS],[CurrentStatus],[CountryCode],[SiteType],[AltitudeMin],[AltitudeMax],[N2KVersioningVersion],[N2KVersioningRef],[Area],[Length],[JustificationRequired],[JustificationProvided],[DateConfSCI],[SCIOverwriten],[Priority],[DatePropSCI],[DateSpa],[DateSac]  
+                                    FROM [dbo].[Sites]
+	                                inner join
+	                                @siteCodes T on  Sites.SiteCode= T.SiteCode and Sites.Version=T.Version
+                                 ";
+
+            SqlConnection backboneConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            try
+            {
+                backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                backboneConn.Open();
+                command = new SqlCommand(queryString, backboneConn);
+                SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable1.Value = sitecodesfilter;
+                paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                command.Parameters.Add(paramTable1);
+                reader = await command.ExecuteReaderAsync();
+
+                while (reader.Read())
+                {
+                    Sites site = new Sites
+                    {
+                        SiteCode = reader["SiteCode"].ToString(),
+                        Version = int.Parse(reader["Version"].ToString()),
+                        Current =bool.Parse(reader["Current"].ToString()),
+                        Name = reader["Name"].ToString(),
+                        CompilationDate = DateTime.Parse(reader["CompilationDate"].ToString()),
+                        ModifyTS =DateTime.Parse(reader["ModifyTS"].ToString()),
+                        CountryCode = reader["CountryCode"].ToString(),
+                        SiteType = reader["SiteType"].ToString(),
+                        AltitudeMin = double.Parse(reader["AltitudeMin"].ToString()),
+                        AltitudeMax = double.Parse(reader["AltitudeMax"].ToString()),
+                        N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString()),
+                        N2KVersioningRef = int.Parse(reader["N2KVersioningRef"].ToString()),
+                        Area = decimal.Parse(reader["Area"].ToString()),
+                        Length = decimal.Parse(reader["Length"].ToString()),
+                        JustificationRequired = bool.Parse(reader["JustificationRequired"].ToString()),
+                        JustificationProvided = bool.Parse(reader["JustificationProvided"].ToString()),
+                        DateConfSCI = DateTime.Parse(reader["CountryCode"].ToString()),
+                        Priority = bool.Parse(reader["Priority"].ToString()),
+                        DatePropSCI = DateTime.Parse(reader["DatePropSCI"].ToString()),
+                        DateSpa = DateTime.Parse(reader["DateSpa"].ToString()),
+                        DateSac = DateTime.Parse(reader["DateSac"].ToString())
+                    };
+                    sites.Add(site);
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load changes", "");
+            }
+            finally
+            {
+                if (reader != null) await reader.DisposeAsync();
+                if (command != null) command.Dispose();
+                if (backboneConn != null) backboneConn.Dispose();
+            }
+            return sites;
         }
 
         public async Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
@@ -1216,6 +1282,9 @@ namespace N2K_BackboneBackEnd.Services
                 List<SiteActivities> _lstActivities = await GetSiteActivities(sitecodeschanges);
                 //get the changes already saved in the DB
                 List<SiteChangeDb> _lstChanges = await GetChanges(sitecodeschanges);
+
+                //get the sites already saved in the DB
+                List<Sites> _lstSites = await GetSites(sitecodeschanges);
                 foreach (var modifiedSiteCode in changedSiteStatus)
                 {
                     try
@@ -1245,7 +1314,7 @@ namespace N2K_BackboneBackEnd.Services
                         if (change != null)
                         {
                             //Select the max version for the site with the currentsatatus accepted, but not the version of the change and the referenced version
-                            previousCurrent = _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
+                            previousCurrent = _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
                             //Search the previous activities
                             List<SiteActivities> activityDelete = activities.Where(e => (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition").ToList();
 
@@ -1260,12 +1329,12 @@ namespace N2K_BackboneBackEnd.Services
                                 paramSiteCode, paramOldVersion, paramNewVersion1);
 
                             //Find edited version in order to remove from the sites entity
-                            siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
+                            siteToDelete =  _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefault();
 
                             //Change the version and the name for the previous version
                             paramVersionId = new SqlParameter("@version", change.VersionReferenceId);
                             mySiteView.Version = change.VersionReferenceId; //points to the final version
-                            string previousName = _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).Select(x => x.Name).First().ToString();
+                            string previousName = _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).Select(x => x.Name).First().ToString();
                             mySiteView.Name = previousName;
                         }
                         //Was this site edited after being rejected?
@@ -1277,12 +1346,12 @@ namespace N2K_BackboneBackEnd.Services
                             if (siteDeleted != null)
                             {
                                 //Get the site max accepted version for the last package but not the current
-                                previousSite = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefaultAsync();
+                                previousSite =  _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefault();
                             }
                             else
                             {
                                 //Get the site max accepted version for the last package but not the current nor the present version 
-                                previousSite = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefaultAsync();
+                                previousSite =  _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefault();
                             }
                             previousCurrent = previousSite.Version;
 
@@ -1290,7 +1359,7 @@ namespace N2K_BackboneBackEnd.Services
                             activityCheck.ForEach(s => s.Deleted = true);
 
                             //Find the current site
-                            siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Current == true).FirstOrDefaultAsync();
+                            siteToDelete =  _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Current == true).FirstOrDefault();
                         }
                         //In both cases
                         if (change != null || (activityCheck != null && activityCheck.Count > 0))
