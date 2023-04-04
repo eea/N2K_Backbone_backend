@@ -10,15 +10,15 @@ using N2K_BackboneBackEnd.Models;
 namespace N2K_BackboneBackEnd.Helpers
 {
 
-    public class ValidateHashAuthenticationSchemeOptions : AuthenticationSchemeOptions
+    public class ChangeDetectionHashAuthenticationSchemeOptions : AuthenticationSchemeOptions
     {
 
     }
 
-    public class ValidateHashAuthenticationHandler: AuthenticationHandler<ValidateHashAuthenticationSchemeOptions>
+    public class ChangeDetectionHashAuthenticationHandler: AuthenticationHandler<ChangeDetectionHashAuthenticationSchemeOptions>
     {
-        public ValidateHashAuthenticationHandler(
-            IOptionsMonitor<ValidateHashAuthenticationSchemeOptions> options,
+        public ChangeDetectionHashAuthenticationHandler(
+            IOptionsMonitor<ChangeDetectionHashAuthenticationSchemeOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
             ISystemClock clock)
@@ -84,7 +84,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 var jwtSecurityToken = tokenHandler.ReadJwtToken(token);
 
                 var claimsIdentity = new ClaimsIdentity(jwtSecurityToken.Claims,
-                                nameof(ValidateHashAuthenticationHandler));
+                                nameof(ChangeDetectionHashAuthenticationHandler));
 
                 // generate AuthenticationTicket from the Identity
                 // and current authentication scheme

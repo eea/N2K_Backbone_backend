@@ -4,6 +4,6 @@
     {
 
        Task<int> Harvest(string countryCode, int versionId);
-       Task<int> ValidateChanges(string countryCode, int newVersionId, int referenceVersionID);
+       Task<int> ChangeDetectionChanges(string countryCode, int newVersionId, int referenceVersionID);
     }
 }
