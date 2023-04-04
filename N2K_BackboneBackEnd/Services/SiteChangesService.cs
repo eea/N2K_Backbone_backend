@@ -1062,7 +1062,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             List<SiteActivities> activities = new List<SiteActivities>();
             string queryString = @" 
-                        select SiteCode, Version,Author, Date, Action,Deleted
+                        select SiteActivities.SiteCode, SiteActivities.Version,Author, Date, Action,Deleted
                         from 
 	                        [dbo].[SiteActivities] inner join 
 	                        @siteCodes T on  SiteActivities.SiteCode= T.SiteCode 
@@ -1086,11 +1086,11 @@ namespace N2K_BackboneBackEnd.Services
                 while (reader.Read())
                 {
                     SiteActivities act = new SiteActivities();
-                    act.SiteCode = reader["SiteCode"].ToString();
+                    act.SiteCode = reader["SiteCode"] is null ? null : reader["SiteCode"].ToString();
                     act.Version = int.Parse(reader["Version"].ToString());
-                    act.Author = reader["Author"].ToString();
+                    act.Author = reader["Author"] is null ? null : reader["Author"].ToString();
                     act.Date = DateTime.Parse(reader["Date"].ToString());
-                    act.Action = reader["Action"].ToString();
+                    act.Action = reader["Action"] is null ? null : reader["Action"].ToString();
                     act.Deleted = bool.Parse(reader["Deleted"].ToString());
                     activities.Add(act);
                 }
@@ -1113,7 +1113,7 @@ namespace N2K_BackboneBackEnd.Services
 
             List<SiteChangeDb> changes = new List<SiteChangeDb>();
             string queryString = @" 
-                        select [SiteCode],[Version],[Country],[Status],[Tags],[Level],[ChangeCategory],[ChangeType],[NewValue],[OldValue],[Detail],[Code],[Section],[VersionReferenceId],[FieldName],[ReferenceSiteCode],[N2KVersioningVersion]
+                        select Changes.[SiteCode],Changes.[Version],Changes.[Country],[Status],[Tags],[Level],[ChangeCategory],[ChangeType],[NewValue],[OldValue],[Detail],[Code],[Section],[VersionReferenceId],[FieldName],[ReferenceSiteCode],[N2KVersioningVersion]
                         from 
 	                        [dbo].[Changes]
 	                        inner join
@@ -1133,16 +1133,15 @@ namespace N2K_BackboneBackEnd.Services
                 paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
                 command.Parameters.Add(paramTable1);
                 reader = await command.ExecuteReaderAsync();
-
                 while (reader.Read())
                 {
+                    
                     SiteChangeDb change = new SiteChangeDb
                     {
-                        SiteCode = reader["SiteCode"].ToString(),
+                        SiteCode = reader["SiteCode"] is null? null: reader["SiteCode"].ToString(),
                         Version = int.Parse(reader["Version"].ToString()),
                         Country = reader["Country"].ToString(),
                         Tags = reader["Tags"].ToString(),
-                        Level = (Level?)int.Parse(reader["Level"].ToString()),
                         ChangeCategory = reader["ChangeCategory"].ToString(),
                         ChangeType = reader["ChangeType"].ToString(),
                         NewValue = reader["NewValue"].ToString(),
@@ -1152,9 +1151,16 @@ namespace N2K_BackboneBackEnd.Services
                         Section = reader["Section"].ToString(),
                         VersionReferenceId = int.Parse(reader["VersionReferenceId"].ToString()),
                         FieldName = reader["FieldName"].ToString(),
-                        ReferenceSiteCode = reader["ReferencesSiteCode"].ToString(),
+                        ReferenceSiteCode = reader["ReferenceSiteCode"] is null ? reader["SiteCode"].ToString() : reader["ReferenceSiteCode"].ToString(),
                         N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString())
                     };
+                    Level level;
+                    Enum.TryParse<Level>(reader["Level"].ToString(), out level);
+                    change.Level=level;
+
+                    SiteChangeStatus status;
+                    Enum.TryParse<SiteChangeStatus>(reader["Status"].ToString(), out status);
+                    change.Status = status;
                     changes.Add(change);
                 }
             }
@@ -1175,7 +1181,7 @@ namespace N2K_BackboneBackEnd.Services
         {
 
             List<Sites> sites = new List<Sites>();
-            string queryString = @" SELECT [SiteCode],[Version],[Current],[Name],[CompilationDate],[ModifyTS],[CurrentStatus],[CountryCode],[SiteType],[AltitudeMin],[AltitudeMax],[N2KVersioningVersion],[N2KVersioningRef],[Area],[Length],[JustificationRequired],[JustificationProvided],[DateConfSCI],[SCIOverwriten],[Priority],[DatePropSCI],[DateSpa],[DateSac]  
+            string queryString = @" SELECT Sites.[SiteCode],Sites.[Version],[Current],[Name],[CompilationDate],[ModifyTS],[CurrentStatus],[CountryCode],[SiteType],[AltitudeMin],[AltitudeMax],[N2KVersioningVersion],[N2KVersioningRef],[Area],[Length],[JustificationRequired],[JustificationProvided],[DateConfSCI],[SCIOverwriten],[Priority],[DatePropSCI],[DateSpa],[DateSac]  
                                     FROM [dbo].[Sites]
 	                                inner join
 	                                @siteCodes T on  Sites.SiteCode= T.SiteCode and Sites.Version=T.Version
@@ -1199,28 +1205,46 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     Sites site = new Sites
                     {
-                        SiteCode = reader["SiteCode"].ToString(),
+                        SiteCode = reader["SiteCode"] is null? null: reader["SiteCode"].ToString(),
                         Version = int.Parse(reader["Version"].ToString()),
                         Current =bool.Parse(reader["Current"].ToString()),
                         Name = reader["Name"].ToString(),
-                        CompilationDate = DateTime.Parse(reader["CompilationDate"].ToString()),
-                        ModifyTS =DateTime.Parse(reader["ModifyTS"].ToString()),
                         CountryCode = reader["CountryCode"].ToString(),
                         SiteType = reader["SiteType"].ToString(),
-                        AltitudeMin = double.Parse(reader["AltitudeMin"].ToString()),
-                        AltitudeMax = double.Parse(reader["AltitudeMax"].ToString()),
+                        //AltitudeMin = double.Parse(reader["AltitudeMin"].ToString()),
+                        //AltitudeMax = double.Parse(reader["AltitudeMax"].ToString()),
                         N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString()),
                         N2KVersioningRef = int.Parse(reader["N2KVersioningRef"].ToString()),
                         Area = decimal.Parse(reader["Area"].ToString()),
                         Length = decimal.Parse(reader["Length"].ToString()),
                         JustificationRequired = bool.Parse(reader["JustificationRequired"].ToString()),
-                        JustificationProvided = bool.Parse(reader["JustificationProvided"].ToString()),
-                        DateConfSCI = DateTime.Parse(reader["DateConfSCI"].ToString()),
-                        Priority = bool.Parse(reader["Priority"].ToString()),
-                        DatePropSCI = DateTime.Parse(reader["DatePropSCI"].ToString()),
-                        DateSpa = DateTime.Parse(reader["DateSpa"].ToString()),
-                        DateSac = DateTime.Parse(reader["DateSac"].ToString())
+                        //JustificationProvided = bool.Parse(reader["JustificationProvided"].ToString()),
+                        Priority = bool.Parse(reader["Priority"].ToString())
                     };
+                    if(reader["CompilationDate"].ToString() != "")
+                    {
+                        site.CompilationDate = DateTime.Parse(reader["CompilationDate"].ToString());
+                    }
+                    if (reader["ModifyTS"].ToString() != "")
+                    {
+                        site.ModifyTS = DateTime.Parse(reader["ModifyTS"].ToString());
+                    }
+                    if (reader["DateConfSCI"].ToString() != "")
+                    {
+                        site.DateConfSCI = DateTime.Parse(reader["DateConfSCI"].ToString());
+                    }
+                    if (reader["DatePropSCI"].ToString() != "")
+                    {
+                        site.DatePropSCI = DateTime.Parse(reader["DatePropSCI"].ToString());
+                    }
+                    if (reader["DateSpa"].ToString() != "")
+                    {
+                        site.DateSpa = DateTime.Parse(reader["DateSpa"].ToString());
+                    }
+                    if (reader["DateSac"].ToString() != "")
+                    {
+                        site.DateSac = DateTime.Parse(reader["DateSac"].ToString());
+                    }
                     sites.Add(site);
                 }
             }
@@ -1297,20 +1321,15 @@ namespace N2K_BackboneBackEnd.Services
                     try
                     {
                         List<SiteChangeDb> changes = _lstChanges.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToList();
-
+                        if (changes == null || changes.Count ==0) continue;
                         //Create the listView for the cached lists. By deafult this values
                         SiteCodeView mySiteView = new SiteCodeView();
                         mySiteView.SiteCode = modifiedSiteCode.SiteCode;
                         mySiteView.Version = modifiedSiteCode.VersionId;
                         mySiteView.Name = changes.First().SiteName;
 
-                        //SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
-                        //SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
-                        //SqlParameter paramOldVersion = new SqlParameter("@oldVersion", modifiedSiteCode.VersionId);
-                        //SqlParameter paramNewVersion2 = null;
 
-
-                        Sites? siteToDelete = null;
+                        Sites siteToDelete = new Sites();
                         int previousCurrent = -1;//The 0 value can be a version
 
                        #region In case of user edition
@@ -1383,7 +1402,10 @@ namespace N2K_BackboneBackEnd.Services
                             JustificationFiles.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, change.VersionReferenceId, previousCurrent });
 
                             //Delete edited version
-                            sitecodesdelete.Rows.Add(new Object[] { siteToDelete.SiteCode, siteToDelete.Version });
+                            if (siteToDelete !=null)
+                            {
+                                sitecodesdelete.Rows.Add(new Object[] { siteToDelete.SiteCode, siteToDelete.Version });
+                            }
                         }
                         #endregion
 
