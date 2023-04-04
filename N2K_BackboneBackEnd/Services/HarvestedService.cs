@@ -360,7 +360,7 @@ namespace N2K_BackboneBackEnd.Services
             {
                 try
                 {
-                    SystemLog.write(SystemLog.errorLevel.Info, String.Format("Start validation harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "");
+                    SystemLog.write(SystemLog.errorLevel.Info, String.Format("Start ChangeDetection harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "");
 
                     SqlParameter param1 = new SqlParameter("@country", envelope.CountryCode);
                     SqlParameter param2 = new SqlParameter("@version", envelope.VersionId);
@@ -378,7 +378,7 @@ namespace N2K_BackboneBackEnd.Services
                     //For each site in Versioning compare it with that site in backboneDB
                     foreach (SiteToHarvest? harvestingSite in sitesVersioning)
                     {
-                        changes = await SiteValidation(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope);
+                        changes = await SiteChangeDetection(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope);
                     }
 
                     //For each site in backboneDB check if the site still exists in Versioning
@@ -433,7 +433,7 @@ namespace N2K_BackboneBackEnd.Services
                     throw ex;
 
                 }
-                SystemLog.write(SystemLog.errorLevel.Info, String.Format("END validation harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "");
+                SystemLog.write(SystemLog.errorLevel.Info, String.Format("END ChangeDetection harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "");
             }
 
             return result;
@@ -492,7 +492,7 @@ namespace N2K_BackboneBackEnd.Services
             String serverUrl = String.Format(_appSettings.Value.fme_service_singlesite_spatialchanges, siteCode, versionId.ToString(), _appSettings.Value.fme_security_token);
             try
             {
-                //TimeLog.setTimeStamp("Spatial validation for site " + siteCode + " - " + versionId.ToString(), "Starting");
+                //TimeLog.setTimeStamp("Spatial ChangeDetection for site " + siteCode + " - " + versionId.ToString(), "Starting");
                 Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                 string content = await response.Result.Content.ReadAsStringAsync();
                 result = 1;
@@ -554,7 +554,7 @@ namespace N2K_BackboneBackEnd.Services
                 List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSiteBySitecode  @sitecode",
                                 param1).ToListAsync();
 
-                changes = await SiteValidation(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, true);
+                changes = await SiteChangeDetection(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, true);
                 processedEnvelope.Status = HarvestingStatus.Harvested;
                 result.Add(new HarvestedEnvelope
                 {
@@ -588,7 +588,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<SiteChangeDb>> SiteValidation(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, bool manualEdition = false)
+        public async Task<List<SiteChangeDb>> SiteChangeDetection(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, bool manualEdition = false)
         {
             //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
             //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
@@ -801,7 +801,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteValidation - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangeDetection - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
             }
 
             return changes;
@@ -1104,12 +1104,12 @@ namespace N2K_BackboneBackEnd.Services
                             if (envelopes.Count == 0)
                             {
                                                                 
-                                //Task tabValidationTask = ChangeDetection(_tempEnvelope);
-                                //Task spatialValidationTask = ChangeDetectionSpatialData(_tempEnvelope);
+                                //Task tabChangeDetectionTask = ChangeDetection(_tempEnvelope);
+                                //Task spatialChangeDetectionTask = ChangeDetectionSpatialData(_tempEnvelope);
                                 //make sure they are all finished
 
                                 //await Task.When
-                                //All(tabValidationTask, spatialValidationTask);
+                                //All(tabChangeDetectionTask, spatialChangeDetectionTask);
                                 //change the status of the whole process to PreHarvested
                                 await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested, cache);
                                 bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
@@ -1193,18 +1193,18 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         if (envelope.Status == HarvestingStatus.DataLoaded)
                         {
-                            Task tabValidationTask = ChangeDetection(new EnvelopesToProcess[] { new EnvelopesToProcess
+                            Task tabChangeDetectionTask = ChangeDetection(new EnvelopesToProcess[] { new EnvelopesToProcess
                             {
                                 CountryCode = country,
                                 VersionId = version
                             } });
-                            Task spatialValidationTask = ChangeDetectionSpatialData(new EnvelopesToProcess[] { new EnvelopesToProcess
+                            Task spatialChangeDetectionTask = ChangeDetectionSpatialData(new EnvelopesToProcess[] { new EnvelopesToProcess
                             {
                                 CountryCode = country,
                                 VersionId = version
                             } });
                             //make sure they are all finished
-                            await Task.WhenAll(tabValidationTask, spatialValidationTask);
+                            await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
                         }
 
                         SqlParameter param1 = new SqlParameter("@country", country);
@@ -1245,10 +1245,10 @@ namespace N2K_BackboneBackEnd.Services
                                 EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { nextEnvelopeToChangeDetection };
                                 if (nextEnvelope.Status != HarvestingStatus.DataLoaded)
                                 {
-                                    Task tabValidationTask = ChangeDetection(_tempEnvelope);
-                                    Task spatialValidationTask = ChangeDetectionSpatialData(_tempEnvelope);
+                                    Task tabChangeDetectionTask = ChangeDetection(_tempEnvelope);
+                                    Task spatialChangeDetectionTask = ChangeDetectionSpatialData(_tempEnvelope);
                                     //make sure they are all finished
-                                    await Task.WhenAll(tabValidationTask, spatialValidationTask);
+                                    await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
                                 }
                                 //change the status of the whole process to PreHarvested
                                 await ChangeStatus(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested, cache);

@@ -327,7 +327,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         /// <summary>
-        /// Executes the process of the validation for a selected envelop (Country and Version).
+        /// Executes the process of the ChangeDetection for a selected envelop (Country and Version).
         /// It must be hervested yet to perform this action
         /// </summary>
         /// <param name="envelopes"></param>
@@ -358,7 +358,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         /// <summary>
-        /// Executes the process of the validation for a selected site (Sitecode and Version).
+        /// Executes the process of the ChangeDetection for a selected site (Sitecode and Version).
         /// It must be hervested yet to perform this action
         /// </summary>
         /// <param name="envelopes"></param>
