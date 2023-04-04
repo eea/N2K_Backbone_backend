@@ -1032,11 +1032,13 @@ namespace N2K_BackboneBackEnd.Services
                                                             Encoding.UTF8,
                                                             "application/json");//CONTENT-TYPE header
 
-                        var res = await client.SendAsync(request);
+                        var res = await client.SendAsync(request).ConfigureAwait(false);
                         var json = await res.Content.ReadAsStringAsync();
                         JObject jResponse = JObject.Parse(json);
                         string jobId = jResponse.GetValue("id").ToString();
                         Console.WriteLine(string.Format(@"JobId {0} launched", jobId));
+
+
                         /*
                         SystemLog.write(SystemLog.errorLevel.Info ,"Start harvest spatial", "HarvestSpatialData", "");
                         Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
