@@ -15,6 +15,7 @@ using System.Diagnostics;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Http;
 using System.Runtime.CompilerServices;
+using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -1261,6 +1262,21 @@ namespace N2K_BackboneBackEnd.Services
             return sites;
         }
 
+        public DataSet GetDataSet(SqlConnection connection, string storedProcName, DataTable param)
+        {
+            var command = new SqlCommand(storedProcName, connection) { CommandType = CommandType.StoredProcedure };
+            SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+            paramTable1.Value = param;
+            paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+            command.Parameters.Add(paramTable1);
+            var result = new DataSet();
+            var dataAdapter = new SqlDataAdapter(command);
+            dataAdapter.Fill(result);
+
+            return result;
+        }
+
+         
         public async Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
             //var country = (changedSiteStatus.First().SiteCode).Substring(0, 2);
@@ -1310,17 +1326,122 @@ namespace N2K_BackboneBackEnd.Services
 
                 //List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
                 //get the activities already saved in the DB
-                List<SiteActivities> _lstActivities = await GetSiteActivities(sitecodeschanges);
+                //List<SiteActivities> _lstActivities = await GetSiteActivities(sitecodeschanges);
                 //get the changes already saved in the DB
-                List<SiteChangeDb> _lstChanges = await GetChanges(sitecodeschanges);
+                //List<SiteChangeDb> _lstChanges = await GetChanges(sitecodeschanges);
 
                 //get the sites already saved in the DB
-                List<Sites> _lstSites = await GetSites(sitecodeschanges);
+               // List<Sites> _lstSites = await GetSites(sitecodeschanges);
+
+
+                //GET ALL FROM DB
+                SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                var dataSet = GetDataSet(backboneConn, "spGetMoveToPendingTables", sitecodeschanges);
+
+                //GET SITEACTIVITIES
+                var siteActivitiesTable = dataSet?.Tables?[0];
+                List<SiteActivities> activitiesDB = new List<SiteActivities>();
+                foreach (DataRow row in siteActivitiesTable.Rows)
+                {
+                    SiteActivities act = new SiteActivities();
+                    act.SiteCode = row["SiteCode"] is null ? null : row["SiteCode"].ToString();
+                    act.Version = int.Parse(row["Version"].ToString());
+                    act.Author = row["Author"] is null ? null : row["Author"].ToString();
+                    act.Date = DateTime.Parse(row["Date"].ToString());
+                    act.Action = row["Action"] is null ? null : row["Action"].ToString();
+                    act.Deleted = bool.Parse(row["Deleted"].ToString());
+                    activitiesDB.Add(act);
+                }
+
+                //GET CHANGES
+                var siteChangesTable = dataSet?.Tables?[1];
+                List<SiteChangeDb> changesDB = new List<SiteChangeDb>();
+                foreach (DataRow row in siteChangesTable.Rows)
+                {
+
+                    SiteChangeDb change = new SiteChangeDb
+                    {
+                        SiteCode = row["SiteCode"] is null ? null : row["SiteCode"].ToString(),
+                        Version = int.Parse(row["Version"].ToString()),
+                        Country = row["Country"].ToString(),
+                        Tags = row["Tags"].ToString(),
+                        ChangeCategory = row["ChangeCategory"].ToString(),
+                        ChangeType = row["ChangeType"].ToString(),
+                        NewValue = row["NewValue"].ToString(),
+                        OldValue = row["OldValue"].ToString(),
+                        Detail = row["Detail"].ToString(),
+                        Code = row["Code"].ToString(),
+                        Section = row["Section"].ToString(),
+                        VersionReferenceId = int.Parse(row["VersionReferenceId"].ToString()),
+                        FieldName = row["FieldName"].ToString(),
+                        ReferenceSiteCode = row["ReferenceSiteCode"] is null ? row["SiteCode"].ToString() : row["ReferenceSiteCode"].ToString(),
+                        N2KVersioningVersion = int.Parse(row["N2KVersioningVersion"].ToString())
+                    };
+                    Level levelChange = 0;
+                    Enum.TryParse<Level>(row["Level"].ToString(), out level);
+                    change.Level = levelChange;
+
+                    SiteChangeStatus statusChange;
+                    Enum.TryParse<SiteChangeStatus>(row["Status"].ToString(), out statusChange);
+                    change.Status = statusChange;
+                    changesDB.Add(change);
+                }
+
+                //GET SITES
+                var sitesTable = dataSet?.Tables?[2];
+                List<Sites> sitesDB = new List<Sites>();
+                foreach (DataRow row in sitesTable.Rows)
+                {
+                    Sites site = new Sites
+                    {
+                        SiteCode = row["SiteCode"] is null ? null : row["SiteCode"].ToString(),
+                        Version = int.Parse(row["Version"].ToString()),
+                        Current = bool.Parse(row["Current"].ToString()),
+                        Name = row["Name"].ToString(),
+                        CountryCode = row["CountryCode"].ToString(),
+                        SiteType = row["SiteType"].ToString(),
+                        //AltitudeMin = double.Parse(row["AltitudeMin"].ToString()),
+                        //AltitudeMax = double.Parse(row["AltitudeMax"].ToString()),
+                        N2KVersioningVersion = int.Parse(row["N2KVersioningVersion"].ToString()),
+                        N2KVersioningRef = int.Parse(row["N2KVersioningRef"].ToString()),
+                        Area = decimal.Parse(row["Area"].ToString()),
+                        Length = decimal.Parse(row["Length"].ToString()),
+                        JustificationRequired = bool.Parse(row["JustificationRequired"].ToString()),
+                        //JustificationProvided = bool.Parse(row["JustificationProvided"].ToString()),
+                        Priority = bool.Parse(row["Priority"].ToString())
+                    };
+                    if (row["CompilationDate"].ToString() != "")
+                    {
+                        site.CompilationDate = DateTime.Parse(row["CompilationDate"].ToString());
+                    }
+                    if (row["ModifyTS"].ToString() != "")
+                    {
+                        site.ModifyTS = DateTime.Parse(row["ModifyTS"].ToString());
+                    }
+                    if (row["DateConfSCI"].ToString() != "")
+                    {
+                        site.DateConfSCI = DateTime.Parse(row["DateConfSCI"].ToString());
+                    }
+                    if (row["DatePropSCI"].ToString() != "")
+                    {
+                        site.DatePropSCI = DateTime.Parse(row["DatePropSCI"].ToString());
+                    }
+                    if (row["DateSpa"].ToString() != "")
+                    {
+                        site.DateSpa = DateTime.Parse(row["DateSpa"].ToString());
+                    }
+                    if (row["DateSac"].ToString() != "")
+                    {
+                        site.DateSac = DateTime.Parse(row["DateSac"].ToString());
+                    }
+                    sitesDB.Add(site);
+                }
+
                 foreach (var modifiedSiteCode in changedSiteStatus)
                 {
                     try
                     {
-                        List<SiteChangeDb> changes = _lstChanges.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToList();
+                        List<SiteChangeDb> changes = changesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToList();
                         if (changes == null || changes.Count ==0) continue;
                         //Create the listView for the cached lists. By deafult this values
                         SiteCodeView mySiteView = new SiteCodeView();
@@ -1334,14 +1455,14 @@ namespace N2K_BackboneBackEnd.Services
 
                        #region In case of user edition
 
-                        List<SiteActivities> activities = _lstActivities.Where(e => e.SiteCode == modifiedSiteCode.SiteCode).ToList();
+                        List<SiteActivities> activities = activitiesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode).ToList();
 
                         //Was this site edited after being accepted?
                         SiteChangeDb? change = changes.Where(e => e.ChangeType == "User edition").FirstOrDefault();
                         if (change != null)
                         {
                             //Select the max version for the site with the currentsatatus accepted, but not the version of the change and the referenced version
-                            previousCurrent = _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
+                            previousCurrent = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
                             //Search the previous activities
                             List<SiteActivities> activityDelete = activities.Where(e => (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition").ToList();
 
@@ -1358,12 +1479,12 @@ namespace N2K_BackboneBackEnd.Services
                             JustificationFiles.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId, change.VersionReferenceId });
 
                             //Find edited version in order to remove from the sites entity
-                            siteToDelete =  _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefault();
+                            siteToDelete = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefault();
 
                             //Change the version and the name for the previous version
                             //paramVersionId = new SqlParameter("@version", change.VersionReferenceId);
                             mySiteView.Version = change.VersionReferenceId; //points to the final version
-                            string previousName = _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).Select(x => x.Name).First().ToString();
+                            string previousName = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).Select(x => x.Name).First().ToString();
                             mySiteView.Name = previousName;
                         }
                         //Was this site edited after being rejected?
@@ -1375,12 +1496,12 @@ namespace N2K_BackboneBackEnd.Services
                             if (siteDeleted != null)
                             {
                                 //Get the site max accepted version for the last package but not the current
-                                previousSite =  _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefault();
+                                previousSite = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefault();
                             }
                             else
                             {
                                 //Get the site max accepted version for the last package but not the current nor the present version 
-                                previousSite =  _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefault();
+                                previousSite = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefault();
                             }
                             previousCurrent = previousSite.Version;
 
@@ -1388,7 +1509,7 @@ namespace N2K_BackboneBackEnd.Services
                             activityCheck.ForEach(s => s.Deleted = true);
 
                             //Find the current site
-                            siteToDelete =  _lstSites.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Current == true).FirstOrDefault();
+                            siteToDelete = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Current == true).FirstOrDefault();
                         }
                         //In both cases
                         if (change != null || (activityCheck != null && activityCheck.Count > 0))
