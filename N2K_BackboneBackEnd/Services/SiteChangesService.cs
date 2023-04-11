@@ -1299,12 +1299,13 @@ namespace N2K_BackboneBackEnd.Services
                 sitecodesdelete.Columns.Add("SiteCode", typeof(string));
                 sitecodesdelete.Columns.Add("Version", typeof(int));
 
+                var iddelete = new DataTable("iddelete");
+                iddelete.Columns.Add("ID", typeof(long));
 
                 var JustificationFiles = new DataTable("JustificationFiles");
                 JustificationFiles.Columns.Add("SiteCode", typeof(string));
                 JustificationFiles.Columns.Add("OldVersion", typeof(int));
                 JustificationFiles.Columns.Add("NewVersion", typeof(int));
-
 
 
                 changedSiteStatus.ToList().ForEach(cs =>
@@ -1343,6 +1344,7 @@ namespace N2K_BackboneBackEnd.Services
                 foreach (DataRow row in siteActivitiesTable.Rows)
                 {
                     SiteActivities act = new SiteActivities();
+                    act.ID = long.Parse(row["ID"] is null ? null : row["ID"].ToString());
                     act.SiteCode = row["SiteCode"] is null ? null : row["SiteCode"].ToString();
                     act.Version = int.Parse(row["Version"].ToString());
                     act.Author = row["Author"] is null ? null : row["Author"].ToString();
@@ -1405,9 +1407,7 @@ namespace N2K_BackboneBackEnd.Services
                         N2KVersioningRef = int.Parse(row["N2KVersioningRef"].ToString()),
                         Area = decimal.Parse(row["Area"].ToString()),
                         Length = decimal.Parse(row["Length"].ToString()),
-                        JustificationRequired = bool.Parse(row["JustificationRequired"].ToString()),
-                        //JustificationProvided = bool.Parse(row["JustificationProvided"].ToString()),
-                        Priority = bool.Parse(row["Priority"].ToString())
+                        //JustificationProvided = bool.Parse(row["JustificationProvided"].ToString())
                     };
                     if (row["CompilationDate"].ToString() != "")
                     {
@@ -1416,6 +1416,14 @@ namespace N2K_BackboneBackEnd.Services
                     if (row["ModifyTS"].ToString() != "")
                     {
                         site.ModifyTS = DateTime.Parse(row["ModifyTS"].ToString());
+                    }
+                    if (row["JustificationRequired"].ToString() != "")
+                    {
+                        site.JustificationRequired = bool.Parse(row["JustificationRequired"].ToString());
+                    }
+                    if (row["Priority"].ToString() != "")
+                    {
+                        site.Priority = bool.Parse(row["Priority"].ToString());
                     }
                     if (row["DateConfSCI"].ToString() != "")
                     {
@@ -1433,6 +1441,9 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         site.DateSac = DateTime.Parse(row["DateSac"].ToString());
                     }
+                    SiteChangeStatus statusChange;
+                    Enum.TryParse<SiteChangeStatus>(row["CurrentStatus"].ToString(), out statusChange);
+                    site.CurrentStatus = statusChange;
                     sitesDB.Add(site);
                 }
 
@@ -1466,7 +1477,7 @@ namespace N2K_BackboneBackEnd.Services
                             List<SiteActivities> activityDelete = activities.Where(e => (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition").ToList();
 
                             //mark the result as activities deleted
-                            activityDelete.ForEach(s => s.Deleted = true);
+                            activityDelete.ForEach(s => iddelete.Rows.Add(new Object[] { s.ID }));
 
 
                             //Add comments and docs to the soon to be pending version (the previous version referenced in the change)
@@ -1505,7 +1516,7 @@ namespace N2K_BackboneBackEnd.Services
                             previousCurrent = previousSite.Version;
 
                             //mark the result as activities deleted
-                            activityCheck.ForEach(s => s.Deleted = true);
+                            activityCheck.ForEach(s => iddelete.Rows.Add(new Object[] { s.ID }));
 
                             //Find the current site
                             siteToDelete = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Current == true).FirstOrDefault();
@@ -1519,7 +1530,7 @@ namespace N2K_BackboneBackEnd.Services
                             //await _dataContext.Database.ExecuteSqlRawAsync(
                             //    "exec spCopyJustificationFilesAndStatusChanges @sitecode, @oldVersion, @newVersion",
                             //    paramSiteCode, paramOldVersion, paramNewVersion2);
-                            JustificationFiles.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, change.VersionReferenceId, previousCurrent });
+                            JustificationFiles.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId, previousCurrent });
 
                             //Delete edited version
                             if (siteToDelete != null)
@@ -1559,6 +1570,12 @@ namespace N2K_BackboneBackEnd.Services
 
                 try
                 {
+                    SqlParameter paramTable2 = new SqlParameter("@iddelete", System.Data.SqlDbType.Structured);
+                    paramTable2.Value = iddelete;
+                    paramTable2.TypeName = "[dbo].[IdDelete]";
+                    await _dataContext.Database.ExecuteSqlRawAsync(
+                        "exec spMarkActivitiesAsDeleted @iddelete",
+                        paramTable2);
 
                     SqlParameter paramTable1 = new SqlParameter("@justificationFiles", System.Data.SqlDbType.Structured);
                     paramTable1.Value = JustificationFiles;
@@ -1592,7 +1609,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 catch
                 {
-
+                    throw;
                 }
 
                 ////GetSiteCodesByStatusAndLevelAndCountry
