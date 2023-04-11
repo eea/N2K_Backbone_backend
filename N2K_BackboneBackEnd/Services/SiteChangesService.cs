@@ -15,7 +15,6 @@ using System.Diagnostics;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Http;
 using System.Runtime.CompilerServices;
-using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -1136,10 +1135,10 @@ namespace N2K_BackboneBackEnd.Services
                 reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
-                    
+
                     SiteChangeDb change = new SiteChangeDb
                     {
-                        SiteCode = reader["SiteCode"] is null? null: reader["SiteCode"].ToString(),
+                        SiteCode = reader["SiteCode"] is null ? null : reader["SiteCode"].ToString(),
                         Version = int.Parse(reader["Version"].ToString()),
                         Country = reader["Country"].ToString(),
                         Tags = reader["Tags"].ToString(),
@@ -1157,7 +1156,7 @@ namespace N2K_BackboneBackEnd.Services
                     };
                     Level level;
                     Enum.TryParse<Level>(reader["Level"].ToString(), out level);
-                    change.Level=level;
+                    change.Level = level;
 
                     SiteChangeStatus status;
                     Enum.TryParse<SiteChangeStatus>(reader["Status"].ToString(), out status);
@@ -1206,9 +1205,9 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     Sites site = new Sites
                     {
-                        SiteCode = reader["SiteCode"] is null? null: reader["SiteCode"].ToString(),
+                        SiteCode = reader["SiteCode"] is null ? null : reader["SiteCode"].ToString(),
                         Version = int.Parse(reader["Version"].ToString()),
-                        Current =bool.Parse(reader["Current"].ToString()),
+                        Current = bool.Parse(reader["Current"].ToString()),
                         Name = reader["Name"].ToString(),
                         CountryCode = reader["CountryCode"].ToString(),
                         SiteType = reader["SiteType"].ToString(),
@@ -1222,7 +1221,7 @@ namespace N2K_BackboneBackEnd.Services
                         //JustificationProvided = bool.Parse(reader["JustificationProvided"].ToString()),
                         Priority = bool.Parse(reader["Priority"].ToString())
                     };
-                    if(reader["CompilationDate"].ToString() != "")
+                    if (reader["CompilationDate"].ToString() != "")
                     {
                         site.CompilationDate = DateTime.Parse(reader["CompilationDate"].ToString());
                     }
@@ -1276,7 +1275,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-         
+
         public async Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
             //var country = (changedSiteStatus.First().SiteCode).Substring(0, 2);
@@ -1331,7 +1330,7 @@ namespace N2K_BackboneBackEnd.Services
                 //List<SiteChangeDb> _lstChanges = await GetChanges(sitecodeschanges);
 
                 //get the sites already saved in the DB
-               // List<Sites> _lstSites = await GetSites(sitecodeschanges);
+                // List<Sites> _lstSites = await GetSites(sitecodeschanges);
 
 
                 //GET ALL FROM DB
@@ -1442,7 +1441,7 @@ namespace N2K_BackboneBackEnd.Services
                     try
                     {
                         List<SiteChangeDb> changes = changesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToList();
-                        if (changes == null || changes.Count ==0) continue;
+                        if (changes == null || changes.Count == 0) continue;
                         //Create the listView for the cached lists. By deafult this values
                         SiteCodeView mySiteView = new SiteCodeView();
                         mySiteView.SiteCode = modifiedSiteCode.SiteCode;
@@ -1450,10 +1449,10 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.Name = changes.First().SiteName;
 
 
-                        Sites siteToDelete = new Sites();
+                        Sites siteToDelete = null;
                         int previousCurrent = -1;//The 0 value can be a version
 
-                       #region In case of user edition
+                        #region In case of user edition
 
                         List<SiteActivities> activities = activitiesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode).ToList();
 
@@ -1523,7 +1522,7 @@ namespace N2K_BackboneBackEnd.Services
                             JustificationFiles.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, change.VersionReferenceId, previousCurrent });
 
                             //Delete edited version
-                            if (siteToDelete !=null)
+                            if (siteToDelete != null)
                             {
                                 sitecodesdelete.Rows.Add(new Object[] { siteToDelete.SiteCode, siteToDelete.Version });
                             }
