@@ -23,6 +23,7 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2K_VersioningContext _versioningContext;
         private readonly IOptions<ConfigSettings> _appSettings;
         private bool _ThereAreChanges = false;
+        private BackgroundSpatialHarvestJobs _fmeHarvestJobs;
 
 
         private IList<SpeciesTypes> _speciesTypes= new List<SpeciesTypes>();
@@ -44,12 +45,13 @@ namespace N2K_BackboneBackEnd.Services
         /// <param name="dataContext">Context for the BackBone database</param>
         /// <param name="versioningContext">Context for the Versioning database</param>
         /// <param name="app">Configuration options</param>
-        public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app)
+        public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app, BackgroundSpatialHarvestJobs harvestJobs)
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
             _appSettings = app;
             InitialiseBulkItems();
+            _fmeHarvestJobs = harvestJobs;
         }
 
         /// <summary>
@@ -1007,49 +1009,7 @@ namespace N2K_BackboneBackEnd.Services
                     String serverUrl = String.Format(_appSettings.Value.fme_service_spatialload, envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
                     try
                     {
-                        Console.WriteLine("launching FME");
-
-                        await Task.Delay(15000);
-
-                        //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
-                        client.Timeout = TimeSpan.FromHours(5);
-                        String url = String.Format("{0}/fmerest/v3/transformations/submit/{1}/{2}",
-                           "https://fme.discomap.eea.europa.eu",
-                           "N2KBackbone",
-                           "test_notofocations.fmw");
-
-                        String body = string.Format(@"{{""publishedParameters"":[" +
-                            @"{{""name"":""CountryVersionId"",""value"":{0}}}," +
-                            @"{{""name"":""CountryCode"",""value"": ""{1}""}}]" +
-                            @"}}", envelope.VersionId, envelope.CountryCode);
-
-                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("fmetoken", "token=" + _appSettings.Value.fme_security_token);
-                        client.DefaultRequestHeaders.Accept
-                            .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));//ACCEPT header
-
-                        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
-                        request.Content = new StringContent(body,
-                                                            Encoding.UTF8,
-                                                            "application/json");//CONTENT-TYPE header
-
-                        var res = await client.SendAsync(request).ConfigureAwait(false);
-                        var json = await res.Content.ReadAsStringAsync();
-                        JObject jResponse = JObject.Parse(json);
-                        string jobId = jResponse.GetValue("id").ToString();
-                        Console.WriteLine(string.Format(@"JobId {0} launched", jobId));
-
-
-                        /*
-                        SystemLog.write(SystemLog.errorLevel.Info ,"Start harvest spatial", "HarvestSpatialData", "");
-                        Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
-                        var response1 = client.GetAsync(serverUrl);
-                        SystemLog.write(SystemLog.errorLevel.Info, String.Format("Launched {0}",serverUrl), "HarvestSpatialData", "");
-                        string content = await response.Result.Content.ReadAsStringAsync();                       
-                        SystemLog.write(SystemLog.errorLevel.Info, "Harvest spatial completed", "HarvestSpatialData", "");
-                        */
-
-
-                        /*
+                        _fmeHarvestJobs.LaunchFMESpatialHarvestBackground(envelope, _appSettings);
                         result.Add(
                             new HarvestedEnvelope
                             {
@@ -1059,31 +1019,19 @@ namespace N2K_BackboneBackEnd.Services
                                 Status = SiteChangeStatus.Harvested
                             }
                          );
-                        */
                     }
                     catch (Exception ex)
                     {
                         SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestGeodata", "");
-                        /*
-                        result.Add(
-                            new HarvestedEnvelope
-                            {
-                                CountryCode = envelope.CountryCode,
-                                VersionId = envelope.VersionId,
-                                NumChanges = 0,
-                                Status = SiteChangeStatus.Rejected
-                            }
-                         );
-                        */
                     }
                     finally
                     {
                         client.Dispose();
                         client = null;
                         //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString().ToString(), "End");
-                    }
-
+                    }                    
                 }
+                await _fmeHarvestJobs.WaitUntillAllCompleted();
                 return result;
             }
 
@@ -1096,9 +1044,6 @@ namespace N2K_BackboneBackEnd.Services
             {
                 //TimeLog.setTimeStamp("Harvesting process ", "End");
             }
-
-
-
         }
 
 

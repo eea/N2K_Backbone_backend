@@ -45,7 +45,10 @@ builder.Services.AddScoped<IReleaseService, ReleaseService>();
 builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
 
 builder.Services.AddHostedService<LongRunningService>();
+builder.Services.AddHostedService<FMELongRunningService>();
 builder.Services.AddSingleton<BackgroundWorkerQueue>();
+builder.Services.AddSingleton<BackgroundSpatialHarvestJobs>();
+
 
 builder.Services.AddResponseCompression(options =>
 {

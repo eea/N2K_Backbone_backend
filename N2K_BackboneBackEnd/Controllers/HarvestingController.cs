@@ -284,7 +284,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 _backgroundWorkerQueue.QueueBackgroundWorkItem(async token =>
                 {
                     await _harvestedService.HarvestSpatialData(envelopes);
-                    var aaa = 1;
                 });
 
                 response.Success = true;
@@ -310,16 +309,20 @@ namespace N2K_BackboneBackEnd.Controllers
         /// <returns></returns>
         [Route("FullHarvest")]
         [HttpPost]
-        public async Task<ActionResult<List<HarvestedEnvelope>>> FullHarvest()
+        public async Task<ActionResult<int>> FullHarvest()
         {
-            var response = new ServiceResponse<List<HarvestedEnvelope>>();
+            var response = new ServiceResponse<int>();
             try
             {
-                var siteChanges = await _harvestedService.FullHarvest(_cache);
+                await Task.Delay(1);
+                _backgroundWorkerQueue.QueueBackgroundWorkItem(async token =>
+                {
+                    await _harvestedService.FullHarvest(_cache);
+                });                
                 response.Success = true;
                 response.Message = "";
-                response.Data = siteChanges;
-                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                response.Data = 1;
+                response.Count = 1;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -327,7 +330,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<HarvestedEnvelope>();
+                response.Data = 0;
                 return Ok(response);
             }
         }
