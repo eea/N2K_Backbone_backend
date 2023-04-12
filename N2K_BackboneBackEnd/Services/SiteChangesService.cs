@@ -1261,9 +1261,10 @@ namespace N2K_BackboneBackEnd.Services
             return sites;
         }
 
-        public DataSet GetDataSet(SqlConnection connection, string storedProcName, DataTable param)
+        public DataSet GetDataSet( string storedProcName, DataTable param)
         {
-            var command = new SqlCommand(storedProcName, connection) { CommandType = CommandType.StoredProcedure };
+            SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+            var command = new SqlCommand(storedProcName, backboneConn) { CommandType = CommandType.StoredProcedure };
             SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
             paramTable1.Value = param;
             paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
@@ -1272,6 +1273,9 @@ namespace N2K_BackboneBackEnd.Services
             var dataAdapter = new SqlDataAdapter(command);
             dataAdapter.Fill(result);
 
+            dataAdapter.Dispose();
+            command.Dispose();
+            backboneConn.Dispose();
             return result;
         }
 
@@ -1335,8 +1339,7 @@ namespace N2K_BackboneBackEnd.Services
 
 
                 //GET ALL FROM DB
-                SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
-                var dataSet = GetDataSet(backboneConn, "spGetMoveToPendingTables", sitecodeschanges);
+                var dataSet = GetDataSet("spGetMoveToPendingTables", sitecodeschanges);
 
                 //GET SITEACTIVITIES
                 var siteActivitiesTable = dataSet?.Tables?[0];
@@ -1397,18 +1400,20 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         SiteCode = row["SiteCode"] is null ? null : row["SiteCode"].ToString(),
                         Version = int.Parse(row["Version"].ToString()),
-                        Current = bool.Parse(row["Current"].ToString()),
-                        Name = row["Name"].ToString(),
                         CountryCode = row["CountryCode"].ToString(),
                         SiteType = row["SiteType"].ToString(),
                         //AltitudeMin = double.Parse(row["AltitudeMin"].ToString()),
                         //AltitudeMax = double.Parse(row["AltitudeMax"].ToString()),
-                        N2KVersioningVersion = int.Parse(row["N2KVersioningVersion"].ToString()),
-                        N2KVersioningRef = int.Parse(row["N2KVersioningRef"].ToString()),
-                        Area = decimal.Parse(row["Area"].ToString()),
-                        Length = decimal.Parse(row["Length"].ToString()),
                         //JustificationProvided = bool.Parse(row["JustificationProvided"].ToString())
                     };
+                    if (row["Current"].ToString() != "")
+                    {
+                        site.Current = bool.Parse(row["Current"].ToString());
+                    }
+                    if (row["Name"].ToString() != "")
+                    {
+                        site.Name = row["Name"].ToString();
+                    }
                     if (row["CompilationDate"].ToString() != "")
                     {
                         site.CompilationDate = DateTime.Parse(row["CompilationDate"].ToString());
@@ -1416,6 +1421,22 @@ namespace N2K_BackboneBackEnd.Services
                     if (row["ModifyTS"].ToString() != "")
                     {
                         site.ModifyTS = DateTime.Parse(row["ModifyTS"].ToString());
+                    }
+                    if (row["N2KVersioningVersion"].ToString() != "")
+                    {
+                        site.N2KVersioningVersion = int.Parse(row["N2KVersioningVersion"].ToString());
+                    }
+                    if (row["N2KVersioningRef"].ToString() != "")
+                    {
+                        site.N2KVersioningRef = int.Parse(row["N2KVersioningRef"].ToString());
+                    }
+                    if (row["Area"].ToString() != "")
+                    {
+                        site.Area = decimal.Parse(row["Area"].ToString());
+                    }
+                    if (row["Length"].ToString() != "")
+                    {
+                        site.Length = decimal.Parse(row["Length"].ToString());
                     }
                     if (row["JustificationRequired"].ToString() != "")
                     {
