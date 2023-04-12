@@ -1400,18 +1400,20 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         SiteCode = row["SiteCode"] is null ? null : row["SiteCode"].ToString(),
                         Version = int.Parse(row["Version"].ToString()),
-                        Current = bool.Parse(row["Current"].ToString()),
-                        Name = row["Name"].ToString(),
                         CountryCode = row["CountryCode"].ToString(),
                         SiteType = row["SiteType"].ToString(),
                         //AltitudeMin = double.Parse(row["AltitudeMin"].ToString()),
                         //AltitudeMax = double.Parse(row["AltitudeMax"].ToString()),
-                        N2KVersioningVersion = int.Parse(row["N2KVersioningVersion"].ToString()),
-                        N2KVersioningRef = int.Parse(row["N2KVersioningRef"].ToString()),
-                        Area = decimal.Parse(row["Area"].ToString()),
-                        Length = decimal.Parse(row["Length"].ToString()),
                         //JustificationProvided = bool.Parse(row["JustificationProvided"].ToString())
                     };
+                    if (row["Current"].ToString() != "")
+                    {
+                        site.Current = bool.Parse(row["Current"].ToString());
+                    }
+                    if (row["Name"].ToString() != "")
+                    {
+                        site.Name = row["Name"].ToString();
+                    }
                     if (row["CompilationDate"].ToString() != "")
                     {
                         site.CompilationDate = DateTime.Parse(row["CompilationDate"].ToString());
@@ -1419,6 +1421,22 @@ namespace N2K_BackboneBackEnd.Services
                     if (row["ModifyTS"].ToString() != "")
                     {
                         site.ModifyTS = DateTime.Parse(row["ModifyTS"].ToString());
+                    }
+                    if (row["N2KVersioningVersion"].ToString() != "")
+                    {
+                        site.N2KVersioningVersion = int.Parse(row["N2KVersioningVersion"].ToString());
+                    }
+                    if (row["N2KVersioningRef"].ToString() != "")
+                    {
+                        site.N2KVersioningRef = int.Parse(row["N2KVersioningRef"].ToString());
+                    }
+                    if (row["Area"].ToString() != "")
+                    {
+                        site.Area = decimal.Parse(row["Area"].ToString());
+                    }
+                    if (row["Length"].ToString() != "")
+                    {
+                        site.Length = decimal.Parse(row["Length"].ToString());
                     }
                     if (row["JustificationRequired"].ToString() != "")
                     {
