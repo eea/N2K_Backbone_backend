@@ -1261,9 +1261,10 @@ namespace N2K_BackboneBackEnd.Services
             return sites;
         }
 
-        public DataSet GetDataSet(SqlConnection connection, string storedProcName, DataTable param)
+        public DataSet GetDataSet( string storedProcName, DataTable param)
         {
-            var command = new SqlCommand(storedProcName, connection) { CommandType = CommandType.StoredProcedure };
+            SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+            var command = new SqlCommand(storedProcName, backboneConn) { CommandType = CommandType.StoredProcedure };
             SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
             paramTable1.Value = param;
             paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
@@ -1272,6 +1273,9 @@ namespace N2K_BackboneBackEnd.Services
             var dataAdapter = new SqlDataAdapter(command);
             dataAdapter.Fill(result);
 
+            dataAdapter.Dispose();
+            command.Dispose();
+            backboneConn.Dispose();
             return result;
         }
 
@@ -1335,8 +1339,7 @@ namespace N2K_BackboneBackEnd.Services
 
 
                 //GET ALL FROM DB
-                SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
-                var dataSet = GetDataSet(backboneConn, "spGetMoveToPendingTables", sitecodeschanges);
+                var dataSet = GetDataSet("spGetMoveToPendingTables", sitecodeschanges);
 
                 //GET SITEACTIVITIES
                 var siteActivitiesTable = dataSet?.Tables?[0];

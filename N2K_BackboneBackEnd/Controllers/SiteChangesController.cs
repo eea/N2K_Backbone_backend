@@ -484,6 +484,7 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpPost]
         public async Task<ActionResult<List<ModifiedSiteCode>>> AcceptChanges([FromBody] ModifiedSiteCode[] acceptedChanges)
         {
+            var start = DateTime.Now;
             var response = new ServiceResponse<List<ModifiedSiteCode>>();
             try
             {
@@ -492,6 +493,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Message = "";
                 response.Data = siteChanges;
                 response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                Console.WriteLine(String.Format("Accept {0}", (DateTime.Now - start).TotalSeconds));
                 return Ok(response);
             }
             catch (Exception ex)
@@ -511,6 +513,7 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpPost]
         public async Task<ActionResult<List<ModifiedSiteCode>>> MoveToPending([FromBody] ModifiedSiteCode[] changedSiteStatus)
         {
+            var start= DateTime.Now;
             var response = new ServiceResponse<List<ModifiedSiteCode>>();
             try
             {
@@ -519,6 +522,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Message = "";
                 response.Data = siteChanges;
                 response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                Console.WriteLine(String.Format("Move to pending {0}", (DateTime.Now - start).TotalSeconds));
                 return Ok(response);
             }
             catch (Exception ex)
@@ -537,6 +541,7 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpPost]
         public async Task<ActionResult<List<ModifiedSiteCode>>> RejectChanges([FromBody] ModifiedSiteCode[] rejectedChanges)
         {
+            var start = DateTime.Now;
             var response = new ServiceResponse<List<ModifiedSiteCode>>();
             try
             {
@@ -545,6 +550,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Message = "";
                 response.Data = siteChanges;
                 response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                Console.WriteLine(String.Format("Reject {0}", (DateTime.Now - start).TotalSeconds));
                 return Ok(response);
             }
             catch (Exception ex)
