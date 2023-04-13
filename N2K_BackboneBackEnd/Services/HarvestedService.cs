@@ -1000,39 +1000,19 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
-
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
-                    HttpClient client = new HttpClient();
-                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialload, envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
                     try
                     {
                         _fmeHarvestJobs.LaunchFMESpatialHarvestBackground(envelope, _appSettings);
-                        result.Add(
-                            new HarvestedEnvelope
-                            {
-                                CountryCode = envelope.CountryCode,
-                                VersionId = envelope.VersionId,
-                                NumChanges = 0,
-                                Status = SiteChangeStatus.Harvested
-                            }
-                         );
                     }
                     catch (Exception ex)
                     {
                         SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestGeodata", "");
                     }
-                    finally
-                    {
-                        client.Dispose();
-                        client = null;
-                        //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString().ToString(), "End");
-                    }                    
                 }
-                await _fmeHarvestJobs.WaitUntillAllCompleted();
-                return result;
+                return await _fmeHarvestJobs.WaitUntillAllCompleted();
             }
 
             catch (Exception ex)
@@ -1083,14 +1063,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             //When there is no previous envelopes to resolve for this country
                             if (envelopes.Count == 0)
-                            {
-                                                                
-                                //Task tabValidationTask = Validate(_tempEnvelope);
-                                //Task spatialValidationTask = ValidateSpatialData(_tempEnvelope);
-                                //make sure they are all finished
-
-                                //await Task.When
-                                //All(tabValidationTask, spatialValidationTask);
+                            {                                                                
                                 //change the status of the whole process to PreHarvested
                                 await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested, cache);
                                 bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
