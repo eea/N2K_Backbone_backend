@@ -371,7 +371,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false)
+        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false)
         {
             string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes",
                     country,
@@ -395,14 +395,27 @@ namespace N2K_BackboneBackEnd.Services
                 IQueryable<SiteCodeVersion> changes = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryAndStatusAndLevel]  @country, @status, @level",
                             param1, param2, param3);
 
-                result = (await changes.ToListAsync()).Select(x =>
-                     new SiteCodeView
-                     {
-                         SiteCode = x.SiteCode,
-                         Version = x.Version,
-                         Name = x.Name
-                     }
-                ).ToList();
+                List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
+                            param1).ToListAsync();
+                foreach (var change in (await changes.ToListAsync()))
+                {
+                    SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
+                    if (activity == null)
+                    {
+                        SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                        if (editionChange != null)
+                            activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
+                    }
+                    SiteCodeView temp = new SiteCodeView
+                    {
+                        SiteCode = change.SiteCode,
+                        Version = change.Version,
+                        Name = change.Name,
+                        EditedBy = activity is null ? null : activity.Author,
+                        EditedDate = activity is null ? null : activity.Date
+                    };
+                    result.Add(temp);
+                }
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                         .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
                         .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
@@ -410,6 +423,8 @@ namespace N2K_BackboneBackEnd.Services
                         .SetSize(40000);
                 cache.Set(listName, result, cacheEntryOptions);
             }
+            if (onlyedited)
+                result = result.Where(x => x.EditedDate != null).ToList();
             return result.OrderBy(o => o.SiteCode).ToList();
         }
 
@@ -1261,7 +1276,7 @@ namespace N2K_BackboneBackEnd.Services
             return sites;
         }
 
-        public DataSet GetDataSet( string storedProcName, DataTable param)
+        public DataSet GetDataSet(string storedProcName, DataTable param)
         {
             SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
             var command = new SqlCommand(storedProcName, backboneConn) { CommandType = CommandType.StoredProcedure };
