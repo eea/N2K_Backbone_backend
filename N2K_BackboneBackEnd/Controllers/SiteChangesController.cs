@@ -21,7 +21,7 @@ namespace N2K_BackboneBackEnd.Controllers
         private IMemoryCache _cache;
 
 
-        public SiteChangesController(ISiteChangesService siteChangesService, IMapper mapper,IMemoryCache cache)
+        public SiteChangesController(ISiteChangesService siteChangesService, IMapper mapper, IMemoryCache cache)
         {
             _siteChangesService = siteChangesService;
             _mapper = mapper;
@@ -57,7 +57,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDbEdition>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, null, null,_cache, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(string.Empty, null, null, _cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -104,7 +104,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<SiteChangeDbEdition>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, null,_cache, page, limit);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, null, null, _cache, page, limit);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -404,18 +404,18 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("GetSiteCodes/country={country:string}&status={status:Status}&level={level:Level}/")]
+        [Route("GetSiteCodes/country={country:string}&status={status:Status}&level={level:Level}&onlyedited={onlyedited:bool}/")]
         [HttpGet()]
-        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level)
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, bool onlyedited)
         {
             var response = new ServiceResponse<List<SiteCodeView>>();
             try
             {
-                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, status, level,_cache);
+                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, status, level, _cache, false, onlyedited);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteCodes;
-                response.Count =  await _siteChangesService.GetPendingChangesByCountry(country,_cache);
+                response.Count = await _siteChangesService.GetPendingChangesByCountry(country, _cache);
                 return Ok(response);
             }
             catch (Exception ex)
@@ -438,7 +438,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteCodes;
-                response.Count = await _siteChangesService.GetPendingChangesByCountry(country,_cache);
+                response.Count = await _siteChangesService.GetPendingChangesByCountry(country, _cache);
                 return Ok(response);
             }
             catch (Exception ex)
@@ -487,7 +487,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<ModifiedSiteCode>>();
             try
             {
-                var siteChanges = await _siteChangesService.AcceptChanges(acceptedChanges, _cache );
+                var siteChanges = await _siteChangesService.AcceptChanges(acceptedChanges, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -514,7 +514,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<ModifiedSiteCode>>();
             try
             {
-                var siteChanges = await _siteChangesService.MoveToPending(changedSiteStatus,_cache);
+                var siteChanges = await _siteChangesService.MoveToPending(changedSiteStatus, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -540,7 +540,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<ModifiedSiteCode>>();
             try
             {
-                var siteChanges = await _siteChangesService.RejectChanges(rejectedChanges,_cache);
+                var siteChanges = await _siteChangesService.RejectChanges(rejectedChanges, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
