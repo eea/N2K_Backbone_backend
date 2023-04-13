@@ -14,6 +14,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using System.Text;
+using System.Collections.Generic;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -998,33 +999,36 @@ namespace N2K_BackboneBackEnd.Services
             return returnDate;
         }
 
-        public async Task<List<HarvestedEnvelope>> HarvestSpatialData(EnvelopesToProcess[] envelopeIDs)
+        public async Task HarvestSpatialData(EnvelopesToProcess[] envelopeIDs)
         {
             try
             {
+                await Task.Delay(1);
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
                     try
                     {
                         _fmeHarvestJobs.LaunchFMESpatialHarvestBackground(envelope, _appSettings);
-                        _fmeHarvestJobs.FMEJobCompleted += (sender, env) =>
-                        {
-                            Console.WriteLine(String.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId));
-                        };
                     }
                     catch (Exception ex)
                     {
                         SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestGeodata", "");
                     }
                 }
-                return await _fmeHarvestJobs.WaitUntillAllCompleted();
+                _fmeHarvestJobs.FMEJobCompleted += (sender, env) =>
+                {
+                    Console.WriteLine(String.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId));
+                    if (env.AllFinished)
+                    {
+                        Console.WriteLine("FME Spatial harvest completed");
+                    }
+                };
+               
             }
-
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return new List<HarvestedEnvelope>();
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");               
             }
             finally
             {
@@ -1049,6 +1053,7 @@ namespace N2K_BackboneBackEnd.Services
                 //List<ProcessedEnvelopes> pEnvelopes = new List<ProcessedEnvelopes>();
 
                 List<HarvestedEnvelope> bbEnvelopes = new List<HarvestedEnvelope>();
+                EnvelopesToProcess[] allEnvelopes = new EnvelopesToProcess[] { };
                 if (vEnvelopes.Count > 0)
                 {
                     foreach (Harvesting vEnvelope in vEnvelopes)
@@ -1060,11 +1065,30 @@ namespace N2K_BackboneBackEnd.Services
                             SubmissionDate = vEnvelope.SubmissionDate
                         };
                         EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { envelope };
+
+                        allEnvelopes.Append(envelope);
+
+                        //harvest SiteCode-version to fill Sites table.
+
+                    }
+                    
+                    //send FME to harvest all envelopes in sync mode
+                    await HarvestSpatialData(allEnvelopes);
+                    //while tabular data of the sites is harvested
+                    foreach (Harvesting vEnvelope in vEnvelopes)
+                    {
+                        EnvelopesToProcess envelope = new EnvelopesToProcess
+                        {
+                            VersionId = Int32.Parse(vEnvelope.Id.ToString()),
+                            CountryCode = vEnvelope.Country,
+                            SubmissionDate = vEnvelope.SubmissionDate
+                        };
+                        EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { envelope };
+                        //harvest the extended tabular data
                         List<HarvestedEnvelope> bbEnvelope = await Harvest(_tempEnvelope);
-                        List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(_tempEnvelope);
+                        
 
                         List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == _tempEnvelope[0].CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToListAsync();
-
                         //Harvest proccess did its work successfully
                         if (bbEnvelope.Count > 0)
                         {
