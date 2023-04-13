@@ -10,18 +10,21 @@ using System.Threading;
 
 namespace N2K_BackboneBackEnd.Models
 {
+
     public class BackgroundSpatialHarvestJobs
     {
+        public event EventHandler<FMEJobEventArgs> FMEJobCompleted;
+
         private ConcurrentDictionary<EnvelopesToProcess, long> _fmeJobs = new ConcurrentDictionary<EnvelopesToProcess, long>();
         private SemaphoreSlim _signal = new SemaphoreSlim(0);
-        private List<HarvestedEnvelope> result= new List<HarvestedEnvelope> { };
+        private List<HarvestedEnvelope> result = new List<HarvestedEnvelope> { };
         public void LaunchFMESpatialHarvestBackground(EnvelopesToProcess envelope, IOptions<ConfigSettings> appSettings)
         {
             if (envelope == null)
             {
                 throw new ArgumentNullException(nameof(envelope));
             }
-            if (_fmeJobs.Count == 0) _signal.Release(); 
+            if (_fmeJobs.Count == 0) _signal.Release();
 
             HttpClient client = new HttpClient();
             try
@@ -55,13 +58,13 @@ namespace N2K_BackboneBackEnd.Models
                                                     "application/json");//CONTENT-TYPE header
 
                 //call the FME script in async 
-                var res =  client.Send(request);
+                var res = client.Send(request);
                 //get the JobId 
                 var json = res.Content.ReadAsStringAsync().Result;
                 JObject jResponse = JObject.Parse(json);
                 string jobId = jResponse.GetValue("id").ToString();
 
-                _fmeJobs.TryAdd(envelope,long.Parse(jobId));
+                _fmeJobs.TryAdd(envelope, long.Parse(jobId));
                 Console.WriteLine(string.Format(@"JobId {0} launched", jobId));
 
             }
@@ -108,12 +111,12 @@ namespace N2K_BackboneBackEnd.Models
                 if (jResponse.GetValue("status").ToString() == "SUCCESS" || jResponse.GetValue("status").ToString() == "ERROR")
                 {
                     result.Add(new HarvestedEnvelope
-                            {
-                                CountryCode = spatialHarvestjob.Key.CountryCode,
-                                VersionId = spatialHarvestjob.Key.VersionId,
-                                NumChanges = 0,
-                                Status = SiteChangeStatus.Harvested
-                            });
+                    {
+                        CountryCode = spatialHarvestjob.Key.CountryCode,
+                        VersionId = spatialHarvestjob.Key.VersionId,
+                        NumChanges = 0,
+                        Status = SiteChangeStatus.Harvested
+                    });
                     CompleteTask(spatialHarvestjob.Key);
                     SystemLog.write(SystemLog.errorLevel.Info, string.Format("Harvest spatial {0}-{1} completed", spatialHarvestjob.Key.CountryCode, spatialHarvestjob.Key.VersionId), "HarvestSpatialData", "");
                 }
@@ -124,7 +127,19 @@ namespace N2K_BackboneBackEnd.Models
         public void CompleteTask(EnvelopesToProcess envelope)
         {
             _fmeJobs.TryRemove(envelope, out long jobId);
+            OnFMEJobIdCompleted(envelope);
         }
+
+
+        protected virtual void OnFMEJobIdCompleted(EnvelopesToProcess envelope)
+        {
+            FMEJobEventArgs evt= new FMEJobEventArgs {
+                AllFinished= _fmeJobs.Count == 0,
+                Envelope= envelope
+            };
+            FMEJobCompleted?.Invoke(this, evt);
+        }
+
 
         public async Task<List<HarvestedEnvelope>> WaitUntillAllCompleted()
         {

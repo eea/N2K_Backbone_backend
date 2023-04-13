@@ -1008,6 +1008,10 @@ namespace N2K_BackboneBackEnd.Services
                     try
                     {
                         _fmeHarvestJobs.LaunchFMESpatialHarvestBackground(envelope, _appSettings);
+                        _fmeHarvestJobs.FMEJobCompleted += (sender, env) =>
+                        {
+                            Console.WriteLine(String.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId));
+                        };
                     }
                     catch (Exception ex)
                     {
@@ -1027,6 +1031,7 @@ namespace N2K_BackboneBackEnd.Services
                 //TimeLog.setTimeStamp("Harvesting process ", "End");
             }
         }
+
 
 
         /// <summary>
