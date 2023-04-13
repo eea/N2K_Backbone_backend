@@ -54,11 +54,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="referenceVersionID"></param>
         /// <returns></returns>
         [Obsolete("Method Harvest is deprecated, and has no code.")]
-        public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
+        public async Task<int> ChangeDetectionChanges(string countryCode, int versionId, int referenceVersionID)
         {
-            Console.WriteLine("==>Start Site Code validate...");
+            Console.WriteLine("==>Start Site Code ChangeDetection...");
             await Task.Delay(10000);
-            Console.WriteLine("==>ENd Site Code validate...");
+            Console.WriteLine("==>ENd Site Code ChangeDetection...");
             return 1;
         }
 
@@ -789,7 +789,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        public async Task<List<SiteChangeDb>> ValidateSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance, ProcessedEnvelopes? processedEnvelope)
+        public async Task<List<SiteChangeDb>> ChangeDetectionSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance, ProcessedEnvelopes? processedEnvelope)
         {
             await Task.Delay(1);
             try
@@ -977,12 +977,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSites - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ChangeDetectionSites - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
             }
             return changes;
         }
 
-        public async Task<List<SiteChangeDb>> ValidateBioRegions(List<BioRegions> bioRegionsVersioning, List<BioRegions> referencedBioRegions, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, ProcessedEnvelopes? processedEnvelope)
+        public async Task<List<SiteChangeDb>> ChangeDetectionBioRegions(List<BioRegions> bioRegionsVersioning, List<BioRegions> referencedBioRegions, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, ProcessedEnvelopes? processedEnvelope)
         {
             try
             {
@@ -1045,7 +1045,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateBioRegions - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ChangeDetectionBioRegions - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
             }
             return changes;
         }

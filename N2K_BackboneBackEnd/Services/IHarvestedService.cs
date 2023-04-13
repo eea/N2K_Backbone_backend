@@ -21,11 +21,11 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<EnvelopesToHarvest>> GetPreHarvestedEnvelopes();
 
-        Task<List<HarvestedEnvelope>> Validate(EnvelopesToProcess[] envelopeIDs);
+        Task<List<HarvestedEnvelope>> ChangeDetection(EnvelopesToProcess[] envelopeIDs);
 
-        Task<List<HarvestedEnvelope>> ValidateSingleSite(string siteCode, int versionId);
+        Task<List<HarvestedEnvelope>> ChangeDetectionSingleSite(string siteCode, int versionId);
 
-        Task<List<HarvestedEnvelope>> ValidateSingleSiteObject(SiteToHarvest harvestingSite);
+        Task<List<HarvestedEnvelope>> ChangeDetectionSingleSiteObject(SiteToHarvest harvestingSite);
 
         Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs);
 

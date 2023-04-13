@@ -250,15 +250,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         
 
-        public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
+        public async Task<int> ChangeDetectionChanges(string countryCode, int versionId, int referenceVersionID)
         {
-            Console.WriteLine("==>Start species validate...");
+            Console.WriteLine("==>Start species ChangeDetection...");
             await Task.Delay(2000);
-            Console.WriteLine("==>ENd speciesvalidate...");
+            Console.WriteLine("==>ENd speciesChangeDetection...");
             return 1;
         }
 
-        public async Task<List<SiteChangeDb>> ValidateSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope)
+        public async Task<List<SiteChangeDb>> ChangeDetectionSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope)
         {
             try
             {
@@ -624,7 +624,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSpecies - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ChangeDetectionSpecies - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
             }
             return changes;
         }

@@ -368,20 +368,20 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         /// <summary>
-        /// Executes the process of the validation for a selected envelop (Country and Version).
+        /// Executes the process of the ChangeDetection for a selected envelop (Country and Version).
         /// It must be hervested yet to perform this action
         /// </summary>
         /// <param name="envelopes"></param>
         /// <returns></returns>
         // POST api/<HarvestingController>
-        [Route("Harvest/Validate")]
+        [Route("Harvest/ChangeDetection")]
         [HttpPost]
-        public async  Task<ActionResult<List<HarvestedEnvelope>>> Validate([FromBody] EnvelopesToProcess[] envelopes)
+        public async  Task<ActionResult<List<HarvestedEnvelope>>> ChangeDetection([FromBody] EnvelopesToProcess[] envelopes)
         {
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
-                var processedEnvelope = await _harvestedService.Validate(envelopes);
+                var processedEnvelope = await _harvestedService.ChangeDetection(envelopes);
                 response.Success = true;
                 response.Message = "";
                 response.Data = processedEnvelope;
@@ -399,20 +399,20 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         /// <summary>
-        /// Executes the process of the validation for a selected site (Sitecode and Version).
+        /// Executes the process of the ChangeDetection for a selected site (Sitecode and Version).
         /// It must be hervested yet to perform this action
         /// </summary>
         /// <param name="envelopes"></param>
         /// <returns></returns>
         // POST api/<HarvestingController>
-        [Route("Harvest/ValidateSingleSite")]
+        [Route("Harvest/ChangeDetectionSingleSite")]
         [HttpPost]
-        public async Task<ActionResult<List<HarvestedEnvelope>>> ValidateSingleSite([FromBody] string siteCode, int versionId)
+        public async Task<ActionResult<List<HarvestedEnvelope>>> ChangeDetectionSingleSite([FromBody] string siteCode, int versionId)
         {
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
-                var processedEnvelope = await _harvestedService.ValidateSingleSite(siteCode, versionId);
+                var processedEnvelope = await _harvestedService.ChangeDetectionSingleSite(siteCode, versionId);
                 response.Success = true;
                 response.Message = "";
                 response.Data = processedEnvelope;

@@ -128,7 +128,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = "EULoginSchema";
 })
-.AddScheme<ValidateHashAuthenticationSchemeOptions, ValidateHashAuthenticationHandler>("EULoginSchema", null);
+.AddScheme<ChangeDetectionHashAuthenticationSchemeOptions, ChangeDetectionHashAuthenticationHandler>("EULoginSchema", null);
 
 builder.Services.AddMemoryCache();
 

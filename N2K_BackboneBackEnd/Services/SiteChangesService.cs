@@ -12,6 +12,9 @@ using NuGet.Protocol;
 using N2K_BackboneBackEnd.Helpers;
 using System.Security.Policy;
 using System.Diagnostics;
+using N2K_BackboneBackEnd.Models.BackboneDB;
+using Microsoft.AspNetCore.Http;
+using System.Runtime.CompilerServices;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -20,6 +23,13 @@ namespace N2K_BackboneBackEnd.Services
     public class SiteChangesService : ISiteChangesService
     {
 
+        private struct MyStruct
+        {
+            public string SiteCode { get; set; }
+            public string Name { get; set; }
+            public int Version { get; set; }
+            public N2K_BackboneBackEnd.Enumerations.Level Level { get; set; }
+        }
 
         private class OrderedChanges
         {
@@ -801,62 +811,100 @@ namespace N2K_BackboneBackEnd.Services
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
             try
             {
-                foreach (var modifiedSiteCode in changedSiteStatus)
+                var sitecodesfilter = new DataTable("sitecodesfilter");
+                sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter.Columns.Add("Version", typeof(int));
+
+                changedSiteStatus.ToList().ForEach(cs =>
+                {
+                    sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.VersionId });
+
+                    cs.OK = 1;
+                    cs.Error = string.Empty;
+                    cs.Status = SiteChangeStatus.Accepted;
+                    result.Add(cs);
+
+                    siteActivities.Add(new SiteActivities
+                    {
+                        SiteCode = cs.SiteCode,
+                        Version = cs.VersionId,
+                        Author = GlobalData.Username,
+                        Date = DateTime.Now,
+                        Action = "Accept Changes",
+                        Deleted = false
+                    });
+                });
+
+                string queryString = @" 
+                        select  Changes.SiteCode,Changes.Version, Sites.Name as SiteName, Max(
+	                        case
+		                        when Level='Critical' then 2
+		                        when Level='Warning' then 1
+		                        when Level='Info' then 0
+                            end
+	                        ) as Level
+                        from 
+	                        [dbo].[Changes] inner join 
+	                        Sites ON   changes.sitecode= sites.sitecode and Changes.version=Sites.version 
+	                        inner join
+	                        @siteCodes T on  Changes.SiteCode= T.SiteCode and Changes.Version= T.Version
+
+                        group by 
+	                        changes.SiteCode, Changes.version, Sites.name";
+
+                SqlConnection backboneConn = null;
+                SqlCommand command = null;
+                SqlDataReader reader = null;
+                try
                 {
 
-                    try
+                    backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                    backboneConn.Open();
+                    command = new SqlCommand(queryString, backboneConn);
+                    SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                    paramTable1.Value = sitecodesfilter;
+                    paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                    command.Parameters.Add(paramTable1);
+                    reader = await command.ExecuteReaderAsync();
+                    while (reader.Read())
                     {
-                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
-                        SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
-
-                        await _dataContext.Database.ExecuteSqlRawAsync(
-                                "exec spAcceptSiteCodeChanges @sitecode, @version",
-                                paramSiteCode,
-                                paramVersionId);
-
-
-                        //Get all changes accepted
-                        List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
-
-                        SiteActivities activity = new SiteActivities
-                        {
-                            SiteCode = modifiedSiteCode.SiteCode,
-                            Version = modifiedSiteCode.VersionId,
-                            Author = GlobalData.Username,
-                            Date = DateTime.Now,
-                            Action = "Accept Changes",
-                            Deleted = false
-                        };
-                        //_dataContext.Set<SiteActivities>().Add(activity);
-                        siteActivities.Add(activity);
-                        await _dataContext.SaveChangesAsync();
-
-                        Level level = (Level)changes.Max(a => a.Level);
-                        SiteChangeStatus status = (SiteChangeStatus)changes.FirstOrDefault().Status;
-
-                        //Create the listView
                         SiteCodeView mySiteView = new SiteCodeView();
-                        mySiteView.SiteCode = changes.First().SiteCode;
-                        mySiteView.Version = changes.First().Version;
-                        mySiteView.Name = changes.First().SiteName;
-
+                        mySiteView.SiteCode = reader["SiteCode"].ToString();
+                        mySiteView.Version = int.Parse(reader["Version"].ToString());
+                        mySiteView.Name = reader["SiteName"].ToString();
+                        Level level;
+                        Enum.TryParse<Level>(reader["Level"].ToString(), out level);
                         //Alter cached listd. They come from pendign and goes to accepted
-                        await swapSiteInListCache(cache, status, level, SiteChangeStatus.Pending, mySiteView);
+                        await swapSiteInListCache(cache, SiteChangeStatus.Accepted, level, SiteChangeStatus.Pending, mySiteView);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "AcceptChanges", "");
+                }
+                finally
+                {
+                    if (reader != null) await reader.DisposeAsync();
+                    if (command != null) command.Dispose();
+                    if (backboneConn != null) backboneConn.Dispose();
+                }
 
+                try
+                {
 
-                        modifiedSiteCode.OK = 1;
-                        modifiedSiteCode.Error = string.Empty;
-                        modifiedSiteCode.Status = SiteChangeStatus.Accepted;
-                    }
-                    catch (Exception ex)
-                    {
-                        modifiedSiteCode.OK = 0;
-                        modifiedSiteCode.Error = ex.Message;
-                    }
-                    finally
-                    {
-                        result.Add(modifiedSiteCode);
-                    }
+                    SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                    paramTable.Value = sitecodesfilter;
+                    paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+
+                    await _dataContext.Database.ExecuteSqlRawAsync(
+                            "exec spAcceptSiteCodeChangesBulk @siteCodes",
+                            paramTable);
+
+                    SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
+
+                }
+                catch
+                {
                 }
 
                 //Refresh site codes cache
@@ -865,14 +913,13 @@ namespace N2K_BackboneBackEnd.Services
                     var country = (result.First().SiteCode).Substring(0, 2);
                     var site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
                     Level level = (Level)site.Max(a => a.Level);
-                    var status = site.FirstOrDefault().Status;
+                    //var status = site.FirstOrDefault().Status;
 
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Accepted, level, cache, true);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
-                //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
             catch
@@ -890,62 +937,102 @@ namespace N2K_BackboneBackEnd.Services
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
             try
             {
-                foreach (var modifiedSiteCode in changedSiteStatus)
+                var sitecodesfilter = new DataTable("sitecodesfilter");
+                sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter.Columns.Add("Version", typeof(int));
+
+                changedSiteStatus.ToList().ForEach(cs =>
                 {
+                    sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.VersionId });
 
-                    try
+                    cs.OK = 1;
+                    cs.Error = string.Empty;
+                    cs.Status = SiteChangeStatus.Rejected;
+                    result.Add(cs);
+
+                    siteActivities.Add(new SiteActivities
                     {
-                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
-                        SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
+                        SiteCode = cs.SiteCode,
+                        Version = cs.VersionId,
+                        Author = GlobalData.Username,
+                        Date = DateTime.Now,
+                        Action = "Reject Changes",
+                        Deleted = false
+                    });
+                });
+                string queryString = @" 
+                        select  Changes.SiteCode,Changes.Version, Sites.Name as SiteName, Max(
+	                        case
+		                        when Level='Critical' then 2
+		                        when Level='Warning' then 1
+		                        when Level='Info' then 0
+                            end
+	                        ) as Level
+                        from 
+	                        [dbo].[Changes] inner join 
+	                        Sites ON   changes.sitecode= sites.sitecode and Changes.version=Sites.version 
+	                        inner join
+	                        @siteCodes T on  Changes.SiteCode= T.SiteCode and Changes.Version= T.Version
 
-                        await _dataContext.Database.ExecuteSqlRawAsync(
-                                "exec spRejectSiteCodeChanges @sitecode, @version",
-                                paramSiteCode,
-                                paramVersionId);
-
-                        List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
-
-                        SiteActivities activity = new SiteActivities
-                        {
-                            SiteCode = modifiedSiteCode.SiteCode,
-                            Version = modifiedSiteCode.VersionId,
-                            Author = GlobalData.Username,
-                            Date = DateTime.Now,
-                            Action = "Reject Changes",
-                            Deleted = false
-                        };
-                        //_dataContext.Set<SiteActivities>().Add(activity);
-                        // await _dataContext.SaveChangesAsync();
-                        siteActivities.Add(activity);
-
-                        Level level = (Level)changes.Max(a => a.Level);
-                        SiteChangeStatus status = (SiteChangeStatus)changes.FirstOrDefault().Status;
-
-                        //Create the listView
+                        group by 
+	                        changes.SiteCode, Changes.version, Sites.name";
+                SqlConnection backboneConn = null;
+                SqlCommand command = null;
+                SqlDataReader reader = null;
+                try
+                {
+                    backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                    backboneConn.Open();
+                    command = new SqlCommand(queryString, backboneConn);
+                    SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                    paramTable1.Value = sitecodesfilter;
+                    paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                    command.Parameters.Add(paramTable1);
+                    reader = await command.ExecuteReaderAsync();
+                    while (reader.Read())
+                    {
                         SiteCodeView mySiteView = new SiteCodeView();
-                        mySiteView.SiteCode = changes.First().SiteCode;
-                        mySiteView.Version = changes.First().Version;
-                        mySiteView.Name = changes.First().SiteName;
-
-                        //Alter cached listd. They come from pendign and goes to accepted
-                        await swapSiteInListCache(cache, status, level, SiteChangeStatus.Pending, mySiteView);
-
-
-                        modifiedSiteCode.OK = 1;
-                        modifiedSiteCode.Error = string.Empty;
-                        modifiedSiteCode.Status = SiteChangeStatus.Rejected;
-                    }
-                    catch (Exception ex)
-                    {
-                        modifiedSiteCode.OK = 0;
-                        modifiedSiteCode.Error = ex.Message;
-                    }
-                    finally
-                    {
-                        result.Add(modifiedSiteCode);
+                        mySiteView.SiteCode = reader["SiteCode"].ToString();
+                        mySiteView.Version = int.Parse(reader["Version"].ToString());
+                        mySiteView.Name = reader["SiteName"].ToString();
+                        Level level;
+                        Enum.TryParse<Level>(reader["Level"].ToString(), out level);
+                        //Alter cached listd. They come from pendign and goes to rejected
+                        await swapSiteInListCache(cache, SiteChangeStatus.Rejected, level, SiteChangeStatus.Pending, mySiteView);
                     }
                 }
-                //get the country and the level of the first site code. The other codes will have the same level
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "RejectChanges", "");
+
+                }
+                finally
+                {
+                    if (reader != null) await reader.DisposeAsync();
+                    if (command != null) command.Dispose();
+                    if (backboneConn != null) backboneConn.Dispose();
+                }
+
+
+
+
+                try
+                {
+                    SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                    paramTable.Value = sitecodesfilter;
+                    paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+
+                    await _dataContext.Database.ExecuteSqlRawAsync(
+                            "exec spRejectSiteCodeChangesBulk @siteCodes",
+                            paramTable);
+
+                    SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
+                }
+                catch
+                {
+
+                }
+
                 //refresh the chache
                 if (result.Count > 0)
                 {
@@ -959,15 +1046,237 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, true);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
-                //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
+
+
             }
             catch
             {
                 throw;
             }
 
+        }
 
+
+        private async Task<List<SiteActivities>> GetSiteActivities(DataTable sitecodesfilter)
+        {
+            List<SiteActivities> activities = new List<SiteActivities>();
+            string queryString = @" 
+                        select SiteActivities.SiteCode, SiteActivities.Version,Author, Date, Action,Deleted
+                        from 
+	                        [dbo].[SiteActivities] inner join 
+	                        @siteCodes T on  SiteActivities.SiteCode= T.SiteCode 
+                        where 
+                           SiteActivities.deleted=0 and SiteActivities.Action like 'User edition%'
+                        ";
+
+            SqlConnection backboneConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            try
+            {
+                backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                backboneConn.Open();
+                command = new SqlCommand(queryString, backboneConn);
+                SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable1.Value = sitecodesfilter;
+                paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                command.Parameters.Add(paramTable1);
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+                    SiteActivities act = new SiteActivities();
+                    act.SiteCode = reader["SiteCode"] is null ? null : reader["SiteCode"].ToString();
+                    act.Version = int.Parse(reader["Version"].ToString());
+                    act.Author = reader["Author"] is null ? null : reader["Author"].ToString();
+                    act.Date = DateTime.Parse(reader["Date"].ToString());
+                    act.Action = reader["Action"] is null ? null : reader["Action"].ToString();
+                    act.Deleted = bool.Parse(reader["Deleted"].ToString());
+                    activities.Add(act);
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load Activities", "");
+            }
+            finally
+            {
+                if (reader != null) await reader.DisposeAsync();
+                if (command != null) command.Dispose();
+                if (backboneConn != null) backboneConn.Dispose();
+            }
+            return activities;
+        }
+        private async Task<List<SiteChangeDb>> GetChanges(DataTable sitecodesfilter)
+        {
+            //List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
+
+            List<SiteChangeDb> changes = new List<SiteChangeDb>();
+            string queryString = @" 
+                        select Changes.[SiteCode],Changes.[Version],Changes.[Country],[Status],[Tags],[Level],[ChangeCategory],[ChangeType],[NewValue],[OldValue],[Detail],[Code],[Section],[VersionReferenceId],[FieldName],[ReferenceSiteCode],[N2KVersioningVersion]
+                        from 
+	                        [dbo].[Changes]
+	                        inner join
+	                        @siteCodes T on  Changes.SiteCode= T.SiteCode and Changes.Version=T.Version
+                        ";
+
+            SqlConnection backboneConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            try
+            {
+                backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                backboneConn.Open();
+                command = new SqlCommand(queryString, backboneConn);
+                SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable1.Value = sitecodesfilter;
+                paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                command.Parameters.Add(paramTable1);
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+
+                    SiteChangeDb change = new SiteChangeDb
+                    {
+                        SiteCode = reader["SiteCode"] is null ? null : reader["SiteCode"].ToString(),
+                        Version = int.Parse(reader["Version"].ToString()),
+                        Country = reader["Country"].ToString(),
+                        Tags = reader["Tags"].ToString(),
+                        ChangeCategory = reader["ChangeCategory"].ToString(),
+                        ChangeType = reader["ChangeType"].ToString(),
+                        NewValue = reader["NewValue"].ToString(),
+                        OldValue = reader["OldValue"].ToString(),
+                        Detail = reader["Detail"].ToString(),
+                        Code = reader["Code"].ToString(),
+                        Section = reader["Section"].ToString(),
+                        VersionReferenceId = int.Parse(reader["VersionReferenceId"].ToString()),
+                        FieldName = reader["FieldName"].ToString(),
+                        ReferenceSiteCode = reader["ReferenceSiteCode"] is null ? reader["SiteCode"].ToString() : reader["ReferenceSiteCode"].ToString(),
+                        N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString())
+                    };
+                    Level level;
+                    Enum.TryParse<Level>(reader["Level"].ToString(), out level);
+                    change.Level = level;
+
+                    SiteChangeStatus status;
+                    Enum.TryParse<SiteChangeStatus>(reader["Status"].ToString(), out status);
+                    change.Status = status;
+                    changes.Add(change);
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load changes", "");
+            }
+            finally
+            {
+                if (reader != null) await reader.DisposeAsync();
+                if (command != null) command.Dispose();
+                if (backboneConn != null) backboneConn.Dispose();
+            }
+            return changes;
+        }
+
+        private async Task<List<Sites>> GetSites(DataTable sitecodesfilter)
+        {
+
+            List<Sites> sites = new List<Sites>();
+            string queryString = @" SELECT Sites.[SiteCode],Sites.[Version],[Current],[Name],[CompilationDate],[ModifyTS],[CurrentStatus],[CountryCode],[SiteType],[AltitudeMin],[AltitudeMax],[N2KVersioningVersion],[N2KVersioningRef],[Area],[Length],[JustificationRequired],[JustificationProvided],[DateConfSCI],[SCIOverwriten],[Priority],[DatePropSCI],[DateSpa],[DateSac]  
+                                    FROM [dbo].[Sites]
+	                                inner join
+	                                @siteCodes T on  Sites.SiteCode= T.SiteCode and Sites.Version=T.Version
+                                 ";
+
+            SqlConnection backboneConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            try
+            {
+                backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                backboneConn.Open();
+                command = new SqlCommand(queryString, backboneConn);
+                SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable1.Value = sitecodesfilter;
+                paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                command.Parameters.Add(paramTable1);
+                reader = await command.ExecuteReaderAsync();
+
+                while (reader.Read())
+                {
+                    Sites site = new Sites
+                    {
+                        SiteCode = reader["SiteCode"] is null ? null : reader["SiteCode"].ToString(),
+                        Version = int.Parse(reader["Version"].ToString()),
+                        Current = bool.Parse(reader["Current"].ToString()),
+                        Name = reader["Name"].ToString(),
+                        CountryCode = reader["CountryCode"].ToString(),
+                        SiteType = reader["SiteType"].ToString(),
+                        //AltitudeMin = double.Parse(reader["AltitudeMin"].ToString()),
+                        //AltitudeMax = double.Parse(reader["AltitudeMax"].ToString()),
+                        N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString()),
+                        N2KVersioningRef = int.Parse(reader["N2KVersioningRef"].ToString()),
+                        Area = decimal.Parse(reader["Area"].ToString()),
+                        Length = decimal.Parse(reader["Length"].ToString()),
+                        JustificationRequired = bool.Parse(reader["JustificationRequired"].ToString()),
+                        //JustificationProvided = bool.Parse(reader["JustificationProvided"].ToString()),
+                        Priority = bool.Parse(reader["Priority"].ToString())
+                    };
+                    if (reader["CompilationDate"].ToString() != "")
+                    {
+                        site.CompilationDate = DateTime.Parse(reader["CompilationDate"].ToString());
+                    }
+                    if (reader["ModifyTS"].ToString() != "")
+                    {
+                        site.ModifyTS = DateTime.Parse(reader["ModifyTS"].ToString());
+                    }
+                    if (reader["DateConfSCI"].ToString() != "")
+                    {
+                        site.DateConfSCI = DateTime.Parse(reader["DateConfSCI"].ToString());
+                    }
+                    if (reader["DatePropSCI"].ToString() != "")
+                    {
+                        site.DatePropSCI = DateTime.Parse(reader["DatePropSCI"].ToString());
+                    }
+                    if (reader["DateSpa"].ToString() != "")
+                    {
+                        site.DateSpa = DateTime.Parse(reader["DateSpa"].ToString());
+                    }
+                    if (reader["DateSac"].ToString() != "")
+                    {
+                        site.DateSac = DateTime.Parse(reader["DateSac"].ToString());
+                    }
+                    sites.Add(site);
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load changes", "");
+            }
+            finally
+            {
+                if (reader != null) await reader.DisposeAsync();
+                if (command != null) command.Dispose();
+                if (backboneConn != null) backboneConn.Dispose();
+            }
+            return sites;
+        }
+
+        public DataSet GetDataSet( string storedProcName, DataTable param)
+        {
+            SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+            var command = new SqlCommand(storedProcName, backboneConn) { CommandType = CommandType.StoredProcedure };
+            SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+            paramTable1.Value = param;
+            paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+            command.Parameters.Add(paramTable1);
+            var result = new DataSet();
+            var dataAdapter = new SqlDataAdapter(command);
+            dataAdapter.Fill(result);
+
+            dataAdapter.Dispose();
+            command.Dispose();
+            backboneConn.Dispose();
+            return result;
         }
 
 
@@ -982,106 +1291,277 @@ namespace N2K_BackboneBackEnd.Services
             List<ModifiedSiteCode> result = new List<ModifiedSiteCode>();
             try
             {
+                var sitecodesfilter = new DataTable("sitecodesfilter");
+                sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter.Columns.Add("Version", typeof(int));
+
+                var sitecodeschanges = new DataTable("sitecodeschanges");
+                sitecodeschanges.Columns.Add("SiteCode", typeof(string));
+                sitecodeschanges.Columns.Add("Version", typeof(int));
+
+                var sitecodesdelete = new DataTable("sitecodesdelete");
+                sitecodesdelete.Columns.Add("SiteCode", typeof(string));
+                sitecodesdelete.Columns.Add("Version", typeof(int));
+
+                var iddelete = new DataTable("iddelete");
+                iddelete.Columns.Add("ID", typeof(long));
+
+                var JustificationFiles = new DataTable("JustificationFiles");
+                JustificationFiles.Columns.Add("SiteCode", typeof(string));
+                JustificationFiles.Columns.Add("OldVersion", typeof(int));
+                JustificationFiles.Columns.Add("NewVersion", typeof(int));
+
+
+                changedSiteStatus.ToList().ForEach(cs =>
+                {
+                    sitecodeschanges.Rows.Add(new Object[] { cs.SiteCode, cs.VersionId });
+
+                    siteActivities.Add(new SiteActivities
+                    {
+                        SiteCode = cs.SiteCode,
+                        Version = cs.VersionId,
+                        Author = GlobalData.Username,
+                        Date = DateTime.Now,
+                        Action = "Back to Pending",
+                        Deleted = false
+                    });
+                });
+
+
+                //List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
+                //get the activities already saved in the DB
+                //List<SiteActivities> _lstActivities = await GetSiteActivities(sitecodeschanges);
+                //get the changes already saved in the DB
+                //List<SiteChangeDb> _lstChanges = await GetChanges(sitecodeschanges);
+
+                //get the sites already saved in the DB
+                // List<Sites> _lstSites = await GetSites(sitecodeschanges);
+
+
+                //GET ALL FROM DB
+                var dataSet = GetDataSet("spGetMoveToPendingTables", sitecodeschanges);
+
+                //GET SITEACTIVITIES
+                var siteActivitiesTable = dataSet?.Tables?[0];
+                List<SiteActivities> activitiesDB = new List<SiteActivities>();
+                foreach (DataRow row in siteActivitiesTable.Rows)
+                {
+                    SiteActivities act = new SiteActivities();
+                    act.ID = long.Parse(row["ID"] is null ? null : row["ID"].ToString());
+                    act.SiteCode = row["SiteCode"] is null ? null : row["SiteCode"].ToString();
+                    act.Version = int.Parse(row["Version"].ToString());
+                    act.Author = row["Author"] is null ? null : row["Author"].ToString();
+                    act.Date = DateTime.Parse(row["Date"].ToString());
+                    act.Action = row["Action"] is null ? null : row["Action"].ToString();
+                    act.Deleted = bool.Parse(row["Deleted"].ToString());
+                    activitiesDB.Add(act);
+                }
+
+                //GET CHANGES
+                var siteChangesTable = dataSet?.Tables?[1];
+                List<SiteChangeDb> changesDB = new List<SiteChangeDb>();
+                foreach (DataRow row in siteChangesTable.Rows)
+                {
+
+                    SiteChangeDb change = new SiteChangeDb
+                    {
+                        SiteCode = row["SiteCode"] is null ? null : row["SiteCode"].ToString(),
+                        Version = int.Parse(row["Version"].ToString()),
+                        Country = row["Country"].ToString(),
+                        Tags = row["Tags"].ToString(),
+                        ChangeCategory = row["ChangeCategory"].ToString(),
+                        ChangeType = row["ChangeType"].ToString(),
+                        NewValue = row["NewValue"].ToString(),
+                        OldValue = row["OldValue"].ToString(),
+                        Detail = row["Detail"].ToString(),
+                        Code = row["Code"].ToString(),
+                        Section = row["Section"].ToString(),
+                        VersionReferenceId = int.Parse(row["VersionReferenceId"].ToString()),
+                        FieldName = row["FieldName"].ToString(),
+                        ReferenceSiteCode = row["ReferenceSiteCode"] is null ? row["SiteCode"].ToString() : row["ReferenceSiteCode"].ToString(),
+                        N2KVersioningVersion = int.Parse(row["N2KVersioningVersion"].ToString())
+                    };
+                    Level levelChange = 0;
+                    Enum.TryParse<Level>(row["Level"].ToString(), out level);
+                    change.Level = levelChange;
+
+                    SiteChangeStatus statusChange;
+                    Enum.TryParse<SiteChangeStatus>(row["Status"].ToString(), out statusChange);
+                    change.Status = statusChange;
+                    changesDB.Add(change);
+                }
+
+                //GET SITES
+                var sitesTable = dataSet?.Tables?[2];
+                List<Sites> sitesDB = new List<Sites>();
+                foreach (DataRow row in sitesTable.Rows)
+                {
+                    Sites site = new Sites
+                    {
+                        SiteCode = row["SiteCode"] is null ? null : row["SiteCode"].ToString(),
+                        Version = int.Parse(row["Version"].ToString()),
+                        CountryCode = row["CountryCode"].ToString(),
+                        SiteType = row["SiteType"].ToString(),
+                        //AltitudeMin = double.Parse(row["AltitudeMin"].ToString()),
+                        //AltitudeMax = double.Parse(row["AltitudeMax"].ToString()),
+                        //JustificationProvided = bool.Parse(row["JustificationProvided"].ToString())
+                    };
+                    if (row["Current"].ToString() != "")
+                    {
+                        site.Current = bool.Parse(row["Current"].ToString());
+                    }
+                    if (row["Name"].ToString() != "")
+                    {
+                        site.Name = row["Name"].ToString();
+                    }
+                    if (row["CompilationDate"].ToString() != "")
+                    {
+                        site.CompilationDate = DateTime.Parse(row["CompilationDate"].ToString());
+                    }
+                    if (row["ModifyTS"].ToString() != "")
+                    {
+                        site.ModifyTS = DateTime.Parse(row["ModifyTS"].ToString());
+                    }
+                    if (row["N2KVersioningVersion"].ToString() != "")
+                    {
+                        site.N2KVersioningVersion = int.Parse(row["N2KVersioningVersion"].ToString());
+                    }
+                    if (row["N2KVersioningRef"].ToString() != "")
+                    {
+                        site.N2KVersioningRef = int.Parse(row["N2KVersioningRef"].ToString());
+                    }
+                    if (row["Area"].ToString() != "")
+                    {
+                        site.Area = decimal.Parse(row["Area"].ToString());
+                    }
+                    if (row["Length"].ToString() != "")
+                    {
+                        site.Length = decimal.Parse(row["Length"].ToString());
+                    }
+                    if (row["JustificationRequired"].ToString() != "")
+                    {
+                        site.JustificationRequired = bool.Parse(row["JustificationRequired"].ToString());
+                    }
+                    if (row["Priority"].ToString() != "")
+                    {
+                        site.Priority = bool.Parse(row["Priority"].ToString());
+                    }
+                    if (row["DateConfSCI"].ToString() != "")
+                    {
+                        site.DateConfSCI = DateTime.Parse(row["DateConfSCI"].ToString());
+                    }
+                    if (row["DatePropSCI"].ToString() != "")
+                    {
+                        site.DatePropSCI = DateTime.Parse(row["DatePropSCI"].ToString());
+                    }
+                    if (row["DateSpa"].ToString() != "")
+                    {
+                        site.DateSpa = DateTime.Parse(row["DateSpa"].ToString());
+                    }
+                    if (row["DateSac"].ToString() != "")
+                    {
+                        site.DateSac = DateTime.Parse(row["DateSac"].ToString());
+                    }
+                    SiteChangeStatus statusChange;
+                    Enum.TryParse<SiteChangeStatus>(row["CurrentStatus"].ToString(), out statusChange);
+                    site.CurrentStatus = statusChange;
+                    sitesDB.Add(site);
+                }
+
                 foreach (var modifiedSiteCode in changedSiteStatus)
                 {
                     try
                     {
-                        List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
-
+                        List<SiteChangeDb> changes = changesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToList();
+                        if (changes == null || changes.Count == 0) continue;
                         //Create the listView for the cached lists. By deafult this values
                         SiteCodeView mySiteView = new SiteCodeView();
                         mySiteView.SiteCode = modifiedSiteCode.SiteCode;
                         mySiteView.Version = modifiedSiteCode.VersionId;
                         mySiteView.Name = changes.First().SiteName;
 
-                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", modifiedSiteCode.SiteCode);
-                        SqlParameter paramVersionId = new SqlParameter("@version", modifiedSiteCode.VersionId);
-                        SqlParameter paramOldVersion = new SqlParameter("@oldVersion", modifiedSiteCode.VersionId);
-                        SqlParameter paramNewVersion2 = null;
 
                         Sites siteToDelete = null;
                         int previousCurrent = -1;//The 0 value can be a version
 
                         #region In case of user edition
 
-                        List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Action.StartsWith("User edition") && e.Deleted == false).ToListAsync();
+                        List<SiteActivities> activities = activitiesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode).ToList();
 
                         //Was this site edited after being accepted?
                         SiteChangeDb? change = changes.Where(e => e.ChangeType == "User edition").FirstOrDefault();
                         if (change != null)
                         {
                             //Select the max version for the site with the currentsatatus accepted, but not the version of the change and the referenced version
-                            previousCurrent = _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
+                            previousCurrent = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
                             //Search the previous activities
                             List<SiteActivities> activityDelete = activities.Where(e => (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition").ToList();
 
                             //mark the result as activities deleted
-                            activityDelete.ForEach(s => s.Deleted = true);
+                            activityDelete.ForEach(s => iddelete.Rows.Add(new Object[] { s.ID }));
 
 
                             //Add comments and docs to the soon to be pending version (the previous version referenced in the change)
-                            SqlParameter paramNewVersion1 = new SqlParameter("@newVersion", change.VersionReferenceId);
-                            await _dataContext.Database.ExecuteSqlRawAsync(
-                                "exec spCopyJustificationFilesAndStatusChanges @sitecode, @oldVersion, @newVersion",
-                                paramSiteCode, paramOldVersion, paramNewVersion1);
+                            //SqlParameter paramNewVersion1 = new SqlParameter("@newVersion", change.VersionReferenceId);
+                            //await _dataContext.Database.ExecuteSqlRawAsync(
+                            //    "exec spCopyJustificationFilesAndStatusChanges @sitecode, @oldVersion, @newVersion",
+                            //    paramSiteCode, paramOldVersion, paramNewVersion1);
+
+                            JustificationFiles.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId, change.VersionReferenceId });
 
                             //Find edited version in order to remove from the sites entity
-                            siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefaultAsync();
+                            siteToDelete = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).FirstOrDefault();
 
                             //Change the version and the name for the previous version
-                            paramVersionId = new SqlParameter("@version", change.VersionReferenceId);
+                            //paramVersionId = new SqlParameter("@version", change.VersionReferenceId);
                             mySiteView.Version = change.VersionReferenceId; //points to the final version
-                            string previousName = _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).Select(x => x.Name).First().ToString();
+                            string previousName = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).Select(x => x.Name).First().ToString();
                             mySiteView.Name = previousName;
                         }
                         //Was this site edited after being rejected?
                         List<SiteActivities> activityCheck = activities.Where(e => e.Action == "User edition after rejection of version " + modifiedSiteCode.VersionId).ToList();
                         if (activityCheck != null && activityCheck.Count > 0)
                         {
-                            //Get the site max accepted version for the last package but not the current nor the present version 
-                            Sites previousSite = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefaultAsync();
+                            SiteChangeDb siteDeleted = changes.Where(e => e.ChangeType == "Site Deleted").FirstOrDefault();
+                            Sites previousSite = new Sites();
+                            if (siteDeleted != null)
+                            {
+                                //Get the site max accepted version for the last package but not the current
+                                previousSite = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefault();
+                            }
+                            else
+                            {
+                                //Get the site max accepted version for the last package but not the current nor the present version 
+                                previousSite = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.CurrentStatus == SiteChangeStatus.Accepted && e.Current == false).OrderByDescending(x => x.N2KVersioningVersion).ThenByDescending(x => x.Version).FirstOrDefault();
+                            }
                             previousCurrent = previousSite.Version;
 
                             //mark the result as activities deleted
-                            activityCheck.ForEach(s => s.Deleted = true);
+                            activityCheck.ForEach(s => iddelete.Rows.Add(new Object[] { s.ID }));
 
                             //Find the current site
-                            siteToDelete = await _dataContext.Set<Sites>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Current == true).FirstOrDefaultAsync();
+                            siteToDelete = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Current == true).FirstOrDefault();
                         }
                         //In both cases
                         if (change != null || (activityCheck != null && activityCheck.Count > 0))
                         {
-                            paramNewVersion2 = new SqlParameter("@newVersion", previousCurrent);
+                            //paramNewVersion2 = new SqlParameter("@newVersion", previousCurrent);
 
                             //Add comments and docs to the previous current version
-                            await _dataContext.Database.ExecuteSqlRawAsync(
-                                "exec spCopyJustificationFilesAndStatusChanges @sitecode, @oldVersion, @newVersion",
-                                paramSiteCode, paramOldVersion, paramNewVersion2);
+                            //await _dataContext.Database.ExecuteSqlRawAsync(
+                            //    "exec spCopyJustificationFilesAndStatusChanges @sitecode, @oldVersion, @newVersion",
+                            //    paramSiteCode, paramOldVersion, paramNewVersion2);
+                            JustificationFiles.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId, previousCurrent });
 
                             //Delete edited version
-                            _dataContext.Set<Sites>().Remove(siteToDelete);
-                            await _dataContext.SaveChangesAsync();
+                            if (siteToDelete != null)
+                            {
+                                sitecodesdelete.Rows.Add(new Object[] { siteToDelete.SiteCode, siteToDelete.Version });
+                            }
                         }
                         #endregion
 
-                        await _dataContext.Database.ExecuteSqlRawAsync(
-                            "exec spMoveSiteCodeToPending @sitecode, @version",
-                            paramSiteCode,
-                            paramVersionId);
 
-                        SiteActivities activity = new SiteActivities
-                        {
-                            SiteCode = modifiedSiteCode.SiteCode,
-                            Version = modifiedSiteCode.VersionId,
-                            Author = GlobalData.Username,
-                            Date = DateTime.Now,
-                            Action = "Back to Pending",
-                            Deleted = false
-                        };
-
-                        //_dataContext.Set<SiteActivities>().Add(activity);
-                        //await _dataContext.SaveChangesAsync();
-                        siteActivities.Add(activity);
 
                         //Get the previous level and status to find the proper cached lists
                         level = (Level)changes.Max(a => a.Level);
@@ -1095,6 +1575,8 @@ namespace N2K_BackboneBackEnd.Services
                         modifiedSiteCode.Error = string.Empty;
                         modifiedSiteCode.Status = SiteChangeStatus.Pending;
                         modifiedSiteCode.VersionId = change is null ? modifiedSiteCode.VersionId : change.VersionReferenceId;
+
+                        sitecodesfilter.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId });
                     }
                     catch (Exception ex)
                     {
@@ -1105,6 +1587,50 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         result.Add(modifiedSiteCode);
                     }
+                }
+
+                try
+                {
+                    SqlParameter paramTable2 = new SqlParameter("@iddelete", System.Data.SqlDbType.Structured);
+                    paramTable2.Value = iddelete;
+                    paramTable2.TypeName = "[dbo].[IdDelete]";
+                    await _dataContext.Database.ExecuteSqlRawAsync(
+                        "exec spMarkActivitiesAsDeleted @iddelete",
+                        paramTable2);
+
+                    SqlParameter paramTable1 = new SqlParameter("@justificationFiles", System.Data.SqlDbType.Structured);
+                    paramTable1.Value = JustificationFiles;
+                    paramTable1.TypeName = "[dbo].[JustificationFilesAndStatusChanges]";
+                    await _dataContext.Database.ExecuteSqlRawAsync(
+                        "exec spCopyJustificationFilesAndStatusChangesBulk @justificationFiles",
+                        paramTable1);
+                    //Save activities changes
+                    await _dataContext.SaveChangesAsync();
+
+                    SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                    paramTable.Value = sitecodesdelete;
+                    paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+
+                    //Delete the clones of manual editions
+                    if (sitecodesdelete.Rows.Count > 0)
+                    {
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spDeleteSitesBulk @siteCodes",
+                                paramTable);
+                    }
+
+                    paramTable.Value = sitecodesfilter;
+
+                    await _dataContext.Database.ExecuteSqlRawAsync(
+                            "exec spMoveSiteCodeToPendingBulk @siteCodes",
+                            paramTable);
+
+                    //Save new avtivities
+                    SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
+                }
+                catch
+                {
+                    throw;
                 }
 
                 ////GetSiteCodesByStatusAndLevelAndCountry
@@ -1119,7 +1645,6 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, true);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
-                //SiteActivities.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), siteActivities);
                 return result;
             }
             catch
