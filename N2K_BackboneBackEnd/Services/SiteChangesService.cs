@@ -15,14 +15,10 @@ using System.Diagnostics;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Http;
 using System.Runtime.CompilerServices;
-using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Http;
-using System.Runtime.CompilerServices;
 
 namespace N2K_BackboneBackEnd.Services
 {
-
-
     public class SiteChangesService : ISiteChangesService
     {
 
@@ -1125,10 +1121,179 @@ namespace N2K_BackboneBackEnd.Services
             }
             return activities;
         }
+
+
         private async Task<List<SiteChangeDb>> GetChanges(DataTable sitecodesfilter)
         {
             //List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
 
+            List<SiteChangeDb> changes = new List<SiteChangeDb>();
+            string queryString = @" 
+                        select Changes.[SiteCode],Changes.[Version],Changes.[Country],[Status],[Tags],[Level],[ChangeCategory],[ChangeType],[NewValue],[OldValue],[Detail],[Code],[Section],[VersionReferenceId],[FieldName],[ReferenceSiteCode],[N2KVersioningVersion]
+                        from 
+	                        [dbo].[Changes]
+	                        inner join
+	                        @siteCodes T on  Changes.SiteCode= T.SiteCode and Changes.Version=T.Version
+                        ";
+
+            SqlConnection backboneConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            try
+            {
+                backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                backboneConn.Open();
+                command = new SqlCommand(queryString, backboneConn);
+                SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable1.Value = sitecodesfilter;
+                paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                command.Parameters.Add(paramTable1);
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+
+                    SiteChangeDb change = new SiteChangeDb
+                    {
+                        SiteCode = reader["SiteCode"] is null ? null : reader["SiteCode"].ToString(),
+                        Version = int.Parse(reader["Version"].ToString()),
+                        Country = reader["Country"].ToString(),
+                        Tags = reader["Tags"].ToString(),
+                        ChangeCategory = reader["ChangeCategory"].ToString(),
+                        ChangeType = reader["ChangeType"].ToString(),
+                        NewValue = reader["NewValue"].ToString(),
+                        OldValue = reader["OldValue"].ToString(),
+                        Detail = reader["Detail"].ToString(),
+                        Code = reader["Code"].ToString(),
+                        Section = reader["Section"].ToString(),
+                        VersionReferenceId = int.Parse(reader["VersionReferenceId"].ToString()),
+                        FieldName = reader["FieldName"].ToString(),
+                        ReferenceSiteCode = reader["ReferenceSiteCode"] is null ? reader["SiteCode"].ToString() : reader["ReferenceSiteCode"].ToString(),
+                        N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString())
+                    };
+                    Level level;
+                    Enum.TryParse<Level>(reader["Level"].ToString(), out level);
+                    change.Level = level;
+
+                    SiteChangeStatus status;
+                    Enum.TryParse<SiteChangeStatus>(reader["Status"].ToString(), out status);
+                    change.Status = status;
+                    changes.Add(change);
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load changes", "");
+            }
+            finally
+            {
+                if (reader != null) await reader.DisposeAsync();
+                if (command != null) command.Dispose();
+                if (backboneConn != null) backboneConn.Dispose();
+            }
+            return changes;
+        }
+
+        private async Task<List<Sites>> GetSites(DataTable sitecodesfilter)
+        {
+
+            List<Sites> sites = new List<Sites>();
+            string queryString = @" SELECT Sites.[SiteCode],Sites.[Version],[Current],[Name],[CompilationDate],[ModifyTS],[CurrentStatus],[CountryCode],[SiteType],[AltitudeMin],[AltitudeMax],[N2KVersioningVersion],[N2KVersioningRef],[Area],[Length],[JustificationRequired],[JustificationProvided],[DateConfSCI],[SCIOverwriten],[Priority],[DatePropSCI],[DateSpa],[DateSac]  
+                                    FROM [dbo].[Sites]
+	                                inner join
+	                                @siteCodes T on  Sites.SiteCode= T.SiteCode and Sites.Version=T.Version
+                                 ";
+
+            SqlConnection backboneConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            try
+            {
+                backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                backboneConn.Open();
+                command = new SqlCommand(queryString, backboneConn);
+                SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable1.Value = sitecodesfilter;
+                paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                command.Parameters.Add(paramTable1);
+                reader = await command.ExecuteReaderAsync();
+
+                while (reader.Read())
+                {
+                    Sites site = new Sites
+                    {
+                        SiteCode = reader["SiteCode"] is null ? null : reader["SiteCode"].ToString(),
+                        Version = int.Parse(reader["Version"].ToString()),
+                        Current = bool.Parse(reader["Current"].ToString()),
+                        Name = reader["Name"].ToString(),
+                        CountryCode = reader["CountryCode"].ToString(),
+                        SiteType = reader["SiteType"].ToString(),
+                        //AltitudeMin = double.Parse(reader["AltitudeMin"].ToString()),
+                        //AltitudeMax = double.Parse(reader["AltitudeMax"].ToString()),
+                        N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString()),
+                        N2KVersioningRef = int.Parse(reader["N2KVersioningRef"].ToString()),
+                        Area = decimal.Parse(reader["Area"].ToString()),
+                        Length = decimal.Parse(reader["Length"].ToString()),
+                        JustificationRequired = bool.Parse(reader["JustificationRequired"].ToString()),
+                        //JustificationProvided = bool.Parse(reader["JustificationProvided"].ToString()),
+                        Priority = bool.Parse(reader["Priority"].ToString())
+                    };
+                    if (reader["CompilationDate"].ToString() != "")
+                    {
+                        site.CompilationDate = DateTime.Parse(reader["CompilationDate"].ToString());
+                    }
+                    if (reader["ModifyTS"].ToString() != "")
+                    {
+                        site.ModifyTS = DateTime.Parse(reader["ModifyTS"].ToString());
+                    }
+                    if (reader["DateConfSCI"].ToString() != "")
+                    {
+                        site.DateConfSCI = DateTime.Parse(reader["DateConfSCI"].ToString());
+                    }
+                    if (reader["DatePropSCI"].ToString() != "")
+                    {
+                        site.DatePropSCI = DateTime.Parse(reader["DatePropSCI"].ToString());
+                    }
+                    if (reader["DateSpa"].ToString() != "")
+                    {
+                        site.DateSpa = DateTime.Parse(reader["DateSpa"].ToString());
+                    }
+                    if (reader["DateSac"].ToString() != "")
+                    {
+                        site.DateSac = DateTime.Parse(reader["DateSac"].ToString());
+                    }
+                    sites.Add(site);
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load changes", "");
+            }
+            finally
+            {
+                if (reader != null) await reader.DisposeAsync();
+                if (command != null) command.Dispose();
+                if (backboneConn != null) backboneConn.Dispose();
+            }
+            return sites;
+        }
+
+        public DataSet GetDataSet(string storedProcName, DataTable param)
+        {
+            SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+            var command = new SqlCommand(storedProcName, backboneConn) { CommandType = CommandType.StoredProcedure };
+            SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+            paramTable1.Value = param;
+            paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+            command.Parameters.Add(paramTable1);
+            var result = new DataSet();
+            var dataAdapter = new SqlDataAdapter(command);
+            dataAdapter.Fill(result);
+
+            dataAdapter.Dispose();
+            command.Dispose();
+            backboneConn.Dispose();
+            return result;
+        }
 
         public async Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
