@@ -397,12 +397,14 @@ namespace N2K_BackboneBackEnd.Services
 
                 List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                             param1).ToListAsync();
+                List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
+                                param1).ToListAsync();
                 foreach (var change in (await changes.ToListAsync()))
                 {
                     SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                     if (activity == null)
                     {
-                        SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                        SiteChangeDb editionChange = editionChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
                         if (editionChange != null)
                             activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                     }
