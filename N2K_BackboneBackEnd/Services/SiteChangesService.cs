@@ -397,14 +397,17 @@ namespace N2K_BackboneBackEnd.Services
 
                 List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                             param1).ToListAsync();
+
+                List<SiteChangeDb> editionChange = await _dataContext.Set<SiteChangeDb>().Where(e=> e.ChangeType == "User edition").ToListAsync();
+
                 foreach (var change in (await changes.ToListAsync()))
                 {
                     SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                     if (activity == null)
                     {
-                        SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
-                        if (editionChange != null)
-                            activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
+                        SiteChangeDb editionChange1 = editionChange.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
+                        if (editionChange1 != null)
+                            activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange1.VersionReferenceId).FirstOrDefault();
                     }
                     SiteCodeView temp = new SiteCodeView
                     {
@@ -887,6 +890,8 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.SiteCode = reader["SiteCode"].ToString();
                         mySiteView.Version = int.Parse(reader["Version"].ToString());
                         mySiteView.Name = reader["SiteName"].ToString();
+                        mySiteView.CountryCode = mySiteView.SiteCode.Substring(0, 2);
+
                         Level level;
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
                         //Alter cached listd. They come from pendign and goes to accepted
@@ -921,7 +926,7 @@ namespace N2K_BackboneBackEnd.Services
                 catch
                 {
                 }
-
+                
                 //Refresh site codes cache
                 if (result.Count > 0)
                 {
@@ -932,9 +937,10 @@ namespace N2K_BackboneBackEnd.Services
 
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Accepted, level, cache, true);
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Accepted, level, cache, false);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, false);
                 }
+                
                 return result;
             }
             catch
@@ -1010,6 +1016,8 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.SiteCode = reader["SiteCode"].ToString();
                         mySiteView.Version = int.Parse(reader["Version"].ToString());
                         mySiteView.Name = reader["SiteName"].ToString();
+                        mySiteView.CountryCode = mySiteView.SiteCode.Substring(0, 2);
+
                         Level level;
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
                         //Alter cached listd. They come from pendign and goes to rejected
@@ -1048,7 +1056,8 @@ namespace N2K_BackboneBackEnd.Services
 
                 }
 
-                //refresh the chache
+                //refresh the cache
+                
                 if (result.Count > 0)
                 {
                     var country = (result.First().SiteCode).Substring(0, 2);
@@ -1058,9 +1067,10 @@ namespace N2K_BackboneBackEnd.Services
 
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, true);
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, false);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, false);
                 }
+                
                 return result;
 
 
@@ -1372,39 +1382,6 @@ namespace N2K_BackboneBackEnd.Services
                     activitiesDB.Add(act);
                 }
 
-                //GET CHANGES
-                var siteChangesTable = dataSet?.Tables?[1];
-                List<SiteChangeDb> changesDB = new List<SiteChangeDb>();
-                foreach (DataRow row in siteChangesTable.Rows)
-                {
-
-                    SiteChangeDb change = new SiteChangeDb
-                    {
-                        SiteCode = row["SiteCode"] is null ? null : row["SiteCode"].ToString(),
-                        Version = int.Parse(row["Version"].ToString()),
-                        Country = row["Country"].ToString(),
-                        Tags = row["Tags"].ToString(),
-                        ChangeCategory = row["ChangeCategory"].ToString(),
-                        ChangeType = row["ChangeType"].ToString(),
-                        NewValue = row["NewValue"].ToString(),
-                        OldValue = row["OldValue"].ToString(),
-                        Detail = row["Detail"].ToString(),
-                        Code = row["Code"].ToString(),
-                        Section = row["Section"].ToString(),
-                        VersionReferenceId = int.Parse(row["VersionReferenceId"].ToString()),
-                        FieldName = row["FieldName"].ToString(),
-                        ReferenceSiteCode = row["ReferenceSiteCode"] is null ? row["SiteCode"].ToString() : row["ReferenceSiteCode"].ToString(),
-                        N2KVersioningVersion = int.Parse(row["N2KVersioningVersion"].ToString())
-                    };
-                    Level levelChange = 0;
-                    Enum.TryParse<Level>(row["Level"].ToString(), out level);
-                    change.Level = levelChange;
-
-                    SiteChangeStatus statusChange;
-                    Enum.TryParse<SiteChangeStatus>(row["Status"].ToString(), out statusChange);
-                    change.Status = statusChange;
-                    changesDB.Add(change);
-                }
 
                 //GET SITES
                 var sitesTable = dataSet?.Tables?[2];
@@ -1483,6 +1460,45 @@ namespace N2K_BackboneBackEnd.Services
                     sitesDB.Add(site);
                 }
 
+
+                //GET CHANGES
+                var siteChangesTable = dataSet?.Tables?[1];
+                List<SiteChangeDb> changesDB = new List<SiteChangeDb>();
+                foreach (DataRow row in siteChangesTable.Rows)
+                {
+
+                    SiteChangeDb change = new SiteChangeDb
+                    {
+                        SiteCode = row["SiteCode"] is null ? null : row["SiteCode"].ToString(),
+                        Version = int.Parse(row["Version"].ToString()),
+                        Country = row["Country"].ToString(),
+                        Tags = row["Tags"].ToString(),
+                        ChangeCategory = row["ChangeCategory"].ToString(),
+                        ChangeType = row["ChangeType"].ToString(),
+                        NewValue = row["NewValue"].ToString(),
+                        OldValue = row["OldValue"].ToString(),
+                        Detail = row["Detail"].ToString(),
+                        Code = row["Code"].ToString(),
+                        Section = row["Section"].ToString(),
+                        VersionReferenceId = int.Parse(row["VersionReferenceId"].ToString()),
+                        FieldName = row["FieldName"].ToString(),
+                        ReferenceSiteCode = row["ReferenceSiteCode"] is null ? row["SiteCode"].ToString() : row["ReferenceSiteCode"].ToString(),
+                        N2KVersioningVersion = int.Parse(row["N2KVersioningVersion"].ToString())
+                    };
+                    Level levelChange = 0;
+                    Enum.TryParse<Level>(row["Level"].ToString(), out levelChange);
+                    change.Level = levelChange;
+
+                    //take the name of the site from the list created in the previous step
+                    var _site= sitesDB.Where(s => s.SiteCode == change.SiteCode && s.Version == change.Version).FirstOrDefault();
+                    if (_site != null)  change.SiteName = _site.Name;
+
+                    SiteChangeStatus statusChange;
+                    Enum.TryParse<SiteChangeStatus>(row["Status"].ToString(), out statusChange);
+                    change.Status = statusChange;
+                    changesDB.Add(change);
+                }
+
                 foreach (var modifiedSiteCode in changedSiteStatus)
                 {
                     try
@@ -1494,7 +1510,7 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.SiteCode = modifiedSiteCode.SiteCode;
                         mySiteView.Version = modifiedSiteCode.VersionId;
                         mySiteView.Name = changes.First().SiteName;
-
+                        mySiteView.CountryCode = modifiedSiteCode.SiteCode.Substring(0, 2);
 
                         Sites siteToDelete = null;
                         int previousCurrent = -1;//The 0 value can be a version
@@ -1657,8 +1673,8 @@ namespace N2K_BackboneBackEnd.Services
 
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, true);
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, false);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache,false);
                 }
                 return result;
             }
@@ -1784,6 +1800,8 @@ namespace N2K_BackboneBackEnd.Services
                     cachedlist.Remove(element);
                 }
             }
+
+
             //Site goes to that list
             listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", pSite.SiteCode.Substring(0, 2), pStatus.ToString(), pLevel.ToString());
             if (pCache.TryGetValue(listName, out cachedlist))
@@ -1799,12 +1817,6 @@ namespace N2K_BackboneBackEnd.Services
                     cachedlist.Add(pSite);
                 }
 
-            }
-            else
-            {
-                //If the destination list doesn't exist, create it.
-                List<SiteCodeView> mockresult = null;
-                mockresult = await GetSiteCodesByStatusAndLevelAndCountry(pSite.SiteCode.Substring(0, 2), pStatus, pLevel, pCache, true);
             }
             return null;
         }
