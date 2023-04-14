@@ -61,7 +61,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0)
+        public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false)
         {
             var startRow = (page - 1) * pageLimit;
             var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache));
@@ -125,6 +125,8 @@ namespace N2K_BackboneBackEnd.Services
             var siteCode = string.Empty;
             List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                             param1).ToListAsync();
+            List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
+                            param1).ToListAsync();
             foreach (var sCode in orderedChanges)
             {
                 //load all the changes for each of the site codes ordered by level
@@ -158,7 +160,7 @@ namespace N2K_BackboneBackEnd.Services
                         SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                         if (activity == null)
                         {
-                            SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                            SiteChangeDb editionChange = editionChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
                             if (editionChange != null)
                                 activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                             if (activity == null)
@@ -212,6 +214,8 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 result.Add(siteChange);
             }
+            if (onlyedited)
+                result = result.Where(x => x.EditedDate != null).ToList();
             return result;
         }
 
@@ -396,12 +400,14 @@ namespace N2K_BackboneBackEnd.Services
 
                 List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                             param1).ToListAsync();
+                List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
+                                param1).ToListAsync();
                 foreach (var change in (await changes.ToListAsync()))
                 {
                     SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                     if (activity == null)
                     {
-                        SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                        SiteChangeDb editionChange = editionChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
                         if (editionChange != null)
                             activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                     }
