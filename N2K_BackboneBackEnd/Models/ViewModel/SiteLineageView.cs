@@ -9,7 +9,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class SiteLineageView : IEntityModel
     {
         public string? SiteCode { get; set; }
-        public string? Version { get; set; }
+        public string? Release { get; set; }
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SiteLineageView>();

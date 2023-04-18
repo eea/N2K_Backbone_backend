@@ -8,7 +8,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     public class SiteLineage : IEntityModel
     {
         public string? SiteCode { get; set; }
-        public string? Version { get; set; }
+        public string? Release { get; set; }
         [NotMapped]
         public SiteLineageView? Predecessors { get; set; } = new SiteLineageView();
         [NotMapped]
