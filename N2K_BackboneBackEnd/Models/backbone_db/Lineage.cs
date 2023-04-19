@@ -8,7 +8,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 {
     public class Lineage : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
     {
-        public int ID { get; set; }
+        public long ID { get; set; }
         public string SiteCode { get; set; } = string.Empty;
         public long Version { get; set; }
         public long? AntecessorsVersion { get; set; }
@@ -39,7 +39,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 cmd = conn.CreateCommand();
                 SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
                 SqlParameter param2 = new SqlParameter("@Version", this.Version);
-                SqlParameter param3 = new SqlParameter("@AntecessorsVersion", this.AntecessorsVersion);
+                SqlParameter param3 = new SqlParameter("@AntecessorsVersion", this.AntecessorsVersion is null ? DBNull.Value : this.AntecessorsVersion);
                 SqlParameter param4 = new SqlParameter("@AntecessorsSiteCodes", this.AntecessorsSiteCodes is null ? DBNull.Value : this.AntecessorsSiteCodes);
                 SqlParameter param5 = new SqlParameter("@Operation", this.Operation is null ? DBNull.Value : this.Operation);
 
@@ -66,7 +66,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public async static Task<int> SaveBulkRecord(string db, List<Lineage> listData)
         {
-
             try
             {
                 if (listData.Count > 0)
@@ -86,7 +85,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "Lineage - SaveBulkRecord", "");
                 return 0;
             }
-            
+
         }
 
 
