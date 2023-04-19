@@ -38,42 +38,33 @@ namespace N2K_BackboneBackEnd.Services
             string country = siteCode.Substring(0, 2);
 
             SiteLineage v1 = new SiteLineage();
-            v1.SiteCode = siteCode;
-            v1.Version = "V1";
-            v1.Successors.SiteCode = country + (siteNumber + 1).ToString("D7") + ", " + country + (siteNumber + 2).ToString("D7");
-            v1.Successors.Version = "V2";
+            v1.SiteCode = "AT1101112";
+            v1.Release = "2019-2020";
+            v1.Successors.SiteCode = "AT1101112";
+            v1.Successors.Release = "2020-2021";
             result.Add(v1);
 
-            SiteLineage v2_1 = new SiteLineage();
-            v2_1.SiteCode = country + (siteNumber + 1).ToString("D7");
-            v2_1.Version = "V2";
-            v2_1.Predecessors.SiteCode = siteCode;
-            v2_1.Predecessors.Version = "V1";
-            v2_1.Successors.SiteCode = country + (siteNumber + 3).ToString("D7");
-            v2_1.Successors.Version = "V3";
-            result.Add(v2_1);
-
-            SiteLineage v2_2 = new SiteLineage();
-            v2_2.SiteCode = country + (siteNumber + 2).ToString("D7");
-            v2_2.Version = "V2";
-            v2_2.Predecessors.SiteCode = siteCode;
-            v2_2.Predecessors.Version = "V1";
-            v2_2.Successors.SiteCode = country + (siteNumber + 4).ToString("D7");
-            v2_2.Successors.Version = "V3";
-            result.Add(v2_2);
+            SiteLineage v2 = new SiteLineage();
+            v2.SiteCode = "AT1101112";
+            v2.Release = "2020-2021";
+            v2.Predecessors.SiteCode = "AT1101112";
+            v2.Predecessors.Release = "2019-2020";
+            v2.Successors.SiteCode = "AT2208000,AT2209000";
+            v2.Successors.Release = "2021-2022";
+            result.Add(v2);
 
             SiteLineage v3_1 = new SiteLineage();
-            v3_1.SiteCode = country + (siteNumber + 3).ToString("D7");
-            v3_1.Version = "V3";
-            v3_1.Predecessors.SiteCode = country + (siteNumber + 1).ToString("D7");
-            v3_1.Predecessors.Version = "V2";
+            v3_1.SiteCode = "AT2208000";
+            v3_1.Release = "2021-2022";
+            v3_1.Predecessors.SiteCode = "AT1101112";
+            v3_1.Predecessors.Release = "2020-2021";
             result.Add(v3_1);
 
             SiteLineage v3_2 = new SiteLineage();
-            v3_2.SiteCode = country + (siteNumber + 4).ToString("D7");
-            v3_2.Version = "V3";
-            v3_2.Predecessors.SiteCode = country + (siteNumber + 2).ToString("D7") + ", " + country + (siteNumber - 1).ToString("D7");
-            v3_2.Predecessors.Version = "V2";
+            v3_2.SiteCode = "AT2209000";
+            v3_2.Release = "2021-2022";
+            v3_2.Predecessors.SiteCode = "AT1101112";
+            v3_2.Predecessors.Release = "2020-2021";
             result.Add(v3_2);
 
             return result;
