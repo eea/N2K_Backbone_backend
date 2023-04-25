@@ -60,7 +60,7 @@ namespace N2K_BackboneBackEnd.Services
 
             //Check if the predecessor of the first one in line exists and if it is in the list, if it's not, add it before the first one
             Lineage originCheck = list.Where(c => c.Version == list.FirstOrDefault().AntecessorsVersion).FirstOrDefault();
-            if (originCheck == null)
+            if (list.FirstOrDefault().AntecessorsVersion != null && originCheck == null)
             {
                 List<Lineage> temps = await _dataContext.Set<Lineage>().AsNoTracking().Where(c => c.Version == list.FirstOrDefault().AntecessorsVersion && list.FirstOrDefault().AntecessorsSiteCodes.Contains(c.SiteCode)).ToListAsync();
                 temps.Reverse();

@@ -13,7 +13,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public long Version { get; set; }
         public long? AntecessorsVersion { get; set; }
         public string? AntecessorsSiteCodes { get; set; } = string.Empty;
-        public int? Operation { get; set; }
+        public int? Type { get; set; }
 
 
         private string dbConnection = "";
@@ -41,11 +41,11 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 SqlParameter param2 = new SqlParameter("@Version", this.Version);
                 SqlParameter param3 = new SqlParameter("@AntecessorsVersion", this.AntecessorsVersion is null ? DBNull.Value : this.AntecessorsVersion);
                 SqlParameter param4 = new SqlParameter("@AntecessorsSiteCodes", this.AntecessorsSiteCodes is null ? DBNull.Value : this.AntecessorsSiteCodes);
-                SqlParameter param5 = new SqlParameter("@Operation", this.Operation is null ? DBNull.Value : this.Operation);
+                SqlParameter param5 = new SqlParameter("@Type", this.Type is null ? DBNull.Value : this.Type);
 
                 cmd.CommandText = "INSERT INTO [Lineage] (  " +
-                    "[SiteCode],[Version],[AntecessorsVersion],[AntecessorsSiteCodes],[Operation]) " +
-                    " VALUES (@SiteCode,@Version,@AntecessorsVersion,@AntecessorsSiteCodes,@Operation) ";
+                    "[SiteCode],[Version],[AntecessorsVersion],[AntecessorsSiteCodes],[Type]) " +
+                    " VALUES (@SiteCode,@Version,@AntecessorsVersion,@AntecessorsSiteCodes,@Type) ";
 
                 cmd.Parameters.Add(param1);
                 cmd.Parameters.Add(param2);
