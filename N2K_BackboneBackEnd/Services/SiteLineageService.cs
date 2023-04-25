@@ -12,8 +12,6 @@ using NuGet.Protocol;
 using N2K_BackboneBackEnd.Helpers;
 using System.Security.Policy;
 using System.Collections.Generic;
-using N2K_BackboneBackEnd.Models.BackboneDB;
-using Microsoft.AspNetCore.Http;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -32,44 +30,95 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<SiteLineage>> GetSiteLineageAsync(string siteCode)
         {
-            await Task.Delay(1);
+            int limit = 0; //Set a release limit to show
+            SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
+            SqlParameter param2 = new SqlParameter("@limit", DBNull.Value); //limit is not used here since it would limit based on lines, not releases
+            List<Lineage> list = await _dataContext.Set<Lineage>().FromSqlRaw($"exec [dbo].[spGetSiteLineageBySitecode]  @sitecode, @limit",
+                                param1, param2).ToListAsync();
+            List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().ToListAsync();
+            headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
+
             List<SiteLineage> result = new List<SiteLineage>();
 
-            int siteNumber = Int32.Parse(siteCode.Substring(siteCode.Length - 7));
-            string country = siteCode.Substring(0, 2);
+            List<long> releases = new List<long>();
+            foreach (Lineage lineage in list)
+            {
+                releases.Add(lineage.Version);
+            }
+            releases = releases.Distinct().ToList();
 
-            SiteLineage v1 = new SiteLineage();
-            v1.SiteCode = "AT1101112";
-            v1.Release = "2019-2020";
-            v1.Successors.SiteCode = "AT1101112";
-            v1.Successors.Release = "2020-2021";
-            result.Add(v1);
+            List<long> ULHIds = new List<long>();
+            foreach (UnionListHeader header in headers)
+            {
+                ULHIds.Add(header.idULHeader);
+            }
+            releases = releases.OrderBy(i => ULHIds.IndexOf(i)).ToList();
+            if (limit > 0)
+                releases = releases.Skip(Math.Max(0, releases.Count() - limit)).ToList();
 
-            SiteLineage v2 = new SiteLineage();
-            v2.SiteCode = "AT1101112";
-            v2.Release = "2020-2021";
-            v2.Predecessors.SiteCode = "AT1101112";
-            v2.Predecessors.Release = "2019-2020";
-            v2.Successors.SiteCode = "AT2208000,AT2209000";
-            v2.Successors.Release = "2021-2022";
-            result.Add(v2);
+            list = list.OrderBy(i => ULHIds.IndexOf(i.Version)).ToList();
 
-            SiteLineage v3_1 = new SiteLineage();
-            v3_1.SiteCode = "AT2208000";
-            v3_1.Release = "2021-2022";
-            v3_1.Predecessors.SiteCode = "AT1101112";
-            v3_1.Predecessors.Release = "2020-2021";
-            result.Add(v3_1);
+            //Check if the predecessor of the first one in line exists and if it is in the list, if it's not, add it before the first one
+            Lineage originCheck = list.Where(c => c.Version == list.FirstOrDefault().AntecessorsVersion).FirstOrDefault();
+            if (list.FirstOrDefault().AntecessorsVersion != null && originCheck == null)
+            {
+                List<Lineage> temps = await _dataContext.Set<Lineage>().AsNoTracking().Where(c => c.Version == list.FirstOrDefault().AntecessorsVersion && list.FirstOrDefault().AntecessorsSiteCodes.Contains(c.SiteCode)).ToListAsync();
+                temps.Reverse();
+                foreach (Lineage temp in temps)
+                {
+                    list.Insert(0, temp);
+                }
+                releases.Insert(0, temps[0].Version);
+                if (limit > 0)
+                    releases = releases.Skip(Math.Max(0, releases.Count() - limit)).ToList();
+            }
 
-            SiteLineage v3_2 = new SiteLineage();
-            v3_2.SiteCode = "AT2209000";
-            v3_2.Release = "2021-2022";
-            v3_2.Predecessors.SiteCode = "AT1101112";
-            v3_2.Predecessors.Release = "2020-2021";
-            result.Add(v3_2);
+            foreach (Lineage lineage in list)
+            {
+                if (releases.Contains(lineage.Version))
+                {
+                    SiteLineage temp = new SiteLineage();
+                    temp.SiteCode = lineage.SiteCode;
+                    temp.Release = headers.Where(c => c.idULHeader == lineage.Version).FirstOrDefault().Name;
+                    if (lineage.AntecessorsSiteCodes == null && lineage.AntecessorsVersion != null)
+                    {
+                        temp.Predecessors.SiteCode = lineage.SiteCode;
+                        temp.Predecessors.Release = headers.Where(c => c.idULHeader == lineage.AntecessorsVersion).FirstOrDefault().Name;
+                    }
+                    else if (lineage.AntecessorsVersion != null)
+                    {
+                        temp.Predecessors.SiteCode = lineage.AntecessorsSiteCodes;
+                        temp.Predecessors.Release = headers.Where(c => c.idULHeader == lineage.AntecessorsVersion).FirstOrDefault().Name;
+                    }
+                    if (list.Where(c => c.SiteCode == lineage.SiteCode && c.AntecessorsVersion == lineage.Version).FirstOrDefault() != null)
+                    {
+                        temp.Successors.SiteCode = lineage.SiteCode;
+                        temp.Successors.Release = headers.Where(c => c.idULHeader == (list.Where(c => c.SiteCode == lineage.SiteCode && c.AntecessorsVersion == lineage.Version).FirstOrDefault().Version)).FirstOrDefault().Name;
+                    }
+                    else if (list.Where(c => c.AntecessorsSiteCodes != null && c.AntecessorsSiteCodes.Contains(lineage.SiteCode) && c.AntecessorsVersion == lineage.Version).FirstOrDefault() != null)
+                    {
+                        List<Lineage> antecessors = list.Where(c => c.AntecessorsSiteCodes != null && c.AntecessorsSiteCodes.Contains(lineage.SiteCode) && c.AntecessorsVersion == lineage.Version).ToList();
+                        string antecessor = "";
 
+                        if (antecessors.Count > 1)
+                        {
+                            antecessor = string.Join(",", antecessors.Select(r => r.SiteCode));
+                        }
+                        else
+                        {
+                            antecessor = antecessors.FirstOrDefault().SiteCode;
+                        }
+
+                        temp.Successors.SiteCode = antecessor;
+                        temp.Successors.Release = headers.Where(c => c.idULHeader == (list.Where(c => c.AntecessorsSiteCodes != null && c.AntecessorsSiteCodes.Contains(lineage.SiteCode) && c.AntecessorsVersion == lineage.Version).FirstOrDefault().Version)).FirstOrDefault().Name;
+                    }
+                    result.Add(temp);
+                }
+            }
             return result;
         }
+
+
 
         public async Task<List<Lineage>> GetChanges(string country, SiteChangeStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
@@ -104,7 +153,7 @@ namespace N2K_BackboneBackEnd.Services
                         Version = int.Parse(reader["Version"].ToString()),
                         AntecessorsVersion = long.Parse(reader["AntecessorsVersion"].ToString()),
                         AntecessorsSiteCodes = reader["AntecessorsSiteCodes"] is null ? null : reader["AntecessorsSiteCodes"].ToString(),
-                        Operation = int.Parse(reader["Operation"].ToString())
+                        Type = int.Parse(reader["Type"].ToString())
                     };
 
                     SiteChangeStatus status1;
@@ -213,3 +262,4 @@ namespace N2K_BackboneBackEnd.Services
 
     }
 }
+
