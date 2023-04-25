@@ -58,6 +58,21 @@ namespace N2K_BackboneBackEnd.Services
 
             list = list.OrderBy(i => ULHIds.IndexOf(i.Version)).ToList();
 
+            //Check if the predecessor of the first one in line exists and if it is in the list, if it's not, add it before the first one
+            Lineage originCheck = list.Where(c => c.Version == list.FirstOrDefault().AntecessorsVersion).FirstOrDefault();
+            if (list.FirstOrDefault().AntecessorsVersion != null && originCheck == null)
+            {
+                List<Lineage> temps = await _dataContext.Set<Lineage>().AsNoTracking().Where(c => c.Version == list.FirstOrDefault().AntecessorsVersion && list.FirstOrDefault().AntecessorsSiteCodes.Contains(c.SiteCode)).ToListAsync();
+                temps.Reverse();
+                foreach (Lineage temp in temps)
+                {
+                    list.Insert(0, temp);
+                }
+                releases.Insert(0, temps[0].Version);
+                if (limit > 0)
+                    releases = releases.Skip(Math.Max(0, releases.Count() - limit)).ToList();
+            }
+
             foreach (Lineage lineage in list)
             {
                 if (releases.Contains(lineage.Version))
