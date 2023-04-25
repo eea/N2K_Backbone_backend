@@ -128,7 +128,7 @@ namespace N2K_BackboneBackEnd.Services
 
             SqlParameter paramCountry = new SqlParameter("@country", country);
             SqlParameter paramStatus = new SqlParameter("@status", status);
-            string query = "SELECT [SiteCode],[Version],[AntecessorsVersion],[AntecessorsSiteCodes],[Operation], [Status] " +
+            string query = "SELECT [SiteCode],[Version],[AntecessorsVersion],[AntecessorsSiteCodes],[Type], [Status] " +
                            "FROM [dbo].[tmpLineage]" +
                            "WHERE @country = LEFT([SiteCode],2) and @status= [Status]";
 
