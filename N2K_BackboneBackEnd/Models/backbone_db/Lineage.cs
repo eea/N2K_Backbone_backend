@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
@@ -13,8 +14,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public long Version { get; set; }
         public long? AntecessorsVersion { get; set; }
         public string? AntecessorsSiteCodes { get; set; } = string.Empty;
-        public int? Type { get; set; }
-        public int? Status { get; set; }
+        public LineageTypes? Type { get; set; }
+        public LineageStatus? Status { get; set; }
 
 
         private string dbConnection = "";
