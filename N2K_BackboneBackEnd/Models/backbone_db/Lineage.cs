@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
@@ -15,6 +16,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? AntecessorsSiteCodes { get; set; } = string.Empty;
         public int? Operation { get; set; }
 
+        public SiteChangeStatus Status { get; set; }
 
         private string dbConnection = "";
 

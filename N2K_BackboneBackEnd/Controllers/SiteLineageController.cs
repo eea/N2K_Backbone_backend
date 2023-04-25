@@ -51,5 +51,107 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+
+        [HttpGet("GetChanges/country={country:string}&status={status:SiteChangeStatus}&page={page:int}&pageLimit={pageLimit:int}&creation={creation:bool}&deletion={deletion:bool}&split={split:bool}&merge={merge:bool}&recode={recode:bool}")]
+        public async Task<ActionResult<List<Lineage>>> GetChanges([FromBody] string country, SiteChangeStatus status,  int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
+        {
+            var response = new ServiceResponse<List<Lineage>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetChanges(country, status, _cache, page, pageLimit, creation, deletion, split, merge, recode);
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<Lineage>();
+                return Ok(response);
+            }
+
+        }
+
+        // POST api/<SiteLineageController>
+        [Route("AcceptChanges/")]
+        [HttpPost]
+        public async Task<ActionResult<List<ModifiedSiteCode>>> AcceptChanges([FromBody] ModifiedSiteCode[] acceptedChanges)
+        {
+            var response = new ServiceResponse<List<ModifiedSiteCode>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.AcceptChanges(acceptedChanges, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<ModifiedSiteCode>();
+                return Ok(response);
+            }
+        }
+
+        // POST api/<SiteChangesController>
+        [Route("MoveToPending/")]
+        [HttpPost]
+        public async Task<ActionResult<List<ModifiedSiteCode>>> SetChangesBackToPending([FromBody] ModifiedSiteCode[] changedSiteStatus)
+        {
+            var response = new ServiceResponse<List<ModifiedSiteCode>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.SetChangesBackToPending(changedSiteStatus, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<ModifiedSiteCode>();
+                return Ok(response);
+            }
+        }
+
+
+
+        [Route("RejectChanges/")]
+        [HttpPost]
+        public async Task<ActionResult<List<ModifiedSiteCode>>> RejectChanges([FromBody] ModifiedSiteCode[] rejectedChanges)
+        {
+            var response = new ServiceResponse<List<ModifiedSiteCode>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.RejectChanges(rejectedChanges, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<ModifiedSiteCode>();
+                return Ok(response);
+            }
+
+        }
     }
 }
