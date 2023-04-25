@@ -17,7 +17,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public LineageTypes? Type { get; set; }
         public LineageStatus? Status { get; set; }
 
-        public SiteChangeStatus Status { get; set; }
 
         private string dbConnection = "";
 

@@ -12,6 +12,7 @@ using NuGet.Protocol;
 using N2K_BackboneBackEnd.Helpers;
 using System.Security.Policy;
 using System.Collections.Generic;
+using N2K_BackboneBackEnd.Models.BackboneDB;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -120,33 +121,35 @@ namespace N2K_BackboneBackEnd.Services
 
 
         
-        public async Task<List<Lineage>> GetChanges(string country, SiteChangeStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
+        public async Task<List<Lineage>> GetChanges(string country, LineageStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
-            List<Lineage> result = null;
+            List<Lineage> changes = null;
             try
             {
-                SiteChangeStatus status2;
-                Enum.TryParse<SiteChangeStatus>(status.ToString(), out status2);
+                LineageStatus statusLineage;
+                Enum.TryParse<LineageStatus>(status.ToString(), out statusLineage);
                 SqlParameter paramCountry = new SqlParameter("@country", country);
-                SqlParameter paramStatus = new SqlParameter("@status", status2);
-                List<Lineage> changes = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData  @country, @status",
+                SqlParameter paramStatus = new SqlParameter("@status", statusLineage);
+                changes = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData  @country, @status",
                                 paramCountry, paramStatus).ToListAsync();
-                return changes;
+                
             }
             catch (Exception ex)
-
             {
-                return result;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "AcceptChanges", "");
             }
 
-            
+            return changes;
 
         }
 
-        public async Task<List<ModifiedSiteCode>> ConsolidateChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
+        public async Task<List<Lineage>> ConsolidateChanges(int changeId, string type, List<string> predecessors, List<string> successors)
         {
-            List<ModifiedSiteCode> siteActivities = new List<ModifiedSiteCode>();
-            return siteActivities;
+            SqlParameter paramId = new SqlParameter("@changeId", changeId);
+            List<Lineage> data = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spConsolidateChangeLineage  @changeId",
+                            paramId).ToListAsync();
+
+            return data;
         }
 
         public async Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)

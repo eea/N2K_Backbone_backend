@@ -10,9 +10,9 @@ namespace N2K_BackboneBackEnd.Services
     {
         Task<List<SiteLineage>> GetSiteLineageAsync(string siteCode);
 
-        Task<List<Lineage>> GetChanges(string country, SiteChangeStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true);
+        Task<List<Lineage>> GetChanges(string country, LineageStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true);
 
-        Task<List<ModifiedSiteCode>> AcceptChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache);
+        Task<List<Lineage>> ConsolidateChanges(int changeId, string type, List<string> predecessors, List<string> successors);
 
         Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache);
 
