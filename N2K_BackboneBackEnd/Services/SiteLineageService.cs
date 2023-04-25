@@ -119,72 +119,31 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-
+        
         public async Task<List<Lineage>> GetChanges(string country, SiteChangeStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
-            List<Lineage> changes = new List<Lineage>();
-
-            Enum.TryParse<SiteChangeStatus>(status.ToString(), out status);
-
-            SqlParameter paramCountry = new SqlParameter("@country", country);
-            SqlParameter paramStatus = new SqlParameter("@status", status);
-            string query = "SELECT [SiteCode],[Version],[AntecessorsVersion],[AntecessorsSiteCodes],[Type], [Status] " +
-                           "FROM [dbo].[tmpLineage]" +
-                           "WHERE @country = LEFT([SiteCode],2) and @status= [Status]";
-
-            SqlConnection backboneConn = null;
-            SqlCommand command = null;
-            SqlDataReader reader = null;
+            List<Lineage> result = null;
             try
             {
-                backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
-                backboneConn.Open();
-                command = new SqlCommand(query, backboneConn);
-                SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-                paramTable.TypeName = "[dbo].[SiteCodeFilter]";
-                command.Parameters.Add(paramTable);
-                reader = await command.ExecuteReaderAsync();
-                while (reader.Read())
-                {
-
-                    Lineage change = new Lineage
-                    {
-                        SiteCode = reader["SiteCode"] is null ? null : reader["SiteCode"].ToString(),
-                        Version = int.Parse(reader["Version"].ToString()),
-                        AntecessorsVersion = long.Parse(reader["AntecessorsVersion"].ToString()),
-                        AntecessorsSiteCodes = reader["AntecessorsSiteCodes"] is null ? null : reader["AntecessorsSiteCodes"].ToString(),
-                        Type = int.Parse(reader["Type"].ToString())
-                    };
-
-                    SiteChangeStatus status1;
-                    Enum.TryParse<SiteChangeStatus>(reader["Status"].ToString(), out status1);
-                    change.Status = status1;
-                    changes.Add(change);
-                }
-                var startRow = (page - 1) * pageLimit;
-                if (pageLimit > 0)
-                {
-                    changes = changes
-                        .Skip(startRow)
-                        .Take(pageLimit)
-                        .ToList();
-                }
+                SiteChangeStatus status2;
+                Enum.TryParse<SiteChangeStatus>(status.ToString(), out status2);
+                SqlParameter paramCountry = new SqlParameter("@country", country);
+                SqlParameter paramStatus = new SqlParameter("@status", status2);
+                List<Lineage> changes = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData  @country, @status",
+                                paramCountry, paramStatus).ToListAsync();
+                return changes;
             }
             catch (Exception ex)
+
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load lineage changes", "");
+                return result;
             }
-            finally
-            {
-                if (reader != null) await reader.DisposeAsync();
-                if (command != null) command.Dispose();
-                if (backboneConn != null) backboneConn.Dispose();
-            }
-            return changes;
+
+            
 
         }
 
-        public async Task<List<ModifiedSiteCode>> AcceptChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
+        public async Task<List<ModifiedSiteCode>> ConsolidateChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
             List<ModifiedSiteCode> siteActivities = new List<ModifiedSiteCode>();
             return siteActivities;

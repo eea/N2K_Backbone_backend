@@ -53,8 +53,8 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("GetChanges/country={country:string}&status={status:SiteChangeStatus}&page={page:int}&pageLimit={pageLimit:int}&creation={creation:bool}&deletion={deletion:bool}&split={split:bool}&merge={merge:bool}&recode={recode:bool}")]
-        public async Task<ActionResult<List<Lineage>>> GetChanges([FromBody] string country, SiteChangeStatus status,  int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
+        [HttpGet("GetChanges")]
+        public async Task<ActionResult<List<Lineage>>> GetChanges( string country, SiteChangeStatus status,  int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
             var response = new ServiceResponse<List<Lineage>>();
             try
