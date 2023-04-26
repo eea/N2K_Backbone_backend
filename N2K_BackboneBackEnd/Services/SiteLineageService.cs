@@ -119,8 +119,6 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-
-
         public async Task<List<LineageChanges>> GetChanges(string country, LineageStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
             List<LineageChanges> result = new List<LineageChanges>();
@@ -189,6 +187,24 @@ namespace N2K_BackboneBackEnd.Services
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "GetChanges", "");
             }
             return result;
+        }
+
+        public async Task<List<string>> GetLineageReferenceSites(string country)
+        {
+            List<string> result = new List<string>();
+            try
+            {
+                List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(c => c.Final == true).ToListAsync();
+                headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
+                headers.Reverse();
+
+                result = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == headers.FirstOrDefault().idULHeader && c.SCI_code.StartsWith(country)).Select(c => c.SCI_code).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageReferenceSites", "");
+            }
+            return result.Distinct().ToList();
         }
 
         public async Task<List<Lineage>> ConsolidateChanges(int changeId, string type, List<string> predecessors, List<string> successors)
