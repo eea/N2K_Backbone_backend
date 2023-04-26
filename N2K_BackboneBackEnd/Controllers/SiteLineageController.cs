@@ -21,7 +21,7 @@ namespace N2K_BackboneBackEnd.Controllers
         private IMemoryCache _cache;
 
 
-        public SiteLineageController(ISiteLineageService siteLineageService, IMapper mapper,IMemoryCache cache)
+        public SiteLineageController(ISiteLineageService siteLineageService, IMapper mapper, IMemoryCache cache)
         {
             _siteLineageService = siteLineageService;
             _mapper = mapper;
@@ -54,9 +54,9 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         [HttpGet("GetChanges")]
-        public async Task<ActionResult<List<Lineage>>> GetChanges( string country, LineageStatus status,  int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
+        public async Task<ActionResult<List<LineageChanges>>> GetChanges(string country, LineageStatus status, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
-            var response = new ServiceResponse<List<Lineage>>();
+            var response = new ServiceResponse<List<LineageChanges>>();
             try
             {
                 var siteChanges = await _siteLineageService.GetChanges(country, status, _cache, page, pageLimit, creation, deletion, split, merge, recode);
@@ -71,36 +71,36 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<Lineage>();
+                response.Data = new List<LineageChanges>();
                 return Ok(response);
             }
 
         }
 
         // POST api/<SiteLineageController>
-        [Route("ConsolidateChanges")]
-        [HttpPost]
-        public async Task<ActionResult<List<Lineage>>> ConsolidateChanges(int changeId, string type, List<string> predecessors, List<string> successors)
-        {
-            var response = new ServiceResponse<List<Lineage>>();
-            try
-            {
-                var siteChanges = await _siteLineageService.ConsolidateChanges(changeId, type, predecessors, successors);
-                response.Success = true;
-                response.Message = "";
-                response.Data = siteChanges;
-                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = new List<Lineage>();
-                return Ok(response);
-            }
-        }
+        //[Route("ConsolidateChanges")]
+        //[HttpPost]
+        //public async Task<ActionResult<List<Lineage>>> ConsolidateChanges(int changeId, string type, List<string> predecessors, List<string> successors)
+        //{
+        //    var response = new ServiceResponse<List<Lineage>>();
+        //    try
+        //    {
+        //        var siteChanges = await _siteLineageService.ConsolidateChanges(changeId, type, predecessors, successors);
+        //        response.Success = true;
+        //        response.Message = "";
+        //        response.Data = siteChanges;
+        //        response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+        //        return Ok(response);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        response.Success = false;
+        //        response.Message = ex.Message;
+        //        response.Count = 0;
+        //        response.Data = new List<Lineage>();
+        //        return Ok(response);
+        //    }
+        //}
 
         //// POST api/<SiteChangesController>
         //[Route("SetChangesBackToPending/")]
@@ -125,33 +125,6 @@ namespace N2K_BackboneBackEnd.Controllers
         //        response.Data = new List<ModifiedSiteCode>();
         //        return Ok(response);
         //    }
-        //}
-
-
-
-        //[Route("RejectChanges/")]
-        //[HttpPost]
-        //public async Task<ActionResult<List<ModifiedSiteCode>>> RejectChanges([FromBody] ModifiedSiteCode[] rejectedChanges)
-        //{
-        //    var response = new ServiceResponse<List<ModifiedSiteCode>>();
-        //    try
-        //    {
-        //        var siteChanges = await _siteLineageService.RejectChanges(rejectedChanges, _cache);
-        //        response.Success = true;
-        //        response.Message = "";
-        //        response.Data = siteChanges;
-        //        response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
-        //        return Ok(response);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        response.Success = false;
-        //        response.Message = ex.Message;
-        //        response.Count = 0;
-        //        response.Data = new List<ModifiedSiteCode>();
-        //        return Ok(response);
-        //    }
-
         //}
     }
 }

@@ -120,27 +120,75 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        
-        public async Task<List<Lineage>> GetChanges(string country, LineageStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
+
+        public async Task<List<LineageChanges>> GetChanges(string country, LineageStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
-            List<Lineage> changes = null;
+            List<LineageChanges> result = new List<LineageChanges>();
             try
             {
                 LineageStatus statusLineage;
                 Enum.TryParse<LineageStatus>(status.ToString(), out statusLineage);
                 SqlParameter paramCountry = new SqlParameter("@country", country);
                 SqlParameter paramStatus = new SqlParameter("@status", statusLineage);
-                changes = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData  @country, @status",
+                List<Lineage> changes = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData  @country, @status",
                                 paramCountry, paramStatus).ToListAsync();
-                
+
+                string filter = "";
+                if (creation)
+                    filter = String.Concat(filter, "Creation,");
+                if (deletion)
+                    filter = String.Concat(filter, "Deletion,");
+                if (split)
+                    filter = String.Concat(filter, "Split,");
+                if (merge)
+                    filter = String.Concat(filter, "Merge,");
+                if (recode)
+                    filter = String.Concat(filter, "Recode,");
+                changes = changes.Where(c => filter.Contains(c.Type.ToString())).ToList();
+
+                foreach (Lineage change in changes)
+                {
+                    LineageChanges temp = new LineageChanges();
+                    temp.ChangeId = change.ID;
+                    temp.SiteCode = change.SiteCode;
+                    temp.Type = change.Type;
+                    if (change.AntecessorsSiteCodes != null)
+                    {
+                        temp.Reference = change.AntecessorsSiteCodes;
+                    }
+                    else if (change.AntecessorsVersion != null)
+                    {
+                        temp.Reference = change.SiteCode;
+                    }
+                    else
+                    {
+                        temp.Reference = "-";
+                    }
+                    if (change.Type == LineageTypes.Deletion)
+                    {
+                        temp.Reported = "-";
+                    }
+                    else
+                    {
+                        temp.Reported = change.SiteCode;
+                    }
+                    result.Add(temp);
+                }
+
+                var startRow = (page - 1) * pageLimit;
+                if (pageLimit > 0)
+                {
+                    changes = changes
+                        .Skip(startRow)
+                        .Take(pageLimit)
+                        .ToList();
+                }
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "AcceptChanges", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetChanges", "");
             }
-
-            return changes;
-
+            return result;
         }
 
         public async Task<List<Lineage>> ConsolidateChanges(int changeId, string type, List<string> predecessors, List<string> successors)
@@ -150,12 +198,6 @@ namespace N2K_BackboneBackEnd.Services
                             paramId).ToListAsync();
 
             return data;
-        }
-
-        public async Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
-        {
-            List<ModifiedSiteCode> siteActivities = new List<ModifiedSiteCode>();
-            return siteActivities;
         }
 
         public DataSet GetDataSet(string storedProcName, DataTable param)
