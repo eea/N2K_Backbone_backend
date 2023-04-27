@@ -41,14 +41,14 @@ namespace N2K_BackboneBackEnd.Services
 
             List<SiteLineage> result = new List<SiteLineage>();
 
-            List<long> releases = new List<long>();
+            List<long?> releases = new List<long?>();
             foreach (Lineage lineage in list)
             {
                 releases.Add(lineage.Version);
             }
             releases = releases.Distinct().ToList();
 
-            List<long> ULHIds = new List<long>();
+            List<long?> ULHIds = new List<long?>();
             foreach (UnionListHeader header in headers)
             {
                 ULHIds.Add(header.idULHeader);

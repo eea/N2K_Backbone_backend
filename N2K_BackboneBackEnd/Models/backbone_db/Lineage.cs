@@ -11,7 +11,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     {
         public long ID { get; set; }
         public string SiteCode { get; set; } = string.Empty;
-        public long Version { get; set; }
+        public long? Version { get; set; }
         public long? AntecessorsVersion { get; set; }
         public string? AntecessorsSiteCodes { get; set; } = string.Empty;
         public LineageTypes? Type { get; set; }
