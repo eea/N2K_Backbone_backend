@@ -13,6 +13,7 @@ using N2K_BackboneBackEnd.Helpers;
 using System.Security.Policy;
 using System.Collections.Generic;
 using N2K_BackboneBackEnd.Models.BackboneDB;
+using Microsoft.AspNetCore.Identity;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -190,15 +191,37 @@ namespace N2K_BackboneBackEnd.Services
             }
             return result;
         }
-
-        public async Task<List<Lineage>> ConsolidateChanges(int changeId, string type, List<string> predecessors, List<string> successors)
+        public async Task<List<LineageConsolidate>> ConsolidateChanges(List<LineageConsolidate> consolidateChanges)
         {
-            SqlParameter paramId = new SqlParameter("@changeId", changeId);
-            List<Lineage> data = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spConsolidateChangeLineage  @changeId",
-                            paramId).ToListAsync();
+            List<LineageConsolidate> data = null;
+            try
+            {
+                var lineageConsolidate = new DataTable("lineageConsolidate");
+                lineageConsolidate.Columns.Add("id", typeof(int));
+                lineageConsolidate.Columns.Add("Type", typeof(int));
+                lineageConsolidate.Columns.Add("predecessors", typeof(string));
+
+                consolidateChanges.ToList().ForEach(cs =>
+                {
+                    lineageConsolidate.Rows.Add(new Object[] { cs.ID, cs.Type, cs.AntecessorsSiteCodes });
+
+                });
+
+                SqlParameter paramTable = new SqlParameter("@lineageConsolidate", System.Data.SqlDbType.Structured);
+                paramTable.Value = lineageConsolidate;
+                paramTable.TypeName = "[dbo].[lineageConsolidate]";
+
+                data = await _dataContext.Set<LineageConsolidate>().FromSqlRaw($"exec dbo.spConsolidateChanges  @lineageConsolidate",
+                                paramTable).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "Consolidate Changes - Lineage", "");
+            }
 
             return data;
         }
+    
 
         public DataSet GetDataSet(string storedProcName, DataTable param)
         {
@@ -219,10 +242,34 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<ModifiedSiteCode>> SetChangesBackToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
+        public async Task<List<Lineage>> SetChangesBackToPropose(List<Lineage> ChangeId)
         {
-            List<ModifiedSiteCode> siteActivities = new List<ModifiedSiteCode>();
-            return siteActivities;
+            List<Lineage> lineageBackProposed = null;
+
+            try
+            {
+                var lineagePropose = new DataTable("lineageConsolidate");
+                lineagePropose.Columns.Add("id", typeof(int));
+                lineagePropose.Columns.Add("Type", typeof(int));
+                lineagePropose.Columns.Add("predecessors", typeof(string));
+
+                ChangeId.ToList().ForEach(cs =>
+                {
+                    lineagePropose.Rows.Add(new Object[] { cs.ID });
+
+                });
+                SqlParameter paramTable = new SqlParameter("@lineagePropose", System.Data.SqlDbType.Structured);
+                paramTable.Value = lineagePropose;
+                paramTable.TypeName = "[dbo].[lineageConsolidate]";
+                lineageBackProposed = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spSetChangesBackToPropose  @lineagePropose",
+                                    paramTable).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "Back to Propose - Lineage", "");
+            }
+            
+            return lineageBackProposed;
 
         }
 

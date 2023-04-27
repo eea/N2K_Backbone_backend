@@ -3,6 +3,7 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Enumerations;
 using Microsoft.Extensions.Caching.Memory;
 using System.Data;
+using N2K_BackboneBackEnd.Models.ViewModel;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -12,8 +13,8 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<LineageChanges>> GetChanges(string country, LineageStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true);
 
-        Task<List<Lineage>> ConsolidateChanges(int changeId, string type, List<string> predecessors, List<string> successors);
+        Task<List<LineageConsolidate>> ConsolidateChanges( List<LineageConsolidate> consolidateChanges);
 
-        Task<List<ModifiedSiteCode>> SetChangesBackToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache);
+        Task<List<Lineage>> SetChangesBackToPropose(List<Lineage> ChangeId);
     }
 }

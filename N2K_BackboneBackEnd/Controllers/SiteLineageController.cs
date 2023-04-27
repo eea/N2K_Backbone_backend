@@ -77,54 +77,54 @@ namespace N2K_BackboneBackEnd.Controllers
 
         }
 
-        // POST api/<SiteLineageController>
-        //[Route("ConsolidateChanges")]
-        //[HttpPost]
-        //public async Task<ActionResult<List<Lineage>>> ConsolidateChanges(int changeId, string type, List<string> predecessors, List<string> successors)
-        //{
-        //    var response = new ServiceResponse<List<Lineage>>();
-        //    try
-        //    {
-        //        var siteChanges = await _siteLineageService.ConsolidateChanges(changeId, type, predecessors, successors);
-        //        response.Success = true;
-        //        response.Message = "";
-        //        response.Data = siteChanges;
-        //        response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
-        //        return Ok(response);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        response.Success = false;
-        //        response.Message = ex.Message;
-        //        response.Count = 0;
-        //        response.Data = new List<Lineage>();
-        //        return Ok(response);
-        //    }
-        //}
+
+        [Route("ConsolidateChanges")]
+        [HttpPost]
+        public async Task<ActionResult<List<LineageConsolidate>>> ConsolidateChanges(List<LineageConsolidate> consolidateChanges)
+        {
+            var response = new ServiceResponse<List<LineageConsolidate>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.ConsolidateChanges(consolidateChanges);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<LineageConsolidate>();
+                return Ok(response);
+            }
+        }
 
         //// POST api/<SiteChangesController>
-        //[Route("SetChangesBackToPending/")]
-        //[HttpPost]
-        //public async Task<ActionResult<List<ModifiedSiteCode>>> SetChangesBackToPending([FromBody] ModifiedSiteCode[] changedSiteStatus)
-        //{
-        //    var response = new ServiceResponse<List<ModifiedSiteCode>>();
-        //    try
-        //    {
-        //        var siteChanges = await _siteLineageService.SetChangesBackToPending(changedSiteStatus, _cache);
-        //        response.Success = true;
-        //        response.Message = "";
-        //        response.Data = siteChanges;
-        //        response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
-        //        return Ok(response);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        response.Success = false;
-        //        response.Message = ex.Message;
-        //        response.Count = 0;
-        //        response.Data = new List<ModifiedSiteCode>();
-        //        return Ok(response);
-        //    }
-        //}
+        [Route("SetChangesBackToPropose/")]
+        [HttpPost]
+        public async Task<ActionResult<List<Lineage>>> SetChangesBackToPropose(List<Lineage> changeId)
+        {
+            var response = new ServiceResponse<List<Lineage>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.SetChangesBackToPropose(changeId);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<Lineage>();
+                return Ok(response);
+            }
+        }
     }
 }
