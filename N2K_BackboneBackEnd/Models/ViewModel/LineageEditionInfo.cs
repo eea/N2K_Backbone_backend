@@ -9,7 +9,7 @@ using System.Data;
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
     [Keyless]
-    public class LineageEditionInfo : IEntityModel
+    public class LineageEditionInfo : IEntityModelBackboneDB
     {
         public string SiteCode { get; set; } = string.Empty;
         public string SiteName { get; set; } = string.Empty;
