@@ -15,6 +15,9 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<LineageConsolidate>> ConsolidateChanges( List<LineageConsolidate> consolidateChanges);
 
+        Task<List<string>> GetLineageReferenceSites(string country);
+
+
         Task<List<Lineage>> SetChangesBackToPropose(List<Lineage> ChangeId);
     }
 }

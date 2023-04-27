@@ -191,6 +191,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             return result;
         }
+        
+
         public async Task<List<LineageConsolidate>> ConsolidateChanges(List<LineageConsolidate> consolidateChanges)
         {
             List<LineageConsolidate> data = null;
@@ -272,7 +274,23 @@ namespace N2K_BackboneBackEnd.Services
             return lineageBackProposed;
 
         }
+        public async Task<List<string>> GetLineageReferenceSites(string country)
+        {
+            List<string> result = new List<string>();
+            try
+            {
+                List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(c => c.Final == true).ToListAsync();
+                headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
+                headers.Reverse();
 
+                result = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == headers.FirstOrDefault().idULHeader && c.SCI_code.StartsWith(country)).Select(c => c.SCI_code).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageReferenceSites", "");
+            }
+            return result.Distinct().ToList();
+        }
         private async Task<List<SiteCodeView>> swapSiteInListCache(IMemoryCache pCache, SiteChangeStatus? pStatus, Level? pLevel, SiteChangeStatus? pListNameFrom, SiteCodeView pSite)
         {
 
