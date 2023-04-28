@@ -13,11 +13,12 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<LineageChanges>> GetChanges(string country, LineageStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true);
 
-        Task<List<LineageConsolidate>> ConsolidateChanges( List<LineageConsolidate> consolidateChanges);
+        Task<List<long>> ConsolidateChanges(LineageConsolidation[] consolidateChanges);
+
+        Task<List<long>> SetChangesBackToProposed(long[] ChangeId);
+
+        Task<List<LineageEditionInfo>> GetPredecessorsInfo(long ChangeId);
 
         Task<List<string>> GetLineageReferenceSites(string country);
-
-
-        Task<List<Lineage>> SetChangesBackToPropose(List<Lineage> ChangeId);
     }
 }

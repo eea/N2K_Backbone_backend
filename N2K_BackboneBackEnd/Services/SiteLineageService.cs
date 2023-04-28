@@ -121,7 +121,6 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-
         public async Task<List<LineageChanges>> GetChanges(string country, LineageStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
             List<LineageChanges> result = new List<LineageChanges>();
@@ -179,7 +178,7 @@ namespace N2K_BackboneBackEnd.Services
                 var startRow = (page - 1) * pageLimit;
                 if (pageLimit > 0)
                 {
-                    changes = changes
+                    result = result
                         .Skip(startRow)
                         .Take(pageLimit)
                         .ToList();
@@ -191,11 +190,11 @@ namespace N2K_BackboneBackEnd.Services
             }
             return result;
         }
-        
 
-        public async Task<List<LineageConsolidate>> ConsolidateChanges(List<LineageConsolidate> consolidateChanges)
+
+        public async Task<List<long>> ConsolidateChanges(LineageConsolidation[] consolidateChanges)
         {
-            List<LineageConsolidate> data = null;
+            List<long> result = new List<long>();
             try
             {
                 var lineageConsolidate = new DataTable("lineageConsolidate");
@@ -205,25 +204,100 @@ namespace N2K_BackboneBackEnd.Services
 
                 consolidateChanges.ToList().ForEach(cs =>
                 {
-                    lineageConsolidate.Rows.Add(new Object[] { cs.ID, cs.Type, cs.AntecessorsSiteCodes });
-
+                    if (cs.Predecessors == "" || cs.Predecessors == "string")
+                        cs.Predecessors = null;
+                    lineageConsolidate.Rows.Add(new Object[] { cs.ChangeId, cs.Type, (cs.Predecessors == null) ? DBNull.Value : cs.Predecessors });
+                    result.Add(cs.ChangeId);
                 });
 
                 SqlParameter paramTable = new SqlParameter("@lineageConsolidate", System.Data.SqlDbType.Structured);
                 paramTable.Value = lineageConsolidate;
                 paramTable.TypeName = "[dbo].[lineageConsolidate]";
 
-                data = await _dataContext.Set<LineageConsolidate>().FromSqlRaw($"exec dbo.spConsolidateChanges  @lineageConsolidate",
+                List<Lineage> data = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spConsolidateChanges  @lineageConsolidate",
                                 paramTable).ToListAsync();
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "Consolidate Changes - Lineage", "");
             }
-
-            return data;
+            return result;
         }
-    
+
+
+        public async Task<List<long>> SetChangesBackToProposed(long[] ChangeId)
+        {
+            List<long> result = new List<long>();
+            try
+            {
+                List<Lineage> lineageBackProposed = await _dataContext.Set<Lineage>().Where(c => c.Status == LineageStatus.Consolidated && ChangeId.Contains(c.ID)).ToListAsync();
+                lineageBackProposed.ForEach(y =>
+                {
+                    y.Status = LineageStatus.Proposed;
+                    result.Add(y.ID);
+                });
+                _dataContext.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "Back to Propose - Lineage", "");
+            }
+            return result;
+        }
+
+        //WIP
+        public async Task<List<LineageEditionInfo>> GetPredecessorsInfo(long ChangeId)
+        {
+            List<LineageEditionInfo> result = new List<LineageEditionInfo>();
+            try
+            {
+                List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(c => c.Final == true).ToListAsync();
+                headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
+                headers.Reverse();
+
+                Lineage change = await _dataContext.Set<Lineage>().AsNoTracking().Where(c => c.ID == ChangeId).FirstOrDefaultAsync();
+                List<UnionListDetail> details = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == headers.FirstOrDefault().idULHeader && change.AntecessorsSiteCodes.Contains(c.SCI_code)).ToListAsync();
+
+                details.ForEach(d =>
+                {
+                    result.Add(new LineageEditionInfo
+                    {
+                        SiteCode = d.SCI_code,
+                        SiteName = d.SCI_Name,
+                        SiteType = "",
+                        BioRegion = d.BioRegion,
+                        AreaSDF = d.Area,
+                        AreaGEO = d.Area,
+                        Length = d.Length
+                    });
+                });
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageReferenceSites", "");
+            }
+            return result.Distinct().ToList();
+        }
+
+
+        public async Task<List<string>> GetLineageReferenceSites(string country)
+        {
+            List<string> result = new List<string>();
+            try
+            {
+                List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(c => c.Final == true).ToListAsync();
+                headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
+                headers.Reverse();
+
+                result = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == headers.FirstOrDefault().idULHeader && c.SCI_code.StartsWith(country)).Select(c => c.SCI_code).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageReferenceSites", "");
+            }
+            return result.Distinct().ToList();
+        }
+
 
         public DataSet GetDataSet(string storedProcName, DataTable param)
         {
@@ -244,53 +318,6 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<Lineage>> SetChangesBackToPropose(List<Lineage> ChangeId)
-        {
-            List<Lineage> lineageBackProposed = null;
-
-            try
-            {
-                var lineagePropose = new DataTable("lineageConsolidate");
-                lineagePropose.Columns.Add("id", typeof(int));
-                lineagePropose.Columns.Add("Type", typeof(int));
-                lineagePropose.Columns.Add("predecessors", typeof(string));
-
-                ChangeId.ToList().ForEach(cs =>
-                {
-                    lineagePropose.Rows.Add(new Object[] { cs.ID });
-
-                });
-                SqlParameter paramTable = new SqlParameter("@lineagePropose", System.Data.SqlDbType.Structured);
-                paramTable.Value = lineagePropose;
-                paramTable.TypeName = "[dbo].[lineageConsolidate]";
-                lineageBackProposed = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spSetChangesBackToPropose  @lineagePropose",
-                                    paramTable).ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Back to Propose - Lineage", "");
-            }
-            
-            return lineageBackProposed;
-
-        }
-        public async Task<List<string>> GetLineageReferenceSites(string country)
-        {
-            List<string> result = new List<string>();
-            try
-            {
-                List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(c => c.Final == true).ToListAsync();
-                headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
-                headers.Reverse();
-
-                result = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == headers.FirstOrDefault().idULHeader && c.SCI_code.StartsWith(country)).Select(c => c.SCI_code).ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageReferenceSites", "");
-            }
-            return result.Distinct().ToList();
-        }
         private async Task<List<SiteCodeView>> swapSiteInListCache(IMemoryCache pCache, SiteChangeStatus? pStatus, Level? pLevel, SiteChangeStatus? pListNameFrom, SiteCodeView pSite)
         {
 

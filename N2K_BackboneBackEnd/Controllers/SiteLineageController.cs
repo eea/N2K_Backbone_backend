@@ -80,9 +80,9 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("ConsolidateChanges")]
         [HttpPost]
-        public async Task<ActionResult<List<LineageConsolidate>>> ConsolidateChanges(List<LineageConsolidate> consolidateChanges)
+        public async Task<ActionResult<List<long>>> ConsolidateChanges(LineageConsolidation[] consolidateChanges)
         {
-            var response = new ServiceResponse<List<LineageConsolidate>>();
+            var response = new ServiceResponse<List<long>>();
             try
             {
                 var siteChanges = await _siteLineageService.ConsolidateChanges(consolidateChanges);
@@ -97,10 +97,63 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<LineageConsolidate>();
+                response.Data = new List<long>();
                 return Ok(response);
             }
         }
+
+
+        // POST api/<SiteChangesController>
+        [Route("SetChangesBackToProposed/")]
+        [HttpPost]
+        public async Task<ActionResult<List<long>>> SetChangesBackToProposed(long[] ChangeId)
+        {
+            var response = new ServiceResponse<List<long>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.SetChangesBackToProposed(ChangeId);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<long>();
+                return Ok(response);
+            }
+        }
+
+
+        [HttpGet("GetPredecessorsInfo")]
+        public async Task<ActionResult<List<LineageEditionInfo>>> GetPredecessorsInfo(long ChangeId)
+        {
+            var response = new ServiceResponse<List<LineageEditionInfo>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetPredecessorsInfo(ChangeId);
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<LineageEditionInfo>();
+                return Ok(response);
+            }
+
+        }
+
+
         [HttpGet("GetLineageReferenceSites")]
         public async Task<ActionResult<List<string>>> GetLineageReferenceSites(string country)
         {
@@ -119,31 +172,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<LineageConsolidate>();
-                return Ok(response);
-            }
-        }
-        //// POST api/<SiteChangesController>
-        [Route("SetChangesBackToPropose/")]
-        [HttpPost]
-        public async Task<ActionResult<List<Lineage>>> SetChangesBackToPropose(List<Lineage> changeId)
-        {
-            var response = new ServiceResponse<List<Lineage>>();
-            try
-            {
-                var siteChanges = await _siteLineageService.SetChangesBackToPropose(changeId);
-                response.Success = true;
-                response.Message = "";
-                response.Data = siteChanges;
-                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = new List<Lineage>();
+                response.Data = new List<string>();
                 return Ok(response);
             }
         }
