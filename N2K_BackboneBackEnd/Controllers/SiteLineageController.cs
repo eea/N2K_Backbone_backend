@@ -78,6 +78,31 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
+        [HttpGet("GetCodesCount")]
+        public async Task<ActionResult<LineageCount>> GetCodesCount(string country, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
+        {
+            var response = new ServiceResponse<LineageCount>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetCodesCount(country, _cache, creation, deletion, split, merge, recode);
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = (siteChanges == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new LineageCount();
+                return Ok(response);
+            }
+
+        }
+
+
         [Route("ConsolidateChanges")]
         [HttpPost]
         public async Task<ActionResult<List<long>>> ConsolidateChanges(LineageConsolidation[] consolidateChanges)

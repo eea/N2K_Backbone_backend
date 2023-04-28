@@ -192,6 +192,44 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
+        public async Task<LineageCount> GetCodesCount(string country, IMemoryCache cache, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
+        {
+            LineageCount result = new LineageCount();
+            try
+            {
+                SqlParameter paramCountry = new SqlParameter("@country", country);
+                SqlParameter paramStatus = new SqlParameter("@status", LineageStatus.Proposed);
+                List<Lineage> proposed = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData  @country, @status",
+                                paramCountry, paramStatus).ToListAsync();
+                paramStatus = new SqlParameter("@status", LineageStatus.Consolidated);
+                List<Lineage> consolidated = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData  @country, @status",
+                                paramCountry, paramStatus).ToListAsync();
+
+                string filter = "";
+                if (creation)
+                    filter = String.Concat(filter, "Creation,");
+                if (deletion)
+                    filter = String.Concat(filter, "Deletion,");
+                if (split)
+                    filter = String.Concat(filter, "Split,");
+                if (merge)
+                    filter = String.Concat(filter, "Merge,");
+                if (recode)
+                    filter = String.Concat(filter, "Recode,");
+                proposed = proposed.Where(c => filter.Contains(c.Type.ToString())).ToList();
+                consolidated = consolidated.Where(c => filter.Contains(c.Type.ToString())).ToList();
+
+                result.Proposed = proposed.Count();
+                result.Consolidated = consolidated.Count();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetCodesCount", "");
+            }
+            return result;
+        }
+
+
         public async Task<List<long>> ConsolidateChanges(LineageConsolidation[] consolidateChanges)
         {
             List<long> result = new List<long>();
