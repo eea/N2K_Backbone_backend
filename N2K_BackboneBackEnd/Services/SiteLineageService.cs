@@ -336,7 +336,46 @@ namespace N2K_BackboneBackEnd.Services
             return result.Distinct().ToList();
         }
 
+        public async Task<LineageEditionInfo> GetLineageChangesInfo(long ChangeId)
+        {
+            List<LineageEditionInfo> result = new List<LineageEditionInfo>();
+            try
+            {
+                Lineage change = await _dataContext.Set<Lineage>().AsNoTracking().Where(c => c.ID == ChangeId).FirstOrDefaultAsync();
 
+                var sitecodesfilter = new DataTable("sitecodesfilter");
+                sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter.Columns.Add("Version", typeof(int));
+
+                sitecodesfilter.Rows.Add(new Object[] { change.SiteCode, 0 });
+
+                SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable.Value = sitecodesfilter;
+                paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+                List<Sites> sites = await _dataContext.Set<Sites>().FromSqlRaw($"exec dbo.spGetLatestSiteVersionsLineage  @siteCodes",
+                                paramTable).ToListAsync();
+                sites.ForEach(d =>
+                {
+                    result.Add(new LineageEditionInfo
+                    {
+                        SiteCode = d.SiteCode,
+                        SiteName = d.Name,
+                        SiteType = d.SiteType,
+                        BioRegion = "",
+                        AreaSDF = Convert.ToDouble(d.Area),
+                        AreaGEO = Convert.ToDouble(d.Area),
+                        Length = Convert.ToDouble(d.Length)
+                    });
+                });
+
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageChangesInfo", "");
+
+            }
+            return result.First();
+        }
         public DataSet GetDataSet(string storedProcName, DataTable param)
         {
             SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
@@ -396,4 +435,3 @@ namespace N2K_BackboneBackEnd.Services
 
     }
 }
-

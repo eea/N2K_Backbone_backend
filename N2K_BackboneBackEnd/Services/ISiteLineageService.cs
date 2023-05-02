@@ -22,5 +22,6 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<LineageEditionInfo>> GetPredecessorsInfo(long ChangeId);
 
         Task<List<string>> GetLineageReferenceSites(string country);
+        Task<LineageEditionInfo> GetLineageChangesInfo(long ChangeId);
     }
 }

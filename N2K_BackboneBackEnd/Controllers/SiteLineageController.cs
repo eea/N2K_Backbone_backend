@@ -201,5 +201,29 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+        [HttpGet("GetLineageChangesInfo")]
+        public async Task<ActionResult<LineageEditionInfo>> GetLineageChangesInfo(long ChangeId)
+        {
+            var response = new ServiceResponse<LineageEditionInfo>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetLineageChangesInfo(ChangeId);
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+
+        }
     }
 }
