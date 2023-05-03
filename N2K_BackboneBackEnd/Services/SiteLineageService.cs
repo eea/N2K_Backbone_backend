@@ -331,25 +331,6 @@ namespace N2K_BackboneBackEnd.Services
             return result.Distinct().ToList();
         }
 
-
-        public async Task<List<string>> GetLineageReferenceSites(string country)
-        {
-            List<string> result = new List<string>();
-            try
-            {
-                List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(c => c.Final == true).ToListAsync();
-                headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
-                headers.Reverse();
-
-                result = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == headers.FirstOrDefault().idULHeader && c.SCI_code.StartsWith(country)).Select(c => c.SCI_code).ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageReferenceSites", "");
-            }
-            return result.Distinct().ToList();
-        }
-
         public async Task<LineageEditionInfo> GetLineageChangesInfo(long ChangeId)
         {
             List<LineageEditionInfo> result = new List<LineageEditionInfo>();
@@ -368,6 +349,18 @@ namespace N2K_BackboneBackEnd.Services
                 paramTable.TypeName = "[dbo].[SiteCodeFilter]";
                 List<Sites> sites = await _dataContext.Set<Sites>().FromSqlRaw($"exec dbo.spGetLatestSiteVersionsLineage  @siteCodes",
                                 paramTable).ToListAsync();
+
+                sitecodesfilter = new DataTable("sitecodesfilter");
+                sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter.Columns.Add("Version", typeof(int));
+                sites.ForEach(d =>
+                {
+                    sitecodesfilter.Rows.Add(new Object[] { d.SiteCode, d.Version });
+                });
+                paramTable.Value = sitecodesfilter;
+                List<SiteBioRegions> bioregions = await _dataContext.Set<SiteBioRegions>().FromSqlRaw($"exec dbo.spGetBioRegionsBySitecodeAndVersion  @siteCodes",
+                                paramTable).ToListAsync();
+
                 sites.ForEach(d =>
                 {
                     result.Add(new LineageEditionInfo
@@ -375,7 +368,7 @@ namespace N2K_BackboneBackEnd.Services
                         SiteCode = d.SiteCode,
                         SiteName = d.Name,
                         SiteType = d.SiteType,
-                        BioRegion = "",
+                        BioRegion = (bioregions.Count() > 0) ? (bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault().BioRegions) : "",
                         AreaSDF = Convert.ToDouble(d.Area),
                         AreaGEO = Convert.ToDouble(d.Area),
                         Length = Convert.ToDouble(d.Length)
@@ -390,6 +383,27 @@ namespace N2K_BackboneBackEnd.Services
             }
             return result.First();
         }
+
+
+        public async Task<List<string>> GetLineageReferenceSites(string country)
+        {
+            List<string> result = new List<string>();
+            try
+            {
+                List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(c => c.Final == true).ToListAsync();
+                headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
+                headers.Reverse();
+
+                result = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == headers.FirstOrDefault().idULHeader && c.SCI_code.StartsWith(country)).Select(c => c.SCI_code).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageReferenceSites", "");
+            }
+            return result.Distinct().ToList();
+        }
+        
+
         public DataSet GetDataSet(string storedProcName, DataTable param)
         {
             SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());

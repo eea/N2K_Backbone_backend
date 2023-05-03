@@ -179,29 +179,6 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("GetLineageReferenceSites")]
-        public async Task<ActionResult<List<string>>> GetLineageReferenceSites(string country)
-        {
-            var response = new ServiceResponse<List<string>>();
-            try
-            {
-                var siteChanges = await _siteLineageService.GetLineageReferenceSites(country);
-                response.Data = siteChanges;
-                response.Success = true;
-                response.Message = "";
-                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = new List<string>();
-                return Ok(response);
-            }
-        }
-
         [HttpGet("GetLineageChangesInfo")]
         public async Task<ActionResult<LineageEditionInfo>> GetLineageChangesInfo(long ChangeId)
         {
@@ -224,6 +201,30 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
 
+        }
+
+
+        [HttpGet("GetLineageReferenceSites")]
+        public async Task<ActionResult<List<string>>> GetLineageReferenceSites(string country)
+        {
+            var response = new ServiceResponse<List<string>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetLineageReferenceSites(country);
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<string>();
+                return Ok(response);
+            }
         }
     }
 }
