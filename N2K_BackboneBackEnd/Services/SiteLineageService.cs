@@ -146,11 +146,25 @@ namespace N2K_BackboneBackEnd.Services
                     filter = String.Concat(filter, "Recode,");
                 changes = changes.Where(c => filter.Contains(c.Type.ToString())).ToList();
 
+                var sitecodesfilter = new DataTable("sitecodesfilter");
+                sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter.Columns.Add("Version", typeof(int));
+                changes.ToList().ForEach(cs =>
+                {
+                    sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, 0 });
+                });
+                SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable.Value = sitecodesfilter;
+                paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+                List<Sites> sites = await _dataContext.Set<Sites>().FromSqlRaw($"exec dbo.spGetLatestSiteVersionsLineage  @siteCodes",
+                                paramTable).ToListAsync();
+
                 foreach (Lineage change in changes)
                 {
                     LineageChanges temp = new LineageChanges();
                     temp.ChangeId = change.ID;
                     temp.SiteCode = change.SiteCode;
+                    temp.SiteName = sites.Where(c => c.SiteCode == change.SiteCode).FirstOrDefault().Name;
                     temp.Type = change.Type;
                     if (change.AntecessorsSiteCodes != null)
                     {
