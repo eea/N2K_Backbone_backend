@@ -14,7 +14,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     {
         public string SiteCode { get; set; }
         public int Version { get; set; }
-        public string BioRegions { get; set; }
+        public string? BioRegions { get; set; }
+        public decimal? area { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {

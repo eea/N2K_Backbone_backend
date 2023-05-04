@@ -319,7 +319,7 @@ namespace N2K_BackboneBackEnd.Services
                 SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
                 paramTable.Value = sitecodesfilter;
                 paramTable.TypeName = "[dbo].[SiteCodeFilter]";
-                List<SiteBioRegions> bioregions = await _dataContext.Set<SiteBioRegions>().FromSqlRaw($"exec dbo.spGetBioRegionsBySitecodeAndVersion  @siteCodes",
+                List<SiteBioRegions> bioregions = await _dataContext.Set<SiteBioRegions>().FromSqlRaw($"exec dbo.spGetBioRegionsAndAreaBySitecodeAndVersion  @siteCodes",
                                 paramTable).ToListAsync();
 
                 details.ForEach(d =>
@@ -329,10 +329,10 @@ namespace N2K_BackboneBackEnd.Services
                         SiteCode = d.SCI_code,
                         SiteName = d.SCI_Name,
                         SiteType = _dataContext.Set<Sites>().AsNoTracking().Where(c => c.SiteCode == d.SCI_code && c.Version == d.version).Select(c => c.SiteType).First(),
-                        BioRegion = (bioregions.Count() > 0) ? (bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault().BioRegions) : "",
-                        AreaSDF = d.Area,
-                        AreaGEO = d.Area,
-                        Length = d.Length
+                        BioRegion = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault().BioRegions != null ? (bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault().BioRegions) : "",
+                        AreaSDF = d.Area != null ? Convert.ToDouble(d.Area) : null,
+                        AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault().area) : null,
+                        Length = d.Length != null ? Convert.ToDouble(d.Length) : null
                     });
                 });
                 result = result.DistinctBy(c => c.SiteCode).ToList();
@@ -371,7 +371,7 @@ namespace N2K_BackboneBackEnd.Services
                     sitecodesfilter.Rows.Add(new Object[] { d.SiteCode, d.Version });
                 });
                 paramTable.Value = sitecodesfilter;
-                List<SiteBioRegions> bioregions = await _dataContext.Set<SiteBioRegions>().FromSqlRaw($"exec dbo.spGetBioRegionsBySitecodeAndVersion  @siteCodes",
+                List<SiteBioRegions> bioregions = await _dataContext.Set<SiteBioRegions>().FromSqlRaw($"exec dbo.spGetBioRegionsAndAreaBySitecodeAndVersion  @siteCodes",
                                 paramTable).ToListAsync();
 
                 sites.ForEach(d =>
@@ -381,10 +381,10 @@ namespace N2K_BackboneBackEnd.Services
                         SiteCode = d.SiteCode,
                         SiteName = d.Name,
                         SiteType = d.SiteType,
-                        BioRegion = (bioregions.Count() > 0) ? (bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault().BioRegions) : "",
-                        AreaSDF = Convert.ToDouble(d.Area),
-                        AreaGEO = Convert.ToDouble(d.Area),
-                        Length = Convert.ToDouble(d.Length)
+                        BioRegion = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault().BioRegions != null ? (bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault().BioRegions) : "",
+                        AreaSDF = d.Area != null ? Convert.ToDouble(d.Area) : null,
+                        AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault().area) : null,
+                        Length = d.Length != null ? Convert.ToDouble(d.Length) : null
                     });
                 });
 
@@ -392,7 +392,6 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageChangesInfo", "");
-
             }
             return result.First();
         }
@@ -415,7 +414,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             return result.Distinct().ToList();
         }
-        
+
 
         public DataSet GetDataSet(string storedProcName, DataTable param)
         {
