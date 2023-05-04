@@ -297,7 +297,6 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        //WIP
         public async Task<List<LineageEditionInfo>> GetPredecessorsInfo(long ChangeId)
         {
             List<LineageEditionInfo> result = new List<LineageEditionInfo>();
@@ -310,19 +309,33 @@ namespace N2K_BackboneBackEnd.Services
                 Lineage change = await _dataContext.Set<Lineage>().AsNoTracking().Where(c => c.ID == ChangeId).FirstOrDefaultAsync();
                 List<UnionListDetail> details = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == headers.FirstOrDefault().idULHeader && change.AntecessorsSiteCodes.Contains(c.SCI_code)).ToListAsync();
 
+                var sitecodesfilter = new DataTable("sitecodesfilter");
+                sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter.Columns.Add("Version", typeof(int));
+                details.ForEach(d =>
+                {
+                    sitecodesfilter.Rows.Add(new Object[] { d.SCI_code, d.version });
+                });
+                SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable.Value = sitecodesfilter;
+                paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+                List<SiteBioRegions> bioregions = await _dataContext.Set<SiteBioRegions>().FromSqlRaw($"exec dbo.spGetBioRegionsBySitecodeAndVersion  @siteCodes",
+                                paramTable).ToListAsync();
+
                 details.ForEach(d =>
                 {
                     result.Add(new LineageEditionInfo
                     {
                         SiteCode = d.SCI_code,
                         SiteName = d.SCI_Name,
-                        SiteType = "",
-                        BioRegion = d.BioRegion,
+                        SiteType = _dataContext.Set<Sites>().AsNoTracking().Where(c => c.SiteCode == d.SCI_code && c.Version == d.version).Select(c => c.SiteType).First(),
+                        BioRegion = (bioregions.Count() > 0) ? (bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault().BioRegions) : "",
                         AreaSDF = d.Area,
                         AreaGEO = d.Area,
                         Length = d.Length
                     });
                 });
+                result = result.DistinctBy(c => c.SiteCode).ToList();
             }
             catch (Exception ex)
             {
