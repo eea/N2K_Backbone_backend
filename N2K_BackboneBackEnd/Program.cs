@@ -44,11 +44,9 @@ builder.Services.AddScoped<IUnionListService, UnionListService>();
 builder.Services.AddScoped<IReleaseService, ReleaseService>();
 builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
 
-builder.Services.AddHostedService<LongRunningService>();
+builder.Services.AddTransient<IFireForgetRepositoryHandler, FireForgetRepositoryHandler>();
 builder.Services.AddHostedService<FMELongRunningService>();
-builder.Services.AddSingleton<BackgroundWorkerQueue>();
-builder.Services.AddSingleton<BackgroundSpatialHarvestJobs>();
-
+builder.Services.AddSingleton<IBackgroundSpatialHarvestJobs,BackgroundSpatialHarvestJobs>();
 
 builder.Services.AddResponseCompression(options =>
 {
@@ -68,16 +66,19 @@ builder.Configuration.AddJsonFile("appsettings.json");
 builder.Services.AddDbContext<N2KBackboneContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
+    //options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
 
 builder.Services.AddDbContext<N2KReleasesContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_ReleasesBackEndContext"));
+    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
 
 builder.Services.AddDbContext<N2K_VersioningContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_VersioningBackEndContext"));
+    //options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
 
 
@@ -150,14 +151,15 @@ builder.Services.AddControllers()
 
 
 var app = builder.Build();
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
 app.UseCors(x => x
+    .WithOrigins("http://localhost:3000")
     .AllowAnyMethod()
     .AllowAnyHeader()
     .SetIsOriginAllowed(origin => true) // allow any origin
     .AllowCredentials()); // allow credentials
-}
+//}
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())

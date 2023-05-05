@@ -1,4 +1,6 @@
-﻿using N2K_BackboneBackEnd.Models.backbone_db;
+﻿using Microsoft.Extensions.Caching.Memory;
+using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Models.backbone_db;
 
 namespace N2K_BackboneBackEnd.Models
 {
@@ -6,6 +8,5 @@ namespace N2K_BackboneBackEnd.Models
     {
             public bool AllFinished { get; set; }
             public EnvelopesToProcess Envelope { get; set; }
-
     }
 }

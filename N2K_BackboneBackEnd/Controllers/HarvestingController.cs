@@ -23,16 +23,18 @@ namespace N2K_BackboneBackEnd.Controllers
         private readonly IHarvestedService _harvestedService;
         private readonly IMapper _mapper;
         private IMemoryCache _cache;
-        private readonly BackgroundWorkerQueue _backgroundWorkerQueue;
+        //private readonly BackgroundWorkerQueue _backgroundWorkerQueue;
+        private readonly IFireForgetRepositoryHandler _fireForgetRepositoryHandler;
 
-        public HarvestingController(IHarvestedService harvestedService, IMapper mapper, IMemoryCache cache, BackgroundWorkerQueue backgroundWorkerQueue)
+      
+        public HarvestingController(IHarvestedService harvestedService, IMapper mapper, IMemoryCache cache, IFireForgetRepositoryHandler fireForgetRepositoryHandler)
         {
             _harvestedService = harvestedService;
             _mapper = mapper;
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-            _backgroundWorkerQueue = backgroundWorkerQueue;
+            _fireForgetRepositoryHandler = fireForgetRepositoryHandler;
+            //_backgroundWorkerQueue = backgroundWorkerQueue;
         }
-
 
         /*
         // GET: api/<HarvestingController>
@@ -281,9 +283,11 @@ namespace N2K_BackboneBackEnd.Controllers
             try
             {
                 await Task.Delay(1);
-                _backgroundWorkerQueue.QueueBackgroundWorkItem(async token =>
+                // Delegate the blog auditing to another task on the threadpool
+                _fireForgetRepositoryHandler.Execute(async repository =>
                 {
-                    await _harvestedService.HarvestSpatialData(envelopes);
+                    // Will receive its own scoped repository on the executing task
+                    await repository.HarvestSpatialData(envelopes, _cache);
                 });
 
                 response.Success = true;
@@ -302,7 +306,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         /// <summary>
         /// Execute an unattended load of the data from versioning
         /// </summary>
@@ -315,10 +318,12 @@ namespace N2K_BackboneBackEnd.Controllers
             try
             {
                 await Task.Delay(1);
-                _backgroundWorkerQueue.QueueBackgroundWorkItem(async token =>
+                // Delegate the blog auditing to another task on the threadpool
+                _fireForgetRepositoryHandler.Execute(async repository =>
                 {
-                    await _harvestedService.FullHarvest(_cache);
-                });                
+                    // Will receive its own scoped repository on the executing task
+                    await repository.FullHarvest(_cache);
+                });
                 response.Success = true;
                 response.Message = "";
                 response.Data = 1;
@@ -335,7 +340,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
+        
         /// <summary>
         /// Changes te status of a envelope
         /// </summary>
