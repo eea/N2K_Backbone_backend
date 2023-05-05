@@ -8,6 +8,6 @@ namespace N2K_BackboneBackEnd.Models
         public string CountryCode { get; set; } = "";
         public int NumChanges { get; set; }
 
-        public SiteChangeStatus Status { get; set; }
+        public HarvestingStatus Status { get; set; }
     }
 }
