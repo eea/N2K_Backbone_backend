@@ -15,11 +15,10 @@ using System.Diagnostics;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Http;
 using System.Runtime.CompilerServices;
+using Microsoft.AspNetCore.Http;
 
 namespace N2K_BackboneBackEnd.Services
 {
-
-
     public class SiteChangesService : ISiteChangesService
     {
 
@@ -1135,6 +1134,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             return activities;
         }
+
+
         private async Task<List<SiteChangeDb>> GetChanges(DataTable sitecodesfilter)
         {
             //List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToListAsync();
@@ -1306,7 +1307,6 @@ namespace N2K_BackboneBackEnd.Services
             backboneConn.Dispose();
             return result;
         }
-
 
         public async Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
@@ -1789,7 +1789,7 @@ namespace N2K_BackboneBackEnd.Services
         /// <returns></returns>
         private async Task<List<SiteCodeView>> swapSiteInListCache(IMemoryCache pCache, SiteChangeStatus? pStatus, Level? pLevel, SiteChangeStatus? pListNameFrom, SiteCodeView pSite)
         {
-
+            await Task.Delay(1);
             List<SiteCodeView> cachedlist = new List<SiteCodeView>();
 
 
