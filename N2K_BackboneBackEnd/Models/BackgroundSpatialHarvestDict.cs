@@ -30,6 +30,7 @@ namespace N2K_BackboneBackEnd.Models
         private readonly N2KBackboneContext _dataContext;
         private readonly IOptions<ConfigSettings> _appSettings;
         private ConcurrentDictionary<EnvelopesToProcess, long> _fmeJobs = new ConcurrentDictionary<EnvelopesToProcess, long>();
+        private ConcurrentDictionary<string, long> _minCountryJobs = new ConcurrentDictionary<string, long>();
         private SemaphoreSlim _signal = new SemaphoreSlim(0);
         private List<HarvestedEnvelope> result = new List<HarvestedEnvelope> { };
 
@@ -92,6 +93,9 @@ namespace N2K_BackboneBackEnd.Models
                 string jobId = jResponse.GetValue("id").ToString();
 
                 _fmeJobs.TryAdd(envelope, long.Parse(jobId));
+                //add the jobId if it is the first of the country
+                if (!_minCountryJobs.ContainsKey(envelope.CountryCode)) 
+                    _minCountryJobs.TryAdd(envelope.CountryCode, envelope.VersionId);
                 Console.WriteLine(string.Format(@"JobId {0} launched", jobId));
 
             }
@@ -154,15 +158,26 @@ namespace N2K_BackboneBackEnd.Models
 
         protected virtual void OnFMEJobIdCompleted(EnvelopesToProcess envelope)
         {
+            bool firstInCountry = false;
+            long minVersionCountry = 0;
+            if (_minCountryJobs.ContainsKey(envelope.CountryCode))
+            {
+                minVersionCountry = _minCountryJobs[envelope.CountryCode];
+                firstInCountry = envelope.VersionId == minVersionCountry;
+            }
 
             FMEJobEventArgs evt = new FMEJobEventArgs {
                 AllFinished = _fmeJobs.Count == 0,
-                Envelope = envelope                
+                Envelope = envelope,
+                FirstInCountry = firstInCountry
             };
+            //remove country from _minCountryJob dictionary if the job is the latest of the country
+            if (_fmeJobs.Where(j=> j.Key.CountryCode== envelope.CountryCode).ToList().Count == 0)
+            {
+                long jobId = 0; 
+                _minCountryJobs.TryRemove(envelope.CountryCode,out jobId);
+            }
             FMEJobCompleted?.Invoke(this, evt);
         }
-
- 
-
     }
 }
