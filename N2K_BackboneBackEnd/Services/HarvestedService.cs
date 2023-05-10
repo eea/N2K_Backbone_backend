@@ -582,7 +582,7 @@ namespace N2K_BackboneBackEnd.Services
 
             //Get the changes status from ProcessedEnvelopes
             List<ProcessedEnvelopes> processedEnvelopes = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"exec dbo.spGetProcessedEnvelopesByCountryAndVersion  @country, @version",
-                            countryParam1, countryParam2).ToListAsync();
+                            countryParam1, countryParam2).AsNoTracking().ToListAsync();
             ProcessedEnvelopes? processedEnvelope = processedEnvelopes.FirstOrDefault();
 
             List<RelatedSites>? sitesRelation = await _dataContext.Set<RelatedSites>().FromSqlRaw($"exec dbo.spGetSitesToDetectChanges  @last_envelop, @country",
