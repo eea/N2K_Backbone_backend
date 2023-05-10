@@ -1134,7 +1134,8 @@ namespace N2K_BackboneBackEnd.Services
         private void FMEJobCompleted( object sender, FMEJobEventArgs env, IMemoryCache cache)
         {
             try
-            {                
+            {  
+                //create a new DBContext to avoid concurrency errors
                 string _connectionString= ((BackgroundSpatialHarvestJobs) sender).GetDataContext()
                     .Database.GetConnectionString();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_connectionString).Options;
