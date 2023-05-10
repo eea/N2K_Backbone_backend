@@ -1134,14 +1134,15 @@ namespace N2K_BackboneBackEnd.Services
         private void FMEJobCompleted( object sender, FMEJobEventArgs env, IMemoryCache cache)
         {
             try
-            {
-                _dataContext = ((BackgroundSpatialHarvestJobs) sender).GetDataContext();
-                string _connectionString= _dataContext.Database.GetConnectionString();
+            {                
+                string _connectionString= ((BackgroundSpatialHarvestJobs) sender).GetDataContext()
+                    .Database.GetConnectionString();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_connectionString).Options;
                 using (var ctx = new N2KBackboneContext(options))
                 {
                     ProcessedEnvelopes _procEnv = ctx.Set<ProcessedEnvelopes>().Where(pe => pe.Country == env.Envelope.CountryCode && pe.Version == env.Envelope.VersionId).FirstOrDefault();
-                    if (_procEnv.Status == HarvestingStatus.DataLoaded) return;
+                    //avoid processing the event twice
+                    if (_procEnv.Status == HarvestingStatus.DataLoaded || _procEnv.Status == HarvestingStatus.SpatialDataLoaded ) return;
 
                     Console.WriteLine(String.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId));
                     if (_procEnv.Status == HarvestingStatus.TabularDataLoaded)
