@@ -7,6 +7,7 @@ using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -21,13 +22,19 @@ namespace N2K_BackboneBackEnd.Controllers
 
         private readonly IHarvestedService _harvestedService;
         private readonly IMapper _mapper;
+        private IMemoryCache _cache;
+        //private readonly BackgroundWorkerQueue _backgroundWorkerQueue;
+        private readonly IFireForgetRepositoryHandler _fireForgetRepositoryHandler;
 
-        public HarvestingController(IHarvestedService harvestedService, IMapper mapper)
+      
+        public HarvestingController(IHarvestedService harvestedService, IMapper mapper, IMemoryCache cache, IFireForgetRepositoryHandler fireForgetRepositoryHandler)
         {
             _harvestedService = harvestedService;
             _mapper = mapper;
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+            _fireForgetRepositoryHandler = fireForgetRepositoryHandler;
+            //_backgroundWorkerQueue = backgroundWorkerQueue;
         }
-
 
         /*
         // GET: api/<HarvestingController>
@@ -264,21 +271,29 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         /// <summary>
-        /// Execute an unattended load of the data from versioning
+        /// Executes the process of the harvesting for a selected envelop (Country and Version)
         /// </summary>
         /// <returns></returns>
-        [Route("FullHarvest")]
+        // POST api/<HarvestingController>
+        [Route("HarvestSpatialData")]
         [HttpPost]
-        public async Task<ActionResult<List<HarvestedEnvelope>>> FullHarvest()
+        public async Task<ActionResult<int>> HarvestSpatialData([FromBody] EnvelopesToProcess[] envelopes)
         {
-            var response = new ServiceResponse<List<HarvestedEnvelope>>();
+            var response = new ServiceResponse<int>();
             try
             {
-                var siteChanges = await _harvestedService.FullHarvest();
+                await Task.Delay(1);
+                // Delegate the blog auditing to another task on the threadpool
+                _fireForgetRepositoryHandler.Execute(async repository =>
+                {
+                    // Will receive its own scoped repository on the executing task
+                    await repository.HarvestSpatialData(envelopes, _cache);
+                });
+
                 response.Success = true;
                 response.Message = "";
-                response.Data = siteChanges;
-                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                response.Data = 1;
+                response.Count = 1;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -286,12 +301,46 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<HarvestedEnvelope>();
+                response.Data = 0;
                 return Ok(response);
             }
         }
 
+        /// <summary>
+        /// Execute an unattended load of the data from versioning
+        /// </summary>
+        /// <returns></returns>
+        [Route("FullHarvest")]
+        [HttpPost]
+        public async Task<ActionResult<int>> FullHarvest()
+        {
+            var response = new ServiceResponse<int>();
+            try
+            {
+                await Task.Delay(1);
+                // Delegate the blog auditing to another task on the threadpool
+                _fireForgetRepositoryHandler.Execute(async repository =>
+                {
+                    // Will receive its own scoped repository on the executing task
+                    await repository.FullHarvest(_cache);
+                });
+                response.Success = true;
+                response.Message = "";
+                response.Data = 1;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = 0;
+                return Ok(response);
+            }
+        }
 
+        
         /// <summary>
         /// Changes te status of a envelope
         /// </summary>
@@ -303,7 +352,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<ProcessedEnvelopes>();
             try
             {
-                var siteChanges = await _harvestedService.ChangeStatus(country, version, toStatus);
+                var siteChanges = await _harvestedService.ChangeStatus(country, version, toStatus, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -324,20 +373,20 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         /// <summary>
-        /// Executes the process of the validation for a selected envelop (Country and Version).
+        /// Executes the process of the ChangeDetection for a selected envelop (Country and Version).
         /// It must be hervested yet to perform this action
         /// </summary>
         /// <param name="envelopes"></param>
         /// <returns></returns>
         // POST api/<HarvestingController>
-        [Route("Harvest/Validate")]
+        [Route("Harvest/ChangeDetection")]
         [HttpPost]
-        public async  Task<ActionResult<List<HarvestedEnvelope>>> Validate([FromBody] EnvelopesToProcess[] envelopes)
+        public async  Task<ActionResult<List<HarvestedEnvelope>>> ChangeDetection([FromBody] EnvelopesToProcess[] envelopes)
         {
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
-                var processedEnvelope = await _harvestedService.Validate(envelopes);
+                var processedEnvelope = await _harvestedService.ChangeDetection(envelopes);
                 response.Success = true;
                 response.Message = "";
                 response.Data = processedEnvelope;
@@ -355,20 +404,20 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         /// <summary>
-        /// Executes the process of the validation for a selected site (Sitecode and Version).
+        /// Executes the process of the ChangeDetection for a selected site (Sitecode and Version).
         /// It must be hervested yet to perform this action
         /// </summary>
         /// <param name="envelopes"></param>
         /// <returns></returns>
         // POST api/<HarvestingController>
-        [Route("Harvest/ValidateSingleSite")]
+        [Route("Harvest/ChangeDetectionSingleSite")]
         [HttpPost]
-        public async Task<ActionResult<List<HarvestedEnvelope>>> ValidateSingleSite([FromBody] string siteCode, int versionId)
+        public async Task<ActionResult<List<HarvestedEnvelope>>> ChangeDetectionSingleSite([FromBody] string siteCode, int versionId)
         {
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
-                var processedEnvelope = await _harvestedService.ValidateSingleSite(siteCode, versionId);
+                var processedEnvelope = await _harvestedService.ChangeDetectionSingleSite(siteCode, versionId);
                 response.Success = true;
                 response.Message = "";
                 response.Data = processedEnvelope;

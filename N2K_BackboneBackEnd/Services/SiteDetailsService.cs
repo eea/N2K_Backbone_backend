@@ -455,7 +455,13 @@ namespace N2K_BackboneBackEnd.Services
         {
             var username = GlobalData.Username;
             Sites site = null;
-            SiteChangeDb change = null;
+            SiteChangeDb change = null, reject = null;
+            SiteActivities activityCheck = null;
+            SiteActivities activity = null;
+            SiteChangeStatus status = SiteChangeStatus.Accepted; //Added generic value since null is not an option
+            Level level = Level.Critical; //Added generic value since null is not an option
+            List<SiteCodeView> cachedlist = null;
+
             SqlParameter param_sitecode = null;
             SqlParameter param_version = null;
             SqlParameter param_name = null;
@@ -467,57 +473,85 @@ namespace N2K_BackboneBackEnd.Services
             SqlParameter param_justif_required = null;
             SqlParameter param_justif_provided = null;
 
-            SiteChangeStatus? siteStatus;
-
             try
             {
-                //Verify the site & version exists
-                site = _dataContext.Set<Sites>().Single(x => x.SiteCode == changeEdition.SiteCode && x.Version == changeEdition.Version);
+                //Verify the site & current version exists
+                site = _dataContext.Set<Sites>().Single(x => x.SiteCode == changeEdition.SiteCode && x.Current == true);
 
-                if (site != null)
+
+                if (site != null && (site.CurrentStatus == SiteChangeStatus.Accepted || site.CurrentStatus == SiteChangeStatus.Rejected))
                 {
-                    //Store the status of the site to change
-                    siteStatus = (SiteChangeStatus?)site.CurrentStatus;
 
-                    List<SiteChangeDb> changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version).ToListAsync();
-                    //Store the level of the changes and the status of them
-                    Level level = (Level)changes.Max(a => a.Level);
-                    SiteChangeStatus status = (SiteChangeStatus)changes.FirstOrDefault().Status;
 
+                    activity = new SiteActivities
+                    {
+                        SiteCode = changeEdition.SiteCode,
+                        Version = changeEdition.Version,
+                        Author = GlobalData.Username,
+                        Date = DateTime.Now,
+                        Action = "User edition",
+                        Deleted = false
+                    };
+
+                    activity.Version = site.Version;
+
+                    //Loading the neccesary list for the changes of sent version
+                    List<SiteChangeDb> deletionChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version).ToListAsync();
+                    if (deletionChanges.Count > 0)
+                    {
+                        status = (SiteChangeStatus)deletionChanges.FirstOrDefault().Status;
+                        level = (Level)deletionChanges.Max(a => a.Level);
+                    }
+
+                    List<SiteChangeDb> changes = deletionChanges;
+                    if (site.Version != changeEdition.Version)
+                    {
+                        changes = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == site.Version).ToListAsync();
+                    }
+                    //Was it edited after rejection?
+                    activityCheck = await _dataContext.Set<SiteActivities>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Action == "User edition after rejection of version " + changeEdition.Version && e.Deleted == false).FirstOrDefaultAsync();
+
+                    //Is the sender site Rejected?
+                    reject = deletionChanges.Where(e => e.Status == SiteChangeStatus.Rejected).FirstOrDefault();
+                    if (reject != null)
+                    {
+                        activity.Action = "User edition after rejection of version " + changeEdition.Version;
+                    }
+
+                    //Load the params for the stored procedures
                     param_sitecode = new SqlParameter("@sitecode", changeEdition.SiteCode);
-                    param_version = new SqlParameter("@version", changeEdition.Version);
+                    param_version = new SqlParameter("@version", site.Version);
                     param_name = new SqlParameter("@name", changeEdition.SiteName is null ? DBNull.Value : changeEdition.SiteName);
                     param_sitetype = new SqlParameter("@sitetype", changeEdition.SiteType is null ? DBNull.Value : changeEdition.SiteType);
-                    param_area = new SqlParameter("@area", changeEdition.Area);
-                    param_length = new SqlParameter("@length", changeEdition.Length);
-                    param_centrex = new SqlParameter("@centrex", changeEdition.CentreX);
-                    param_centrey = new SqlParameter("@centrey", changeEdition.CentreY);
+                    param_area = new SqlParameter("@area", changeEdition.Area is null ? DBNull.Value : changeEdition.Area);
+                    param_length = new SqlParameter("@length", changeEdition.Length is null ? DBNull.Value : changeEdition.Length);
+                    param_centrex = new SqlParameter("@centrex", changeEdition.CentreX is null ? DBNull.Value : changeEdition.CentreX);
+                    param_centrey = new SqlParameter("@centrey", changeEdition.CentreY is null ? DBNull.Value : changeEdition.CentreY);
                     param_justif_required = new SqlParameter("@justif_required", changeEdition.JustificationRequired == null ? false : changeEdition.JustificationRequired);
                     param_justif_provided = new SqlParameter("@justif_provided", changeEdition.JustificationProvided == null ? false : changeEdition.JustificationProvided);
 
+                    //Was the site previously edited?
                     change = changes.Where(e => e.ChangeType == "User edition").FirstOrDefault();
-                    
-                    if (change == null)
+
+                    if (change == null || (reject != null && activityCheck == null))
                     {
                         await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spCloneSites " +
                             "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
                             , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
 
-                        //Get the new version form the database
                         site = await _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefaultAsync();
                     }
                     else
                     {
-                        //Is the same version than the previous
                         await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spUpdateSites " +
                             "@sitecode, @version, @name, @sitetype, @area, @length, @centrex, @centrey, @justif_required , @justif_provided "
                             , param_sitecode, param_version, param_name, param_sitetype, param_area, param_length, param_centrex, param_centrey, param_justif_required, param_justif_provided);
                     }
 
                     //To prevent the faillure of the spCloneSites procedure
+                    //site = await _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefaultAsync();
                     if (site != null)
                     {
-                        //Add the bioregions to the new site o the edited site
                         if (changeEdition.BioRegion != null && changeEdition.BioRegion != "string" && changeEdition.BioRegion != "")
                         {
                             string[] bioregions = changeEdition.BioRegion.Split(",");
@@ -535,56 +569,37 @@ namespace N2K_BackboneBackEnd.Services
                             await _dataContext.SaveChangesAsync();
                         }
 
-                        string listName = "";
-                        List<SiteCodeView> cachedlist = new List<SiteCodeView>();
-                        //If the site was in rejected status take out from the cache list
-                        if (status == SiteChangeStatus.Rejected)
+                        _dataContext.Set<SiteActivities>().Add(activity);
+                        await _dataContext.SaveChangesAsync();
+
+                        //For a edition the site only has two status: Accepted and Rejected
+                        //Just in case of the site was previously in Accepted status, update the  element
+                        //In case of Rejected status, the site must remain in the list of rejecteds
+                        if (status == SiteChangeStatus.Accepted)
                         {
-                            listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes", site.CountryCode, status.ToString(), level.ToString());
+                            String listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", site.CountryCode, SiteChangeStatus.Accepted.ToString(), level.ToString());
+                            cachedlist = new List<SiteCodeView>();
                             if (cache.TryGetValue(listName, out cachedlist))
                             {
                                 SiteCodeView element = cachedlist.Where(x => x.SiteCode == site.SiteCode).FirstOrDefault();
                                 if (element != null)
                                 {
-                                    cachedlist.Remove(element);
+                                    //Exists, so update it
+                                    element.Name = site.Name;
+                                    element.Version = site.Version;
                                 }
                             }
-
-                        }
-                        
-                        listName = string.Format("{0}_{1}_{2}_{3}_{4}", GlobalData.Username, "list_codes", site.CountryCode, SiteChangeStatus.Accepted.ToString(), level.ToString());
-                        cachedlist = new List<SiteCodeView>();
-                        //It doesn't matter if is new or is an uddate, get the cached list of Accepted
-                        if (cache.TryGetValue(listName, out cachedlist))
-                        {
-                            SiteCodeView element = cachedlist.Where(x => x.SiteCode == site.SiteCode).FirstOrDefault();
-                            if (element != null)
-                            {
-                                //Exists, so update it
-                                element.Name = site.Name;
-                                element.Version = site.Version;
-                            }
-                            else
-                            {
-                                //Doesn't exist, so append it
-                                element = new SiteCodeView();
-                                element.Name = site.Name;
-                                element.Version = site.Version;
-                                element.SiteCode = site.SiteCode;
-
-                                cachedlist.Add(element);
-                            }
-                        }
-                        else { 
-                            //If the Accepted list is not create? Is it an option?
-                        
                         }
                     }
                 }
+                else
+                {
+                    throw new Exception("The status for this Site (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ") is wrong");
+                }
             }
-            catch(System.InvalidOperationException iex)
+            catch (System.InvalidOperationException iex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, "The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")" , "SaveEdition", "");
+                SystemLog.write(SystemLog.errorLevel.Error,string.Format("The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ") {0}",iex.Message)    , "SaveEdition", "");
                 throw new Exception("The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")");
             }
             catch (Exception ex)
@@ -596,7 +611,7 @@ namespace N2K_BackboneBackEnd.Services
             return "OK";
         }
 
-        public async Task<ChangeEditionViewModel?> GetReferenceEditInfo(string siteCode)
+        public async Task<ChangeEditionViewModelOriginal?> GetReferenceEditInfo(string siteCode)
         {
             SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
             List<ChangeEditionDb> list = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.[spGetReferenceEditInfo]  @sitecode",
@@ -608,13 +623,13 @@ namespace N2K_BackboneBackEnd.Services
             }
             else
             {
-                return new ChangeEditionViewModel
+                ChangeEditionViewModelOriginal result = new ChangeEditionViewModelOriginal()
                 {
-                    Area = changeEdition.Area,
+                    Area = changeEdition.Area is null ? null : changeEdition.Area,
                     BioRegion = !string.IsNullOrEmpty(changeEdition.BioRegion) ? changeEdition.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>(),
-                    CentreX = changeEdition.CentreX,
-                    CentreY = changeEdition.CentreY,
-                    Length = changeEdition.Length,
+                    CentreX = changeEdition.CentreX is null ? null : changeEdition.CentreX,
+                    CentreY = changeEdition.CentreY is null ? null : changeEdition.CentreY,
+                    Length = changeEdition.Length is null ? null : changeEdition.Length,
                     SiteCode = changeEdition.SiteCode,
                     SiteName = changeEdition.SiteName,
                     SiteType = changeEdition.SiteType,
@@ -622,10 +637,29 @@ namespace N2K_BackboneBackEnd.Services
                     JustificationRequired = changeEdition.JustificationRequired,
                     JustificationProvided = changeEdition.JustificationProvided
                 };
+                SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == siteCode && e.Version == changeEdition.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                if (change != null)
+                {
+                    SqlParameter param2 = new SqlParameter("@version", change.VersionReferenceId);
+                    List<ChangeEditionDb> listOriginal = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.[spGetOriginalEditInfo]  @sitecode, @version",
+                                        param1, param2).ToListAsync();
+                    ChangeEditionDb changeEditionOriginal = listOriginal.FirstOrDefault();
+                    if (changeEditionOriginal != null)
+                    {
+                        result.OriginalArea = changeEdition.Area == changeEditionOriginal.Area ? null : changeEditionOriginal.Area;
+                        if (changeEdition.BioRegion != changeEditionOriginal.BioRegion)
+                            result.OriginalBioRegion = !string.IsNullOrEmpty(changeEditionOriginal.BioRegion) ? changeEditionOriginal.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>();
+                        result.OriginalCentreX = changeEdition.CentreX == changeEditionOriginal.CentreX ? null : changeEditionOriginal.CentreX;
+                        result.OriginalCentreY = changeEdition.CentreY == changeEditionOriginal.CentreY ? null : changeEditionOriginal.CentreY;
+                        result.OriginalLength = changeEdition.Length == changeEditionOriginal.Length ? null : changeEditionOriginal.Length;
+                        result.OriginalSiteName = changeEdition.SiteName == changeEditionOriginal.SiteName ? null : changeEditionOriginal.SiteName;
+                        result.OriginalSiteType = changeEdition.SiteType == changeEditionOriginal.SiteType ? null : changeEditionOriginal.SiteType;
+                    }
+                }
+                return result;
             }
         }
 
         #endregion
-
     }
 }

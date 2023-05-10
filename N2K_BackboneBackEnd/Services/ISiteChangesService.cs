@@ -9,15 +9,13 @@ namespace N2K_BackboneBackEnd.Services
 {
     public interface ISiteChangesService
     {
-        Task<List<SiteChangeDb>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache,  int page = 1, int pageLimit = 0);
+        Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false);
 
         Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion);
 
-        Task<List<SiteCodeView>> GetReferenceSiteCodes(string country);
-
         Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country);
 
-        Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false);
+        Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false);
 
         Task<int> GetPendingChangesByCountry(string? country, IMemoryCache cache);
 
@@ -28,7 +26,7 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache);
 
         Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache);
-        
+
         Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification);
 
         Task<List<ModifiedSiteCode>> JustificationProvided(JustificationModel[] justification);

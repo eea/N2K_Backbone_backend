@@ -198,7 +198,7 @@ namespace N2K_BackboneBackEnd.Services
                 if ((bool?)changedItem.Priority.Source != (bool?)changedItem.Priority.Target)
                 {
                     bool prioSource = ((bool?)changedItem.Priority.Source).HasValue ? ((bool?)changedItem.Priority.Source).Value : false;
-                    bool prioTarget = ((bool?)changedItem.Priority.Target).HasValue ? ((bool?)changedItem.Priority.Target).Value : false;
+                    bool prioTarget = ((bool?)changedItem.Priority.Target).HasValue ? ((bool?) changedItem.Priority.Target).Value : false;
 
                     if (prioSource && !prioTarget)
                     {
@@ -383,6 +383,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             IAttachedFileHandler? fileHandler = null;
             var username = GlobalData.Username;
+#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
             if (_appSettings.Value.AttachedFiles.AzureBlob)
             {
                 fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
@@ -391,6 +392,7 @@ namespace N2K_BackboneBackEnd.Services
             {
                 fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
             }
+#pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
 
             string repositoryPath = Path.Combine(Directory.GetCurrentDirectory(), _appSettings.Value.AttachedFiles.JustificationFolder);
             string tempZipFile = repositoryPath + "//" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + GlobalData.Username.Split("@")[0] + "_Union List.zip";
@@ -653,8 +655,7 @@ namespace N2K_BackboneBackEnd.Services
             SqlParameter param1 = new SqlParameter("@name", _appSettings.Value.current_ul_name);
             SqlParameter param2 = new SqlParameter("@creator", _appSettings.Value.current_ul_createdby);
             SqlParameter param3 = new SqlParameter("@final", false);
-            SqlParameter param4 = new SqlParameter("@release", string.Empty);
-            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final, @release ", param1, param2, param3, param4);
+            await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final ", param1, param2, param3);
 
             //Get Current
             UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();

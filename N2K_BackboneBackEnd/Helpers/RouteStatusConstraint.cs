@@ -6,7 +6,9 @@ namespace N2K_BackboneBackEnd.Helpers
     public class RouteStatusConstraint : IRouteConstraint
     {
 
+#pragma warning disable CS8767 // La nulabilidad de los tipos de referencia del tipo de parámetro no coincide con el miembro implementado de forma implícita (posiblemente debido a los atributos de nulabilidad).
         public bool Match(HttpContext httpContext,
+#pragma warning restore CS8767 // La nulabilidad de los tipos de referencia del tipo de parámetro no coincide con el miembro implementado de forma implícita (posiblemente debido a los atributos de nulabilidad).
             IRouter route,
             string routeKey,
             RouteValueDictionary values,

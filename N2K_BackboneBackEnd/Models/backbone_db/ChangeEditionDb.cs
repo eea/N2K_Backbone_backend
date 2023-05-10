@@ -12,10 +12,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? SiteType { get; set; }
         //public List<int> BioRegion { get; set; } = new List<int>();
         //public string? spBiogeographicRegion { get; set; }
-        public double Area { get; set; } = 0;
-        public double Length { get; set; } = 0;
-        public double CentreX { get; set; } = 0;
-        public double CentreY { get; set; } = 0;
+        public decimal? Area { get; set; }
+        public decimal? Length { get; set; }
+        public decimal? CentreX { get; set; }
+        public decimal? CentreY { get; set; }
 
         public string? BioRegion { get; set; }
 

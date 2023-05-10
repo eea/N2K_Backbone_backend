@@ -3,7 +3,7 @@
     public class SpecieBase
     {
         public long id { get; set; }
-        public string SiteCode { get; set; }
+        public string SiteCode { get; set; } = "";
         public int Version { get; set; }
         public string? SpecieCode { get; set; }
         public int? PopulationMin { get; set; }
@@ -26,6 +26,8 @@
         public Boolean? NonPersistence { get; set; }
         public string? DataQuality { get; set; }
         public string? SpecieType { get; set; }
+
+        public bool? Other { get; set; }
 
         public Species getSpecies() { 
             Species specie = new Species();

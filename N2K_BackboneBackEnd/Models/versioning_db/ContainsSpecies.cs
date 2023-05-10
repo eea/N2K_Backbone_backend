@@ -8,16 +8,16 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
     public class ContainsSpecies : VersioningBase, IEntityModel
     {
         public int RID { get; set; }
-        public string COUNTRYCODE { get; set; }
+        public string COUNTRYCODE { get; set; } = "";
 
         [Column(TypeName = "decimal(18, 0)")]
         public decimal VERSIONID { get; set; }
 
         [Column(TypeName = "decimal(18, 0)")]
         public decimal COUNTRYVERSIONID { get; set; }
-        public string SITECODE { get; set; }
+        public string SITECODE { get; set; } = "";
         public string? SPECIESCODE { get; set; }
-        public string? SPECIESNAME { get; set; } 
+        public string SPECIESNAME { get; set; } = "";
         public string? SPECIESNAMECLEAN { get; set; }
         public string? POPULATION { get; set; }
         public string? CONSERVATION { get; set; }

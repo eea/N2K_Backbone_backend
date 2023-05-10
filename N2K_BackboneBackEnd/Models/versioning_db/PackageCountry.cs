@@ -7,7 +7,7 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
     [Keyless]
     public class PackageCountry : VersioningBase, IEntityModel
     {
-        public string CountryCode { get; set; }
+        public string CountryCode { get; set; } = "";
 
         [Column(TypeName = "decimal(18, 0)")]
         public float CountryVersionID { get; set; }
@@ -30,7 +30,7 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
     [Keyless]
     public class PackageCountrySpatial : VersioningBase, IEntityModel
     {
-        public string CountryCode { get; set; }
+        public string CountryCode { get; set; } = "";
 
         [Column(TypeName = "decimal(18, 0)")]
         public float CountryVersionID { get; set; }
@@ -42,7 +42,7 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         public decimal VERSIONID { get; set; }
         public bool Versioned { get; set; }
         public bool Discarded { get; set; }
-        public string SpatialRef { get; set; }
+        public string? SpatialRef { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {

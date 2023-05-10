@@ -2,10 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
+using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 
@@ -25,6 +24,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         public HarvestSiteCode(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext) : base(dataContext, versioningContext)
         {
         }
+
+        public List<HabitatPriority> habitatPriority = new List<HabitatPriority>();
+        public List<SpeciePriority> speciesPriority = new List<SpeciePriority>();
 
         /// <summary>
         /// This mehtod calls for teh process to harvest the complete data for all sites 
@@ -52,11 +54,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="referenceVersionID"></param>
         /// <returns></returns>
         [Obsolete("Method Harvest is deprecated, and has no code.")]
-        public async Task<int> ValidateChanges(string countryCode, int versionId, int referenceVersionID)
+        public async Task<int> ChangeDetectionChanges(string countryCode, int versionId, int referenceVersionID)
         {
-            Console.WriteLine("==>Start Site Code validate...");
+            Console.WriteLine("==>Start Site Code ChangeDetection...");
             await Task.Delay(10000);
-            Console.WriteLine("==>ENd Site Code validate...");
+            Console.WriteLine("==>ENd Site Code ChangeDetection...");
             return 1;
         }
 
@@ -67,40 +69,38 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The definition ogf the versioning Site</param>
         /// <param name="pEnvelope">The envelope to process</param>
         /// <returns>Returns a BackBone Site object</returns>
-        public async Task<Sites>? HarvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
+        public async Task<int>? HarvestSite(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, IList<DataQualityTypes> dataQualityTypes, IList<OwnerShipTypes> ownerShipTypes, List<Sites> bbSites)
         {
-            Sites? bbSite = null;
             try
             {
-                bbSite = await harvestSiteCode(pVSite, pEnvelope);
-                _dataContext.Set<Sites>().Add(bbSite);
-                //To await the site be stored in the table before use it
-                //Some traces show errors about conflicted with the FOREIGN KEY constraint and the table dbo.Sites.
-                await _dataContext.SaveChangesAsync();
 
+                //Get the data for all related tables
 
-                //Get the data for all related tables                                
-                _dataContext.Set<Respondents>().AddRange(await harvestRespondents(pVSite, bbSite.Version));
-                _dataContext.Set<BioRegions>().AddRange(await harvestBioregions(pVSite, bbSite.Version));
-                _dataContext.Set<NutsBySite>().AddRange(await harvestNutsBySite(pVSite, bbSite.Version));
-                _dataContext.Set<Models.backbone_db.IsImpactedBy>().AddRange(await harvestIsImpactedBy(pVSite, bbSite.Version));
-                _dataContext.Set<Models.backbone_db.HasNationalProtection>().AddRange(await harvestHasNationalProtection(pVSite, bbSite.Version));
-                _dataContext.Set<Models.backbone_db.DetailedProtectionStatus>().AddRange(await harvestDetailedProtectionStatus(pVSite, bbSite.Version));
-                _dataContext.Set<SiteLargeDescriptions>().AddRange(await harvestSiteLargeDescriptions(pVSite, bbSite.Version));
-                _dataContext.Set<SiteOwnerType>().AddRange(await harvestSiteOwnerType(pVSite, bbSite.Version));
-                //TimeLog.setTimeStamp("Site " + pVSite.SITECODE + " - " + pVSite.VERSIONID.ToString(), "Processed");
+                await harvestRespondents(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
+                await harvestBioregions(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
+                await harvestNutsBySite(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
+                await harvestIsImpactedBy(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
+                await harvestHasNationalProtection(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
+                await harvestDetailedProtectionStatus(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
+                await harvestSiteLargeDescriptions(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
+                await harvestSiteOwnerType(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, ownerShipTypes, bbSites);
 
-                return bbSite;
-
+                //BioRegions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await BioRegionsTask);
+                //Respondents.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await RespondentsTask);
+                /*
+                NutsBySite.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await NutsBySitesTask);
+                Models.backbone_db.IsImpactedBy.SaveBulkRecord(this._dataContext.Database.GetConnectionString(),await IsImpactedByTask);
+                Models.backbone_db.HasNationalProtection.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await HasNationalProtectionTask);
+                Models.backbone_db.DetailedProtectionStatus.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await DetailedProtectionStatusTask);
+                SiteLargeDescriptions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(),await SiteLargeDescriptionsTask);
+                SiteOwnerType.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await SiteOwnerTypeTask);
+                */
+                return 1;
             }
             catch (Exception ex)
             {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
-            }
-            finally
-            {
-                bbSite = null;
+                return 0;
             }
 
         }
@@ -113,75 +113,69 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The definition ogf the versioning Site</param>
         /// <param name="pEnvelope">The envelope to process</param>
         /// <returns>Returns a BackBone Site object</returns>
-        private async Task<Sites>? harvestSiteCode(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
+        public Sites harvestSiteCode(NaturaSite pVSite, EnvelopesToProcess pEnvelope, int versionNext)
         {
             //Tomamos el valor más alto que tiene en el campo Version para ese SiteCode. Por defecto es -1 para cuando no existe 
             //por que le vamos a sumar un 1 lo cual dejaría en 0
             Sites bbSite = new Sites();
-            int versionNext = -1;
 
             #region SitePriority
-            //Get the lists of priority habitats and species
-            List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-            List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+            //SqlParameter param3 = new SqlParameter("@site", pVSite.SITECODE);
+            //SqlParameter param4 = new SqlParameter("@versionId", pVSite.VERSIONID);
 
-            SqlParameter param3 = new SqlParameter("@site", pVSite.SITECODE);
-            SqlParameter param4 = new SqlParameter("@versionId", pVSite.VERSIONID);
+            //List<HabitatToHarvest> habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+            //                        param3, param4).ToListAsync();
+            //List<SpeciesToHarvest> speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+            //                param3, param4).ToListAsync();
 
-            List<HabitatToHarvest> habitatVersioning = await _dataContext.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
-                                    param3, param4).ToListAsync();
-            List<SpeciesToHarvest> speciesVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
-                            param3, param4).ToListAsync();
+            ////These booleans declare whether or not each site is a priority
+            //Boolean isHarvestingSitePriority = false;
 
-            //These booleans declare whether or not each site is a priority
-            Boolean isHarvestingSitePriority = false;
+            //foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
+            //{
+            //    HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
+            //    if (priorityCount != null)
+            //    {
+            //        if (priorityCount.Priority == 2)
+            //        {
+            //            if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true)
+            //            {
+            //                isHarvestingSitePriority = true;
+            //                break;
+            //            }
+            //        }
+            //        else
+            //        {
+            //            if (harvestingHabitat.Representativity.ToUpper() != "D")
+            //            {
+            //                isHarvestingSitePriority = true;
+            //                break;
+            //            }
+            //        }
+            //    }
+            //}
 
-            foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
-            {
-                HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
-                if (priorityCount != null)
-                {
-                    if (priorityCount.Priority == 2)
-                    {
-                        if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true)
-                        {
-                            isHarvestingSitePriority = true;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        if (harvestingHabitat.Representativity.ToUpper() != "D")
-                        {
-                            isHarvestingSitePriority = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!isHarvestingSitePriority)
-            {
-                foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
-                {
-                    SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
-                    if (priorityCount != null)
-                    {
-                        if (harvestingSpecies.Population.ToUpper() != "D")
-                        {
-                            isHarvestingSitePriority = true;
-                            break;
-                        }
-                    }
-                }
-            }
+            //if (!isHarvestingSitePriority)
+            //{
+            //    foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
+            //    {
+            //        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+            //        if (priorityCount != null)
+            //        {
+            //            if (harvestingSpecies.Population.ToUpper() != "D")
+            //            {
+            //                isHarvestingSitePriority = true;
+            //                break;
+            //            }
+            //        }
+            //    }
+            //}
             #endregion
 
             try
             {
-                versionNext = await _dataContext.Set<Sites>().Where(s => s.SiteCode == pVSite.SITECODE).OrderBy(s => s.Version).Select(s => s.Version).LastOrDefaultAsync();
                 bbSite.SiteCode = pVSite.SITECODE;
-                bbSite.Version = versionNext + 1;
+                bbSite.Version = versionNext;
                 bbSite.Current = false;
                 bbSite.Name = pVSite.SITENAME;
                 if (pVSite.DATE_COMPILATION.HasValue)
@@ -196,13 +190,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.SiteType = pVSite.SITETYPE;
                 bbSite.AltitudeMin = pVSite.ALTITUDE_MIN;
                 bbSite.AltitudeMax = pVSite.ALTITUDE_MAX;
-                bbSite.Area = (double?)pVSite.AREAHA;
+                bbSite.Area = pVSite.AREAHA;
                 bbSite.CountryCode = pEnvelope.CountryCode;
-                bbSite.Length = (double?)pVSite.LENGTHKM;
+                bbSite.Length = pVSite.LENGTHKM;
                 bbSite.N2KVersioningRef = Int32.Parse(pVSite.VERSIONID.ToString());
                 bbSite.N2KVersioningVersion = pEnvelope.VersionId;
                 bbSite.DateConfSCI = pVSite.DATE_CONF_SCI;
-                bbSite.Priority = isHarvestingSitePriority;
+                bbSite.Priority = null;
                 bbSite.DatePropSCI = pVSite.DATE_PROP_SCI;
                 bbSite.DateSpa = pVSite.DATE_SPA;
                 bbSite.DateSac = pVSite.DATE_SAC;
@@ -225,46 +219,79 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The object Versioning Site</param>
         /// <param name="pVersion">The version in BackBone</param>
         /// <returns>List of bioregions stored</returns>
-        private async Task<List<BioRegions>> harvestBioregions(NaturaSite pVSite, int pVersion)
+        //private async Task<List<BioRegions>> harvestBioregions(NaturaSite pVSite, int pVersion, string backboneDb)
+        private async Task<int> harvestBioregions(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<BelongsToBioRegion> elements = null;
             List<BioRegions> items = new List<BioRegions>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+
+            var start = DateTime.Now;
+
             try
             {
-                //elements = await _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
-                //Chaged to support a multiple primary codes exception (Site, version and Bioregion)
-                elements = await _versioningContext.Set<BelongsToBioRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).GroupBy(s => s.BIOREGID).Select(bb => new BelongsToBioRegion
-                {
-                    COUNTRYCODE = bb.First().COUNTRYCODE,
-                    VERSIONID = bb.First().VERSIONID,
-                    COUNTRYVERSIONID = bb.First().COUNTRYVERSIONID,
-                    SITECODE = bb.First().SITECODE,
-                    BIOREGID = bb.First().BIOREGID,
-                    PERCENTAGE = bb.Sum(c => c.PERCENTAGE),
-                }).ToListAsync();
+                versioningConn = new SqlConnection(versioningDB);
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
-                foreach (BelongsToBioRegion element in elements)
+
+                String queryString = @"select SITECODE as SiteCode,BIOREGID as BGRID, PERCENTAGE as Percentage
+                                     from BelongsToBioRegion
+                                     where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                command = new SqlCommand(queryString, versioningConn);
+                versioningConn.Open();
+
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+                reader = await command.ExecuteReaderAsync();
+
+
+                while (reader.Read())
                 {
-                    //SystemLog.write(SystemLog.errorLevel.Debug, "Site/Version/BioRegion: " + pVSite.SITECODE + "-" + pVSite.VERSIONID.ToString() + "/" + pVersion.ToString() + "/"+ element.BIOREGID.ToString(), "HarvestedService - harvestBioregions", "");
                     BioRegions item = new BioRegions();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.BGRID = element.BIOREGID;
-                    item.Percentage = (double?)element.PERCENTAGE;
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    item.Version = 0;
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                    }
+                    item.BGRID = TypeConverters.CheckNull<int>(reader["BGRID"]);
+                    item.Percentage = null;
+                    if (reader["Percentage"] != DBNull.Value)
+                        item.Percentage = decimal.ToDouble(TypeConverters.CheckNull<decimal>(reader["Percentage"]));
                     items.Add(item);
                 }
-                return items;
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                try
+                {
+                    await BioRegions.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedSiteCode - BioRegions.SaveBulkRecord", "");
+                }
+                //Console.WriteLine(String.Format("End save to list bioregions -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                return 1;
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedSiteCode - HarvestSitesByCountry", "");
+                return 0;
             }
             finally
             {
-
+                items.Clear();
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
             }
-
         }
 
         /// <summary>
@@ -273,39 +300,78 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The object Versioning Site</param>
         /// <param name="pVersion">The version in BackBone</param>
         /// <returns>List of NUTS stored</returns>
-        private async Task<List<NutsBySite>>? harvestNutsBySite(NaturaSite pVSite, int pVersion)
+        //private async Task<List<NutsBySite>>? harvestNutsBySite(NaturaSite pVSite, int pVersion)
+        private async Task<int> harvestNutsBySite(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<NutsRegion> elements = null;
             List<NutsBySite> items = new List<NutsBySite>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            var start = DateTime.Now;
             try
             {
-                //elements = await _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
-                elements = await _versioningContext.Set<NutsRegion>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).GroupBy(s => new { s.SITECODE, s.VERSIONID, s.NUTSCODE })
-                    .Select(gs => new NutsRegion() { SITECODE = gs.Key.SITECODE, VERSIONID = gs.Key.VERSIONID, NUTSCODE = gs.Key.NUTSCODE, COVER = gs.Sum(c => c.COVER) }).ToListAsync();
+                versioningConn = new SqlConnection(versioningDB);
 
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
+                String queryString = @"select SITECODE as SiteCode, NUTSCODE as NutId,
+                            SUM(COVER) as CoverPercentage 
+                            from NutsRegion 
+                            where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID
+                            group by SITECODE, VERSIONID, NUTSCODE";
 
-                foreach (NutsRegion element in elements)
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
                 {
                     NutsBySite item = new NutsBySite();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.NutId = element.NUTSCODE;
-                    item.CoverPercentage = (double?)element.COVER;
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    item.Version = 0;
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                    }
+                    item.NutId = TypeConverters.CheckNull<string>(reader["NutId"]);
+                    item.CoverPercentage = null;
+                    if (reader["CoverPercentage"] != DBNull.Value)
+                        item.CoverPercentage = decimal.ToDouble(TypeConverters.CheckNull<decimal>(reader["CoverPercentage"]));
+
                     items.Add(item);
                 }
-                return items;
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                try
+                {
+                    await NutsBySite.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - NutsBySite.SaveBulkRecord", "");
+                }
+
+                //Console.WriteLine(String.Format("End save to list nuts by site -> {0}", (DateTime.Now - start).TotalSeconds));
+                return 1;
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestNutsBySite", "");
+                return 0;
             }
             finally
             {
-
+                items.Clear();
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
             }
-
         }
 
         /// <summary>
@@ -314,48 +380,91 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The object Versioning Site</param>
         /// <param name="pVersion">The version in BackBone</param>
         /// <returns>List of IsImpactedBy stored</returns>
-        private async Task<List<Models.backbone_db.IsImpactedBy>>? harvestIsImpactedBy(NaturaSite pVSite, int pVersion)
+        private async Task<int> harvestIsImpactedBy(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<Models.versioning_db.IsImpactedBy> elements = null;
             List<Models.backbone_db.IsImpactedBy> items = new List<Models.backbone_db.IsImpactedBy>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+
+            var start =DateTime.Now;
+
             try
             {
-                elements = await _versioningContext.Set<Models.versioning_db.IsImpactedBy>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
-                foreach (Models.versioning_db.IsImpactedBy element in elements)
+
+                versioningConn = new SqlConnection(versioningDB);
+                String queryString = @"SELECT 
+                        SITECODE as SiteCode,ACTIVITYCODE as ActivityCode,IN_OUT  as InOut,INTENSITY as Intensity,
+                        PERCENTAGEAFF as PercentageAff, INFLUENCE as Influence ,STARTDATE as StartDate,ENDDATE as EndDate,POLLUTIONCODE as PollutionCode,OCCURRENCE as Ocurrence,IMPACTTYPE  as ImpactType                         
+                            from IsImpactedBy 
+                            where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+
+                reader = await command.ExecuteReaderAsync();
+
+                //Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                while (reader.Read())
                 {
                     Models.backbone_db.IsImpactedBy item = new Models.backbone_db.IsImpactedBy();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.ActivityCode = element.ACTIVITYCODE;
-                    item.InOut = element.IN_OUT;
-                    item.Intensity = element.INTENSITY;
-                    item.PercentageAff = element.PERCENTAGEAFF;
-                    item.Influence = element.INFLUENCE;
-                    if (element.STARTDATE.HasValue)
+
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    item.Version = 0;
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
-                        item.StartDate = element.STARTDATE;
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
                     }
-                    if (element.ENDDATE.HasValue)
-                    {
-                        item.EndDate = element.ENDDATE;
-                    }
-                    item.PollutionCode = element.POLLUTIONCODE;
-                    item.Ocurrence = element.OCCURRENCE;
-                    item.ImpactType = element.IMPACTTYPE;
-                    item.InOut = element.IN_OUT;
-                    item.InOut = element.IN_OUT;
+                    item.ActivityCode = TypeConverters.CheckNull<string>(reader["ActivityCode"]);
+                    item.InOut = TypeConverters.CheckNull<string>(reader["InOut"]);
+                    item.Intensity = TypeConverters.CheckNull<string>(reader["Intensity"]);
+                    item.PercentageAff = null;
+                    if (reader["PercentageAff"] != DBNull.Value)
+                        item.PercentageAff = decimal.ToDouble(TypeConverters.CheckNull<decimal>(reader["PercentageAff"]));
+                    item.Influence = TypeConverters.CheckNull<string>(reader["Influence"]);
+                    item.StartDate = TypeConverters.CheckNull<DateTime>(reader["StartDate"]);
+                    item.EndDate = TypeConverters.CheckNull<DateTime>(reader["EndDate"]);
+                    item.PollutionCode = TypeConverters.CheckNull<string>(reader["PollutionCode"]);
+                    item.Ocurrence = TypeConverters.CheckNull<string>(reader["Ocurrence"]);
+                    item.ImpactType = TypeConverters.CheckNull<string>(reader["ImpactType"]);
+
                     items.Add(item);
                 }
-                return items;
+
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                try
+                {
+                    await Models.backbone_db.IsImpactedBy.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - IsImpactedBy.SaveBulkRecord", "");
+                }
+                //Console.WriteLine(String.Format("End save to list IsImpactedBy -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                return 1;
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestIsImpactedBy", "");
+                return 0;
             }
             finally
             {
-
+                items.Clear();
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
             }
 
         }
@@ -366,33 +475,76 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The object Versioning Site</param>
         /// <param name="pVersion">The version in BackBone</param>
         /// <returns>List of HasNationalProtection stored</returns>
-        private async Task<List<Models.backbone_db.HasNationalProtection>>? harvestHasNationalProtection(NaturaSite pVSite, int pVersion)
+        private async Task<int> harvestHasNationalProtection(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<Models.versioning_db.HasNationalProtection> elements = null;
+
             List<Models.backbone_db.HasNationalProtection> items = new List<Models.backbone_db.HasNationalProtection>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            var start= DateTime.Now;
             try
             {
-                elements = await _versioningContext.Set<Models.versioning_db.HasNationalProtection>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
-                foreach (Models.versioning_db.HasNationalProtection element in elements)
+                versioningConn = new SqlConnection(versioningDB);
+                String queryString = @"SELECT 
+                        SITECODE as SiteCode, DesignatedCode, Percentage
+                            from HasNationalProtection 
+                            where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID",COUNTRYVERSIONID);
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
                 {
+
                     Models.backbone_db.HasNationalProtection item = new Models.backbone_db.HasNationalProtection();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.DesignatedCode = element.DESIGNATEDCODE;
-                    item.Percentage = (decimal?)element.PERCENTAGE;
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    item.Version = 0;
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                    }
+                    item.DesignatedCode = TypeConverters.CheckNull<string>(reader["DesignatedCode"]);
+                    item.Percentage = TypeConverters.CheckNull<decimal>(reader["Percentage"]);
                     items.Add(item);
                 }
-                return items;
+
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                try
+                {
+                    await Models.backbone_db.HasNationalProtection.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - HasNationalProtection.SaveBulkRecord", "");
+                }
+                //Console.WriteLine(String.Format("End save to list HasNationalProtection -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                return 1;
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestHasNationalProtection", "");
+                return 0;
             }
             finally
             {
-
+                items.Clear();
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
             }
+
 
         }
 
@@ -402,35 +554,78 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The object Versioning Site</param>
         /// <param name="pVersion">The version in BackBone</param>
         /// <returns>List of DetailedProtectionStatus stored</returns>
-        private async Task<List<Models.backbone_db.DetailedProtectionStatus>>? harvestDetailedProtectionStatus(NaturaSite pVSite, int pVersion)
+        private async Task<int> harvestDetailedProtectionStatus(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<Models.versioning_db.DetailedProtectionStatus> elements = null;
             List<Models.backbone_db.DetailedProtectionStatus> items = new List<Models.backbone_db.DetailedProtectionStatus>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+
+            var start = DateTime.Now;
+
             try
             {
-                elements = await _versioningContext.Set<Models.versioning_db.DetailedProtectionStatus>().Where(s => s.N2K_SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
-                foreach (Models.versioning_db.DetailedProtectionStatus element in elements)
+                versioningConn = new SqlConnection(versioningDB);
+                String queryString = @"SELECT 
+                        N2K_SITECODE as SiteCode,DesignationCode,OverlapCode,OVERLAPPERC as OverlapPercentage,Convention
+                            from DetailedProtectionStatus 
+                            where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE",countryCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
                 {
                     Models.backbone_db.DetailedProtectionStatus item = new Models.backbone_db.DetailedProtectionStatus();
-                    item.SiteCode = element.N2K_SITECODE;
-                    item.Version = pVersion;
-                    item.DesignationCode = element.DESIGNATIONCODE;
-                    item.OverlapCode = element.OVERLAPCODE;
-                    item.OverlapPercentage = (decimal?)element.OVERLAPPERC;
-                    item.Convention = element.CONVENTION;
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    item.Version = 0;
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                    }
+                    item.DesignationCode = TypeConverters.CheckNull<string>(reader["DesignationCode"]);
+                    item.OverlapCode = TypeConverters.CheckNull<string>(reader["OverlapCode"]);
+                    item.OverlapPercentage = TypeConverters.CheckNull<decimal>(reader["OverlapPercentage"]);
+                    item.Convention = TypeConverters.CheckNull<string>(reader["Convention"]);
                     items.Add(item);
                 }
-                return items;
+
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                try
+                {
+                    await Models.backbone_db.DetailedProtectionStatus.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - DetailedProtectionStatus.SaveBulkRecord", "");
+                }
+                //Console.WriteLine(String.Format("End save to list DetailedProtectionStatus -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                return 1;
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestDetailedProtectionStatus", "");
+                return 0;
             }
             finally
             {
-
+                items.Clear();
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
             }
+
 
         }
 
@@ -440,40 +635,81 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The object Versioning Site</param>
         /// <param name="pVersion">The version in BackBone</param>
         /// <returns>List of SiteLargeDescriptions stored</returns>
-        private async Task<List<Models.backbone_db.SiteLargeDescriptions>>? harvestSiteLargeDescriptions(NaturaSite pVSite, int pVersion)
+        private async Task<int>? harvestSiteLargeDescriptions(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<Models.versioning_db.Description> elements = null;
             List<Models.backbone_db.SiteLargeDescriptions> items = new List<Models.backbone_db.SiteLargeDescriptions>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            var start = DateTime.Now;
             try
             {
-                elements = await _versioningContext.Set<Models.versioning_db.Description>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).ToListAsync();
-                foreach (Models.versioning_db.Description element in elements)
+                versioningConn = new SqlConnection(versioningDB);
+                String queryString = @"SELECT 
+                        SITECODE as SiteCode,Quality, Vulnarab,Designation,MANAG_PLAN as ManagPlan,Documentation,
+                        OtherCharact,MANAG_CONSERV_MEASURES as  ManagConservMeasures, MANAG_PLAN_URL as ManagPlanUrl,MANAG_STATUS as ManagStatus
+                        from Description 
+                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
                 {
-                    Models.backbone_db.SiteLargeDescriptions item = new Models.backbone_db.SiteLargeDescriptions();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.Quality = element.QUALITY;
-                    item.Vulnarab = element.VULNARAB;
-                    item.Designation = element.DESIGNATION;
-                    item.ManagPlan = element.MANAG_PLAN;
-                    item.Documentation = element.DOCUMENTATION;
-                    item.OtherCharact = element.OTHERCHARACT;
-                    item.ManagConservMeasures = element.MANAG_CONSERV_MEASURES;
-                    item.ManagPlanUrl = element.MANAG_PLAN_URL;
-                    item.ManagStatus = element.MANAG_STATUS;
+
+                    SiteLargeDescriptions item = new SiteLargeDescriptions();
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    item.Version = 0;
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                    }
+                    item.Quality = TypeConverters.CheckNull<string>(reader["Quality"]);
+                    item.Vulnarab = TypeConverters.CheckNull<string>(reader["Vulnarab"]);
+                    item.Designation = TypeConverters.CheckNull<string>(reader["Designation"]);
+                    item.ManagPlan = TypeConverters.CheckNull<string>(reader["ManagPlan"]);
+                    item.Documentation = TypeConverters.CheckNull<string>(reader["Documentation"]);
+                    item.OtherCharact = TypeConverters.CheckNull<string>(reader["OtherCharact"]);
+                    item.ManagConservMeasures = TypeConverters.CheckNull<string>(reader["ManagConservMeasures"]);
+                    item.ManagPlanUrl = TypeConverters.CheckNull<string>(reader["ManagPlanUrl"]);
+                    item.ManagStatus = TypeConverters.CheckNull<string>(reader["ManagStatus"]);
 
                     items.Add(item);
                 }
-                return items;
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                try
+                {
+                    await Models.backbone_db.SiteLargeDescriptions.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - SiteLargeDescriptions.SaveBulkRecord", "");
+                }
+                //Console.WriteLine(String.Format("End save to list Site Large Description -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                return 1;
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSiteLargeDescriptions", "");
+                return 0;
             }
             finally
             {
-
+                items.Clear();
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
             }
 
         }
@@ -484,48 +720,78 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <param name="pVSite">The object Versioning Site</param>
         /// <param name="pVersion">The version in BackBone</param>
         /// <returns>List of SiteOwnerType stored</returns>
-        private async Task<List<Models.backbone_db.SiteOwnerType>>? harvestSiteOwnerType(NaturaSite pVSite, int pVersion)
+        private async Task<int> harvestSiteOwnerType(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, IList<Models.backbone_db.OwnerShipTypes> _ownerShipTypes, List<Sites> sites)
         {
-
-            List<Models.versioning_db.OwnerType> elements = null;
             List<Models.backbone_db.SiteOwnerType> items = new List<Models.backbone_db.SiteOwnerType>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+
             try
             {
-                elements = await _versioningContext.Set<Models.versioning_db.OwnerType>().Where(s => s.SITECODE == pVSite.SITECODE && s.VERSIONID == pVSite.VERSIONID).GroupBy(s => s.TYPE).Select(cl => new OwnerType
+                versioningConn = new SqlConnection(versioningDB);
+                String queryString = @"SELECT 
+                        SITECODE,TYPE, SUM([PERCENT]) as [percent]
+                        from OwnerType 
+                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID
+                        group by SITECODE, VERSIONID, Type";
+
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
                 {
-                    COUNTRYCODE = cl.First().COUNTRYCODE,
-                    VERSIONID = cl.First().VERSIONID,
-                    COUNTRYVERSIONID = cl.First().COUNTRYVERSIONID,
-                    SITECODE = cl.First().SITECODE,
-                    TYPE = cl.First().TYPE,
-                    PERCENT = cl.Sum(c => c.PERCENT),
-                }).ToListAsync();
-                foreach (OwnerType element in elements)
-                {
-                    Models.backbone_db.SiteOwnerType item = new Models.backbone_db.SiteOwnerType();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
+                    SiteOwnerType item = new SiteOwnerType();
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    item.Version = 0;
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                    }
                     //6-Unknown for those types not found in the reference OwnerShipTypes
-                    item.Type = _dataContext.Set<Models.backbone_db.OwnerShipTypes>().Where(s => s.Description == element.TYPE).Select(s => s.Id).FirstOrDefault();
-                    item.Percent = (decimal?)element.PERCENT;
+                    item.Type = _ownerShipTypes.Where(s => s.Description == reader["Type"].ToString()).Select(s => s.Id).FirstOrDefault();
+                    item.Percent = TypeConverters.CheckNull<decimal>(reader["Percent"]);
                     items.Add(item);
+
                 }
-                return items;
+                try 
+                {
+                    await Models.backbone_db.SiteOwnerType.SaveBulkRecord(backboneDb, items);
+                } 
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - SiteOwnerType.SaveBulkRecord", "");
+                }
+                return 1;
+
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
-                return null;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSiteOwnerType", "");
+                return 0;
             }
             finally
             {
-
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
             }
 
         }
 
-        public async Task<List<SiteChangeDb>> ValidateSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance, ProcessedEnvelopes? processedEnvelope)
+        public async Task<List<SiteChangeDb>> ChangeDetectionSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance, ProcessedEnvelopes? processedEnvelope)
         {
+            await Task.Delay(1);
             try
             {
                 if (harvestingSite.SiteName != storedSite.SiteName)
@@ -711,12 +977,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateSites - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ChangeDetectionSites - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
             }
             return changes;
         }
 
-        public async Task<List<SiteChangeDb>> ValidateBioRegions(List<BioRegions> bioRegionsVersioning, List<BioRegions> referencedBioRegions, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, ProcessedEnvelopes? processedEnvelope)
+        public async Task<List<SiteChangeDb>> ChangeDetectionBioRegions(List<BioRegions> bioRegionsVersioning, List<BioRegions> referencedBioRegions, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, ProcessedEnvelopes? processedEnvelope)
         {
             try
             {
@@ -779,42 +1045,92 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ValidateBioRegions - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ChangeDetectionBioRegions - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
             }
             return changes;
         }
 
 
-        private async Task<List<Respondents>>? harvestRespondents(NaturaSite pVSite, int pVersion)
+        private async Task<int> harvestRespondents(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
+            List<Respondents> items = new List<Respondents>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+
+            var start = DateTime.Now;
             try
             {
-                List<Contact> vContact = _versioningContext.Set<Contact>().Where(v => (v.COUNTRYCODE == pVSite.COUNTRYCODE) && (v.COUNTRYVERSIONID == pVSite.COUNTRYVERSIONID)).ToList();
-                List<Respondents> items = new List<Respondents>();
-                foreach (Contact contact in vContact)
+                items = new List<Respondents>();
+                versioningConn = new SqlConnection(versioningDB);
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+
+                String queryString = @"select SITECODE as SiteCode,LOCATOR_NAME as locatorName,ADDRESS_AREA as addressArea,POST_NAME as postName,POSTCODE as postCode,THOROUGHFARE as thoroughfare,UNSTRUCTURED_ADD as addressUnstructured,CONTACT_NAME as name, EMAIL as Email, ADMIN_UNIT as AdminUnit,LOCATOR_DESIGNATOR as LocatorDesignator
+                                       from CONTACT
+                                       where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+
+
+                //Console.WriteLine(String.Format("Start respondents  Query -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+                reader = await command.ExecuteReaderAsync();
+                //Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                while (reader.Read())
                 {
                     Respondents respondent = new Respondents();
-                    respondent.SiteCode = contact.SITECODE;
-                    respondent.Version = pVersion;
-                    respondent.locatorName = contact.LOCATOR_NAME;
-                    respondent.addressArea = contact.ADDRESS_AREA;
-                    respondent.postName = contact.POST_NAME;
-                    respondent.postCode = contact.POSTCODE;
-                    respondent.thoroughfare = contact.THOROUGHFARE;
-                    respondent.addressUnstructured = contact.UNSTRUCTURED_ADD;
-                    respondent.name = contact.CONTACT_NAME;
-                    respondent.Email = contact.EMAIL;
-                    respondent.AdminUnit = contact.ADMIN_UNIT;
-                    respondent.LocatorDesignator = contact.LOCATOR_DESIGNATOR;
+                    respondent.SiteCode = reader["SiteCode"].ToString();
+                    respondent.Version = 0;
+                    if (sites.Any(s => s.SiteCode == respondent.SiteCode))
+                    {
+                        respondent.Version = sites.FirstOrDefault(s => s.SiteCode == respondent.SiteCode).Version;
+                    }
+                    respondent.locatorName = TypeConverters.CheckNull<string>(reader["locatorName"]);
+                    respondent.addressArea = TypeConverters.CheckNull<string>(reader["addressArea"]);
+                    respondent.postName = TypeConverters.CheckNull<string>(reader["postName"]);
+                    respondent.postCode = TypeConverters.CheckNull<string>(reader["postCode"]);
+                    respondent.thoroughfare = TypeConverters.CheckNull<string>(reader["thoroughfare"]);
+                    respondent.addressUnstructured = TypeConverters.CheckNull<string>(reader["addressUnstructured"]);
+                    respondent.name = TypeConverters.CheckNull<string>(reader["name"]);
+                    respondent.Email = TypeConverters.CheckNull<string>(reader["Email"]);
+                    respondent.AdminUnit = TypeConverters.CheckNull<string>(reader["AdminUnit"]);
+                    respondent.LocatorDesignator = TypeConverters.CheckNull<string>(reader["LocatorDesignator"]);
                     items.Add(respondent);
                 }
-                return items;
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                try
+                {
+                    await Respondents.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - DescribeSites.SaveBulkRecord", "");
+                }
+                //Console.WriteLine(String.Format("End save to list describe sites -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                return 1;
             }
-            catch (Exception ex){
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestRespondents", "");
-                return null;
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestDescribeSitesByCountry", "");
+                return 0;
+            }
+            finally
+            {
+                items.Clear();
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
             }
         }
-
     }
 }
+
