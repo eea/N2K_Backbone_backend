@@ -403,8 +403,10 @@ namespace N2K_BackboneBackEnd.Services
 
                     foreach (var sc in sitesRelation)
                     {
-                        previoussitecodesfilter.Rows.Add(new Object[] { sc.PreviousSiteCode, sc.PreviousVersion });
-                        newsitecodesfilter.Rows.Add(new Object[] { sc.NewSiteCode, sc.NewVersion });
+                        if (sc.PreviousSiteCode != null && sc.PreviousVersion != null)
+                            previoussitecodesfilter.Rows.Add(new Object[] { sc.PreviousSiteCode, sc.PreviousVersion });
+                        if (sc.NewSiteCode != null && sc.NewVersion != null)
+                            newsitecodesfilter.Rows.Add(new Object[] { sc.NewSiteCode, sc.NewVersion });
                     }
 
                     SqlParameter param4 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
@@ -1164,14 +1166,14 @@ namespace N2K_BackboneBackEnd.Services
             {
                 //create a new DBContext to avoid concurrency errors
                 _dataContext = ((BackgroundSpatialHarvestJobs)sender).GetDataContext();
-                string _connectionString= ((BackgroundSpatialHarvestJobs) sender).GetDataContext()
+                string _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext()
                     .Database.GetConnectionString();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_connectionString).Options;
                 using (var ctx = new N2KBackboneContext(options))
                 {
                     ProcessedEnvelopes _procEnv = ctx.Set<ProcessedEnvelopes>().Where(pe => pe.Country == env.Envelope.CountryCode && pe.Version == env.Envelope.VersionId).FirstOrDefault();
                     //avoid processing the event twice
-                    if (_procEnv.Status == HarvestingStatus.DataLoaded || _procEnv.Status == HarvestingStatus.SpatialDataLoaded )
+                    if (_procEnv.Status == HarvestingStatus.DataLoaded || _procEnv.Status == HarvestingStatus.SpatialDataLoaded)
                         return;
 
                     Console.WriteLine(String.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId));
@@ -1217,7 +1219,8 @@ namespace N2K_BackboneBackEnd.Services
                     }
                 }
             }
-            catch (Exception ex ) {
+            catch (Exception ex)
+            {
                 SystemLog.write(SystemLog.errorLevel.Error, ex, "FMEJobCompleted ", "");
                 Console.WriteLine("FME JOB completed with errors:" + ex.Message);
             }
@@ -1227,7 +1230,7 @@ namespace N2K_BackboneBackEnd.Services
                 Console.WriteLine(String.Format("FMEJobCompleted {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId));
             }
         }
-        
+
 
         /// <summary>
         /// In order to execute the all steps of the process of the harvest from Versioning
