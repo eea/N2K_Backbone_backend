@@ -58,61 +58,64 @@ namespace N2K_BackboneBackEnd.Services
 
             list = list.OrderBy(i => ULHIds.IndexOf(i.Version)).ToList();
 
-            //Check if the predecessor of the first one in line exists and if it is in the list, if it's not, add it before the first one
-            Lineage originCheck = list.Where(c => c.Version == list.FirstOrDefault().AntecessorsVersion).FirstOrDefault();
-            if (list.FirstOrDefault().AntecessorsVersion != null && originCheck == null)
+            if (list.Count() > 0)
             {
-                List<Lineage> temps = await _dataContext.Set<Lineage>().AsNoTracking().Where(c => c.Version == list.FirstOrDefault().AntecessorsVersion && list.FirstOrDefault().AntecessorsSiteCodes.Contains(c.SiteCode)).ToListAsync();
-                temps.Reverse();
-                foreach (Lineage temp in temps)
+                //Check if the predecessor of the first one in line exists and if it is in the list, if it's not, add it before the first one
+                Lineage originCheck = list.Where(c => c.Version == list.FirstOrDefault().AntecessorsVersion).FirstOrDefault();
+                if (list.FirstOrDefault().AntecessorsVersion != null && originCheck == null)
                 {
-                    list.Insert(0, temp);
+                    List<Lineage> temps = await _dataContext.Set<Lineage>().AsNoTracking().Where(c => c.Version == list.FirstOrDefault().AntecessorsVersion && list.FirstOrDefault().AntecessorsSiteCodes.Contains(c.SiteCode)).ToListAsync();
+                    temps.Reverse();
+                    foreach (Lineage temp in temps)
+                    {
+                        list.Insert(0, temp);
+                    }
+                    releases.Insert(0, temps[0].Version);
+                    if (limit > 0)
+                        releases = releases.Skip(Math.Max(0, releases.Count() - limit)).ToList();
                 }
-                releases.Insert(0, temps[0].Version);
-                if (limit > 0)
-                    releases = releases.Skip(Math.Max(0, releases.Count() - limit)).ToList();
-            }
 
-            foreach (Lineage lineage in list)
-            {
-                if (releases.Contains(lineage.Version))
+                foreach (Lineage lineage in list)
                 {
-                    SiteLineage temp = new SiteLineage();
-                    temp.SiteCode = lineage.SiteCode;
-                    temp.Release = headers.Where(c => c.idULHeader == lineage.Version).FirstOrDefault().Name;
-                    if (lineage.AntecessorsSiteCodes == null && lineage.AntecessorsVersion != null)
+                    if (releases.Contains(lineage.Version))
                     {
-                        temp.Predecessors.SiteCode = lineage.SiteCode;
-                        temp.Predecessors.Release = headers.Where(c => c.idULHeader == lineage.AntecessorsVersion).FirstOrDefault().Name;
-                    }
-                    else if (lineage.AntecessorsVersion != null)
-                    {
-                        temp.Predecessors.SiteCode = lineage.AntecessorsSiteCodes;
-                        temp.Predecessors.Release = headers.Where(c => c.idULHeader == lineage.AntecessorsVersion).FirstOrDefault().Name;
-                    }
-                    if (list.Where(c => c.SiteCode == lineage.SiteCode && c.AntecessorsVersion == lineage.Version).FirstOrDefault() != null)
-                    {
-                        temp.Successors.SiteCode = lineage.SiteCode;
-                        temp.Successors.Release = headers.Where(c => c.idULHeader == (list.Where(c => c.SiteCode == lineage.SiteCode && c.AntecessorsVersion == lineage.Version).FirstOrDefault().Version)).FirstOrDefault().Name;
-                    }
-                    else if (list.Where(c => c.AntecessorsSiteCodes != null && c.AntecessorsSiteCodes.Contains(lineage.SiteCode) && c.AntecessorsVersion == lineage.Version).FirstOrDefault() != null)
-                    {
-                        List<Lineage> antecessors = list.Where(c => c.AntecessorsSiteCodes != null && c.AntecessorsSiteCodes.Contains(lineage.SiteCode) && c.AntecessorsVersion == lineage.Version).ToList();
-                        string antecessor = "";
-
-                        if (antecessors.Count > 1)
+                        SiteLineage temp = new SiteLineage();
+                        temp.SiteCode = lineage.SiteCode;
+                        temp.Release = headers.Where(c => c.idULHeader == lineage.Version).FirstOrDefault().Name;
+                        if (lineage.AntecessorsSiteCodes == null && lineage.AntecessorsVersion != null)
                         {
-                            antecessor = string.Join(",", antecessors.Select(r => r.SiteCode));
+                            temp.Predecessors.SiteCode = lineage.SiteCode;
+                            temp.Predecessors.Release = headers.Where(c => c.idULHeader == lineage.AntecessorsVersion).FirstOrDefault().Name;
                         }
-                        else
+                        else if (lineage.AntecessorsVersion != null)
                         {
-                            antecessor = antecessors.FirstOrDefault().SiteCode;
+                            temp.Predecessors.SiteCode = lineage.AntecessorsSiteCodes;
+                            temp.Predecessors.Release = headers.Where(c => c.idULHeader == lineage.AntecessorsVersion).FirstOrDefault().Name;
                         }
+                        if (list.Where(c => c.SiteCode == lineage.SiteCode && c.AntecessorsVersion == lineage.Version).FirstOrDefault() != null)
+                        {
+                            temp.Successors.SiteCode = lineage.SiteCode;
+                            temp.Successors.Release = headers.Where(c => c.idULHeader == (list.Where(c => c.SiteCode == lineage.SiteCode && c.AntecessorsVersion == lineage.Version).FirstOrDefault().Version)).FirstOrDefault().Name;
+                        }
+                        else if (list.Where(c => c.AntecessorsSiteCodes != null && c.AntecessorsSiteCodes.Contains(lineage.SiteCode) && c.AntecessorsVersion == lineage.Version).FirstOrDefault() != null)
+                        {
+                            List<Lineage> antecessors = list.Where(c => c.AntecessorsSiteCodes != null && c.AntecessorsSiteCodes.Contains(lineage.SiteCode) && c.AntecessorsVersion == lineage.Version).ToList();
+                            string antecessor = "";
 
-                        temp.Successors.SiteCode = antecessor;
-                        temp.Successors.Release = headers.Where(c => c.idULHeader == (list.Where(c => c.AntecessorsSiteCodes != null && c.AntecessorsSiteCodes.Contains(lineage.SiteCode) && c.AntecessorsVersion == lineage.Version).FirstOrDefault().Version)).FirstOrDefault().Name;
+                            if (antecessors.Count > 1)
+                            {
+                                antecessor = string.Join(",", antecessors.Select(r => r.SiteCode));
+                            }
+                            else
+                            {
+                                antecessor = antecessors.FirstOrDefault().SiteCode;
+                            }
+
+                            temp.Successors.SiteCode = antecessor;
+                            temp.Successors.Release = headers.Where(c => c.idULHeader == (list.Where(c => c.AntecessorsSiteCodes != null && c.AntecessorsSiteCodes.Contains(lineage.SiteCode) && c.AntecessorsVersion == lineage.Version).FirstOrDefault().Version)).FirstOrDefault().Name;
+                        }
+                        result.Add(temp);
                     }
-                    result.Add(temp);
                 }
             }
             return result;
