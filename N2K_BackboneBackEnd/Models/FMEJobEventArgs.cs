@@ -8,5 +8,7 @@ namespace N2K_BackboneBackEnd.Models
     {
             public bool AllFinished { get; set; }
             public EnvelopesToProcess Envelope { get; set; }
+
+            public bool FirstInCountry{ get; set; }
     }
 }

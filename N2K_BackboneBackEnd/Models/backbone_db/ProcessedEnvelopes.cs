@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Enumerations;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
@@ -19,7 +20,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public HarvestingStatus Status { get;  set; }
 
         public DateTime N2K_VersioningDate { get; set; } = DateTime.MinValue;
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {
