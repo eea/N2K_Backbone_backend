@@ -1134,8 +1134,9 @@ namespace N2K_BackboneBackEnd.Services
         private void FMEJobCompleted( object sender, FMEJobEventArgs env, IMemoryCache cache)
         {
             try
-            {  
+            {
                 //create a new DBContext to avoid concurrency errors
+                _dataContext = ((BackgroundSpatialHarvestJobs)sender).GetDataContext();
                 string _connectionString= ((BackgroundSpatialHarvestJobs) sender).GetDataContext()
                     .Database.GetConnectionString();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_connectionString).Options;
@@ -1143,7 +1144,8 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     ProcessedEnvelopes _procEnv = ctx.Set<ProcessedEnvelopes>().Where(pe => pe.Country == env.Envelope.CountryCode && pe.Version == env.Envelope.VersionId).FirstOrDefault();
                     //avoid processing the event twice
-                    if (_procEnv.Status == HarvestingStatus.DataLoaded || _procEnv.Status == HarvestingStatus.SpatialDataLoaded ) return;
+                    if (_procEnv.Status == HarvestingStatus.DataLoaded || _procEnv.Status == HarvestingStatus.SpatialDataLoaded )
+                        return;
 
                     Console.WriteLine(String.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId));
                     if (_procEnv.Status == HarvestingStatus.TabularDataLoaded)
@@ -1558,7 +1560,7 @@ namespace N2K_BackboneBackEnd.Services
             finally
             {
                 SystemLog.write(SystemLog.errorLevel.Info, String.Format("End Change detection  {0} - {1} ", country, version), "HarvestedService - _Harvest", "");
-                Console.WriteLine(String.Format("End Change detection tabular {0} - {1} ", country, version));
+                Console.WriteLine(String.Format("End Change detection {0} - {1} ", country, version));
 
             }
         }
