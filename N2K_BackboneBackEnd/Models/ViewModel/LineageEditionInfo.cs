@@ -18,5 +18,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public double? AreaSDF { get; set; }
         public double? AreaGEO { get; set; }
         public double? Length { get; set; }
+        public string? Status { get; set; }
     }
 }

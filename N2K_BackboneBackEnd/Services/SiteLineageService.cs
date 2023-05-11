@@ -304,12 +304,16 @@ namespace N2K_BackboneBackEnd.Services
             List<LineageEditionInfo> result = new List<LineageEditionInfo>();
             try
             {
-                List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(c => c.Final == true).ToListAsync();
-                headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
-                headers.Reverse();
-
                 Lineage change = await _dataContext.Set<Lineage>().AsNoTracking().Where(c => c.ID == ChangeId).FirstOrDefaultAsync();
-                List<UnionListDetail> details = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == headers.FirstOrDefault().idULHeader && change.AntecessorsSiteCodes.Contains(c.SCI_code)).ToListAsync();
+                List<UnionListDetail> details = new List<UnionListDetail>();
+                if (change.AntecessorsSiteCodes != null)
+                {
+                    details = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == change.AntecessorsVersion && change.AntecessorsSiteCodes.Contains(c.SCI_code)).ToListAsync();
+                }
+                else
+                {
+                    details = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == change.AntecessorsVersion && c.SCI_code == change.SiteCode).ToListAsync();
+                }
 
                 var sitecodesfilter = new DataTable("sitecodesfilter");
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
@@ -334,7 +338,8 @@ namespace N2K_BackboneBackEnd.Services
                         BioRegion = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault().BioRegions != null ? (bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault().BioRegions) : "",
                         AreaSDF = d.Area != null ? Convert.ToDouble(d.Area) : null,
                         AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == d.SCI_code && b.Version == d.version).FirstOrDefault().area) : null,
-                        Length = d.Length != null ? Convert.ToDouble(d.Length) : null
+                        Length = d.Length != null ? Convert.ToDouble(d.Length) : null,
+                        Status = LineageStatus.Consolidated.ToString()
                     });
                 });
                 result = result.DistinctBy(c => c.SiteCode).ToList();
@@ -386,7 +391,8 @@ namespace N2K_BackboneBackEnd.Services
                         BioRegion = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault().BioRegions != null ? (bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault().BioRegions) : "",
                         AreaSDF = d.Area != null ? Convert.ToDouble(d.Area) : null,
                         AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.Version).FirstOrDefault().area) : null,
-                        Length = d.Length != null ? Convert.ToDouble(d.Length) : null
+                        Length = d.Length != null ? Convert.ToDouble(d.Length) : null,
+                        Status = change.Status.ToString()
                     });
                 });
 
