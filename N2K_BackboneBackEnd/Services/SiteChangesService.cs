@@ -63,211 +63,227 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false)
         {
-            var startRow = (page - 1) * pageLimit;
-            var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache));
-            if (pageLimit > 0)
+            try
             {
-                sitesList = sitesList
-                    .Skip(startRow)
-                    .Take(pageLimit)
-                    .ToList();
-            }
-            var sitecodesfilter = new DataTable("sitecodesfilter");
-            sitecodesfilter.Columns.Add("SiteCode", typeof(string));
-            sitecodesfilter.Columns.Add("Version", typeof(int));
-
-            foreach (var sc in sitesList)
-            {
-                sitecodesfilter.Rows.Add(new Object[] { sc.SiteCode, sc.Version });
-            }
-
-
-            //call a stored procedure that returs the site changes that match the given criteria                        
-            SqlParameter param1 = new SqlParameter("@country", country);
-            SqlParameter param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : String.Empty);
-            SqlParameter param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : String.Empty);
-            SqlParameter param4 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-            param4.Value = sitecodesfilter;
-            param4.TypeName = "[dbo].[SiteCodeFilter]";
-
-            IQueryable<SiteChangeDbNumsperLevel> changes = _dataContext.Set<SiteChangeDbNumsperLevel>().FromSqlRaw($"exec dbo.spGetChangesByCountryAndStatusAndLevel  @country, @status, @level, @siteCodes",
-                            param1, param2, param3, param4);
-
-            IEnumerable<OrderedChanges> orderedChanges;
-            //order the changes so that the first codes are the one with the highest Level value (1. Critical 2. Warning 3. Info)
-            //It return an enumeration of sitecodes with a nested list of the changes for that sitecode, ordered by level
-            IOrderedEnumerable<OrderedChanges> orderedChangesEnum = (from t in await changes.ToListAsync()
-                                                                     group t by new { t.SiteCode, t.SiteName }
-                                                                     into g
-                                                                     select new OrderedChanges
-                                                                     {
-                                                                         SiteCode = g.Key.SiteCode,
-                                                                         SiteName = g.Key.SiteName,
-                                                                         Level = (from t2 in g select t2.Level).Max(),
-                                                                         //Nest all changes of each sitecode ordered by Level
-                                                                         ChangeList = g.Where(s => s.SiteCode.ToUpper() == g.Key.SiteCode.ToUpper()).OrderByDescending(x => (int)x.Level).ToList()
-                                                                     }).OrderByDescending(a => a.Level).ThenBy(b => b.SiteCode);
-
-            /*
-            if (pageLimit != 0)
-            {
-                orderedChanges = orderedChangesEnum
+                var startRow = (page - 1) * pageLimit;
+                var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache));
+                if (pageLimit > 0)
+                {
+                    sitesList = sitesList
                         .Skip(startRow)
                         .Take(pageLimit)
                         .ToList();
-            }
-            else
-            */
-            orderedChanges = orderedChangesEnum.ToList();
+                }
+                var sitecodesfilter = new DataTable("sitecodesfilter");
+                sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter.Columns.Add("Version", typeof(int));
 
-
-            var result = new List<SiteChangeDbEdition>();
-            var siteCode = string.Empty;
-            List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
-                            param1).ToListAsync();
-            List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
-                            param1).ToListAsync();
-            foreach (var sCode in orderedChanges)
-            {
-                //load all the changes for each of the site codes ordered by level
-                var siteChange = new SiteChangeDbEdition();
-                var count = 0;
-                if (sCode.ChangeList == null) continue;
-                foreach (var change in sCode.ChangeList)
+                foreach (var sc in sitesList)
                 {
-                    if (count == 0)
+                    sitecodesfilter.Rows.Add(new Object[] { sc.SiteCode, sc.Version });
+                }
+
+
+                //call a stored procedure that returs the site changes that match the given criteria                        
+                SqlParameter param1 = new SqlParameter("@country", country);
+                SqlParameter param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : String.Empty);
+                SqlParameter param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : String.Empty);
+                SqlParameter param4 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                param4.Value = sitecodesfilter;
+                param4.TypeName = "[dbo].[SiteCodeFilter]";
+
+                IQueryable<SiteChangeDbNumsperLevel> changes = _dataContext.Set<SiteChangeDbNumsperLevel>().FromSqlRaw($"exec dbo.spGetChangesByCountryAndStatusAndLevel  @country, @status, @level, @siteCodes",
+                                param1, param2, param3, param4);
+
+                IEnumerable<OrderedChanges> orderedChanges;
+                //order the changes so that the first codes are the one with the highest Level value (1. Critical 2. Warning 3. Info)
+                //It return an enumeration of sitecodes with a nested list of the changes for that sitecode, ordered by level
+                IOrderedEnumerable<OrderedChanges> orderedChangesEnum = (from t in await changes.ToListAsync()
+                                                                         group t by new { t.SiteCode, t.SiteName }
+                                                                         into g
+                                                                         select new OrderedChanges
+                                                                         {
+                                                                             SiteCode = g.Key.SiteCode,
+                                                                             SiteName = g.Key.SiteName,
+                                                                             Level = (from t2 in g select t2.Level).Max(),
+                                                                             //Nest all changes of each sitecode ordered by Level
+                                                                             ChangeList = g.Where(s => s.SiteCode.ToUpper() == g.Key.SiteCode.ToUpper()).OrderByDescending(x => (int)x.Level).ToList()
+                                                                         }).OrderByDescending(a => a.Level).ThenBy(b => b.SiteCode);
+
+                /*
+                if (pageLimit != 0)
+                {
+                    orderedChanges = orderedChangesEnum
+                            .Skip(startRow)
+                            .Take(pageLimit)
+                            .ToList();
+                }
+                else
+                */
+                orderedChanges = orderedChangesEnum.ToList();
+
+
+                var result = new List<SiteChangeDbEdition>();
+                var siteCode = string.Empty;
+                List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
+                                param1).ToListAsync();
+                List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
+                                param1).ToListAsync();
+                foreach (var sCode in orderedChanges)
+                {
+                    //load all the changes for each of the site codes ordered by level
+                    var siteChange = new SiteChangeDbEdition();
+                    var count = 0;
+                    if (sCode.ChangeList == null) continue;
+                    foreach (var change in sCode.ChangeList)
                     {
-                        siteChange.NumChanges = 1;
-                        siteChange.ChangeId = 0;
-                        siteChange.SiteName = change.SiteName;
-                        siteChange.SiteCode = change.SiteCode;
-                        siteCode = change.SiteCode;
-                        siteChange.ChangeCategory = "";
-                        siteChange.ChangeType = "";
-                        siteChange.Country = "";
-                        siteChange.JustificationProvided = change.JustificationProvided;
-                        siteChange.JustificationRequired = change.JustificationRequired;
-                        siteChange.HasGeometry = change.HasGeometry;
-                        if (change.Country != null)
+                        if (count == 0)
                         {
-                            var countryName = _countries.Where(ctry => ctry.Code.ToLower() == change.Country.ToLower()).FirstOrDefault();
-                            siteChange.Country = countryName != null ? countryName.Country : change.Country;
-                        }
-                        siteChange.Level = null;
-                        siteChange.Status = null;
-                        siteChange.Tags = "";
-                        siteChange.Version = change.Version;
-                        SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
-                        if (activity == null)
-                        {
-                            SiteChangeDb editionChange = editionChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
-                            if (editionChange != null)
-                                activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
+                            siteChange.NumChanges = 1;
+                            siteChange.ChangeId = 0;
+                            siteChange.SiteName = change.SiteName;
+                            siteChange.SiteCode = change.SiteCode;
+                            siteCode = change.SiteCode;
+                            siteChange.ChangeCategory = "";
+                            siteChange.ChangeType = "";
+                            siteChange.Country = "";
+                            siteChange.JustificationProvided = change.JustificationProvided;
+                            siteChange.JustificationRequired = change.JustificationRequired;
+                            siteChange.HasGeometry = change.HasGeometry;
+                            if (change.Country != null)
+                            {
+                                var countryName = _countries.Where(ctry => ctry.Code.ToLower() == change.Country.ToLower()).FirstOrDefault();
+                                siteChange.Country = countryName != null ? countryName.Country : change.Country;
+                            }
+                            siteChange.Level = null;
+                            siteChange.Status = null;
+                            siteChange.Tags = "";
+                            siteChange.Version = change.Version;
+                            SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                             if (activity == null)
                             {
-                                activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Action == "User edition after rejection of version " + change.Version).FirstOrDefault();
+                                SiteChangeDb editionChange = editionChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
+                                if (editionChange != null)
+                                    activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
+                                if (activity == null)
+                                {
+                                    activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Action == "User edition after rejection of version " + change.Version).FirstOrDefault();
+                                }
                             }
-                        }
-                        siteChange.EditedBy = activity is null ? null : activity.Author;
-                        siteChange.EditedDate = activity is null ? null : activity.Date;
-                        var changeView = new SiteChangeView
-                        {
-                            ChangeId = change.ChangeId,
-                            Action = "",
-                            SiteCode = "",
-                            ChangeCategory = change.ChangeCategory,
-                            ChangeType = change.ChangeType,
-                            Country = "",
-                            Level = change.Level,
-                            Status = change.Status,
-                            Tags = change.Tags,
-                            NumChanges = 1
-                        };
-                        siteChange.subRows = new List<SiteChangeView>();
-                        siteChange.subRows.Add(changeView);
-                    }
-                    else
-                    {
-                        if (!siteChange.subRows.Any(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType && ch.Level == change.Level))
-                        {
-                            siteChange.subRows.Add(new SiteChangeView
+                            siteChange.EditedBy = activity is null ? null : activity.Author;
+                            siteChange.EditedDate = activity is null ? null : activity.Date;
+                            var changeView = new SiteChangeView
                             {
                                 ChangeId = change.ChangeId,
-                                SiteCode = string.Empty,
-                                Action = string.Empty,
+                                Action = "",
+                                SiteCode = "",
                                 ChangeCategory = change.ChangeCategory,
                                 ChangeType = change.ChangeType,
                                 Country = "",
                                 Level = change.Level,
                                 Status = change.Status,
-                                Tags = string.Empty,
+                                Tags = change.Tags,
                                 NumChanges = 1
-                            });
+                            };
+                            siteChange.subRows = new List<SiteChangeView>();
+                            siteChange.subRows.Add(changeView);
                         }
                         else
                         {
-                            siteChange.subRows.Where(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType && ch.Level == change.Level).FirstOrDefault().NumChanges++;
+                            if (!siteChange.subRows.Any(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType && ch.Level == change.Level))
+                            {
+                                siteChange.subRows.Add(new SiteChangeView
+                                {
+                                    ChangeId = change.ChangeId,
+                                    SiteCode = string.Empty,
+                                    Action = string.Empty,
+                                    ChangeCategory = change.ChangeCategory,
+                                    ChangeType = change.ChangeType,
+                                    Country = "",
+                                    Level = change.Level,
+                                    Status = change.Status,
+                                    Tags = string.Empty,
+                                    NumChanges = 1
+                                });
+                            }
+                            else
+                            {
+                                siteChange.subRows.Where(ch => ch.ChangeCategory == change.ChangeCategory && ch.ChangeType == change.ChangeType && ch.Level == change.Level).FirstOrDefault().NumChanges++;
+                            }
+                            siteChange.NumChanges++;
                         }
-                        siteChange.NumChanges++;
+                        count++;
                     }
-                    count++;
+                    result.Add(siteChange);
                 }
-                result.Add(siteChange);
+                if (onlyedited)
+                    result = result.Where(x => x.EditedDate != null).ToList();
+                return result;
             }
-            if (onlyedited)
-                result = result.Where(x => x.EditedDate != null).ToList();
-            return result;
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetSiteChangesAsync", "");
+                throw ex;
+            }
         }
 
         public async Task<List<SiteChangeViewModel>> GetSiteChangesFromSP()
         {
-            var param1 = new SqlParameter("@param1", 1);
-            var param2 = new SqlParameter("@param2", 2);
+            try
+            {
+                var param1 = new SqlParameter("@param1", 1);
+                var param2 = new SqlParameter("@param2", 2);
 
-            var list = await _dataContext.Set<SiteChangeViewModel>().FromSqlRaw($"exec dbo.Testing2  @param1, @param2",
-                            param1, param2)
-                //.AsNoTrackingWithIdentityResolution()
-                .ToListAsync();
+                var list = await _dataContext.Set<SiteChangeViewModel>().FromSqlRaw($"exec dbo.Testing2  @param1, @param2",
+                                param1, param2)
+                    //.AsNoTrackingWithIdentityResolution()
+                    .ToListAsync();
 
-            return list;
+                return list;
 
-            /*
-            //For the time we need to execute a sql (StoredProc) that returns an int 
-            // define SqlParameters for the other two params to be passed
-            var oidProviderParam = new SqlParameter("@oidProvider", id.OIdProvider);
-            var oidParam = new SqlParameter("@oid", string.IsNullOrEmpty(id.OId) ? "" : id.OId);
+                /*
+                //For the time we need to execute a sql (StoredProc) that returns an int 
+                // define SqlParameters for the other two params to be passed
+                var oidProviderParam = new SqlParameter("@oidProvider", id.OIdProvider);
+                var oidParam = new SqlParameter("@oid", string.IsNullOrEmpty(id.OId) ? "" : id.OId);
 
-            // define the output parameter that needs to be retained
-            // for the Id created when the Stored Procedure executes 
-            // the INSERT command
-            var userIdParam = new SqlParameter("@Id", SqlDbType.Int);
+                // define the output parameter that needs to be retained
+                // for the Id created when the Stored Procedure executes 
+                // the INSERT command
+                var userIdParam = new SqlParameter("@Id", SqlDbType.Int);
 
-            // the direction defines what kind of parameter we're passing
-            // it can be one of:
-            // Input
-            // Output
-            // InputOutput -- which does pass a value to Stored Procedure and retains a new state
-            userIdParam.Direction = ParameterDirection.Output;
+                // the direction defines what kind of parameter we're passing
+                // it can be one of:
+                // Input
+                // Output
+                // InputOutput -- which does pass a value to Stored Procedure and retains a new state
+                userIdParam.Direction = ParameterDirection.Output;
 
-            // we can also use context.Database.ExecuteSqlCommand() or awaitable ExecuteSqlCommandAsync()
-            // which also produces the same result - but the method is now marked obselete
-            // so we use ExecuteSqlRawAsync() instead
+                // we can also use context.Database.ExecuteSqlCommand() or awaitable ExecuteSqlCommandAsync()
+                // which also produces the same result - but the method is now marked obselete
+                // so we use ExecuteSqlRawAsync() instead
 
-            // we're using the awaitable version since GetOrCreateUserAsync() method is marked async
-            await context.Database.ExecuteSqlRawAsync(
-                    "exec sp_CreateUser @emailAddress, @passwordHash, @oidProvider, @oid, @Id out", 
-                    emailAddressParam, 
-                    passwordParam, 
-                    oidProviderParam, 
-                    oidParam, 
-                    userIdParam);
+                // we're using the awaitable version since GetOrCreateUserAsync() method is marked async
+                await context.Database.ExecuteSqlRawAsync(
+                        "exec sp_CreateUser @emailAddress, @passwordHash, @oidProvider, @oid, @Id out", 
+                        emailAddressParam, 
+                        passwordParam, 
+                        oidProviderParam, 
+                        oidParam, 
+                        userIdParam);
 
-            // the userIdParam which represents the Output param
-            // now holds the Id of the new user and is an Object type
-            // so we convert it to an Integer and send
-            return Convert.ToInt32(userIdParam.Value);
+                // the userIdParam which represents the Output param
+                // now holds the Id of the new user and is an Object type
+                // so we convert it to an Integer and send
+                return Convert.ToInt32(userIdParam.Value);
 
-                    */
+                        */
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetSiteChangesFromSP", "");
+                throw ex;
+            }
         }
 
 
@@ -276,138 +292,105 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<SiteChangeDb?> GetSiteChangeByIdAsync(int id)
 #pragma warning restore CS8613 // La nulabilidad de los tipos de referencia en el tipo de valor devuelto no coincide con el miembro implementado de forma implícita
         {
-            var result = new List<Harvesting>();
-            return await _dataContext.Set<SiteChangeDb>().AsNoTracking().SingleOrDefaultAsync(s => s.ChangeId == id);
+            try
+            {
+                var result = new List<Harvesting>();
+                return await _dataContext.Set<SiteChangeDb>().AsNoTracking().SingleOrDefaultAsync(s => s.ChangeId == id);
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetSiteChangeByIdAsync", "");
+                throw ex;
+            }
         }
 
 
         public async Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion)
         {
-            var changeDetailVM = new SiteChangeDetailViewModel();
-            changeDetailVM.SiteCode = pSiteCode;
-            changeDetailVM.Version = pCountryVersion;
-            changeDetailVM.Warning = new SiteChangesLevelDetail();
-            changeDetailVM.Info = new SiteChangesLevelDetail();
-            changeDetailVM.Critical = new SiteChangesLevelDetail();
-
-
-            var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
-            if (site != null)
+            try
             {
-                changeDetailVM.HasGeometry = false;
-                SqlParameter param1 = new SqlParameter("@SiteCode", site.SiteCode);
-                SqlParameter param2 = new SqlParameter("@Version", site.Version);
+                var changeDetailVM = new SiteChangeDetailViewModel();
+                changeDetailVM.SiteCode = pSiteCode;
+                changeDetailVM.Version = pCountryVersion;
+                changeDetailVM.Warning = new SiteChangesLevelDetail();
+                changeDetailVM.Info = new SiteChangesLevelDetail();
+                changeDetailVM.Critical = new SiteChangesLevelDetail();
 
-                //var geometries = await _dataContext.Set<SiteGeometry>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometry  @SiteCode, @Version",
-                //                param1, param2).ToArrayAsync();
 
-                //if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].GeoJson)) 
-                changeDetailVM.HasGeometry = true;
+                var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
+                if (site != null)
+                {
+                    changeDetailVM.HasGeometry = false;
+                    SqlParameter param1 = new SqlParameter("@SiteCode", site.SiteCode);
+                    SqlParameter param2 = new SqlParameter("@Version", site.Version);
+
+                    //var geometries = await _dataContext.Set<SiteGeometry>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometry  @SiteCode, @Version",
+                    //                param1, param2).ToArrayAsync();
+
+                    //if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].GeoJson)) 
+                    changeDetailVM.HasGeometry = true;
 
 
 #pragma warning disable CS8601 // Posible asignación de referencia nula
-                changeDetailVM.Name = site.Name;
-                changeDetailVM.Status = (SiteChangeStatus?)site.CurrentStatus;
-                changeDetailVM.JustificationProvided = site.JustificationProvided.HasValue ? site.JustificationProvided.Value : false;
-                changeDetailVM.JustificationRequired = site.JustificationRequired.HasValue ? site.JustificationRequired.Value : false;
+                    changeDetailVM.Name = site.Name;
+                    changeDetailVM.Status = (SiteChangeStatus?)site.CurrentStatus;
+                    changeDetailVM.JustificationProvided = site.JustificationProvided.HasValue ? site.JustificationProvided.Value : false;
+                    changeDetailVM.JustificationRequired = site.JustificationRequired.HasValue ? site.JustificationRequired.Value : false;
 #pragma warning restore CS8601 // Posible asignación de referencia nula
-            }
-            ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == site.CountryCode && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
-            var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(changes => changes.SiteCode == pSiteCode && changes.N2KVersioningVersion == harvestedEnvelope.Version).ToListAsync();
-            changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
-            if (changesDb != null)
-            {
-                if (changesDb.FirstOrDefault().ChangeType == "Site Deleted")
-                {
-                    changeDetailVM.Status = changesDb.FirstOrDefault().Status;
                 }
+                ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == site.CountryCode && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
+                var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(changes => changes.SiteCode == pSiteCode && changes.N2KVersioningVersion == harvestedEnvelope.Version).ToListAsync();
+                changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
+                if (changesDb != null)
+                {
+                    if (changesDb.FirstOrDefault().ChangeType == "Site Deleted")
+                    {
+                        changeDetailVM.Status = changesDb.FirstOrDefault().Status;
+                    }
+                }
+
+                _siteHabitats = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
+                _siteSpecies = await _dataContext.Set<Species>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
+                _siteSpeciesOther = await _dataContext.Set<SpeciesOther>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion && site.SpecieCode != null).ToListAsync();
+                _siteHabitatsReference = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion).ToListAsync();
+                _siteSpeciesReference = await _dataContext.Set<Species>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion).ToListAsync();
+                _siteSpeciesOtherReference = await _dataContext.Set<SpeciesOther>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion && site.SpecieCode != null).ToListAsync();
+
+                changeDetailVM.Critical = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Critical);
+                changeDetailVM.Warning = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Warning);
+                changeDetailVM.Info = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Info);
+
+
+                _siteHabitats = null;
+                _siteSpecies = null;
+                _siteSpeciesOther = null;
+
+                return changeDetailVM;
             }
-
-            _siteHabitats = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
-            _siteSpecies = await _dataContext.Set<Species>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).ToListAsync();
-            _siteSpeciesOther = await _dataContext.Set<SpeciesOther>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion && site.SpecieCode != null).ToListAsync();
-            _siteHabitatsReference = await _dataContext.Set<Habitats>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion).ToListAsync();
-            _siteSpeciesReference = await _dataContext.Set<Species>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion).ToListAsync();
-            _siteSpeciesOtherReference = await _dataContext.Set<SpeciesOther>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version != pCountryVersion && site.SpecieCode != null).ToListAsync();
-
-            changeDetailVM.Critical = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Critical);
-            changeDetailVM.Warning = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Warning);
-            changeDetailVM.Info = FillLevelChangeDetailCategory(changesDb, pSiteCode, pCountryVersion, Level.Info);
-
-
-            _siteHabitats = null;
-            _siteSpecies = null;
-            _siteSpeciesOther = null;
-
-            return changeDetailVM;
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetSiteChangesDetail", "");
+                throw ex;
+            }
         }
 
         public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country)
         {
-            SqlParameter param1 = new SqlParameter("@country", country);
-            IQueryable<SiteCodeVersion> changes = _dataContext
-                .Set<SiteCodeVersion>()
-                .FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryNonPending]  @country", param1);
-            List<SiteCodeView> result = new List<SiteCodeView>();
-            List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
-                            param1).ToListAsync();
-            foreach (var change in (await changes.ToListAsync()))
-            {
-                SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
-                if (activity == null)
-                {
-                    SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
-                    if (editionChange != null)
-                        activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
-                }
-                SiteCodeView temp = new SiteCodeView
-                {
-                    SiteCode = change.SiteCode,
-                    Version = change.Version,
-                    Name = change.Name,
-                    EditedBy = activity is null ? null : activity.Author,
-                    EditedDate = activity is null ? null : activity.Date
-                };
-                result.Add(temp);
-            }
-
-            return result;
-        }
-
-        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false)
-        {
-            string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes",
-                    country,
-                    status.ToString(),
-                    level.ToString()
-                   );
-            //if there has been a change in the status refresh the changed sitecodes cache
-            if (refresh) cache.Remove(listName);
-
-            var result = new List<SiteCodeView>();
-            if (cache.TryGetValue(listName, out List<SiteCodeView> cachedList))
-            {
-                result = cachedList;
-            }
-            else
+            try
             {
                 SqlParameter param1 = new SqlParameter("@country", country);
-                SqlParameter param2 = new SqlParameter("@status", status.ToString());
-                SqlParameter param3 = new SqlParameter("@level", level.ToString());
-
-                IQueryable<SiteCodeVersion> changes = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryAndStatusAndLevel]  @country, @status, @level",
-                            param1, param2, param3);
-
+                IQueryable<SiteCodeVersion> changes = _dataContext
+                    .Set<SiteCodeVersion>()
+                    .FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryNonPending]  @country", param1);
+                List<SiteCodeView> result = new List<SiteCodeView>();
                 List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
-                            param1).ToListAsync();
-                List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
                                 param1).ToListAsync();
                 foreach (var change in (await changes.ToListAsync()))
                 {
                     SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                     if (activity == null)
                     {
-                        SiteChangeDb editionChange = editionChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
+                        SiteChangeDb editionChange = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
                         if (editionChange != null)
                             activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                     }
@@ -421,170 +404,250 @@ namespace N2K_BackboneBackEnd.Services
                     };
                     result.Add(temp);
                 }
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                        .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
-                        .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
-                        .SetPriority(CacheItemPriority.Normal)
-                        .SetSize(40000);
-                cache.Set(listName, result, cacheEntryOptions);
+
+                return result;
             }
-            if (onlyedited)
-                result = result.Where(x => x.EditedDate != null).ToList();
-            return result.OrderBy(o => o.SiteCode).ToList();
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetNonPendingSiteCodes", "");
+                throw ex;
+            }
+        }
+
+        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false)
+        {
+            try
+            {
+                string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes",
+                    country,
+                    status.ToString(),
+                    level.ToString()
+                   );
+                //if there has been a change in the status refresh the changed sitecodes cache
+                if (refresh) cache.Remove(listName);
+
+                var result = new List<SiteCodeView>();
+                if (cache.TryGetValue(listName, out List<SiteCodeView> cachedList))
+                {
+                    result = cachedList;
+                }
+                else
+                {
+                    SqlParameter param1 = new SqlParameter("@country", country);
+                    SqlParameter param2 = new SqlParameter("@status", status.ToString());
+                    SqlParameter param3 = new SqlParameter("@level", level.ToString());
+
+                    IQueryable<SiteCodeVersion> changes = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryAndStatusAndLevel]  @country, @status, @level",
+                                param1, param2, param3);
+
+                    List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
+                                param1).ToListAsync();
+                    List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
+                                    param1).ToListAsync();
+                    foreach (var change in (await changes.ToListAsync()))
+                    {
+                        SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
+                        if (activity == null)
+                        {
+                            SiteChangeDb editionChange = editionChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
+                            if (editionChange != null)
+                                activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
+                        }
+                        SiteCodeView temp = new SiteCodeView
+                        {
+                            SiteCode = change.SiteCode,
+                            Version = change.Version,
+                            Name = change.Name,
+                            EditedBy = activity is null ? null : activity.Author,
+                            EditedDate = activity is null ? null : activity.Date
+                        };
+                        result.Add(temp);
+                    }
+                    var cacheEntryOptions = new MemoryCacheEntryOptions()
+                            .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
+                            .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
+                            .SetPriority(CacheItemPriority.Normal)
+                            .SetSize(40000);
+                    cache.Set(listName, result, cacheEntryOptions);
+                }
+                if (onlyedited)
+                    result = result.Where(x => x.EditedDate != null).ToList();
+                return result.OrderBy(o => o.SiteCode).ToList();
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetSiteCodesByStatusAndLevelAndCountry", "");
+                throw ex;
+            }
         }
 
         public async Task<int> GetPendingChangesByCountry(string? country, IMemoryCache cache)
         {
-            //return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null,cache)).Count;
-            SqlParameter param1 = new SqlParameter("@country", country);
+            try
+            {
+                //return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null,cache)).Count;
+                SqlParameter param1 = new SqlParameter("@country", country);
 
-            IQueryable<PendingSites> changes = _dataContext.Set<PendingSites>().FromSqlRaw($"exec dbo.[spGetPendingSiteCodesByCountry] @country ",
-                        param1);
+                IQueryable<PendingSites> changes = _dataContext.Set<PendingSites>().FromSqlRaw($"exec dbo.[spGetPendingSiteCodesByCountry] @country ",
+                            param1);
 
-            var result = (await changes.ToListAsync());
-            if (result != null && result.Count > 0) return result[0].NumSites;
-            return 0;
+                var result = (await changes.ToListAsync());
+                if (result != null && result.Count > 0) return result[0].NumSites;
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetPendingChangesByCountry", "");
+                throw ex;
+            }
         }
 
 
         private SiteChangesLevelDetail FillLevelChangeDetailCategory(List<SiteChangeDb> changesDB, string pSiteCode, int pCountryVersion, Level level)
         {
-
-            var changesPerLevel = new SiteChangesLevelDetail();
-            changesPerLevel.Level = level;
-
-
-            var levelDetails = (from t in changesDB
-                                where t.Level == level
-                                group t by new { t.Section, t.ChangeCategory, t.ChangeType }
-                                 into g
-                                select new
-                                {
-                                    ChangeCategory = g.Key.ChangeCategory,
-                                    ChangeType = g.Key.ChangeType,
-                                    Section = g.Key.Section,
-                                    ChangeList = g.Where(s => s.Section == g.Key.Section && s.ChangeType == g.Key.ChangeType && s.ChangeCategory == g.Key.ChangeCategory).ToList()
-                                }).ToList();
-
-            foreach (var _levelDetail in levelDetails)
+            try
             {
-                SectionChangeDetail _Section = null;
-                switch (_levelDetail.Section)
+                var changesPerLevel = new SiteChangesLevelDetail();
+                changesPerLevel.Level = level;
+
+
+                var levelDetails = (from t in changesDB
+                                    where t.Level == level
+                                    group t by new { t.Section, t.ChangeCategory, t.ChangeType }
+                                     into g
+                                    select new
+                                    {
+                                        ChangeCategory = g.Key.ChangeCategory,
+                                        ChangeType = g.Key.ChangeType,
+                                        Section = g.Key.Section,
+                                        ChangeList = g.Where(s => s.Section == g.Key.Section && s.ChangeType == g.Key.ChangeType && s.ChangeCategory == g.Key.ChangeCategory).ToList()
+                                    }).ToList();
+
+                foreach (var _levelDetail in levelDetails)
                 {
-                    case "Site":
-                    case "BioRegions":
-                        /*
-                        if (_levelDetail.ChangeType.IndexOf("Added") > -1)
-                        {
-                            if (string.IsNullOrEmpty(changesPerLevel.SiteInfo.AddedCodes.ChangeCategory)) changesPerLevel.SiteInfo.AddedCodes.ChangeCategory = "Site Added";
-                            foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
+                    SectionChangeDetail _Section = null;
+                    switch (_levelDetail.Section)
+                    {
+                        case "Site":
+                        case "BioRegions":
+                            /*
+                            if (_levelDetail.ChangeType.IndexOf("Added") > -1)
                             {
-                                changesPerLevel.SiteInfo.AddedCodes.CodeList.Add(
-                                    new CodeAddedRemovedDetail
-                                    {
-                                        Code = changedItem.Code,
-                                        CodeValues = new Dictionary<string, string>()
-                                    }
-                                );
+                                if (string.IsNullOrEmpty(changesPerLevel.SiteInfo.AddedCodes.ChangeCategory)) changesPerLevel.SiteInfo.AddedCodes.ChangeCategory = "Site Added";
+                                foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
+                                {
+                                    changesPerLevel.SiteInfo.AddedCodes.CodeList.Add(
+                                        new CodeAddedRemovedDetail
+                                        {
+                                            Code = changedItem.Code,
+                                            CodeValues = new Dictionary<string, string>()
+                                        }
+                                    );
+                                }
                             }
-                        }
-                        else if (_levelDetail.ChangeType.IndexOf("Deleted") > -1)
+                            else if (_levelDetail.ChangeType.IndexOf("Deleted") > -1)
+                            {
+                                if (string.IsNullOrEmpty(changesPerLevel.SiteInfo.AddedCodes.ChangeCategory)) changesPerLevel.SiteInfo.AddedCodes.ChangeCategory = "Site Deleted";
+                                foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
+                                {
+                                    changesPerLevel.SiteInfo.AddedCodes.CodeList.Add(
+                                        new CodeAddedRemovedDetail
+                                        {
+                                            Code = changedItem.Code,
+                                            CodeValues = new Dictionary<string, string>()
+                                        }
+                                    ); ;
+                                }
+                            }
+                            else
+                            {
+                                changesPerLevel.SiteInfo.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
+                            }
+                            */
+                            if (_levelDetail.ChangeType != "User edition")
+                                changesPerLevel.SiteInfo.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
+                            break;
+
+                        case "Species":
+                            _Section = changesPerLevel.Species;
+                            break;
+                        case "Habitats":
+                            _Section = changesPerLevel.Habitats;
+                            break;
+                    }
+                    if (_Section == null)
+                    {
+                        continue;
+                    }
+
+                    if (_levelDetail.ChangeType.IndexOf("Added") <= -1)
+                    {
+                        if (_levelDetail.ChangeType.IndexOf("Deleted") > -1)
                         {
-                            if (string.IsNullOrEmpty(changesPerLevel.SiteInfo.AddedCodes.ChangeCategory)) changesPerLevel.SiteInfo.AddedCodes.ChangeCategory = "Site Deleted";
+                            if (_Section.DeletedCodes.Count == 0)
+                            {
+                                if (_levelDetail.ChangeType == "Other Species Deleted")
+                                {
+                                    _Section.DeletedCodes.Add(new CategoryChangeDetail
+                                    {
+                                        ChangeCategory = _levelDetail.Section,
+                                        ChangeType = String.Format("List of {0}", _levelDetail.ChangeType),
+                                        ChangedCodesDetail = new List<CodeChangeDetail>()
+                                    });
+                                }
+                                else
+                                {
+                                    _Section.DeletedCodes.Add(new CategoryChangeDetail
+                                    {
+                                        ChangeCategory = _levelDetail.Section,
+                                        ChangeType = String.Format("List of {0} Deleted", _levelDetail.Section),
+                                        ChangedCodesDetail = new List<CodeChangeDetail>()
+                                    });
+                                }
+                            }
+
                             foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
                             {
-                                changesPerLevel.SiteInfo.AddedCodes.CodeList.Add(
-                                    new CodeAddedRemovedDetail
-                                    {
-                                        Code = changedItem.Code,
-                                        CodeValues = new Dictionary<string, string>()
-                                    }
-                                ); ;
+                                _Section.DeletedCodes.ElementAt(0).ChangedCodesDetail.Add(
+                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
+                                );
                             }
                         }
                         else
                         {
-                            changesPerLevel.SiteInfo.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
-                        }
-                        */
-                        if (_levelDetail.ChangeType != "User edition")
-                            changesPerLevel.SiteInfo.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
-                        break;
-
-                    case "Species":
-                        _Section = changesPerLevel.Species;
-                        break;
-                    case "Habitats":
-                        _Section = changesPerLevel.Habitats;
-                        break;
-                }
-                if (_Section == null)
-                {
-                    continue;
-                }
-
-                if (_levelDetail.ChangeType.IndexOf("Added") <= -1)
-                {
-                    if (_levelDetail.ChangeType.IndexOf("Deleted") > -1)
-                    {
-                        if (_Section.DeletedCodes.Count == 0)
-                        {
-                            if (_levelDetail.ChangeType == "Other Species Deleted")
-                            {
-                                _Section.DeletedCodes.Add(new CategoryChangeDetail
-                                {
-                                    ChangeCategory = _levelDetail.Section,
-                                    ChangeType = String.Format("List of {0}", _levelDetail.ChangeType),
-                                    ChangedCodesDetail = new List<CodeChangeDetail>()
-                                });
-                            }
-                            else
-                            {
-                                _Section.DeletedCodes.Add(new CategoryChangeDetail
-                                {
-                                    ChangeCategory = _levelDetail.Section,
-                                    ChangeType = String.Format("List of {0} Deleted", _levelDetail.Section),
-                                    ChangedCodesDetail = new List<CodeChangeDetail>()
-                                });
-                            }
-                        }
-
-                        foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
-                        {
-                            _Section.DeletedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                                CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
-                            );
+                            _Section.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
                         }
                     }
                     else
                     {
-                        _Section.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
-                    }
-                }
-                else
-                {
-                    if (_Section.AddedCodes.Count == 0)
-                    {
-                        _Section.AddedCodes.Add(new CategoryChangeDetail
+                        if (_Section.AddedCodes.Count == 0)
                         {
-                            ChangeCategory = _levelDetail.Section,
-                            ChangeType = String.Format("List of {0} Added", _levelDetail.Section),
-                            ChangedCodesDetail = new List<CodeChangeDetail>()
-                        });
+                            _Section.AddedCodes.Add(new CategoryChangeDetail
+                            {
+                                ChangeCategory = _levelDetail.Section,
+                                ChangeType = String.Format("List of {0} Added", _levelDetail.Section),
+                                ChangedCodesDetail = new List<CodeChangeDetail>()
+                            });
+                        }
+
+                        foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
+                        {
+                            _Section.AddedCodes.ElementAt(0).ChangedCodesDetail.Add(
+                                CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
+                            );
+
+                        }
                     }
 
-                    foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
-                    {
-                        _Section.AddedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                            CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
-                        );
-
-                    }
                 }
 
+                return changesPerLevel;
             }
-
-            return changesPerLevel;
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - FillLevelChangeDetailCategory", "");
+                throw ex;
+            }
         }
 
 
@@ -592,236 +655,260 @@ namespace N2K_BackboneBackEnd.Services
 
         private CategoryChangeDetail GetChangeCategoryDetail(string changeCategory, string changeType, List<SiteChangeDb> changeList)
         {
-            var catChange = new CategoryChangeDetail();
-            catChange.ChangeType = changeType;
-            catChange.ChangeCategory = changeCategory;
-
-            foreach (var changedItem in changeList.OrderBy(c => c.Code == null ? "" : c.Code))
+            try
             {
-                var fields = new Dictionary<string, string>();
-                string nullCase = "";
-                if (changedItem.OldValue != null && changedItem.OldValue.ToUpper() != "NULL")
-                {
-                    fields.Add("Reference", changedItem.OldValue);
-                }
-                else
-                {
-                    fields.Add("Reference", nullCase);
-                }
+                var catChange = new CategoryChangeDetail();
+                catChange.ChangeType = changeType;
+                catChange.ChangeCategory = changeCategory;
 
-                if (changedItem.NewValue != null && changedItem.NewValue.ToUpper() != "NULL")
+                foreach (var changedItem in changeList.OrderBy(c => c.Code == null ? "" : c.Code))
                 {
-                    fields.Add("Reported", changedItem.NewValue);
-                }
-                else
-                {
-                    fields.Add("Reported", nullCase);
-                }
-
-                if (changeCategory == "Habitats" || changeCategory == "Species")
-                {
-                    if (GetCodeName(changedItem) != String.Empty)
+                    var fields = new Dictionary<string, string>();
+                    string nullCase = "";
+                    if (changedItem.OldValue != null && changedItem.OldValue.ToUpper() != "NULL")
                     {
-                        catChange.ChangedCodesDetail.Add(
-                                new CodeChangeDetail
-                                {
-                                    Code = changedItem.Code,
-                                    Name = GetCodeName(changedItem),
-                                    ChangeId = changedItem.ChangeId,
-                                    Fields = fields
-                                }
+                        fields.Add("Reference", changedItem.OldValue);
+                    }
+                    else
+                    {
+                        fields.Add("Reference", nullCase);
+                    }
 
-                            );
+                    if (changedItem.NewValue != null && changedItem.NewValue.ToUpper() != "NULL")
+                    {
+                        fields.Add("Reported", changedItem.NewValue);
+                    }
+                    else
+                    {
+                        fields.Add("Reported", nullCase);
+                    }
+
+                    if (changeCategory == "Habitats" || changeCategory == "Species")
+                    {
+                        if (GetCodeName(changedItem) != String.Empty)
+                        {
+                            catChange.ChangedCodesDetail.Add(
+                                    new CodeChangeDetail
+                                    {
+                                        Code = changedItem.Code,
+                                        Name = GetCodeName(changedItem),
+                                        ChangeId = changedItem.ChangeId,
+                                        Fields = fields
+                                    }
+
+                                );
+                        }
+                        else
+                        {
+                            catChange.ChangedCodesDetail.Add(
+                                    new CodeChangeDetail
+                                    {
+                                        Code = "-",
+                                        Name = changedItem.Code,
+                                        ChangeId = changedItem.ChangeId,
+                                        Fields = fields
+                                    }
+
+                                );
+                        }
                     }
                     else
                     {
                         catChange.ChangedCodesDetail.Add(
                                 new CodeChangeDetail
                                 {
-                                    Code = "-",
-                                    Name = changedItem.Code,
                                     ChangeId = changedItem.ChangeId,
                                     Fields = fields
                                 }
-
                             );
                     }
                 }
-                else
-                {
-                    catChange.ChangedCodesDetail.Add(
-                            new CodeChangeDetail
-                            {
-                                ChangeId = changedItem.ChangeId,
-                                Fields = fields
-                            }
-                        );
-                }
+                return catChange;
             }
-            return catChange;
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetChangeCategoryDetail", "");
+                throw ex;
+            }
         }
 
         private string? GetCodeName(SiteChangeDb change)
         {
-            if (change.Code == null) return "";
-            var name = "";
-            switch (change.Section)
+            try
             {
-                case "Site":
-                case "BioRegions":
-                    if (_dataContext.Set<Sites>().FirstOrDefault(sp => sp.SiteCode.ToLower() == change.Code.ToLower() && sp.Version == change.Version) != null)
-                    {
-                        name = _dataContext.Set<Sites>().FirstOrDefault(sp => sp.SiteCode.ToLower() == change.Code.ToLower() && sp.Version == change.Version).Name;
-                    }
-                    break;
+                if (change.Code == null) return "";
+                var name = "";
+                switch (change.Section)
+                {
+                    case "Site":
+                    case "BioRegions":
+                        if (_dataContext.Set<Sites>().FirstOrDefault(sp => sp.SiteCode.ToLower() == change.Code.ToLower() && sp.Version == change.Version) != null)
+                        {
+                            name = _dataContext.Set<Sites>().FirstOrDefault(sp => sp.SiteCode.ToLower() == change.Code.ToLower() && sp.Version == change.Version).Name;
+                        }
+                        break;
 
-                case "Species":
-                    if (_speciesTypes.FirstOrDefault(sp => sp.Code.ToLower() == change.Code.ToLower()) != null)
-                    {
-                        name = _speciesTypes.FirstOrDefault(sp => sp.Code.ToLower() == change.Code.ToLower()).Name;
-                    }
-                    break;
+                    case "Species":
+                        if (_speciesTypes.FirstOrDefault(sp => sp.Code.ToLower() == change.Code.ToLower()) != null)
+                        {
+                            name = _speciesTypes.FirstOrDefault(sp => sp.Code.ToLower() == change.Code.ToLower()).Name;
+                        }
+                        break;
 
-                case "Habitats":
-                    if (_habitatTypes.FirstOrDefault(hab => hab.Code.ToLower() == change.Code.ToLower()) != null)
-                        name = _habitatTypes.FirstOrDefault(hab => hab.Code.ToLower() == change.Code.ToLower()).Name;
-                    break;
+                    case "Habitats":
+                        if (_habitatTypes.FirstOrDefault(hab => hab.Code.ToLower() == change.Code.ToLower()) != null)
+                            name = _habitatTypes.FirstOrDefault(hab => hab.Code.ToLower() == change.Code.ToLower()).Name;
+                        break;
 
-                default:
-                    name = "";
-                    break;
+                    default:
+                        name = "";
+                        break;
 
 
+                }
+                return name;
             }
-            return name;
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetCodeName", "");
+                throw ex;
+            }
         }
 
 
         private CodeChangeDetail? CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion, int versionReferenceId)
         {
-            var fields = new Dictionary<string, string>();
-            switch (section)
+            try
             {
-                case "Species":
-                    string? specName = null;
-                    string? population = null;
-                    string? specType = null;
+                var fields = new Dictionary<string, string>();
+                switch (section)
+                {
+                    case "Species":
+                        string? specName = null;
+                        string? population = null;
+                        string? specType = null;
 
-                    if (code != null)
-                    {
-                        SpeciesTypes? _spectype = _speciesTypes.FirstOrDefault(s => s.Code.ToLower() == code.ToLower());
-                        if (_spectype != null) specName = _spectype.Name;
+                        if (code != null)
+                        {
+                            SpeciesTypes? _spectype = _speciesTypes.FirstOrDefault(s => s.Code.ToLower() == code.ToLower());
+                            if (_spectype != null) specName = _spectype.Name;
 
-                        var specDetails = _siteSpecies.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
-                            .Select(spc => new
+                            var specDetails = _siteSpecies.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
+                                .Select(spc => new
+                                {
+                                    Population = spc.Population,
+                                    SpecType = spc.SpecieType
+                                }).FirstOrDefault();
+                            if (specDetails == null)
                             {
-                                Population = spc.Population,
-                                SpecType = spc.SpecieType
-                            }).FirstOrDefault();
-                        if (specDetails == null)
-                        {
-                            specDetails = _siteSpeciesOther.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
-                            .Select(spc => new
+                                specDetails = _siteSpeciesOther.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
+                                .Select(spc => new
+                                {
+                                    Population = spc.Population,
+                                    SpecType = spc.SpecieType
+                                }).FirstOrDefault();
+                            }
+                            if (specDetails == null)
                             {
-                                Population = spc.Population,
-                                SpecType = spc.SpecieType
-                            }).FirstOrDefault();
-                        }
-                        if (specDetails == null)
-                        {
-                            specDetails = _siteSpeciesReference.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == versionReferenceId)
-                            .Select(spc => new
+                                specDetails = _siteSpeciesReference.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == versionReferenceId)
+                                .Select(spc => new
+                                {
+                                    Population = spc.Population,
+                                    SpecType = spc.SpecieType
+                                }).FirstOrDefault();
+                            }
+                            if (specDetails == null)
                             {
-                                Population = spc.Population,
-                                SpecType = spc.SpecieType
-                            }).FirstOrDefault();
-                        }
-                        if (specDetails == null)
-                        {
-                            specDetails = _siteSpeciesOtherReference.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == versionReferenceId)
-                            .Select(spc => new
+                                specDetails = _siteSpeciesOtherReference.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == versionReferenceId)
+                                .Select(spc => new
+                                {
+                                    Population = spc.Population,
+                                    SpecType = spc.SpecieType
+                                }).FirstOrDefault();
+                            }
+                            if (specDetails != null)
                             {
-                                Population = spc.Population,
-                                SpecType = spc.SpecieType
-                            }).FirstOrDefault();
+                                population = specDetails.Population;
+                                specType = specDetails.SpecType;
+                            }
                         }
-                        if (specDetails != null)
-                        {
-                            population = specDetails.Population;
-                            specType = specDetails.SpecType;
-                        }
-                    }
-                    fields.Add("Population", population);
-                    fields.Add("SpeciesType", specType);
+                        fields.Add("Population", population);
+                        fields.Add("SpeciesType", specType);
 
-                    if (specName != String.Empty && specName != null)
-                    {
+                        if (specName != String.Empty && specName != null)
+                        {
+                            return new CodeChangeDetail
+                            {
+                                ChangeId = changeId,
+                                Code = code,
+                                Name = specName,
+                                Fields = fields
+
+                            };
+                        }
+                        else
+                        {
+                            return new CodeChangeDetail
+                            {
+                                ChangeId = changeId,
+                                Code = "-",
+                                Name = code,
+                                Fields = fields
+
+                            };
+                        }
+
+                    case "Habitats":
+                        string? habName = null;
+                        string? coverHa = null;
+                        string? relSurface = null;
+                        if (code != null)
+                        {
+
+                            var habType = _habitatTypes.Where(s => s.Code.ToLower() == code.ToLower()).Select(spc => spc.Name).FirstOrDefault();
+                            if (habType != null) habName = habType;
+
+                            var habDetails = _siteHabitats.Where(sh => sh.HabitatCode.ToLower() == code.ToLower())
+                                .Select(hab => new
+                                {
+                                    CoverHA = hab.CoverHA.ToString(),
+                                    RelativeSurface = hab.RelativeSurface
+                                }).FirstOrDefault();
+
+                            if (habDetails == null)
+                            {
+                                habDetails = _siteHabitatsReference.Where(sh => sh.HabitatCode.ToLower() == code.ToLower() && sh.Version == versionReferenceId)
+                                .Select(hab => new
+                                {
+                                    CoverHA = hab.CoverHA.ToString(),
+                                    RelativeSurface = hab.RelativeSurface
+                                }).FirstOrDefault();
+                            }
+                            if (habDetails != null)
+                            {
+                                relSurface = habDetails.RelativeSurface;
+                                coverHa = habDetails.CoverHA;
+                            }
+                        }
+                        fields.Add("CoverHa", coverHa);
+                        fields.Add("RelativeSurface", relSurface);
+
                         return new CodeChangeDetail
                         {
                             ChangeId = changeId,
                             Code = code,
-                            Name = specName,
+                            Name = habName,
                             Fields = fields
-
                         };
-                    }
-                    else
-                    {
-                        return new CodeChangeDetail
-                        {
-                            ChangeId = changeId,
-                            Code = "-",
-                            Name = code,
-                            Fields = fields
+                }
 
-                        };
-                    }
-
-                case "Habitats":
-                    string? habName = null;
-                    string? coverHa = null;
-                    string? relSurface = null;
-                    if (code != null)
-                    {
-
-                        var habType = _habitatTypes.Where(s => s.Code.ToLower() == code.ToLower()).Select(spc => spc.Name).FirstOrDefault();
-                        if (habType != null) habName = habType;
-
-                        var habDetails = _siteHabitats.Where(sh => sh.HabitatCode.ToLower() == code.ToLower())
-                            .Select(hab => new
-                            {
-                                CoverHA = hab.CoverHA.ToString(),
-                                RelativeSurface = hab.RelativeSurface
-                            }).FirstOrDefault();
-
-                        if (habDetails == null)
-                        {
-                            habDetails = _siteHabitatsReference.Where(sh => sh.HabitatCode.ToLower() == code.ToLower() && sh.Version == versionReferenceId)
-                            .Select(hab => new
-                            {
-                                CoverHA = hab.CoverHA.ToString(),
-                                RelativeSurface = hab.RelativeSurface
-                            }).FirstOrDefault();
-                        }
-                        if (habDetails != null)
-                        {
-                            relSurface = habDetails.RelativeSurface;
-                            coverHa = habDetails.CoverHA;
-                        }
-                    }
-                    fields.Add("CoverHa", coverHa);
-                    fields.Add("RelativeSurface", relSurface);
-
-                    return new CodeChangeDetail
-                    {
-                        ChangeId = changeId,
-                        Code = code,
-                        Name = habName,
-                        Fields = fields
-                    };
+                return null;
             }
-
-            return null;
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - CodeAddedRemovedDetail", "");
+                throw ex;
+            }
         }
 
 
@@ -877,7 +964,6 @@ namespace N2K_BackboneBackEnd.Services
                 SqlDataReader reader = null;
                 try
                 {
-
                     backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
                     backboneConn.Open();
                     command = new SqlCommand(queryString, backboneConn);
@@ -902,7 +988,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "AcceptChanges", "");
+                    throw ex;
                 }
                 finally
                 {
@@ -913,7 +999,6 @@ namespace N2K_BackboneBackEnd.Services
 
                 try
                 {
-
                     SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
                     paramTable.Value = sitecodesfilter;
                     paramTable.TypeName = "[dbo].[SiteCodeFilter]";
@@ -923,12 +1008,12 @@ namespace N2K_BackboneBackEnd.Services
                             paramTable);
 
                     SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
-
                 }
-                catch
+                catch (Exception ex)
                 {
+                    throw ex;
                 }
-                
+
                 //Refresh site codes cache
                 if (result.Count > 0)
                 {
@@ -942,15 +1027,14 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Accepted, level, cache, false);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, false);
                 }
-                
+
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - AcceptChanges", "");
+                throw ex;
             }
-
-
         }
 
 
@@ -1028,8 +1112,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "RejectChanges", "");
-
+                    throw ex;
                 }
                 finally
                 {
@@ -1037,9 +1120,6 @@ namespace N2K_BackboneBackEnd.Services
                     if (command != null) command.Dispose();
                     if (backboneConn != null) backboneConn.Dispose();
                 }
-
-
-
 
                 try
                 {
@@ -1053,13 +1133,12 @@ namespace N2K_BackboneBackEnd.Services
 
                     SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    throw ex;
                 }
 
                 //refresh the cache
-                
                 if (result.Count > 0)
                 {
                     var country = (result.First().SiteCode).Substring(0, 2);
@@ -1072,16 +1151,14 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, false);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, false);
                 }
-                
+
                 return result;
-
-
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - RejectChanges", "");
+                throw ex;
             }
-
         }
 
 
@@ -1124,7 +1201,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load Activities", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetSiteActivities", "");
+                throw ex;
             }
             finally
             {
@@ -1195,7 +1273,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load changes", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetChanges", "");
+                throw ex;
             }
             finally
             {
@@ -1208,7 +1287,6 @@ namespace N2K_BackboneBackEnd.Services
 
         private async Task<List<Sites>> GetSites(DataTable sitecodesfilter)
         {
-
             List<Sites> sites = new List<Sites>();
             string queryString = @" SELECT Sites.[SiteCode],Sites.[Version],[Current],[Name],[CompilationDate],[ModifyTS],[CurrentStatus],[CountryCode],[SiteType],[AltitudeMin],[AltitudeMax],[N2KVersioningVersion],[N2KVersioningRef],[Area],[Length],[JustificationRequired],[JustificationProvided],[DateConfSCI],[SCIOverwriten],[Priority],[DatePropSCI],[DateSpa],[DateSac]  
                                     FROM [dbo].[Sites]
@@ -1279,7 +1357,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load changes", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetSites", "");
+                throw ex;
             }
             finally
             {
@@ -1292,20 +1371,28 @@ namespace N2K_BackboneBackEnd.Services
 
         public DataSet GetDataSet(string storedProcName, DataTable param)
         {
-            SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
-            var command = new SqlCommand(storedProcName, backboneConn) { CommandType = CommandType.StoredProcedure };
-            SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-            paramTable1.Value = param;
-            paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
-            command.Parameters.Add(paramTable1);
-            var result = new DataSet();
-            var dataAdapter = new SqlDataAdapter(command);
-            dataAdapter.Fill(result);
+            try
+            {
+                SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                var command = new SqlCommand(storedProcName, backboneConn) { CommandType = CommandType.StoredProcedure };
+                SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable1.Value = param;
+                paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+                command.Parameters.Add(paramTable1);
+                var result = new DataSet();
+                var dataAdapter = new SqlDataAdapter(command);
+                dataAdapter.Fill(result);
 
-            dataAdapter.Dispose();
-            command.Dispose();
-            backboneConn.Dispose();
-            return result;
+                dataAdapter.Dispose();
+                command.Dispose();
+                backboneConn.Dispose();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetDataSet", "");
+                throw ex;
+            }
         }
 
         public async Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
@@ -1493,8 +1580,8 @@ namespace N2K_BackboneBackEnd.Services
                     change.Level = levelChange;
 
                     //take the name of the site from the list created in the previous step
-                    var _site= sitesDB.Where(s => s.SiteCode == change.SiteCode && s.Version == change.Version).FirstOrDefault();
-                    if (_site != null)  change.SiteName = _site.Name;
+                    var _site = sitesDB.Where(s => s.SiteCode == change.SiteCode && s.Version == change.Version).FirstOrDefault();
+                    if (_site != null) change.SiteName = _site.Name;
 
                     SiteChangeStatus statusChange;
                     Enum.TryParse<SiteChangeStatus>(row["Status"].ToString(), out statusChange);
@@ -1595,15 +1682,12 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         #endregion
 
-
-
                         //Get the previous level and status to find the proper cached lists
                         level = (Level)changes.Max(a => a.Level);
                         status = (SiteChangeStatus)changes.FirstOrDefault().Status;
 
                         //Alter cached list. It comes from Removed or Accepted list and goes to Pending list
                         await swapSiteInListCache(cache, SiteChangeStatus.Pending, level, status, mySiteView);
-
 
                         modifiedSiteCode.OK = 1;
                         modifiedSiteCode.Error = string.Empty;
@@ -1662,9 +1746,9 @@ namespace N2K_BackboneBackEnd.Services
                     //Save new avtivities
                     SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    throw;
+                    throw ex;
                 }
 
                 ////GetSiteCodesByStatusAndLevelAndCountry
@@ -1677,13 +1761,14 @@ namespace N2K_BackboneBackEnd.Services
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, false);
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache,false);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, false);
                 }
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - MoveToPending", "");
+                throw ex;
             }
 
 
@@ -1726,9 +1811,10 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - MarkAsJustificationRequired", "");
+                throw ex;
             }
         }
 
@@ -1770,11 +1856,11 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - JustificationProvided", "");
+                throw ex;
             }
-
         }
 
 
@@ -1792,7 +1878,6 @@ namespace N2K_BackboneBackEnd.Services
             await Task.Delay(1);
             List<SiteCodeView> cachedlist = new List<SiteCodeView>();
 
-
             //Site comes from this list
             string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", pSite.SiteCode.Substring(0, 2), pListNameFrom.ToString(), pLevel.ToString());
             if (pCache.TryGetValue(listName, out cachedlist))
@@ -1803,7 +1888,6 @@ namespace N2K_BackboneBackEnd.Services
                     cachedlist.Remove(element);
                 }
             }
-
 
             //Site goes to that list
             listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", pSite.SiteCode.Substring(0, 2), pStatus.ToString(), pLevel.ToString());
@@ -1819,7 +1903,6 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     cachedlist.Add(pSite);
                 }
-
             }
             return null;
         }
