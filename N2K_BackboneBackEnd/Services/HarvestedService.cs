@@ -1581,24 +1581,24 @@ namespace N2K_BackboneBackEnd.Services
                         if (toStatus == HarvestingStatus.Harvested || toStatus == HarvestingStatus.Closed)
                         {
                             //Remove country site changes cache
-                            var field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                            var collection = field.GetValue(cache) as System.Collections.ICollection;
-                            if (collection != null)
-                            {
-                                foreach (var item in collection)
-                                {
-                                    var methodInfo = item.GetType().GetProperty("Key");
-                                    string listName = methodInfo.GetValue(item).ToString();
+                            //var field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                            //var collection = field.GetValue(cache) as System.Collections.ICollection;
+                            //if (collection != null)
+                            //{
+                            //    foreach (var item in collection)
+                            //    {
+                            //        var methodInfo = item.GetType().GetProperty("Key");
+                            //        string listName = methodInfo.GetValue(item).ToString();
 
-                                    if (!string.IsNullOrEmpty(listName))
-                                    {
-                                        if (listName.IndexOf(country) != -1)
-                                        {
-                                            cache.Remove(listName);
-                                        }
-                                    }
-                                }
-                            }
+                            //        if (!string.IsNullOrEmpty(listName))
+                            //        {
+                            //            if (listName.IndexOf(country) != -1)
+                            //            {
+                            //                cache.Remove(listName);
+                            //            }
+                            //        }
+                            //    }
+                            //}
                         }
 
                         envelope.Status = toStatus;
