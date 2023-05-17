@@ -427,9 +427,9 @@ namespace N2K_BackboneBackEnd.Services
                 if (refresh) cache.Remove(listName);
 
                 var result = new List<SiteCodeView>();
-                if (false)
+                if (cache.TryGetValue(listName, out List<SiteCodeView> cachedList))
                 {
-                    //result = cachedList;
+                    result = cachedList;
                 }
                 else
                 {
@@ -463,12 +463,12 @@ namespace N2K_BackboneBackEnd.Services
                         };
                         result.Add(temp);
                     }
-                    //var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    //        .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
-                    //        .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
-                    //        .SetPriority(CacheItemPriority.Normal)
-                    //        .SetSize(40000);
-                    //cache.Set(listName, result, cacheEntryOptions);
+                    var cacheEntryOptions = new MemoryCacheEntryOptions()
+                            .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
+                            .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
+                            .SetPriority(CacheItemPriority.Normal)
+                            .SetSize(40000);
+                    cache.Set(listName, result, cacheEntryOptions);
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
