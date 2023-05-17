@@ -31,8 +31,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public DateTime? DatePropSCI { get; set; }
         public DateTime? DateSpa { get; set; }
         public DateTime? DateSac { get; set; }
-        public decimal? Latitude { get; set; }
-        public decimal? Longitude { get; set; }
 
         private string dbConnection = "";
 

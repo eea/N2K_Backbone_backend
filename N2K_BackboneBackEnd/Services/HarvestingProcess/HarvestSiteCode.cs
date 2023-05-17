@@ -200,8 +200,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.DatePropSCI = pVSite.DATE_PROP_SCI;
                 bbSite.DateSpa = pVSite.DATE_SPA;
                 bbSite.DateSac = pVSite.DATE_SAC;
-                bbSite.Latitude = pVSite.LATITUDE;
-                bbSite.Longitude = pVSite.LONGITUDE;
                 return bbSite;
             }
             catch (Exception ex)

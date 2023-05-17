@@ -118,387 +118,337 @@ namespace N2K_BackboneBackEnd.Services
         #region SiteGeometry
         public async Task<SiteGeometryDetailed> GetSiteGeometry(string siteCode, int version)
         {
-            try
-            {
-                SiteGeometryDetailed result = new SiteGeometryDetailed();
-                SqlParameter param1 = new SqlParameter("@SiteCode", siteCode);
-                SqlParameter param2 = new SqlParameter("@Version", version);
+            SiteGeometryDetailed result = new SiteGeometryDetailed();
+            SqlParameter param1 = new SqlParameter("@SiteCode", siteCode);
+            SqlParameter param2 = new SqlParameter("@Version", version);
 
-                var geometries = await _dataContext.Set<SiteGeometryDetailed>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometryDetailed  @SiteCode, @Version",
-                                param1, param2).ToArrayAsync();
+            var geometries = await _dataContext.Set<SiteGeometryDetailed>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometryDetailed  @SiteCode, @Version",
+                            param1, param2).ToArrayAsync();
 
 
 #pragma warning disable CS8603 // Posible tipo de valor devuelto de referencia nulo
-                if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].SiteCode))
-                    return geometries[0];
+            if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].SiteCode))
+                return geometries[0];
 
 #pragma warning restore CS8603 // Posible tipo de valor devuelto de referencia nulo
-                return result;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteDetailsService - GetSiteGeometry", "");
-                throw ex;
-            }
+            return result;
         }
         #endregion 
 
+
+
         #region SiteComments
+
         public async Task<List<StatusChanges>> ListSiteComments(string pSiteCode, int pCountryVersion, IMemoryCache cache, bool temporal = false)
         {
-            try
-            {
-                List<StatusChanges> result = new List<StatusChanges>();
-                result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == pSiteCode && ch.Version == pCountryVersion).ToListAsync();
+            List<StatusChanges> result = new List<StatusChanges>();
+            result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == pSiteCode && ch.Version == pCountryVersion).ToListAsync();
 
-                if (temporal)
-                {
-                    CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
-                    return ComItem.GetFinalList(result);
-                }
-                return result;
-            }
-            catch (Exception ex)
+            if (temporal)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteDetailsService - ListSiteComments", "");
-                throw ex;
+                CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                return ComItem.GetFinalList(result);
             }
+            return result;
         }
 
 
         public async Task<List<StatusChanges>> AddComment(StatusChanges comment, IMemoryCache cache, bool temporal = false)
         {
-            try
+            List<StatusChanges> result = new List<StatusChanges>();
+            comment.Date = DateTime.Now;
+            comment.Owner = GlobalData.Username;
+            comment.Temporal = true;
+            comment.Edited = 0;
+
+            if (!temporal)
             {
-                List<StatusChanges> result = new List<StatusChanges>();
-                comment.Date = DateTime.Now;
-                comment.Owner = GlobalData.Username;
+                comment.Temporal = false;
+                await _dataContext.Set<StatusChanges>().AddAsync(comment);
+                await _dataContext.SaveChangesAsync();
+                result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
+
+            }
+            else
+            {
                 comment.Temporal = true;
-                comment.Edited = 0;
+                CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                List<StatusChanges> cachedList = ComItem.GetCachedList();
+                comment.Id = GetRandomId();
+                cachedList.Add(comment);
 
-                if (!temporal)
-                {
-                    comment.Temporal = false;
-                    await _dataContext.Set<StatusChanges>().AddAsync(comment);
-                    await _dataContext.SaveChangesAsync();
-                    result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == comment.SiteCode && ch.Version == comment.Version).ToListAsync();
-
-                }
-                else
-                {
-                    comment.Temporal = true;
-                    CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
-                    List<StatusChanges> cachedList = ComItem.GetCachedList();
-                    comment.Id = GetRandomId();
-                    cachedList.Add(comment);
-
-                    cache.Set(comlistName, cachedList);
-                    return await ListSiteComments(comment.SiteCode, comment.Version, cache, temporal);
-                }
-                return result;
+                cache.Set(comlistName, cachedList);
+                return await ListSiteComments(comment.SiteCode, comment.Version, cache, temporal);
             }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteDetailsService - AddComment", "");
-                throw ex;
-            }
+            return result;
         }
 
         public async Task<int> DeleteComment(long CommentId, IMemoryCache cache, bool temporal = false)
         {
-            try
+            int result = 0;
+            StatusChanges? comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == CommentId);
+            if (temporal)
             {
-                int result = 0;
-                StatusChanges? comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == CommentId);
-                if (temporal)
+                CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                List<StatusChanges> cachedList = ComItem.GetCachedList();
+                //if it is a comment existing in the database add it to the cache tagged as deleted
+                if (comment != null)
                 {
-                    CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
-                    List<StatusChanges> cachedList = ComItem.GetCachedList();
-                    //if it is a comment existing in the database add it to the cache tagged as deleted
-                    if (comment != null)
-                    {
-                        comment.EditedDate = DateTime.Now;
-                        comment.Tags = "Deleted";
-                        comment.Editedby = GlobalData.Username;
-                        cachedList.Add(comment);
+                    comment.EditedDate = DateTime.Now;
+                    comment.Tags = "Deleted";
+                    comment.Editedby = GlobalData.Username;
+                    cachedList.Add(comment);
 
-                        cache.Set(comlistName, cachedList);
-                        return 1;
-                    }
-                    else
-                        //it is a temp comment, delete it from cache
-                        if (cachedList.FirstOrDefault(a => a.Id == CommentId) != null)
-                    {
-                        cachedList.Remove(cachedList.FirstOrDefault(a => a.Id == CommentId));
-                        cache.Set(comlistName, cachedList);
-                        return 1;
-                    }
-                    return 0;
+                    cache.Set(comlistName, cachedList);
+                    return 1;
                 }
                 else
+                    //it is a temp comment, delete it from cache
+                    if (cachedList.FirstOrDefault(a => a.Id == CommentId) != null)
                 {
-                    if (comment != null)
-                    {
-                        _dataContext.Set<StatusChanges>().Remove(comment);
-                        await _dataContext.SaveChangesAsync();
-                        result = 1;
-                    }
+                    cachedList.Remove(cachedList.FirstOrDefault(a => a.Id == CommentId));
+                    cache.Set(comlistName, cachedList);
+                    return 1;
                 }
-                return result;
+                return 0;
             }
-            catch (Exception ex)
+            else
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteDetailsService - DeleteComment", "");
-                throw ex;
+                if (comment != null)
+                {
+                    _dataContext.Set<StatusChanges>().Remove(comment);
+                    await _dataContext.SaveChangesAsync();
+                    result = 1;
+                }
             }
+            return result;
         }
 
         public async Task<List<StatusChanges>> UpdateComment(StatusChanges comment, IMemoryCache cache, bool temporal = false)
         {
-            try
+            List<StatusChanges> result = new List<StatusChanges>();
+            var edited = 1;
+            List<StatusChanges> cachedList = new List<StatusChanges>();
+            StatusChanges? _comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == comment.Id);
+            if (temporal)
             {
-                List<StatusChanges> result = new List<StatusChanges>();
-                var edited = 1;
-                List<StatusChanges> cachedList = new List<StatusChanges>();
-                StatusChanges? _comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == comment.Id);
-                if (temporal)
+                CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                cachedList = ComItem.GetCachedList();
+                //if it is a comment existing in the database add it to the cache tagged as updated
+                if (_comment != null)
                 {
-                    CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
-                    cachedList = ComItem.GetCachedList();
-                    //if it is a comment existing in the database add it to the cache tagged as updated
-                    if (_comment != null)
+                    if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
+                    var item = cachedList.FirstOrDefault(a => a.Id == comment.Id);
+                    if (item != null)
                     {
-                        if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
-                        var item = cachedList.FirstOrDefault(a => a.Id == comment.Id);
-                        if (item != null)
-                        {
-                            item.EditedDate = DateTime.Now;
-                            item.Edited = edited;
-                            item.Editedby = GlobalData.Username;
-                            item.Tags = "Updated";
-                            item.Comments = comment.Comments;
-                            item.Date = _comment.Date;
-                            item.Owner = _comment.Owner;
-                        }
-                        else
-                        {
-                            comment.Date = _comment.Date;
-                            comment.Owner = _comment.Owner;
-                            comment.EditedDate = DateTime.Now;
-                            comment.Edited = edited;
-                            comment.Temporal = true;
-                            comment.Editedby = GlobalData.Username;
-                            comment.Tags = "Updated";
-                            cachedList.Add(comment);
-                        }
-                        cache.Set(comlistName, cachedList);
+                        item.EditedDate = DateTime.Now;
+                        item.Edited = edited;
+                        item.Editedby = GlobalData.Username;
+                        item.Tags = "Updated";
+                        item.Comments = comment.Comments;
+                        item.Date = _comment.Date;
+                        item.Owner = _comment.Owner;
                     }
                     else
                     {
-                        //cyeck if it exists in the cache and update the item
-                        if (cachedList.FirstOrDefault(a => a.Id == comment.Id) != null)
-                        {
-                            var item = cachedList.FirstOrDefault(a => a.Id == comment.Id);
-                            item.Comments = comment.Comments;
-                            item.Justification = comment.Justification;
-                        }
-                    }
-                }
-
-                else
-                {
-                    if (_comment != null)
-                    {
-                        if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
-
+                        comment.Date = _comment.Date;
+                        comment.Owner = _comment.Owner;
                         comment.EditedDate = DateTime.Now;
                         comment.Edited = edited;
+                        comment.Temporal = true;
                         comment.Editedby = GlobalData.Username;
-                        _dataContext.Set<StatusChanges>().Update(comment);
-                        await _dataContext.SaveChangesAsync();
+                        comment.Tags = "Updated";
+                        cachedList.Add(comment);
+                    }
+                    cache.Set(comlistName, cachedList);
+                }
+                else
+                {
+                    //cyeck if it exists in the cache and update the item
+                    if (cachedList.FirstOrDefault(a => a.Id == comment.Id) != null)
+                    {
+                        var item = cachedList.FirstOrDefault(a => a.Id == comment.Id);
+                        item.Comments = comment.Comments;
+                        item.Justification = comment.Justification;
                     }
                 }
+            }
 
-                return await ListSiteComments(comment.SiteCode, comment.Version, cache, temporal);
-            }
-            catch (Exception ex)
+            else
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteDetailsService - UpdateComment", "");
-                throw ex;
+                if (_comment != null)
+                {
+                    if (_comment.Edited.HasValue) edited = _comment.Edited.Value + 1;
+
+                    comment.EditedDate = DateTime.Now;
+                    comment.Edited = edited;
+                    comment.Editedby = GlobalData.Username;
+                    _dataContext.Set<StatusChanges>().Update(comment);
+                    await _dataContext.SaveChangesAsync();
+                }
             }
+
+            return await ListSiteComments(comment.SiteCode, comment.Version, cache, temporal);
         }
+
+
         #endregion
 
         #region SiteFiles
+
         public async Task<List<JustificationFiles>> ListSiteFiles(string pSiteCode, int pCountryVersion, IMemoryCache cache, bool temporal = false)
         {
-            try
-            {
-                List<JustificationFiles> result = new List<JustificationFiles>();
-                result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(f => f.SiteCode == pSiteCode && f.Version == pCountryVersion).ToListAsync();
 
-                if (temporal)
-                {
-                    CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
-                    return JustifItem.GetFinalList(result);
-                }
-                return result;
-            }
-            catch (Exception ex)
+            List<JustificationFiles> result = new List<JustificationFiles>();
+            result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(f => f.SiteCode == pSiteCode && f.Version == pCountryVersion).ToListAsync();
+
+            if (temporal)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteDetailsService - ListSiteFiles", "");
-                throw ex;
+                CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
+                return JustifItem.GetFinalList(result);
             }
+            return result;
         }
 
         public async Task<List<JustificationFiles>> UploadFile(AttachedFile attachedFile, IMemoryCache cache, bool temporal = false)
         {
-            try
+            List<JustificationFiles> result = new List<JustificationFiles>();
+            IAttachedFileHandler? fileHandler = null;
+            var username = GlobalData.Username;
+
+            if (_appSettings.Value.AttachedFiles == null) return result;
+
+            if (_appSettings.Value.AttachedFiles.AzureBlob)
             {
-                List<JustificationFiles> result = new List<JustificationFiles>();
-                IAttachedFileHandler? fileHandler = null;
-                var username = GlobalData.Username;
-
-                if (_appSettings.Value.AttachedFiles == null) return result;
-
-                if (_appSettings.Value.AttachedFiles.AzureBlob)
+                fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+            }
+            else
+            {
+                fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+            }
+            var fileUrl = await fileHandler.UploadFileAsync(attachedFile);
+            List<JustificationFiles> cachedList = new List<JustificationFiles>();
+            foreach (var fUrl in fileUrl)
+            {
+                JustificationFiles justFile = new JustificationFiles
                 {
-                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                    Path = fUrl,
+                    SiteCode = attachedFile.SiteCode,
+                    Version = attachedFile.Version,
+                    ImportDate = DateTime.Now,
+                    Username = username
+                };
+                if (temporal)
+                {
+
+                    CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
+                    cachedList = JustifItem.GetCachedList();
+                    justFile.Id = GetRandomId();
+                    cachedList.Add(justFile);
+
+                    cache.Set(justiflistName, cachedList);
                 }
                 else
                 {
-                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                    await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
+                    await _dataContext.SaveChangesAsync();
                 }
-                var fileUrl = await fileHandler.UploadFileAsync(attachedFile);
-                List<JustificationFiles> cachedList = new List<JustificationFiles>();
-                foreach (var fUrl in fileUrl)
-                {
-                    JustificationFiles justFile = new JustificationFiles
-                    {
-                        Path = fUrl,
-                        SiteCode = attachedFile.SiteCode,
-                        Version = attachedFile.Version,
-                        ImportDate = DateTime.Now,
-                        Username = username
-                    };
-                    if (temporal)
-                    {
-                        CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
-                        cachedList = JustifItem.GetCachedList();
-                        justFile.Id = GetRandomId();
-                        cachedList.Add(justFile);
-                        cache.Set(justiflistName, cachedList);
-                    }
-                    else
-                    {
-                        await _dataContext.Set<JustificationFiles>().AddAsync(justFile);
-                        await _dataContext.SaveChangesAsync();
-                    }
-                }
-                return await ListSiteFiles(attachedFile.SiteCode, attachedFile.Version, cache, temporal);
+
+
             }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteDetailsService - UploadFile", "");
-                throw ex;
-            }
+            return await ListSiteFiles(attachedFile.SiteCode, attachedFile.Version, cache, temporal);
         }
 
 
         public async Task<int> DeleteFile(long justificationId, IMemoryCache cache, bool temporal = false)
         {
-            try
+            int result = 0;
+            JustificationFiles? justification = await _dataContext.Set<JustificationFiles>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == justificationId);
+            if (temporal)
             {
-                int result = 0;
-                JustificationFiles? justification = await _dataContext.Set<JustificationFiles>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == justificationId);
-                if (temporal)
+                CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
+                List<JustificationFiles> cachedList = JustifItem.GetCachedList();
+                //if it is a justification existing in the database, add it to the cache tagged as deleted
+                if (justification != null)
                 {
-                    CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
-                    List<JustificationFiles> cachedList = JustifItem.GetCachedList();
-                    //if it is a justification existing in the database, add it to the cache tagged as deleted
-                    if (justification != null)
-                    {
-                        justification.Tags = "Deleted";
-                        cachedList.Add(justification);
-                        cache.Set(justiflistName, cachedList);
-                        return 1;
-                    }
-                    else
-                    {
-                        //it is a temp justification, delete it from cache
-                        if (cachedList.FirstOrDefault(a => a.Id == justificationId) != null)
-                        {
-                            //check if the file is linked to another id
-                            //if not delete from repository
-                            //delete file from repository
-                            JustificationFiles cachedItem = cachedList.FirstOrDefault(a => a.Id == justificationId);
-
-                            if (!_dataContext.Set<JustificationFiles>().Any(it => it.Path == cachedItem.Path))
-                            {
-                                IAttachedFileHandler? fileHandler = null;
-                                if (_appSettings.Value.AttachedFiles == null) return 0;
-                                if (_appSettings.Value.AttachedFiles.AzureBlob)
-                                {
-                                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
-                                }
-                                else
-                                {
-                                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
-                                }
-                                if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
-                            }
-
-                            //remove item from cache
-                            cachedList.Remove(cachedList.FirstOrDefault(a => a.Id == justificationId));
-                            cache.Set(justiflistName, cachedList);
-                            return 1;
-                        }
-                    }
-                    return 0;
+                    justification.Tags = "Deleted";
+                    cachedList.Add(justification);
+                    cache.Set(justiflistName, cachedList);
+                    return 1;
                 }
                 else
                 {
-                    if (justification != null)
+                    //it is a temp justification, delete it from cache
+                    if (cachedList.FirstOrDefault(a => a.Id == justificationId) != null)
                     {
-                        //delete record from DB
-                        _dataContext.Set<JustificationFiles>().Remove(justification);
-                        await _dataContext.SaveChangesAsync();
+                        //check if the file is linked to another id
+                        //if not delete from repository
+                        //delete file from repository
+                        JustificationFiles cachedItem = cachedList.FirstOrDefault(a => a.Id == justificationId);
+
+                        if (!_dataContext.Set<JustificationFiles>().Any(it => it.Path == cachedItem.Path))
+                        {
+                            IAttachedFileHandler? fileHandler = null;
+                            if (_appSettings.Value.AttachedFiles == null) return 0;
+                            if (_appSettings.Value.AttachedFiles.AzureBlob)
+                            {
+                                fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                            }
+                            else
+                            {
+                                fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                            }
+                            if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
+                        }
+
+                        //remove item from cache
+                        cachedList.Remove(cachedList.FirstOrDefault(a => a.Id == justificationId));
+                        cache.Set(justiflistName, cachedList);
+                        return 1;
                     }
                 }
-
+                return 0;
+            }
+            else
+            {
                 if (justification != null)
                 {
-                    if (!temporal)
-                    {
-                        //delete record from DB
-                        _dataContext.Set<JustificationFiles>().Remove(justification);
-                        await _dataContext.SaveChangesAsync();
-
-                        //delete file from repository
-                        IAttachedFileHandler? fileHandler = null;
-                        if (_appSettings.Value.AttachedFiles == null) return 0;
-                        if (_appSettings.Value.AttachedFiles.AzureBlob)
-                        {
-                            fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
-                        }
-                        else
-                        {
-                            fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
-                        }
-
-                        if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
-                        result = 1;
-                    }
+                    //delete record from DB
+                    _dataContext.Set<JustificationFiles>().Remove(justification);
+                    await _dataContext.SaveChangesAsync();
                 }
-                return result;
             }
-            catch (Exception ex)
+
+            if (justification != null)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteDetailsService - DeleteFile", "");
-                throw ex;
+                if (!temporal)
+                {
+                    //delete record from DB
+                    _dataContext.Set<JustificationFiles>().Remove(justification);
+                    await _dataContext.SaveChangesAsync();
+
+
+                    //delete file from repository
+                    IAttachedFileHandler? fileHandler = null;
+                    if (_appSettings.Value.AttachedFiles == null) return 0;
+                    if (_appSettings.Value.AttachedFiles.AzureBlob)
+                    {
+                        fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                    }
+                    else
+                    {
+                        fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                    }
+
+                    if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
+                    result = 1;
+                }
             }
+            return result;
+
         }
         #endregion
+
 
         #region SiteEdition
         public async Task<string> SaveEdition(ChangeEditionDb changeEdition, IMemoryCache cache)
@@ -649,12 +599,12 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (System.InvalidOperationException iex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, string.Format("The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ") {0}", iex.Message), "SaveEdition", "");
+                SystemLog.write(SystemLog.errorLevel.Error,string.Format("The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ") {0}",iex.Message)    , "SaveEdition", "");
                 throw new Exception("The version for this Site doesn't exist (" + changeEdition.SiteCode + " - " + changeEdition.Version.ToString() + ")");
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteDetailsService - SaveEdition", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SaveEdition", "");
                 throw ex;
             }
 
@@ -663,60 +613,53 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<ChangeEditionViewModelOriginal?> GetReferenceEditInfo(string siteCode)
         {
-            try
+            SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
+            List<ChangeEditionDb> list = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.[spGetReferenceEditInfo]  @sitecode",
+                                param1).ToListAsync();
+            ChangeEditionDb changeEdition = list.FirstOrDefault();
+            if (changeEdition == null)
             {
-                SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
-                List<ChangeEditionDb> list = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.[spGetReferenceEditInfo]  @sitecode",
-                                    param1).ToListAsync();
-                ChangeEditionDb changeEdition = list.FirstOrDefault();
-                if (changeEdition == null)
-                {
-                    return null;
-                }
-                else
-                {
-                    ChangeEditionViewModelOriginal result = new ChangeEditionViewModelOriginal()
-                    {
-                        Area = changeEdition.Area is null ? null : changeEdition.Area,
-                        BioRegion = !string.IsNullOrEmpty(changeEdition.BioRegion) ? changeEdition.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>(),
-                        CentreX = changeEdition.CentreX is null ? null : changeEdition.CentreX,
-                        CentreY = changeEdition.CentreY is null ? null : changeEdition.CentreY,
-                        Length = changeEdition.Length is null ? null : changeEdition.Length,
-                        SiteCode = changeEdition.SiteCode,
-                        SiteName = changeEdition.SiteName,
-                        SiteType = changeEdition.SiteType,
-                        Version = changeEdition.Version,
-                        JustificationRequired = changeEdition.JustificationRequired,
-                        JustificationProvided = changeEdition.JustificationProvided
-                    };
-                    SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == siteCode && e.Version == changeEdition.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
-                    if (change != null)
-                    {
-                        SqlParameter param2 = new SqlParameter("@version", change.VersionReferenceId);
-                        List<ChangeEditionDb> listOriginal = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.[spGetOriginalEditInfo]  @sitecode, @version",
-                                            param1, param2).ToListAsync();
-                        ChangeEditionDb changeEditionOriginal = listOriginal.FirstOrDefault();
-                        if (changeEditionOriginal != null)
-                        {
-                            result.OriginalArea = changeEdition.Area == changeEditionOriginal.Area ? null : changeEditionOriginal.Area;
-                            if (changeEdition.BioRegion != changeEditionOriginal.BioRegion)
-                                result.OriginalBioRegion = !string.IsNullOrEmpty(changeEditionOriginal.BioRegion) ? changeEditionOriginal.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>();
-                            result.OriginalCentreX = changeEdition.CentreX == changeEditionOriginal.CentreX ? null : changeEditionOriginal.CentreX;
-                            result.OriginalCentreY = changeEdition.CentreY == changeEditionOriginal.CentreY ? null : changeEditionOriginal.CentreY;
-                            result.OriginalLength = changeEdition.Length == changeEditionOriginal.Length ? null : changeEditionOriginal.Length;
-                            result.OriginalSiteName = changeEdition.SiteName == changeEditionOriginal.SiteName ? null : changeEditionOriginal.SiteName;
-                            result.OriginalSiteType = changeEdition.SiteType == changeEditionOriginal.SiteType ? null : changeEditionOriginal.SiteType;
-                        }
-                    }
-                    return result;
-                }
+                return null;
             }
-            catch (Exception ex)
+            else
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteDetailsService - GetReferenceEditInfo", "");
-                throw ex;
+                ChangeEditionViewModelOriginal result = new ChangeEditionViewModelOriginal()
+                {
+                    Area = changeEdition.Area is null ? null : changeEdition.Area,
+                    BioRegion = !string.IsNullOrEmpty(changeEdition.BioRegion) ? changeEdition.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>(),
+                    CentreX = changeEdition.CentreX is null ? null : changeEdition.CentreX,
+                    CentreY = changeEdition.CentreY is null ? null : changeEdition.CentreY,
+                    Length = changeEdition.Length is null ? null : changeEdition.Length,
+                    SiteCode = changeEdition.SiteCode,
+                    SiteName = changeEdition.SiteName,
+                    SiteType = changeEdition.SiteType,
+                    Version = changeEdition.Version,
+                    JustificationRequired = changeEdition.JustificationRequired,
+                    JustificationProvided = changeEdition.JustificationProvided
+                };
+                SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == siteCode && e.Version == changeEdition.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
+                if (change != null)
+                {
+                    SqlParameter param2 = new SqlParameter("@version", change.VersionReferenceId);
+                    List<ChangeEditionDb> listOriginal = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.[spGetOriginalEditInfo]  @sitecode, @version",
+                                        param1, param2).ToListAsync();
+                    ChangeEditionDb changeEditionOriginal = listOriginal.FirstOrDefault();
+                    if (changeEditionOriginal != null)
+                    {
+                        result.OriginalArea = changeEdition.Area == changeEditionOriginal.Area ? null : changeEditionOriginal.Area;
+                        if (changeEdition.BioRegion != changeEditionOriginal.BioRegion)
+                            result.OriginalBioRegion = !string.IsNullOrEmpty(changeEditionOriginal.BioRegion) ? changeEditionOriginal.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>();
+                        result.OriginalCentreX = changeEdition.CentreX == changeEditionOriginal.CentreX ? null : changeEditionOriginal.CentreX;
+                        result.OriginalCentreY = changeEdition.CentreY == changeEditionOriginal.CentreY ? null : changeEditionOriginal.CentreY;
+                        result.OriginalLength = changeEdition.Length == changeEditionOriginal.Length ? null : changeEditionOriginal.Length;
+                        result.OriginalSiteName = changeEdition.SiteName == changeEditionOriginal.SiteName ? null : changeEditionOriginal.SiteName;
+                        result.OriginalSiteType = changeEdition.SiteType == changeEditionOriginal.SiteType ? null : changeEditionOriginal.SiteType;
+                    }
+                }
+                return result;
             }
         }
+
         #endregion
     }
 }
