@@ -3,11 +3,9 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
-using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.ServiceResponse;
-using System.Diagnostics.Metrics;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -37,167 +35,105 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<CountriesWithDataView>> GetWithDataAsync()
         {
-            try
-            {
-                var changes = _dataContext.Set<SiteChangeDb>().Select(ch => new CountryVersion { Country = ch.Country, Version = ch.N2KVersioningVersion.Value }).Distinct();
-                var countries = _dataContext.Set<CountriesWithDataView>();
 
-                var aux = (from ch in await changes.ToListAsync()
-                           join ctr in countries
-                           on ch.Country.ToUpper() equals ctr.Code.ToUpper()
-                           select new CountriesWithDataView
-                           {
-                               Code = ch.Country.ToUpper(),
-                               Country = ctr.Country,
-                               isEUCountry = ctr.isEUCountry,
-                               Version = ch.Version
-                           }).ToList();
+            var changes = _dataContext.Set<SiteChangeDb>().Select(ch => new CountryVersion { Country = ch.Country, Version = ch.N2KVersioningVersion.Value }).Distinct();
+            var countries = _dataContext.Set<CountriesWithDataView>();
 
-                return aux;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "CountryService - GetWithDataAsync", "");
-                throw ex;
-            }
+            var aux = (from ch in await changes.ToListAsync()
+                       join ctr in countries
+                       on ch.Country.ToUpper() equals ctr.Code.ToUpper()
+                       select new CountriesWithDataView
+                       {
+                           Code = ch.Country.ToUpper(),
+                           Country = ctr.Country,
+                           isEUCountry = ctr.isEUCountry,
+                           Version = ch.Version
+                       }).ToList();
+
+            return aux;
         }
 
         public async Task<List<Countries>> GetAsync()
         {
-            try
-            {
-                List<Countries> result = new List<Countries>();
+            List<Countries> result = new List<Countries>();
 
-                return await _dataContext.Set<Countries>()
-                    .AsNoTracking()
-                    .Select(c => new Countries
-                    {
-                        Code = c.Code.ToUpper(),
-                        Country = c.Country,
-                        isEUCountry = c.isEUCountry
-                    })
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "CountryService - GetAsync", "");
-                throw ex;
-            }
+            return await _dataContext.Set<Countries>()
+                .AsNoTracking()
+                .Select(c => new Countries { 
+                           Code = c.Code.ToUpper(),
+                           Country = c.Country,
+                           isEUCountry = c.isEUCountry
+                           })
+                .ToListAsync();
         }
-
+        
         public async Task<List<CountriesWithDataView>> GetWithDataAsync(SiteChangeStatus? status, Level? level)
         {
-            try
-            {
-                var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : string.Empty);
-                var param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : string.Empty);
 
-                List<CountriesWithDataView> countries = await _dataContext
-                    .Set<CountriesWithDataView>()
-                    .FromSqlRaw($"exec dbo.spGetCountriesByStatusAndLevel @status, @level", param2, param3)
-                    .AsNoTracking()
-                    .ToListAsync();
+            var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : string.Empty);
+            var param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : string.Empty);
 
-                return countries;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "CountryService - GetWithDataAsync", "");
-                throw ex;
-            }
+
+            List<CountriesWithDataView> countries = await _dataContext
+                .Set<CountriesWithDataView>()
+                .FromSqlRaw($"exec dbo.spGetCountriesByStatusAndLevel @status, @level", param2, param3)
+                .AsNoTracking()
+                .ToListAsync();
+
+           return countries;
         }
 
         public async Task<List<CountriesChangesView>> GetPendingLevelAsync()
         {
-            try
-            {
-                var param1 = new SqlParameter("@status", "Pending");
-                var countries = await _dataContext
-                    .Set<CountriesChangesView>()
-                    .FromSqlRaw($"exec dbo.spGetCountriesCountLevelByStatus @status", param1)
-                    .AsNoTracking()
-                    .ToListAsync();
-                return countries;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "CountryService - GetPendingLevelAsync", "");
-                throw ex;
-            }
+            var param1 = new SqlParameter("@status", "Pending");
+            var countries = await _dataContext
+                .Set<CountriesChangesView>()
+                .FromSqlRaw($"exec dbo.spGetCountriesCountLevelByStatus @status", param1)
+                .AsNoTracking()
+                .ToListAsync();
+            return countries;
         }
 
         public async Task<List<CountriesChangesView>> GetConsolidatedCountries()
         {
-            try
-            {
-                var countries = await _dataContext
-                    .Set<CountriesChangesView>()
-                    .FromSqlRaw($"exec dbo.spGetCountriesWithOnlyConsolidatedSumbmisions")
-                    .AsNoTracking()
-                    .ToListAsync();
-                return countries;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "CountryService - GetConsolidatedCountries", "");
-                throw ex;
-            }
+            var countries = await _dataContext
+                .Set<CountriesChangesView>()
+                .FromSqlRaw($"exec dbo.spGetCountriesWithOnlyConsolidatedSumbmisions")
+                .AsNoTracking()
+                .ToListAsync();
+            return countries;
         }
 
         public async Task<List<ClosedCountriesView>> GetClosedAndDiscardedCountriesAsync()
         {
-            try
-            {
-                var countries = await _dataContext
-                    .Set<ClosedCountriesView>()
-                    .FromSqlRaw($"exec dbo.spGetCountriesWithClosedOrDiscardedSubmissions")
-                    .AsNoTracking()
-                    .ToListAsync();
-                return countries;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "CountryService - GetClosedAndDiscardedCountriesAsync", "");
-                throw ex;
-            }
+            var countries = await _dataContext
+                .Set<ClosedCountriesView>()
+                .FromSqlRaw($"exec dbo.spGetCountriesWithClosedOrDiscardedSubmissions")
+                .AsNoTracking()
+                .ToListAsync();
+            return countries;
         }
 
         public async Task<List<SitesWithChangesView>> GetSiteLevelAsync(SiteChangeStatus? status)
         {
-            try
-            {
-                var param1 = new SqlParameter("@status", status.HasValue ? status.ToString() : string.Empty);
-                var countries = await _dataContext
-                    .Set<SitesWithChangesView>()
-                    .FromSqlRaw($"exec dbo.spGetSiteCountLevelByStatus @status", param1)
-                    .AsNoTracking()
-                    .ToListAsync();
-                return countries;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "CountryService - GetSiteLevelAsync", "");
-                throw ex;
-            }
+            var param1 = new SqlParameter("@status", status.HasValue ? status.ToString() : string.Empty);
+            var countries = await _dataContext
+                .Set<SitesWithChangesView>()
+                .FromSqlRaw($"exec dbo.spGetSiteCountLevelByStatus @status", param1)
+                .AsNoTracking()
+                .ToListAsync();
+            return countries;
         }
 
         public async Task<List<CountriesSiteCountView>> GetSiteCountAsync()
         {
-            try
-            {
-                var param1 = new SqlParameter("@country", DBNull.Value);
-                var countries = await _dataContext
-                    .Set<CountriesSiteCountView>()
-                    .FromSqlRaw($"exec dbo.spGetSiteStatusCountByCountry @country", param1)
-                    .AsNoTracking()
-                    .ToListAsync();
-                return countries;
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "CountryService - GetSiteCountAsync", "");
-                throw ex;
-            }
+            var param1 = new SqlParameter("@country", DBNull.Value);
+            var countries = await _dataContext
+                .Set<CountriesSiteCountView>()
+                .FromSqlRaw($"exec dbo.spGetSiteStatusCountByCountry @country", param1)
+                .AsNoTracking()
+                .ToListAsync();
+            return countries;
         }
 
     }
