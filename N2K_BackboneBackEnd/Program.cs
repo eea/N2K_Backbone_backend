@@ -43,6 +43,17 @@ builder.Services.AddScoped<IUnionListService, UnionListService>();
 builder.Services.AddScoped<IReleaseService, ReleaseService>();
 builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
 
+builder.Services.AddScoped<SampleService>();
+
+// Register as singleton first so it can be injected through Dependency Injection
+builder.Services.AddSingleton<FMELongRunningService>();
+
+// Add as hosted service using the instance registered as singleton before
+builder.Services.AddHostedService(
+    provider => provider.GetRequiredService<FMELongRunningService>());
+
+
+
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
