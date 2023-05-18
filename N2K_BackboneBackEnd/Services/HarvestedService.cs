@@ -20,8 +20,8 @@ namespace N2K_BackboneBackEnd.Services
         private bool _ThereAreChanges = false;
 
 
-        private IList<SpeciesTypes> _speciesTypes = new List<SpeciesTypes>();
-        private IList<DataQualityTypes> _dataQualityTypes = new List<DataQualityTypes>();
+        private IList<SpeciesTypes> _speciesTypes= new List<SpeciesTypes>();
+        private IList<DataQualityTypes> _dataQualityTypes= new List<DataQualityTypes>();
         private IList<Models.backbone_db.OwnerShipTypes> _ownerShipTypes = new List<Models.backbone_db.OwnerShipTypes>();
         private IList<Models.backbone_db.SpecieBase> _countrySpecies = new List<Models.backbone_db.SpecieBase>();
 
@@ -72,17 +72,17 @@ namespace N2K_BackboneBackEnd.Services
         private void InitialiseBulkItems()
         {
             _siteItems.Add(typeof(List<Respondents>), new List<Respondents>());
-            _siteItems.Add(typeof(List<BioRegions>), new List<BioRegions>());
+            _siteItems.Add(typeof(List<BioRegions>), new List<BioRegions>());            
             _siteItems.Add(typeof(List<NutsBySite>), new List<NutsBySite>());
             _siteItems.Add(typeof(List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy>), new List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy>());
             _siteItems.Add(typeof(List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection>), new List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection>());
             _siteItems.Add(typeof(List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>), new List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>());
-            _siteItems.Add(typeof(List<SiteLargeDescriptions>), new List<SiteLargeDescriptions>());
+            _siteItems.Add(typeof(List<SiteLargeDescriptions>), new  List<SiteLargeDescriptions>());
             _siteItems.Add(typeof(List<SiteOwnerType>), new List<SiteOwnerType>());
             _siteItems.Add(typeof(List<Habitats>), new List<Habitats>());
             _siteItems.Add(typeof(List<DescribeSites>), new List<DescribeSites>());
             _siteItems.Add(typeof(List<SpeciesOther>), new List<SpeciesOther>());
-            _siteItems.Add(typeof(List<Species>), new List<Species>());
+            _siteItems.Add(typeof(List<Species>), new List<Species>());         
         }
 
         private void ClearBulkItems()
@@ -111,7 +111,7 @@ namespace N2K_BackboneBackEnd.Services
                 try
                 {
                     List<Respondents> _listed = (List<Respondents>)_siteItems[typeof(List<Respondents>)];
-                    await Respondents.SaveBulkRecord(db, _listed);
+                    await Respondents.SaveBulkRecord(db, _listed);                    
                 }
                 catch (Exception ex)
                 {
@@ -871,7 +871,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         //create a list with the existing version per site in the current country
                         //to avoid querying the db for every single site
-                        List<SiteVersion> versionsPerSite = await _dataContext.Set<Sites>().AsNoTracking().Where(v => v.CountryCode == envelope.CountryCode).GroupBy(a => a.SiteCode)
+                        List<SiteVersion> versionsPerSite =await _dataContext.Set<Sites>().AsNoTracking().Where(v => v.CountryCode == envelope.CountryCode).GroupBy(a => a.SiteCode)
                             .Select(g => new SiteVersion
                             {
                                 SiteCode = g.Key,
@@ -880,15 +880,15 @@ namespace N2K_BackboneBackEnd.Services
 
                         //save to backbone database the site-versions                          
                         foreach (NaturaSite vSite in vSites)
-                        {
-                            int versionNext = 0;
-                            if (versionsPerSite.Any(s => s.SiteCode == vSite.SITECODE))
-                            {
-                                SiteVersion? _versionPerSite = versionsPerSite.FirstOrDefault(s => s.SiteCode == vSite.SITECODE);
-                                versionNext = _versionPerSite.Value.MaxVersion + 1;
-                            }
-                            Sites? bbSite = siteCode.harvestSiteCode(vSite, envelope, versionNext);
-                            if (bbSite != null) bbSites.Add(bbSite);
+                        { 
+                                int versionNext = 0;
+                                if (versionsPerSite.Any(s => s.SiteCode == vSite.SITECODE))
+                                {
+                                    SiteVersion? _versionPerSite = versionsPerSite.FirstOrDefault(s => s.SiteCode == vSite.SITECODE);
+                                    versionNext = _versionPerSite.Value.MaxVersion + 1;
+                                }
+                                Sites? bbSite = siteCode.harvestSiteCode(vSite, envelope, versionNext);
+                                if (bbSite != null) bbSites.Add(bbSite);
                         }
                         versionsPerSite.Clear();
 
@@ -901,13 +901,13 @@ namespace N2K_BackboneBackEnd.Services
 
                         //Harvest habitats by country
                         HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
-                        await habitats.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes, bbSites);
+                        await habitats.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes , bbSites);
                         //Console.WriteLine(String.Format("END habitats country {0}", (DateTime.Now - start1).TotalSeconds));
 
-                        HarvestSiteCode sites = new HarvestSiteCode(_dataContext, _versioningContext);
+                        HarvestSiteCode sites =new HarvestSiteCode(_dataContext, _versioningContext);
                         await sites.HarvestSite(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes, _ownerShipTypes, bbSites);
 
-
+                    
                         //set the enevelope as successfully completed
                         envelopeToProcess.Status = HarvestingStatus.DataLoaded;
                         _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
@@ -986,7 +986,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
-                catch { }
+                catch  { }
             }
             return returnDate;
         }
@@ -1007,11 +1007,11 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
                         client.Timeout = TimeSpan.FromHours(5);
-                        SystemLog.write(SystemLog.errorLevel.Info, "Start harvest spatial", "HarvestSpatialData", "");
+                        SystemLog.write(SystemLog.errorLevel.Info ,"Start harvest spatial", "HarvestSpatialData", "");
                         Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                         var response1 = client.GetAsync(serverUrl);
-                        SystemLog.write(SystemLog.errorLevel.Info, String.Format("Launched {0}", serverUrl), "HarvestSpatialData", "");
-                        string content = await response.Result.Content.ReadAsStringAsync();
+                        SystemLog.write(SystemLog.errorLevel.Info, String.Format("Launched {0}",serverUrl), "HarvestSpatialData", "");
+                        string content = await response.Result.Content.ReadAsStringAsync();                       
                         SystemLog.write(SystemLog.errorLevel.Info, "Harvest spatial completed", "HarvestSpatialData", "");
                         /*
                         result.Add(
@@ -1103,7 +1103,7 @@ namespace N2K_BackboneBackEnd.Services
                             //When there is no previous envelopes to resolve for this country
                             if (envelopes.Count == 0)
                             {
-
+                                                                
                                 //Task tabChangeDetectionTask = ChangeDetection(_tempEnvelope);
                                 //Task spatialChangeDetectionTask = ChangeDetectionSpatialData(_tempEnvelope);
                                 //make sure they are all finished
@@ -1188,7 +1188,7 @@ namespace N2K_BackboneBackEnd.Services
                     //Get the version for the Sites 
                     //List<Sites> sites = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).Select(s=> s.Version).First();
                     //Sites site = sites.First();
-                    //int _version = _dataContext.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).First();
+                    int _version = _dataContext.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).First();
                     if (toStatus != envelope.Status)
                     {
                         if (envelope.Status == HarvestingStatus.DataLoaded)
@@ -1331,7 +1331,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeStatus - Envelope " + country + "/" + version.ToString() + " - Status " + toStatus.ToString(), "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - changeStatus", "");
                 //return await Task.FromResult(new ProcessedEnvelopes());
                 throw ex;
             }
@@ -1525,17 +1525,26 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                SqlParameter paramCountryCode = new SqlParameter("@country", envelope.CountryCode);
-                SqlParameter paramVersionId = new SqlParameter("@version", envelope.VersionId);
+                List<Sites>? sites = await _dataContext.Set<Sites>().Where(e => e.CountryCode == envelope.CountryCode && e.N2KVersioningVersion == envelope.VersionId).ToListAsync();
 
-                await _dataContext.Database.ExecuteSqlRawAsync(
-                        "exec spAcceptIdenticalSiteCodesBulk @country, @version",
-                        paramCountryCode,
-                        paramVersionId);
+                foreach (Sites? site in sites)
+                {
+                    SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == site.SiteCode && e.Version == site.Version).FirstOrDefaultAsync();
+                    if (change == null)
+                    {
+                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", site.SiteCode);
+                        SqlParameter paramVersionId = new SqlParameter("@version", site.Version);
+
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spAcceptSiteCodeChanges @sitecode, @version",
+                                paramSiteCode,
+                                paramVersionId);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "AcceptIdenticalSites - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "EnvelopeProcess - Start - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "");
             }
             return envelope;
         }
