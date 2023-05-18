@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
-    [System.Web.Http.AllowAnonymous]
+    [AllowAnonymous]
     [Route("api/[controller]")]
     [ApiController]
     public class EULoginController : ControllerBase
@@ -25,7 +25,7 @@ namespace N2K_BackboneBackEnd.Controllers
             _mapper = mapper;
         }
 
-        [System.Web.Http.AllowAnonymous]
+        [AllowAnonymous]
         [HttpGet("GetLoginUrl/redirectionUrl={redirectionUrl}")]
         public async Task<ActionResult<ServiceResponse<string>>> GetLoginUrl(string redirectionUrl)
         {
@@ -57,7 +57,7 @@ namespace N2K_BackboneBackEnd.Controllers
         /// </summary>
         /// <param name="redirectionUrl">The url to be redirected to</param>
         /// <param name="code_challenge">A code challenge generated in javascript via base64URL(CryptoJS.SHA256(code_verifier)))</param>
-        [System.Web.Http.AllowAnonymous]
+        [AllowAnonymous]
         [HttpGet("GetLoginUrlByCodeChallenge/redirectionUrl={redirectionUrl}&code_challenge={code_challenge}")]
         public async Task<ActionResult<ServiceResponse<string>>> GetLoginUrl(string redirectionUrl, string code_challenge)
         {
@@ -84,7 +84,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         /*
-        [System.Web.Http.AllowAnonymous]
+        [AllowAnonymous]
         [HttpGet("GetToken/redirectionUrl={redirectionUrl}&code={code}&code_verifier={code_verifier}")]
         public async Task<ActionResult<ServiceResponse<string>>> GetToken(string redirectionUrl, string code, string code_verifier)
         {            
@@ -112,7 +112,7 @@ namespace N2K_BackboneBackEnd.Controllers
         */
 
 
-        [System.Web.Http.AllowAnonymous]
+        [AllowAnonymous]
         [Route("GetToken/")]
         [HttpPost]
         public async Task<ActionResult<List<ModifiedSiteCode>>> GetToken([FromBody] GetTokenParams tokenParams)
@@ -139,7 +139,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         }
 
-        [System.Web.Http.AllowAnonymous]
+        [AllowAnonymous]
         [HttpGet("GetUsername/token={token}")]
         public async Task<ActionResult<ServiceResponse<string>>> UsernameGet(string token)
         {
@@ -164,7 +164,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
         }
 
-        [System.Web.Http.AllowAnonymous]
+        [AllowAnonymous]
         [HttpPost("GetUsername")]
         public async Task<ActionResult<ServiceResponse<string>>> UsernamePost([FromBody] GetUsernameParams tokenParams)
         {
