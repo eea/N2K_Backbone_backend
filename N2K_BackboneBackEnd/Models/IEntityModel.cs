@@ -9,11 +9,6 @@ namespace N2K_BackboneBackEnd.Models
 
     public interface IEntityModelBackboneDB { }
 
-    public interface IEntityModelBackboneDBHarvesting
-    {
-        public void SaveRecord(string db);
-    }
-
     public interface IEntityModelVersioningDB { }
 
     public interface IEntityModelReleasesDB { }

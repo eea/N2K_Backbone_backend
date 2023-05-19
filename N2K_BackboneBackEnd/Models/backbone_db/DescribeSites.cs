@@ -10,7 +10,7 @@ using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class DescribeSites : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
+    public class DescribeSites : IEntityModel, IEntityModelBackboneDB
     {
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
@@ -27,42 +27,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         }
 
 
-        public void SaveRecord(string db)
-        {
-            try
-            {
-                this.dbConnection = db;
-                SqlConnection conn = null;
-                SqlCommand cmd = null;
-
-                conn = new SqlConnection(this.dbConnection);
-                conn.Open();
-                cmd = conn.CreateCommand();
-                SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode);
-                SqlParameter param2 = new SqlParameter("@Version", this.Version);
-                SqlParameter param3 = new SqlParameter("@HabitatCode", this.HabitatCode);
-                SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage is null ? DBNull.Value : this.Percentage);
-
-                cmd.CommandText = "INSERT INTO [DescribeSites] (  " +
-                    "[SiteCode],[Version],[HabitatCode],[Percentage]) " +
-                    " VALUES (@SiteCode,@Version,@HabitatCode,@Percentage) ";
-
-                cmd.Parameters.Add(param1);
-                cmd.Parameters.Add(param2);
-                cmd.Parameters.Add(param3);
-                cmd.Parameters.Add(param4);
-
-                cmd.ExecuteNonQuery();
-
-                cmd.Dispose();
-                conn.Dispose();
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "DescribeSites - SaveRecord", "");
-
-            }
-        }
+        
         public async static Task<int> SaveBulkRecord(string db, List<DescribeSites> listData)
         {
             try
@@ -81,7 +46,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "DescribeSites - SaveBulkRecord", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "DescribeSites - SaveBulkRecord", "", db);
                 return 0;
             }
         }
