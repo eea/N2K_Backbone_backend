@@ -37,68 +37,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        public async Task<int> HarvestByCountry(string pCountryCode, int pCountryVersion, int pVersion)
-        {
-            List<ContainsSpecies> elements = null;
-            try
-            {
-                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
-
-                elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
-
-                foreach (ContainsSpecies element in elements)
-                {
-
-                    SpecieBase item = new SpecieBase();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.SpecieCode = element.SPECIESCODE;
-                    item.PopulationMin = (element.LOWERBOUND != null) ? Int32.Parse(element.LOWERBOUND) : null;
-                    item.PopulationMax = (element.UPPERBOUND != null) ? Int32.Parse(element.UPPERBOUND) : null;
-                    //item.Group = element.GROUP; // PENDING
-                    item.SensitiveInfo = (element.LOWERBOUND != null) ? ((element.SENSITIVE == 1) ? true : false) : null;
-                    item.Resident = element.RESIDENT;
-                    item.Breeding = element.BREEDING;
-                    item.Winter = element.WINTER;
-                    item.Staging = element.STAGING;
-                    //item.Path = element.PATH; // ??? PENDING
-                    item.AbundaceCategory = element.ABUNDANCECATEGORY;
-                    item.Motivation = element.MOTIVATION;
-                    item.PopulationType = element.POPULATION_TYPE;
-                    item.CountingUnit = element.COUNTINGUNIT;
-                    item.Population = element.POPULATION;
-                    item.Insolation = element.ISOLATIONFACTOR;
-                    item.Conservation = element.CONSERVATION;
-                    item.Global = element.GLOBALIMPORTANCE;
-                    item.NonPersistence = (element.NONPRESENCEINSITE != null) ? ((element.NONPRESENCEINSITE == 1) ? true : false) : null;
-                    item.DataQuality = element.DATAQUALITY;
-                    item.SpecieType = element.SPTYPE;
-
-                    if (element.SPECIESCODE is null || _dataContext.Set<SpeciesTypes>().Where(a => a.Code == element.SPECIESCODE).Count() < 1)
-                    {
-                        //Use the specie name as a code
-                        item.SpecieCode = element.SPECIESNAMECLEAN;
-                        item.getSpeciesOther().SaveRecord(this._dataContext.Database.GetConnectionString());
-                    }
-                    else
-                    {
-                        item.getSpecies().SaveRecord(this._dataContext.Database.GetConnectionString());
-                    }
-
-
-                }
-
-                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
-                return 1;
-            }
-            catch
-            {
-                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
-                return 0;
-            }
-
-        }                
-
         public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB, string backboneDb, List<Sites> sites)
         {
             SqlConnection versioningConn = null;
@@ -209,7 +147,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - SpeciesOther.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - SpeciesOther.SaveBulkRecord", "", backboneDb);
                 }
 
                 try
@@ -218,7 +156,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Species.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - Species.SaveBulkRecord", "", backboneDb);
                 }
 
                 //Console.WriteLine(String.Format("End save to list species -> {0}", (DateTime.Now - start).TotalSeconds));
@@ -229,7 +167,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             catch (Exception ex)
 
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSpecies - HarvestBySite", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSpecies - HarvestByCountry", "", backboneDb);
                 return 0;
             }
             finally
@@ -624,7 +562,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ChangeDetectionSpecies - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionSpecies - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
             }
             return changes;
         }
