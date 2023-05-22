@@ -410,11 +410,10 @@ namespace N2K_BackboneBackEnd.Services
             List<string> result = new List<string>();
             try
             {
-                List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(c => c.Final == true).ToListAsync();
-                headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
-                headers.Reverse();
-
-                result = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(c => c.idUnionListHeader == headers.FirstOrDefault().idULHeader && c.SCI_code.StartsWith(country)).Select(c => c.SCI_code).ToListAsync();
+                SqlParameter param1 = new SqlParameter("@country", country);
+                List<SiteBasic> resultSites = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
+                                    param1).ToListAsync();
+                result = resultSites.Select(s => s.SiteCode).ToList();
             }
             catch (Exception ex)
             {
