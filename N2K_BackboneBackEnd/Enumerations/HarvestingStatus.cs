@@ -27,11 +27,8 @@ namespace N2K_BackboneBackEnd.Enumerations
         [DataMember]
         DataLoaded = 9,
         [DataMember]
-        Error = 10,
-        [DataMember]
-        TabularDataLoaded = 11,
-        [DataMember]
-        SpatialDataLoaded = 12
+        Error = 10
+
 
     }
 

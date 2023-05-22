@@ -6,7 +6,7 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
-using System.Web.Http.OData;
+using Microsoft.AspNetCore.OData.Query;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
@@ -75,7 +75,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         [HttpGet]
-        [Route("GetUnionListComparer"), EnableQuery()]
+        [Route("GetUnionListComparer"),  EnableQuery ]
         public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer([FromQuery(Name = "bioregions")] string? bioregions, [FromQuery(Name = "page")] int page, [FromQuery(Name = "limit")] int limit)
         {
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();

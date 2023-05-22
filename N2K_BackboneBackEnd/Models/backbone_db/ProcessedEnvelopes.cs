@@ -9,7 +9,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         [Key]
         public long Id { get; }
 
-        public DateTime ImportDate { get; set; } = DateTime.MinValue;
+        public DateTime ImportDate { get;   set; }
         public string? Country { get;  set; }
 
         public int Version { get;   set; }
@@ -17,8 +17,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? Importer { get; set; }
 
         public HarvestingStatus Status { get;  set; }
-
-        public DateTime N2K_VersioningDate { get; set; } = DateTime.MinValue;
+        
+        public DateTime N2K_VersioningDate { get; set; }
 
 
         public static void OnModelCreating(ModelBuilder builder)
