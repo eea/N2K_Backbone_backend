@@ -202,7 +202,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetChanges", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetChanges", "", _dataContext.Database.GetConnectionString());
+                throw ex;
             }
             return result;
         }
@@ -240,7 +241,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetCodesCount", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetCodesCount", "", _dataContext.Database.GetConnectionString());
+                throw ex;
             }
             return result;
         }
@@ -273,7 +275,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Consolidate Changes - Lineage", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - ConsolidateChanges", "", _dataContext.Database.GetConnectionString());
+                throw ex;
             }
             return result;
         }
@@ -294,7 +297,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Back to Propose - Lineage", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - SetChangesBackToProposed", "", _dataContext.Database.GetConnectionString());
+                throw ex;
             }
             return result;
         }
@@ -346,7 +350,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageReferenceSites", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetPredecessorsInfo", "", _dataContext.Database.GetConnectionString());
+                throw ex;
             }
             return result.Distinct().ToList();
         }
@@ -399,7 +404,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageChangesInfo", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetLineageChangesInfo", "", _dataContext.Database.GetConnectionString());
+                throw ex;
             }
             return result.First();
         }
@@ -417,7 +423,8 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "GetLineageReferenceSites", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetLineageReferenceSites", "", _dataContext.Database.GetConnectionString());
+                throw ex;
             }
             return result.Distinct().ToList();
         }
