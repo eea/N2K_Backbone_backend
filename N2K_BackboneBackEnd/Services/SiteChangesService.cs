@@ -878,7 +878,6 @@ namespace N2K_BackboneBackEnd.Services
                 SqlDataReader reader = null;
                 try
                 {
-
                     backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
                     backboneConn.Open();
                     command = new SqlCommand(queryString, backboneConn);
@@ -903,7 +902,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "AcceptChanges", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "AcceptChanges", "", _dataContext.Database.GetConnectionString());
                 }
                 finally
                 {
@@ -914,7 +913,6 @@ namespace N2K_BackboneBackEnd.Services
 
                 try
                 {
-
                     SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
                     paramTable.Value = sitecodesfilter;
                     paramTable.TypeName = "[dbo].[SiteCodeFilter]";
@@ -923,13 +921,14 @@ namespace N2K_BackboneBackEnd.Services
                             "exec spAcceptSiteCodeChangesBulk @siteCodes",
                             paramTable);
 
-                    SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
+                    await SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
 
                 }
-                catch
+                catch (Exception ex)
                 {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "AcceptChanges", "", _dataContext.Database.GetConnectionString());
                 }
-                
+
                 //Refresh site codes cache
                 if (result.Count > 0)
                 {
@@ -943,14 +942,13 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Accepted, level, cache, false);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, false);
                 }
-                
+
                 return result;
             }
             catch
             {
                 throw;
             }
-
 
         }
 
@@ -1029,8 +1027,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "RejectChanges", "");
-
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "RejectChanges", "", _dataContext.Database.GetConnectionString());
                 }
                 finally
                 {
@@ -1038,9 +1035,6 @@ namespace N2K_BackboneBackEnd.Services
                     if (command != null) command.Dispose();
                     if (backboneConn != null) backboneConn.Dispose();
                 }
-
-
-
 
                 try
                 {
@@ -1052,15 +1046,14 @@ namespace N2K_BackboneBackEnd.Services
                             "exec spRejectSiteCodeChangesBulk @siteCodes",
                             paramTable);
 
-                    SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
+                    await SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "RejectChanges", "", _dataContext.Database.GetConnectionString());
                 }
 
                 //refresh the cache
-                
                 if (result.Count > 0)
                 {
                     var country = (result.First().SiteCode).Substring(0, 2);
@@ -1073,10 +1066,8 @@ namespace N2K_BackboneBackEnd.Services
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Rejected, level, cache, false);
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, false);
                 }
-                
+
                 return result;
-
-
             }
             catch
             {
@@ -1125,7 +1116,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load Activities", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "GetSiteActivities", "", _dataContext.Database.GetConnectionString());
             }
             finally
             {
@@ -1194,7 +1185,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load changes", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "GetChanges", "", _dataContext.Database.GetConnectionString());
             }
             finally
             {
@@ -1278,7 +1269,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "Load changes", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "GetSites", "", _dataContext.Database.GetConnectionString());
             }
             finally
             {
@@ -1493,8 +1484,8 @@ namespace N2K_BackboneBackEnd.Services
                     change.Level = levelChange;
 
                     //take the name of the site from the list created in the previous step
-                    var _site= sitesDB.Where(s => s.SiteCode == change.SiteCode && s.Version == change.Version).FirstOrDefault();
-                    if (_site != null)  change.SiteName = _site.Name;
+                    var _site = sitesDB.Where(s => s.SiteCode == change.SiteCode && s.Version == change.Version).FirstOrDefault();
+                    if (_site != null) change.SiteName = _site.Name;
 
                     SiteChangeStatus statusChange;
                     Enum.TryParse<SiteChangeStatus>(row["Status"].ToString(), out statusChange);
@@ -1660,7 +1651,7 @@ namespace N2K_BackboneBackEnd.Services
                             paramTable);
 
                     //Save new avtivities
-                    SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
+                    await SiteActivities.SaveBulkRecord(_dataContext.Database.GetConnectionString(), siteActivities);
                 }
                 catch
                 {
@@ -1677,7 +1668,7 @@ namespace N2K_BackboneBackEnd.Services
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;
                     mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, false);
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache,false);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, false);
                 }
                 return result;
             }
@@ -1789,7 +1780,7 @@ namespace N2K_BackboneBackEnd.Services
         /// <returns></returns>
         private async Task<List<SiteCodeView>> swapSiteInListCache(IMemoryCache pCache, SiteChangeStatus? pStatus, Level? pLevel, SiteChangeStatus? pListNameFrom, SiteCodeView pSite)
         {
-            await Task.Delay(1);
+            await Task.Delay(10);
             List<SiteCodeView> cachedlist = new List<SiteCodeView>();
 
             //Site comes from this list
