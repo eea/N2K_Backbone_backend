@@ -1,29 +1,32 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Data;
-using N2K_BackboneBackEnd.Services;
+using N2K_BackboneBackEnd.Models;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 using System.Text;
 
-namespace N2K_BackboneBackEnd.Models
+namespace N2K_BackboneBackEnd.Services
 {
     public class BackgroundSpatialHarvestJobs : IBackgroundSpatialHarvestJobs
     {
         public event EventHandler<FMEJobEventArgs> FMEJobCompleted;
 
         private readonly N2KBackboneContext _dataContext;
+        private readonly ILogger<BackgroundSpatialHarvestJobs> _logger;
         private readonly IOptions<ConfigSettings> _appSettings;
         private ConcurrentDictionary<EnvelopesToProcess, long> _fmeJobs = new ConcurrentDictionary<EnvelopesToProcess, long>();
         private ConcurrentDictionary<string, long> _minCountryJobs = new ConcurrentDictionary<string, long>();
         private SemaphoreSlim _signal = new SemaphoreSlim(0);
         private List<HarvestedEnvelope> result = new List<HarvestedEnvelope> { };
 
-        public BackgroundSpatialHarvestJobs(N2KBackboneContext dataContext, IOptions<ConfigSettings> appSettings)
+        public BackgroundSpatialHarvestJobs(N2KBackboneContext dataContext, IOptions<ConfigSettings> appSettings, 
+            ILogger<BackgroundSpatialHarvestJobs> logger)
         {
             _dataContext = dataContext;
             _appSettings = appSettings;
+            _logger = logger;
         }
 
         public N2KBackboneContext GetDataContext()
@@ -51,12 +54,12 @@ namespace N2K_BackboneBackEnd.Models
 
                 //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
                 client.Timeout = TimeSpan.FromHours(5);
-                String url = String.Format("{0}/fmerest/v3/transformations/submit/{1}/{2}",
+                string url = string.Format("{0}/fmerest/v3/transformations/submit/{1}/{2}",
                    _appSettings.Value.fme_service_spatialload.server_url,
                    _appSettings.Value.fme_service_spatialload.repository,
                    _appSettings.Value.fme_service_spatialload.workspace);
 
-                String body = string.Format(@"{{""publishedParameters"":[" +
+                string body = string.Format(@"{{""publishedParameters"":[" +
                     @"{{""name"":""CountryVersionId"",""value"":{0}}}," +
                     @"{{""name"":""CountryCode"",""value"": ""{1}""}}]" +
                     @"}}", envelope.VersionId, envelope.CountryCode);
@@ -96,7 +99,7 @@ namespace N2K_BackboneBackEnd.Models
             }
         }
 
-        public void CheckFMEJobsStatus(IOptions<ConfigSettings> appSettings) //, string connString)
+        public async Task CheckFMEJobsStatus(IOptions<ConfigSettings> appSettings) //, string connString)
         {
             foreach (var spatialHarvestjob in _fmeJobs)
             {
@@ -111,7 +114,7 @@ namespace N2K_BackboneBackEnd.Models
                 HttpClient client = new HttpClient();
                 client.Timeout = TimeSpan.FromHours(5);
 
-                String url = String.Format("{0}/fmerest/v3/transformations/jobs/id/{1}",
+                string url = string.Format("{0}/fmerest/v3/transformations/jobs/id/{1}",
                    appSettings.Value.fme_service_spatialload.server_url,
                    jobId);
 
@@ -121,21 +124,22 @@ namespace N2K_BackboneBackEnd.Models
 
                 HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                 //get the status of the fme job via rest api
-                var res = client.Send(request);
-                var json = res.Content.ReadAsStringAsync().Result;
+                var res = await client.SendAsync(request);
+                var json =await res.Content.ReadAsStringAsync();
                 JObject jResponse = JObject.Parse(json);
                 if (jResponse.GetValue("status").ToString() == "SUCCESS" || jResponse.GetValue("status").ToString() == "ERROR")
                 {
 
-                    CompleteTask(spatialHarvestjob.Key);
-                    SystemLog.write(SystemLog.errorLevel.Info, string.Format("Harvest spatial {0}-{1} completed", spatialHarvestjob.Key.CountryCode, spatialHarvestjob.Key.VersionId), "HarvestSpatialData", "");
+                    await CompleteTask(spatialHarvestjob.Key);
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Harvest spatial {0}-{1} completed", spatialHarvestjob.Key.CountryCode, spatialHarvestjob.Key.VersionId), "HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
                 }
                 client.Dispose();
             }
         }
 
-        public void CompleteTask(EnvelopesToProcess envelope)
+        public async Task CompleteTask(EnvelopesToProcess envelope)
         {
+            await Task.Delay(1);
             _fmeJobs.TryRemove(envelope, out long jobId);
             OnFMEJobIdCompleted(envelope);
         }
@@ -165,5 +169,15 @@ namespace N2K_BackboneBackEnd.Models
             }
             FMEJobCompleted?.Invoke(this, evt);
         }
+
+        /*
+        public async Task DoSomethingAsync()
+        {
+            await Task.Delay(100);
+            _logger.LogInformation(
+                "Sample Service did something.");
+        }
+        */
+
     }
 }

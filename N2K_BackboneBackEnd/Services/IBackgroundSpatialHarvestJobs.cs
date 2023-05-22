@@ -7,7 +7,7 @@ namespace N2K_BackboneBackEnd.Services
     public interface IBackgroundSpatialHarvestJobs
     {
         event EventHandler<FMEJobEventArgs> FMEJobCompleted;
-        void CheckFMEJobsStatus(IOptions<ConfigSettings> appSettings);
+        Task CheckFMEJobsStatus(IOptions<ConfigSettings> appSettings);
         Task LaunchFMESpatialHarvestBackground(EnvelopesToProcess envelope);
 
         N2KBackboneContext GetDataContext();

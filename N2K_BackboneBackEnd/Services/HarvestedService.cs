@@ -1157,7 +1157,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         //harvest SiteCode-version to fill Sites table.
                         //Get the sites submitted in the envelope
-                        List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
+                        List<NaturaSite> vSites = await _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
 
                         //save in memory the fixed codes like priority species and habitat codes
                         DateTime start1 = DateTime.Now;
@@ -1215,6 +1215,7 @@ namespace N2K_BackboneBackEnd.Services
                             }
                             bbEnvelopes.Add(bbEnvelope);
                         }
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Full Harvest completed {0} - {1}", bbEnvelope.CountryCode, bbEnvelope.VersionId  )  , "HarvestedService - FullHarvest", "", _dataContext.Database.GetConnectionString());
                     }
                     return bbEnvelopes;
                 }
@@ -1262,7 +1263,9 @@ namespace N2K_BackboneBackEnd.Services
                 //set the enevelope as successfully completed 
                 //if the spatial harvesting is completed we can assign the envelope to DataLoaded
                 //TabluarDataLoaded instead
-                processedEnv = _dataContext.Set<ProcessedEnvelopes>().Where(_env => _env.Country == envelope.CountryCode && _env.Version == envelope.VersionId).FirstOrDefault();
+                processedEnv = await _dataContext.Set<ProcessedEnvelopes>()
+                    .Where(_env => _env.Country == envelope.CountryCode && _env.Version == envelope.VersionId)
+                    .FirstOrDefaultAsync();
                 //if the tabular data has been already harvested change the status to data loaded
                 if (processedEnv.Status == HarvestingStatus.SpatialDataLoaded)
                 {

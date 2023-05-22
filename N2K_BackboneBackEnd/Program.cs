@@ -37,22 +37,14 @@ builder.Services.AddScoped<ISiteDetailsService, SiteDetailsService>();
 builder.Services.AddScoped<IHarvestedService, HarvestedService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<IEULoginService, EULoginService>();
-builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 builder.Services.AddScoped<IUnionListService, UnionListService>();
 builder.Services.AddScoped<IReleaseService, ReleaseService>();
 builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
 
-builder.Services.AddScoped<SampleService>();
-
-// Register as singleton first so it can be injected through Dependency Injection
-builder.Services.AddSingleton<FMELongRunningService>();
-
-// Add as hosted service using the instance registered as singleton before
-builder.Services.AddHostedService(
-    provider => provider.GetRequiredService<FMELongRunningService>());
-
-
+builder.Services.AddTransient<IFireForgetRepositoryHandler, FireForgetRepositoryHandler>();
+builder.Services.AddHostedService<FMELongRunningService>();
+builder.Services.AddSingleton<IBackgroundSpatialHarvestJobs, BackgroundSpatialHarvestJobs>();
 
 builder.Services.AddResponseCompression(options =>
 {

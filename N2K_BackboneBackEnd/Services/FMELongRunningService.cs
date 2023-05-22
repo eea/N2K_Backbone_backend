@@ -7,7 +7,7 @@ namespace N2K_BackboneBackEnd.Services
 {
     public class FMELongRunningService : BackgroundService
     {
-
+        private readonly IBackgroundSpatialHarvestJobs _fme_jobs;
         private readonly TimeSpan _period = TimeSpan.FromSeconds(20);
         private readonly ILogger<FMELongRunningService> _logger;
         private readonly IServiceScopeFactory _serviceProvider;
@@ -17,10 +17,12 @@ namespace N2K_BackboneBackEnd.Services
 
 
         public FMELongRunningService(
+            IBackgroundSpatialHarvestJobs jobs,
             ILogger<FMELongRunningService> logger, 
             IOptions<ConfigSettings> appSettings, 
             IServiceScopeFactory serviceProvider)
         {
+            _fme_jobs = jobs;
             _logger = logger;
             _appSettings = appSettings;
             _serviceProvider = serviceProvider;
@@ -48,14 +50,17 @@ namespace N2K_BackboneBackEnd.Services
                     // To prevent open resources and instances, only create the services and other references on a run
 
                     // Create scope, so we get request services
-                    await using AsyncServiceScope asyncScope = _serviceProvider.CreateAsyncScope();
+                    using (IServiceScope scope = _serviceProvider.CreateScope())
+                    {
+                        IBackgroundSpatialHarvestJobs scopedProcessingService =
+                            scope.ServiceProvider.GetRequiredService<IBackgroundSpatialHarvestJobs>();
 
-                    // Get service from scope
-                    SampleService sampleService = asyncScope.ServiceProvider.GetRequiredService<SampleService>();
+                        //await scopedProcessingService.DoWorkAsync(stoppingToken);
+                        //fme_jobs.CheckFMEJobsStatus(_appSettings);
 
-                    //scopedProcessingService.CheckFMEJobsStatus(_appSettings);
-                    await sampleService.DoSomethingAsync();
+                        await scopedProcessingService.CheckFMEJobsStatus(_appSettings);
 
+                    }
                     // Sample count increment
                     _executionCount++;
                         _logger.LogInformation(
@@ -67,6 +72,7 @@ namespace N2K_BackboneBackEnd.Services
                         $"Failed to execute PeriodicHostedService with exception message {ex.Message}. Good luck next round!");
                 }
             }
+
         }
     }
 }

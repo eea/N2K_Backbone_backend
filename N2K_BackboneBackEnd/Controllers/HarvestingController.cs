@@ -23,13 +23,18 @@ namespace N2K_BackboneBackEnd.Controllers
         private readonly IHarvestedService _harvestedService;
         private readonly IMapper _mapper;
         private IMemoryCache _cache;
+        //private readonly BackgroundWorkerQueue _backgroundWorkerQueue;
+        private readonly IFireForgetRepositoryHandler _fireForgetRepositoryHandler;
 
-        public HarvestingController(IHarvestedService harvestedService, IMapper mapper, IMemoryCache cache)
+        public HarvestingController(IHarvestedService harvestedService, IMapper mapper, IMemoryCache cache, IFireForgetRepositoryHandler fireForgetRepositoryHandler)
         {
             _harvestedService = harvestedService;
             _mapper = mapper;
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+            _fireForgetRepositoryHandler = fireForgetRepositoryHandler;
+            //_backgroundWorkerQueue = backgroundWorkerQueue;
         }
+
 
 
         /*
@@ -272,16 +277,22 @@ namespace N2K_BackboneBackEnd.Controllers
         /// <returns></returns>
         [Route("FullHarvest")]
         [HttpPost]
-        public async Task<ActionResult<List<HarvestedEnvelope>>> FullHarvest()
+        public async Task<ActionResult<int>> FullHarvest()
         {
-            var response = new ServiceResponse<List<HarvestedEnvelope>>();
+            var response = new ServiceResponse<int>();
             try
             {
-                var siteChanges = await _harvestedService.FullHarvest(_cache);
+                await Task.Delay(1);
+                // Delegate the blog auditing to another task on the threadpool
+                _fireForgetRepositoryHandler.Execute(async repository =>
+                {
+                    // Will receive its own scoped repository on the executing task
+                    await repository.FullHarvest(_cache);
+                });
                 response.Success = true;
                 response.Message = "";
-                response.Data = siteChanges;
-                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                response.Data = 1;
+                response.Count = 1;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -289,10 +300,48 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<HarvestedEnvelope>();
+                response.Data = 0;
                 return Ok(response);
             }
         }
+
+
+        /// <summary>
+        /// Executes the process of the harvesting for a selected envelop (Country and Version)
+        /// </summary>
+        /// <returns></returns>
+        // POST api/<HarvestingController>
+        [Route("HarvestSpatialData")]
+        [HttpPost]
+        public async Task<ActionResult<int>> HarvestSpatialData([FromBody] EnvelopesToProcess[] envelopes)
+        {
+            var response = new ServiceResponse<int>();
+            try
+            {
+                await Task.Delay(1);
+                // Delegate the blog auditing to another task on the threadpool
+                _fireForgetRepositoryHandler.Execute(async repository =>
+                {
+                    // Will receive its own scoped repository on the executing task
+                    await repository.HarvestSpatialData(envelopes, _cache);
+                });
+
+                response.Success = true;
+                response.Message = "";
+                response.Data = 1;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = 0;
+                return Ok(response);
+            }
+        }
+
 
 
         /// <summary>
