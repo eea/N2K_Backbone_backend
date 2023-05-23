@@ -9,6 +9,7 @@ using N2K_BackboneBackEnd.Services.HarvestingProcess;
 using N2K_BackboneBackEnd.Enumerations;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Caching.Memory;
+using System.Data;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -352,6 +353,7 @@ namespace N2K_BackboneBackEnd.Services
 
                     SqlParameter param1 = new SqlParameter("@country", envelope.CountryCode);
                     SqlParameter param2 = new SqlParameter("@version", envelope.VersionId);
+                    SqlParameter param3 = new SqlParameter("@last_envelop", envelope.VersionId);
 
                     //Get the changes status from ProcessedEnvelopes
                     List<ProcessedEnvelopes> processedEnvelopes = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"exec dbo.spGetProcessedEnvelopesByCountryAndVersion  @country, @version",
@@ -363,10 +365,36 @@ namespace N2K_BackboneBackEnd.Services
                     List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSitesByCountry  @country",
                                     param1).ToListAsync();
 
-                    //For each site in Versioning compare it with that site in backboneDB
-                    foreach (SiteToHarvest? harvestingSite in sitesVersioning)
+                    List<RelatedSites>? sitesRelation = await _dataContext.Set<RelatedSites>().FromSqlRaw($"exec dbo.spGetSitesToDetectChanges  @last_envelop, @country",
+                                    param3, param1).ToListAsync();
+                    var previoussitecodesfilter = new DataTable("sitecodesfilter");
+                    previoussitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                    previoussitecodesfilter.Columns.Add("Version", typeof(int));
+                    var newsitecodesfilter = new DataTable("sitecodesfilter");
+                    newsitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                    newsitecodesfilter.Columns.Add("Version", typeof(int));
+
+                    foreach (var sc in sitesRelation)
                     {
-                        changes = await SiteChangeDetection(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope);
+                        if (sc.PreviousSiteCode != null && sc.PreviousVersion != null)
+                            previoussitecodesfilter.Rows.Add(new Object[] { sc.PreviousSiteCode, sc.PreviousVersion });
+                        if (sc.NewSiteCode != null && sc.NewVersion != null)
+                            newsitecodesfilter.Rows.Add(new Object[] { sc.NewSiteCode, sc.NewVersion });
+                    }
+
+                    SqlParameter param4 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                    param4.Value = previoussitecodesfilter;
+                    param4.TypeName = "[dbo].[SiteCodeFilter]";
+                    List<SiteToHarvest>? previoussites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetSitesBySiteCodeFilter  @siteCodes",
+                                    param4).ToListAsync();
+                    param4.Value = newsitecodesfilter;
+                    List<SiteToHarvest>? newsites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetSitesBySiteCodeFilter  @siteCodes",
+                                    param4).ToListAsync();
+
+                    //For each site in Versioning compare it with that site in backboneDB
+                    foreach (SiteToHarvest? harvestingSite in newsites)
+                    {
+                        changes = await SiteChangeDetection(changes, previoussites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, sitesRelation);
                     }
 
                     //For each site in backboneDB check if the site still exists in Versioning
@@ -521,11 +549,15 @@ namespace N2K_BackboneBackEnd.Services
 
             SqlParameter countryParam1 = new SqlParameter("@country", envelope.CountryCode);
             SqlParameter countryParam2 = new SqlParameter("@version", envelope.VersionId);
+            SqlParameter countryParam3 = new SqlParameter("@last_envelop", envelope.VersionId);
 
             //Get the changes status from ProcessedEnvelopes
             List<ProcessedEnvelopes> processedEnvelopes = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"exec dbo.spGetProcessedEnvelopesByCountryAndVersion  @country, @version",
-                            countryParam1, countryParam2).ToListAsync();
+                            countryParam1, countryParam2).AsNoTracking().ToListAsync();
             ProcessedEnvelopes? processedEnvelope = processedEnvelopes.FirstOrDefault();
+
+            List<RelatedSites>? sitesRelation = await _dataContext.Set<RelatedSites>().FromSqlRaw($"exec dbo.spGetSitesToDetectChanges  @last_envelop, @country",
+                                    countryParam3, countryParam1).ToListAsync();
 
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
             List<SiteChangeDb> changes = new List<SiteChangeDb>();
@@ -536,13 +568,15 @@ namespace N2K_BackboneBackEnd.Services
 
             try
             {
-                SqlParameter param1 = new SqlParameter("@sitecode", harvestingSite.SiteCode);
-                SqlParameter param2 = new SqlParameter("@version", harvestingSite.VersionId);
+                RelatedSites siteRelation = sitesRelation.Where(s => s.NewSiteCode == harvestingSite.SiteCode && s.NewVersion == harvestingSite.VersionId).FirstOrDefault();
 
-                List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSiteBySitecode  @sitecode",
-                                param1).ToListAsync();
+                SqlParameter param1 = new SqlParameter("@sitecode", siteRelation.PreviousSiteCode);
+                SqlParameter param2 = new SqlParameter("@version", siteRelation.PreviousVersion);
 
-                changes = await SiteChangeDetection(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, true);
+                List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSitesBySitecodeAndVersion  @sitecode, @version",
+                                    param1, param2).ToListAsync();
+
+                changes = await SiteChangeDetection(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, sitesRelation, true);
                 processedEnvelope.Status = HarvestingStatus.Harvested;
                 result.Add(new HarvestedEnvelope
                 {
@@ -556,10 +590,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 try
                 {
-                    //processedEnvelope.Status = HarvestingStatus.Harvested;
-                    //SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
-                    //_dataContext.Update<ProcessedEnvelopes>(processedEnvelope);
-                    //await _dataContext.SaveChangesAsync();
+                    await SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
                 }
                 catch (Exception ex)
                 {
@@ -576,7 +607,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<SiteChangeDb>> SiteChangeDetection(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, bool manualEdition = false)
+        public async Task<List<SiteChangeDb>> SiteChangeDetection(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, List<RelatedSites>? sitesRelation, bool manualEdition = false)
         {
             //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
             //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
@@ -587,8 +618,11 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 processedEnvelope.Status = await GetSiteChangeStatus(processedEnvelope.Status);
-                SiteToHarvest? storedSite = referencedSites.Where(s => s.SiteCode == harvestingSite.SiteCode).FirstOrDefault();
-                if (storedSite != null)
+                RelatedSites? siteRelation = sitesRelation.Where(s => s.NewSiteCode == harvestingSite.SiteCode && s.NewVersion == harvestingSite.VersionId).FirstOrDefault();
+                SiteToHarvest? storedSite = null;
+                if (siteRelation != null)
+                    storedSite = referencedSites.Where(s => s.SiteCode == siteRelation.PreviousSiteCode && s.VersionId == siteRelation.PreviousVersion).FirstOrDefault();
+                if (siteRelation != null && storedSite != null)
                 {
                     //These booleans declare whether or not each site is a priority
                     Boolean isStoredSitePriority = false;
