@@ -104,9 +104,9 @@ namespace N2K_BackboneBackEnd.Services
 
         private async Task<int> SaveBulkItems(DateTime startTime)
         {
-            SystemLog.write(SystemLog.errorLevel.Info, String.Format("Start saving sites in bulk mode  {0}", (DateTime.Now - startTime).TotalSeconds), "HarvestedService - _SaveBulkItems", "");
-
             string db = _dataContext.Database.GetConnectionString();
+            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start saving sites in bulk mode  {0}", (DateTime.Now - startTime).TotalSeconds), "HarvestedService - SaveBulkItems", "", db);
+
             try
             {
                 try
@@ -116,78 +116,70 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Respondents.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - Respondents.SaveBulkRecord", "", db);
                 }
-
                 try
                 {
                     List<BioRegions> _listed = (List<BioRegions>)_siteItems[typeof(List<BioRegions>)];
                     await BioRegions.SaveBulkRecord(db, _listed);
-
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - BioRegions.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - BioRegions.SaveBulkRecord", "", db);
                 }
                 try
                 {
                     List<NutsBySite> _listed = (List<NutsBySite>)_siteItems[typeof(List<NutsBySite>)];
                     await NutsBySite.SaveBulkRecord(db, _listed);
-
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - NutsBySite.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - NutsBySite.SaveBulkRecord", "", db);
                 }
                 try
                 {
                     List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy> _listed = (List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy>)_siteItems[typeof(List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy>)];
                     await N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy.SaveBulkRecord(db, _listed);
-
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - IsImpactedBy.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - IsImpactedBy.SaveBulkRecord", "", db);
                 }
                 try
                 {
                     List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection> _listed = (List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection>)_siteItems[typeof(List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection>)];
                     await N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection.SaveBulkRecord(db, _listed);
-
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HasNationalProtection.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - HasNationalProtection.SaveBulkRecord", "", db);
                 }
                 try
                 {
                     List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus> _listed = (List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>)_siteItems[typeof(List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>)];
                     await N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus.SaveBulkRecord(db, _listed);
-
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - DetailedProtectionStatus.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - DetailedProtectionStatus.SaveBulkRecord", "", db);
                 }
                 try
                 {
                     List<SiteLargeDescriptions> _listed = (List<SiteLargeDescriptions>)_siteItems[typeof(List<SiteLargeDescriptions>)];
                     await SiteLargeDescriptions.SaveBulkRecord(db, _listed);
-
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Habitats.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - SiteLargeDescriptions.SaveBulkRecord", "", db);
                 }
                 try
                 {
                     List<SiteOwnerType> _listed = (List<SiteOwnerType>)_siteItems[typeof(List<SiteOwnerType>)];
                     await SiteOwnerType.SaveBulkRecord(db, _listed);
-
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Habitats.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - SiteOwnerType.SaveBulkRecord", "", db);
                 }
                 try
                 {
@@ -196,29 +188,26 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Habitats.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - Habitats.SaveBulkRecord", "", db);
                 }
                 try
                 {
                     List<DescribeSites> _listed = (List<DescribeSites>)_siteItems[typeof(List<DescribeSites>)];
                     await DescribeSites.SaveBulkRecord(db, _listed);
-
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - DescribeSites.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - DescribeSites.SaveBulkRecord", "", db);
                 }
                 try
                 {
                     List<SpeciesOther> _listed = (List<SpeciesOther>)_siteItems[typeof(List<SpeciesOther>)];
                     await SpeciesOther.SaveBulkRecord(db, _listed);
-
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - SpeciesOther.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - SpeciesOther.SaveBulkRecord", "", db);
                 }
-
                 try
                 {
                     List<Species> _listed = (List<Species>)_siteItems[typeof(List<Species>)];
@@ -226,17 +215,16 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Species.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - Species.SaveBulkRecord", "", db);
                 }
-                SystemLog.write(SystemLog.errorLevel.Info, String.Format("End saving sites in bulk mode  {0}", (DateTime.Now - startTime).TotalSeconds), "HarvestedService - SaveBulkItems", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End saving sites in bulk mode  {0}", (DateTime.Now - startTime).TotalSeconds), "HarvestedService - SaveBulkItems", "", db);
                 return 1;
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - SaveBulkItems", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - SaveBulkItems", "", db);
                 return 0;
             }
-
             finally
             {
                 ClearBulkItems();
@@ -361,7 +349,7 @@ namespace N2K_BackboneBackEnd.Services
             {
                 try
                 {
-                    SystemLog.write(SystemLog.errorLevel.Info, String.Format("Start ChangeDetection harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", _dataContext.Database.GetConnectionString());
 
                     SqlParameter param1 = new SqlParameter("@country", envelope.CountryCode);
                     SqlParameter param2 = new SqlParameter("@version", envelope.VersionId);
@@ -449,7 +437,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     catch (Exception ex)
                     {
-                        SystemLog.write(SystemLog.errorLevel.Error, ex, "Save Changes", "");
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - SaveBulkRecord", "", _dataContext.Database.GetConnectionString());
                         throw ex;
                     }
 
@@ -457,11 +445,11 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "EnvelopeProcess - Start - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
                     throw ex;
 
                 }
-                SystemLog.write(SystemLog.errorLevel.Info, String.Format("END ChangeDetection harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", _dataContext.Database.GetConnectionString());
             }
 
             return result;
@@ -488,7 +476,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     catch (Exception ex)
                     {
-                        SystemLog.write(SystemLog.errorLevel.Error, ex, "Geospatial changes", "");
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "Geospatial changes", "", _dataContext.Database.GetConnectionString());
                     }
                     finally
                     {
@@ -501,7 +489,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeDetection spatial changes", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeDetectionSpatialData", "", _dataContext.Database.GetConnectionString());
                 return new List<HarvestedEnvelope>();
             }
             finally
@@ -527,7 +515,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ChangeDetectionSingleSiteGeodata", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionSingleSiteSpatialData", "", _dataContext.Database.GetConnectionString());
             }
             finally
             {
@@ -606,14 +594,14 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "Save Changes", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionSingleSiteObject - SaveBulkRecord", "", _dataContext.Database.GetConnectionString());
                 }
 
                 await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE ChangeId NOT IN (SELECT MAX(ChangeId) AS MaxRecordID FROM dbo.Changes GROUP BY SiteCode, Version, ChangeType, Code)");
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "EnvelopeProcess - Start - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionSingleSiteObject - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
             }
 
             return result;
@@ -835,7 +823,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangeDetection - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangeDetection - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
             }
 
             return changes;
@@ -870,7 +858,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     ClearBulkItems();
                     Console.WriteLine(String.Format("Start envelope harvest {0} - {1}", envelope.CountryCode, envelope.VersionId));
-                    SystemLog.write(SystemLog.errorLevel.Info, String.Format("Start envelope harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "HarvestedService - _Harvest", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start envelope harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString());
                     var startEnvelope = DateTime.Now;
                     //Not necessary 
                     //await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
@@ -921,7 +909,7 @@ namespace N2K_BackboneBackEnd.Services
                                 SiteVersion? _versionPerSite = versionsPerSite.FirstOrDefault(s => s.SiteCode == vSite.SITECODE);
                                 versionNext = _versionPerSite.Value.MaxVersion + 1;
                             }
-                            Sites? bbSite = siteCode.harvestSiteCode(vSite, envelope, versionNext);
+                            Sites? bbSite = await siteCode.harvestSiteCode(vSite, envelope, versionNext);
                             if (bbSite != null) bbSites.Add(bbSite);
                         }
                         versionsPerSite.Clear();
@@ -957,7 +945,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     catch (Exception ex)
                     {
-                        SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - _Harvest - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
                         envelopeToProcess.Status = HarvestingStatus.Error;
                         _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
                         result.Add(
@@ -976,14 +964,14 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.SaveChanges();
                     }
                     _countrySpecies.Clear();
-                    SystemLog.write(SystemLog.errorLevel.Info, String.Format("End envelope {0}", (DateTime.Now - startEnvelope).TotalSeconds), "HarvestedService - _Harvest", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End envelope harvest {0}", (DateTime.Now - startEnvelope).TotalSeconds), "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString());
                     Console.WriteLine(String.Format("End envelope {0}", (DateTime.Now - startEnvelope).TotalSeconds));
                 }
                 return result;
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString());
                 return await Task.FromResult(new List<HarvestedEnvelope>());
             }
             finally
@@ -1041,12 +1029,12 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
                         client.Timeout = TimeSpan.FromHours(5);
-                        SystemLog.write(SystemLog.errorLevel.Info, "Start harvest spatial", "HarvestSpatialData", "");
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Start harvest spatial", "HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
                         Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                         var response1 = client.GetAsync(serverUrl);
-                        SystemLog.write(SystemLog.errorLevel.Info, String.Format("Launched {0}", serverUrl), "HarvestSpatialData", "");
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Launched {0}", serverUrl), "HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
                         string content = await response.Result.Content.ReadAsStringAsync();
-                        SystemLog.write(SystemLog.errorLevel.Info, "Harvest spatial completed", "HarvestSpatialData", "");
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Harvest spatial completed", "HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
                         /*
                         result.Add(
                             new HarvestedEnvelope
@@ -1061,7 +1049,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     catch (Exception ex)
                     {
-                        SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestGeodata", "");
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestGeodata", "", _dataContext.Database.GetConnectionString());
                         /*
                         result.Add(
                             new HarvestedEnvelope
@@ -1087,7 +1075,7 @@ namespace N2K_BackboneBackEnd.Services
 
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
                 return new List<HarvestedEnvelope>();
             }
             finally
@@ -1163,7 +1151,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - FullHarvest", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - FullHarvest", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
             finally
@@ -1365,7 +1353,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeStatus - Envelope " + country + "/" + version.ToString() + " - Status " + toStatus.ToString(), "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeStatus - Envelope " + country + "/" + version.ToString() + " - Status " + toStatus.ToString(), "", _dataContext.Database.GetConnectionString());
                 //return await Task.FromResult(new ProcessedEnvelopes());
                 throw ex;
             }
@@ -1431,7 +1419,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "", _dataContext.Database.GetConnectionString());
                 return null;
             }
             finally
@@ -1460,7 +1448,7 @@ namespace N2K_BackboneBackEnd.Services
 
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - resetEnvirontment", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex.Message, "HarvestedService - resetEnvirontment", "", _dataContext.Database.GetConnectionString());
             }
             return 1;
         }
@@ -1470,7 +1458,7 @@ namespace N2K_BackboneBackEnd.Services
         /// </summary>
         /// <param name="pCountry"></param>
         /// <param name="pVerion"></param>
-        private void rollback(string pCountry, int pVersion)
+        private async Task rollback(string pCountry, int pVersion)
         {
             try
             {
@@ -1495,15 +1483,14 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
-                List<Sites> toremove = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).ToList();
+                List<Sites> toremove = await _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).ToListAsync();
                 _dataContext.Set<Sites>().RemoveRange(toremove);
-                _dataContext.SaveChanges();
+                await _dataContext.SaveChangesAsync();
                 _ThereAreChanges = false;
-
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - rollback", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - rollback", "", _dataContext.Database.GetConnectionString());
             }
             finally
             {
@@ -1544,7 +1531,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestRespondents", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestRespondents", "", _dataContext.Database.GetConnectionString());
                     return null;
                 }
             }
@@ -1569,7 +1556,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "AcceptIdenticalSites - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "AcceptIdenticalSites - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
             }
             return envelope;
         }
