@@ -141,11 +141,14 @@ builder.Services.AddControllers()
         options.ConstraintMap.Add("level",  typeof(RouteLevelConstraint));
     });
 
-
-
-
-
 var app = builder.Build();
+// <snippet_UseWebSockets>
+var webSocketOptions = new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromMinutes(2)
+};
+app.UseWebSockets(webSocketOptions);
+
 if (app.Environment.IsDevelopment())
 {
 app.UseCors(x => x
