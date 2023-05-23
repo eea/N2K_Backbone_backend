@@ -9,6 +9,7 @@ using N2K_BackboneBackEnd.Services.HarvestingProcess;
 using N2K_BackboneBackEnd.Enumerations;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -25,6 +26,7 @@ namespace N2K_BackboneBackEnd.Services
         private IList<DataQualityTypes> _dataQualityTypes = new List<DataQualityTypes>();
         private IList<Models.backbone_db.OwnerShipTypes> _ownerShipTypes = new List<Models.backbone_db.OwnerShipTypes>();
         private IList<Models.backbone_db.SpecieBase> _countrySpecies = new List<Models.backbone_db.SpecieBase>();
+
 
         private IDictionary<Type, object> _siteItems = new Dictionary<Type, object>(); private struct SiteVersion
         {
@@ -1015,74 +1017,80 @@ namespace N2K_BackboneBackEnd.Services
 
         private void FMEJobCompleted(object sender, FMEJobEventArgs env, IMemoryCache cache)
         {
+            string _connectionString = "";
             try
             {
                 //create a new DBContext to avoid concurrency errors
                 _dataContext = ((BackgroundSpatialHarvestJobs)sender).GetDataContext();
-                string _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext()
+                _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext()
                     .Database.GetConnectionString();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_connectionString).Options;
                 using (var ctx = new N2KBackboneContext(options))
                 {
                     ProcessedEnvelopes _procEnv = ctx.Set<ProcessedEnvelopes>().Where(pe => pe.Country == env.Envelope.CountryCode && pe.Version == env.Envelope.VersionId).FirstOrDefault();
-                    //avoid processing the event twice
-                    if (_procEnv.Status == HarvestingStatus.DataLoaded || _procEnv.Status == HarvestingStatus.SpatialDataLoaded)
-                        return;
-
-                    Console.WriteLine(String.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId));
-                    if (_procEnv.Status == HarvestingStatus.TabularDataLoaded)
-                        _procEnv.Status = HarvestingStatus.DataLoaded;
-                    else
-                        //Spatial data loaded instead
-                        _procEnv.Status = HarvestingStatus.SpatialDataLoaded;
-
-                    // (DateTime) processedEnvelope.N2K_VersioningDate;
-                    _procEnv.N2K_VersioningDate = new DateTime(_procEnv.N2K_VersioningDate.Year, _procEnv.N2K_VersioningDate.Month, _procEnv.N2K_VersioningDate.Day);
-                    _procEnv.ImportDate = new DateTime(_procEnv.ImportDate.Year, _procEnv.ImportDate.Month, _procEnv.ImportDate.Day);
-
-                    ctx.Set<ProcessedEnvelopes>().Update(_procEnv);
-                    try
+                    if (_procEnv != null)
                     {
-                        ctx.SaveChanges();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.Write("error:" + ex.Message);
+                        //avoid processing the event twice
+                        if (_procEnv.Status == HarvestingStatus.DataLoaded || _procEnv.Status == HarvestingStatus.SpatialDataLoaded)
+                            return;
 
-                    }
-                    //if the tabular data has been already harvested change the status to data loaded
-                    //if dataloading is completed launch change detection tool
-                    if (_procEnv.Status == HarvestingStatus.DataLoaded)
-                    {
-                        //When there is no previous envelopes to resolve for this country
-                        List<ProcessedEnvelopes> envelopes = ctx.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == env.Envelope.CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToList();
+                        Console.WriteLine(String.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId));
+                        if (_procEnv.Status == HarvestingStatus.TabularDataLoaded)
+                            _procEnv.Status = HarvestingStatus.DataLoaded;
+                        else
+                            //Spatial data loaded instead
+                            _procEnv.Status = HarvestingStatus.SpatialDataLoaded;
 
-                        if (envelopes.Count == 0 && env.FirstInCountry)
+                        // (DateTime) processedEnvelope.N2K_VersioningDate;
+                        _procEnv.N2K_VersioningDate = new DateTime(_procEnv.N2K_VersioningDate.Year, _procEnv.N2K_VersioningDate.Month, _procEnv.N2K_VersioningDate.Day);
+                        _procEnv.ImportDate = new DateTime(_procEnv.ImportDate.Year, _procEnv.ImportDate.Month, _procEnv.ImportDate.Day);
+
+                        ctx.Set<ProcessedEnvelopes>().Update(_procEnv);
+                        try
                         {
-                            //change the status of the whole process to PreHarvested                    
-                            Task.Run(() =>
-                                ChangeStatus(env.Envelope.CountryCode, env.Envelope.VersionId, HarvestingStatus.PreHarvested, cache)
-                            );
+                            ctx.SaveChanges();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.Write("error:" + ex.Message);
+
+                        }
+                        //if the tabular data has been already harvested change the status to data loaded
+                        //if dataloading is completed launch change detection tool
+                        if (_procEnv.Status == HarvestingStatus.DataLoaded)
+                        {
+                            //When there is no previous envelopes to resolve for this country
+                            List<ProcessedEnvelopes> envelopes = ctx.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == env.Envelope.CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToList();
+
+                            if (envelopes.Count == 0 && env.FirstInCountry)
+                            {
+                                //change the status of the whole process to PreHarvested                    
+                                Task.Run(() =>
+                                    ChangeStatus(env.Envelope.CountryCode, env.Envelope.VersionId, HarvestingStatus.PreHarvested, cache)
+                                );
+                            }
                         }
                     }
-
-                    if (env.AllFinished)
-                    {
-                        Console.WriteLine("FME Spatial harvest completed");
-                    }
+                }
+                if (env.AllFinished)
+                {
+                    Console.WriteLine("FME Spatial harvest completed");
+                    SystemLog.write(SystemLog.errorLevel.Info, "ALL FME Spatial harvest completed", "HarvestedService - FME Job Completed", "", _connectionString);
                 }
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "FMEJobCompleted ", "");
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "FMEJobCompleted ", "", _connectionString);
                 Console.WriteLine("FME JOB completed with errors:" + ex.Message);
             }
             finally
             {
-                SystemLog.write(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "HarvestedService - FME Job Completed", "");
+                SystemLog.write(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "HarvestedService - FME Job Completed", "", _connectionString);
                 Console.WriteLine(String.Format("FMEJobCompleted {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId));
             }
         }
+
+
 
         /// <summary>
         /// In order to execute the all steps of the process of the harvest from Versioning
@@ -1729,6 +1737,29 @@ namespace N2K_BackboneBackEnd.Services
             }
             return envelope;
         }
+
+        public async Task CompleteFMESpatial(string  webSocketMsg)
+        {
+            try
+            {
+                var dynamicObject = JsonConvert.DeserializeObject<dynamic>(webSocketMsg)!;
+                string country = dynamicObject.Country;
+                int version = dynamicObject.Version;
+                long jobId = dynamicObject.JobId;
+                EnvelopesToProcess env = new EnvelopesToProcess
+                {
+                    CountryCode = dynamicObject.Country,
+                    VersionId = dynamicObject.Version,
+                    JobId = dynamicObject.JobId
+                };
+                await _fmeHarvestJobs.CompleteTask(env);
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "FME Job Completed", "", _dataContext.Database.GetConnectionString());
+            }
+        }
+
 
     }
 }

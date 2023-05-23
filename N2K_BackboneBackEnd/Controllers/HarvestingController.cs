@@ -9,6 +9,7 @@ using N2K_BackboneBackEnd.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text;
+using Newtonsoft.Json;
 
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -454,7 +455,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        private static async Task Echo(System.Net.WebSockets.WebSocket webSocket)
+        private  async Task Echo(System.Net.WebSockets.WebSocket webSocket)
         {
             var buffer = new byte[1024 * 4];
             var receiveResult = await webSocket.ReceiveAsync(
@@ -466,6 +467,9 @@ namespace N2K_BackboneBackEnd.Controllers
                     new ArraySegment<byte>(buffer), CancellationToken.None);
 
                 string msg = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
+                if (!string.IsNullOrEmpty(msg)) {
+                    await _harvestedService.CompleteFMESpatial(msg);
+                }
                 Console.WriteLine("New message received : " + msg);
             }
 

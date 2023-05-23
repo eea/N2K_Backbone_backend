@@ -105,7 +105,7 @@ namespace N2K_BackboneBackEnd.Models
             Debug
         }
 
-        public static void write(errorLevel pLevel, string pMessage, string pClass, string pSource)
+        public static void write(errorLevel pLevel, string pMessage, string pClass, string pSource, string connString="")
         {
             SqlConnection conn = null;
             SqlCommand cmd = null;
@@ -117,8 +117,11 @@ namespace N2K_BackboneBackEnd.Models
             //TODO: Log level configurable on the settings
             try
             {
-                ;
-                conn = new SqlConnection(WebApplication.CreateBuilder().Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
+                if (!string.IsNullOrEmpty(connString))
+                    conn = new SqlConnection(connString);
+                else
+                    conn = new SqlConnection(WebApplication.CreateBuilder().Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
+
                 conn.Open();
                 cmd = conn.CreateCommand();
                 param1 = new SqlParameter("@Level", pLevel);
@@ -247,9 +250,9 @@ namespace N2K_BackboneBackEnd.Models
                 cmd.ExecuteNonQuery();
 
             }
-            catch
+            catch (Exception ex)
             {
-
+                var aaa = ex.Message;
             }
             finally
             {

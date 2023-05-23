@@ -4,6 +4,7 @@ using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -16,7 +17,7 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2KBackboneContext _dataContext;
         private readonly ILogger<BackgroundSpatialHarvestJobs> _logger;
         private readonly IOptions<ConfigSettings> _appSettings;
-        private ConcurrentDictionary<EnvelopesToProcess, long> _fmeJobs = new ConcurrentDictionary<EnvelopesToProcess, long>();
+        private ConcurrentDictionary<long,EnvelopesToProcess> _fmeJobs = new ConcurrentDictionary< long, EnvelopesToProcess>();
         private ConcurrentDictionary<string, long> _minCountryJobs = new ConcurrentDictionary<string, long>();
         private SemaphoreSlim _signal = new SemaphoreSlim(0);
         private List<HarvestedEnvelope> result = new List<HarvestedEnvelope> { };
@@ -80,12 +81,12 @@ namespace N2K_BackboneBackEnd.Services
                 JObject jResponse = JObject.Parse(json);
                 string jobId = jResponse.GetValue("id").ToString();
 
-                _fmeJobs.TryAdd(envelope, long.Parse(jobId));
+                _fmeJobs.TryAdd(long.Parse(jobId), envelope);
                 //add the jobId if it is the first of the country
                 if (!_minCountryJobs.ContainsKey(envelope.CountryCode))
                     _minCountryJobs.TryAdd(envelope.CountryCode, envelope.VersionId);
                 Console.WriteLine(string.Format(@"JobId {0} launched", jobId));
-
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format(@"JobId {0} launched", jobId), "HarvestGeodata", "", _dataContext.Database.GetConnectionString());
             }
             catch (Exception ex)
             {
@@ -103,7 +104,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             foreach (var spatialHarvestjob in _fmeJobs)
             {
-                long jobId = spatialHarvestjob.Value;
+                long jobId = spatialHarvestjob.Key;
 
                 //send a GET request to FME Server to check the status of the job
                 //String serverUrl = String.Format(_appSettings.Value.fme_service_spatialload, envelope.VersionId, envelope.CountryCode, appSettings.Value.fme_security_token);
@@ -130,8 +131,8 @@ namespace N2K_BackboneBackEnd.Services
                 if (jResponse.GetValue("status").ToString() == "SUCCESS" || jResponse.GetValue("status").ToString() == "ERROR")
                 {
 
-                    await CompleteTask(spatialHarvestjob.Key);
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Harvest spatial {0}-{1} completed", spatialHarvestjob.Key.CountryCode, spatialHarvestjob.Key.VersionId), "HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
+                    await CompleteTask(spatialHarvestjob.Value);
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Harvest spatial {0}-{1} completed", spatialHarvestjob.Value.CountryCode, spatialHarvestjob.Value.VersionId), "HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
                 }
                 client.Dispose();
             }
@@ -140,13 +141,16 @@ namespace N2K_BackboneBackEnd.Services
         public async Task CompleteTask(EnvelopesToProcess envelope)
         {
             await Task.Delay(1);
-            _fmeJobs.TryRemove(envelope, out long jobId);
-            OnFMEJobIdCompleted(envelope);
+            EnvelopesToProcess _outEnv;
+            _fmeJobs.TryRemove(envelope.JobId, out _outEnv);
+            if (_outEnv != null)
+                await OnFMEJobIdCompleted(envelope);
         }
 
 
-        protected virtual void OnFMEJobIdCompleted(EnvelopesToProcess envelope)
+        protected async virtual Task OnFMEJobIdCompleted(EnvelopesToProcess envelope)
         {
+            await Task.Delay(1);
             bool firstInCountry = false;
             long minVersionCountry = 0;
             if (_minCountryJobs.ContainsKey(envelope.CountryCode))
@@ -154,7 +158,6 @@ namespace N2K_BackboneBackEnd.Services
                 minVersionCountry = _minCountryJobs[envelope.CountryCode];
                 firstInCountry = envelope.VersionId == minVersionCountry;
             }
-
             FMEJobEventArgs evt = new FMEJobEventArgs
             {
                 AllFinished = _fmeJobs.Count == 0,
@@ -162,22 +165,13 @@ namespace N2K_BackboneBackEnd.Services
                 FirstInCountry = firstInCountry
             };
             //remove country from _minCountryJob dictionary if the job is the latest of the country
-            if (_fmeJobs.Where(j => j.Key.CountryCode == envelope.CountryCode).ToList().Count == 0)
+            if (_fmeJobs.Where(j => j.Value.CountryCode == envelope.CountryCode).ToList().Count == 0)
             {
                 long jobId = 0;
                 _minCountryJobs.TryRemove(envelope.CountryCode, out jobId);
             }
             FMEJobCompleted?.Invoke(this, evt);
         }
-
-        /*
-        public async Task DoSomethingAsync()
-        {
-            await Task.Delay(100);
-            _logger.LogInformation(
-                "Sample Service did something.");
-        }
-        */
 
     }
 }

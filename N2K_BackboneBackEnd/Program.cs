@@ -43,7 +43,7 @@ builder.Services.AddScoped<IReleaseService, ReleaseService>();
 builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
 
 builder.Services.AddTransient<IFireForgetRepositoryHandler, FireForgetRepositoryHandler>();
-builder.Services.AddHostedService<FMELongRunningService>();
+//builder.Services.AddHostedService<FMELongRunningService>();
 builder.Services.AddSingleton<IBackgroundSpatialHarvestJobs, BackgroundSpatialHarvestJobs>();
 
 builder.Services.AddResponseCompression(options =>
