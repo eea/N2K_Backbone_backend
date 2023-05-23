@@ -642,7 +642,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - FillLevelChangeDetailCategory", "", _dataContext.Database.GetConnectionString());
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - FillLevelChangeDetailCategory", "");
                 throw ex;
             }
         }
@@ -722,7 +722,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetChangeCategoryDetail", "", _dataContext.Database.GetConnectionString());
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetChangeCategoryDetail", "");
                 throw ex;
             }
         }
@@ -765,7 +765,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetCodeName", "", _dataContext.Database.GetConnectionString());
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetCodeName", "");
                 throw ex;
             }
         }
@@ -901,7 +901,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - CodeAddedRemovedDetail", "", _dataContext.Database.GetConnectionString());
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - CodeAddedRemovedDetail", "");
                 throw ex;
             }
         }
@@ -1382,7 +1382,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetDataSet", "", _dataContext.Database.GetConnectionString());
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetDataSet", "");
                 throw ex;
             }
         }
