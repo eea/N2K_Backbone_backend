@@ -436,8 +436,11 @@ namespace N2K_BackboneBackEnd.Services
                         //For each site in backboneDB check if the site still exists in Versioning
                         foreach (SiteToHarvest? storedSite in previoussites)
                         {
-                            SiteToHarvest? harvestingSite = newsites.Where(s => s.SiteCode == storedSite.SiteCode).FirstOrDefault();
-                            if (harvestingSite == null)
+                            RelatedSites? siteRelation = sitesRelation.Where(s => s.PreviousSiteCode == storedSite.SiteCode && s.PreviousVersion == storedSite.VersionId).FirstOrDefault();
+                            SiteToHarvest? harvestingSite = null;
+                            if (siteRelation != null)
+                                harvestingSite = newsites.Where(s => s.SiteCode == siteRelation.NewSiteCode && s.VersionId == siteRelation.NewVersion).FirstOrDefault();
+                            if (siteRelation != null && harvestingSite == null)
                             {
                                 SiteChangeDb siteChange = new SiteChangeDb();
                                 siteChange.SiteCode = storedSite.SiteCode;
