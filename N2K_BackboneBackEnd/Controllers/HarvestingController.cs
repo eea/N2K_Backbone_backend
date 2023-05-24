@@ -417,7 +417,7 @@ namespace N2K_BackboneBackEnd.Controllers
         // POST api/<HarvestingController>
         [Route("Harvest/ChangeDetectionSingleSite")]
         [HttpPost]
-        public async Task<ActionResult<List<HarvestedEnvelope>>> ChangeDetectionSingleSite([FromBody] string siteCode, int versionId)
+        public async Task<ActionResult<List<HarvestedEnvelope>>> ChangeDetectionSingleSite(string siteCode, int versionId)
         {
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
