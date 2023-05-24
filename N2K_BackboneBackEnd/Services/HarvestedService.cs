@@ -9,6 +9,7 @@ using N2K_BackboneBackEnd.Services.HarvestingProcess;
 using N2K_BackboneBackEnd.Enumerations;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Caching.Memory;
+using System.Data;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -251,66 +252,97 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<HarvestingExpanded>> GetEnvelopesByStatus(HarvestingStatus status)
         {
-            SqlParameter param1 = new SqlParameter("@status", (int)status);
+            try
+            {
+                SqlParameter param1 = new SqlParameter("@status", (int)status);
 
-            List<HarvestingExpanded> result = await _dataContext.Set<HarvestingExpanded>().FromSqlRaw($"exec dbo.spGetEnvelopesByStatus  @status",
-                            param1).AsNoTracking().ToListAsync();
+                List<HarvestingExpanded> result = await _dataContext.Set<HarvestingExpanded>().FromSqlRaw($"exec dbo.spGetEnvelopesByStatus  @status",
+                                param1).AsNoTracking().ToListAsync();
 
-            return result;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - GetEnvelopesByStatus", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
 
         public async Task<List<HarvestingExpanded>> GetOnlyClosedEnvelopes()
         {
-            List<HarvestingExpanded> result = await _dataContext.Set<HarvestingExpanded>().FromSqlRaw($"exec dbo.spGetOnlyClosedEnvelopes").AsNoTracking().ToListAsync();
-
-            return result;
+            try
+            {
+                List<HarvestingExpanded> result = await _dataContext.Set<HarvestingExpanded>().FromSqlRaw($"exec dbo.spGetOnlyClosedEnvelopes").AsNoTracking().ToListAsync();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - GetOnlyClosedEnvelopes", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
 
         public async Task<List<EnvelopesToHarvest>> GetPreHarvestedEnvelopes()
         {
-            IQueryable<EnvelopesToHarvest> changes = _dataContext.Set<EnvelopesToHarvest>().FromSqlRaw($"exec dbo.spGetPreHarvestedEnvelopes");
-            return await changes.ToListAsync();
+            try
+            {
+                IQueryable<EnvelopesToHarvest> changes = _dataContext.Set<EnvelopesToHarvest>().FromSqlRaw($"exec dbo.spGetPreHarvestedEnvelopes");
+                return await changes.ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - GetPreHarvestedEnvelopes", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
 
         public async Task<List<Harvesting>> GetPendingEnvelopes()
         {
-            List<Harvesting> result = new List<Harvesting>();
-            List<Countries> countries = await _dataContext.Set<Countries>().ToListAsync();
-            List<ProcessedEnvelopes> processed = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"select * from dbo.[vHighVersionProcessedEnvelopes]").AsNoTracking().ToListAsync();
-            List<ProcessedEnvelopes> allEnvs = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().ToListAsync();
-            foreach (var procCountry in processed)
+            try
             {
-                SqlParameter param1 = new SqlParameter("@country", procCountry.Country);
-                SqlParameter param2 = new SqlParameter("@version", procCountry.Version);
-                SqlParameter param3 = new SqlParameter("@importdate", procCountry.ImportDate);
-
-                List<Harvesting> list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetPendingCountryVersion  @country, @version,@importdate",
-                                param1, param2, param3).AsNoTracking().ToListAsync();
-                if (list.Count > 0)
+                List<Harvesting> result = new List<Harvesting>();
+                List<Countries> countries = await _dataContext.Set<Countries>().ToListAsync();
+                List<ProcessedEnvelopes> processed = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"select * from dbo.[vHighVersionProcessedEnvelopes]").AsNoTracking().ToListAsync();
+                List<ProcessedEnvelopes> allEnvs = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().ToListAsync();
+                foreach (var procCountry in processed)
                 {
-                    foreach (Harvesting pendEnv in list)
+                    SqlParameter param1 = new SqlParameter("@country", procCountry.Country);
+                    SqlParameter param2 = new SqlParameter("@version", procCountry.Version);
+                    SqlParameter param3 = new SqlParameter("@importdate", procCountry.ImportDate);
+
+                    List<Harvesting> list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetPendingCountryVersion  @country, @version,@importdate",
+                                    param1, param2, param3).AsNoTracking().ToListAsync();
+                    if (list.Count > 0)
                     {
-                        if (!result.Contains(pendEnv))
+                        foreach (Harvesting pendEnv in list)
                         {
-                            if (allEnvs.Where(e => e.Version == pendEnv.Id && e.Country == pendEnv.Country && e.Status == HarvestingStatus.Harvesting).ToList().Count == 0)
+                            if (!result.Contains(pendEnv))
                             {
-                                result.Add(
-                                    new Harvesting
-                                    {
-                                        Country = pendEnv.Country, //countries.Where(ct => ct.Code.ToLower() == pendEnv.Country.ToLower()).FirstOrDefault().Country,
-                                        Name = pendEnv.Name,
-                                        Status = pendEnv.Status,
-                                        Id = pendEnv.Id,
-                                        SubmissionDate = pendEnv.SubmissionDate
-                                    }
-                                 );
+                                if (allEnvs.Where(e => e.Version == pendEnv.Id && e.Country == pendEnv.Country && e.Status == HarvestingStatus.Harvesting).ToList().Count == 0)
+                                {
+                                    result.Add(
+                                        new Harvesting
+                                        {
+                                            Country = pendEnv.Country, //countries.Where(ct => ct.Code.ToLower() == pendEnv.Country.ToLower()).FirstOrDefault().Country,
+                                            Name = pendEnv.Name,
+                                            Status = pendEnv.Status,
+                                            Id = pendEnv.Id,
+                                            SubmissionDate = pendEnv.SubmissionDate
+                                        }
+                                     );
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            return result;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - GetPendingEnvelopes", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
 
 
@@ -321,8 +353,16 @@ namespace N2K_BackboneBackEnd.Services
         /// <returns>The SiteChange status based on the envelope status</returns>
         public async Task<HarvestingStatus> GetSiteChangeStatus(HarvestingStatus envelopeStatus)
         {
-            await Task.Delay(1);
-            return envelopeStatus == HarvestingStatus.Harvested ? HarvestingStatus.Pending : envelopeStatus;
+            try
+            {
+                await Task.Delay(1);
+                return envelopeStatus == HarvestingStatus.Harvested ? HarvestingStatus.Pending : envelopeStatus;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - GetSiteChangeStatus", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
 
         /// <summary>
@@ -332,99 +372,134 @@ namespace N2K_BackboneBackEnd.Services
         /// <returns>A list of the envelops with the result of the process</returns>
         public async Task<List<HarvestedEnvelope>> ChangeDetection(EnvelopesToProcess[] envelopeIDs)
         {
-            List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
-            List<SiteChangeDb> changes = new List<SiteChangeDb>();
-            //var latestVersions = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
-            //await _dataContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.Changes");
-
-            //Get the lists of priority habitats and species
-            List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-            List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
-
-            //from the view vLatest//processedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
-
-            //Load all sites with the CountryVersionID-CountryCode from Versioning
-            foreach (EnvelopesToProcess envelope in envelopeIDs)
+            try
             {
-                try
+                List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
+                List<SiteChangeDb> changes = new List<SiteChangeDb>();
+                //var latestVersions = await _dataContext.Set<ProcessedEnvelopes>().ToListAsync();
+                //await _dataContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.Changes");
+
+                //Get the lists of priority habitats and species
+                List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+                List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+
+                //from the view vLatest//processedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
+
+                //Load all sites with the CountryVersionID-CountryCode from Versioning
+                foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", _dataContext.Database.GetConnectionString());
-
-                    SqlParameter param1 = new SqlParameter("@country", envelope.CountryCode);
-                    SqlParameter param2 = new SqlParameter("@version", envelope.VersionId);
-
-                    //Get the changes status from ProcessedEnvelopes
-                    List<ProcessedEnvelopes> processedEnvelopes = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"exec dbo.spGetProcessedEnvelopesByCountryAndVersion  @country, @version",
-                                    param1, param2).ToListAsync();
-                    ProcessedEnvelopes? processedEnvelope = processedEnvelopes.FirstOrDefault();
-
-                    List<SiteToHarvest>? sitesVersioning = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSitesByCountryAndVersion  @country, @version",
-                                    param1, param2).ToListAsync();
-                    List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSitesByCountry  @country",
-                                    param1).ToListAsync();
-
-                    //For each site in Versioning compare it with that site in backboneDB
-                    foreach (SiteToHarvest? harvestingSite in sitesVersioning)
-                    {
-                        changes = await SiteChangeDetection(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope);
-                    }
-
-                    //For each site in backboneDB check if the site still exists in Versioning
-                    foreach (SiteToHarvest? storedSite in referencedSites)
-                    {
-                        SiteToHarvest? harvestingSite = sitesVersioning.Where(s => s.SiteCode == storedSite.SiteCode).FirstOrDefault();
-                        if (harvestingSite == null)
-                        {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = storedSite.SiteCode;
-                            siteChange.Version = storedSite.VersionId;
-                            siteChange.ChangeCategory = "Network general structure";
-                            siteChange.ChangeType = "Site Deleted";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status);
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = null;
-                            siteChange.OldValue = storedSite.SiteCode;
-                            siteChange.Code = storedSite.SiteCode;
-                            siteChange.Section = "Site";
-                            siteChange.VersionReferenceId = storedSite.VersionId;
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
-                            changes.Add(siteChange);
-                        }
-                    }
-
-                    result.Add(new HarvestedEnvelope
-                    {
-                        CountryCode = envelope.CountryCode,
-                        VersionId = envelope.VersionId,
-                        NumChanges = changes.Count,
-                        Status = SiteChangeStatus.PreHarvested
-                    });
-
                     try
                     {
-                        await SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", _dataContext.Database.GetConnectionString());
+
+                        SqlParameter param1 = new SqlParameter("@country", envelope.CountryCode);
+                        SqlParameter param2 = new SqlParameter("@version", envelope.VersionId);
+                        SqlParameter param3 = new SqlParameter("@last_envelop", envelope.VersionId);
+
+                        //Get the changes status from ProcessedEnvelopes
+                        List<ProcessedEnvelopes> processedEnvelopes = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"exec dbo.spGetProcessedEnvelopesByCountryAndVersion  @country, @version",
+                                        param1, param2).ToListAsync();
+                        ProcessedEnvelopes? processedEnvelope = processedEnvelopes.FirstOrDefault();
+
+                        List<SiteToHarvest>? sitesVersioning = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSitesByCountryAndVersion  @country, @version",
+                                        param1, param2).ToListAsync();
+                        List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSitesByCountry  @country",
+                                        param1).ToListAsync();
+
+                        List<RelatedSites>? sitesRelation = await _dataContext.Set<RelatedSites>().FromSqlRaw($"exec dbo.spGetSitesToDetectChanges  @last_envelop, @country",
+                                        param3, param1).ToListAsync();
+                        var previoussitecodesfilter = new DataTable("sitecodesfilter");
+                        previoussitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                        previoussitecodesfilter.Columns.Add("Version", typeof(int));
+                        var newsitecodesfilter = new DataTable("sitecodesfilter");
+                        newsitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                        newsitecodesfilter.Columns.Add("Version", typeof(int));
+
+                        foreach (var sc in sitesRelation)
+                        {
+                            if (sc.PreviousSiteCode != null && sc.PreviousVersion != null)
+                                previoussitecodesfilter.Rows.Add(new Object[] { sc.PreviousSiteCode, sc.PreviousVersion });
+                            if (sc.NewSiteCode != null && sc.NewVersion != null)
+                                newsitecodesfilter.Rows.Add(new Object[] { sc.NewSiteCode, sc.NewVersion });
+                        }
+
+                        SqlParameter param4 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                        param4.Value = previoussitecodesfilter;
+                        param4.TypeName = "[dbo].[SiteCodeFilter]";
+                        List<SiteToHarvest>? previoussites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetSitesBySiteCodeFilter  @siteCodes",
+                                        param4).ToListAsync();
+                        param4.Value = newsitecodesfilter;
+                        List<SiteToHarvest>? newsites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetSitesBySiteCodeFilter  @siteCodes",
+                                        param4).ToListAsync();
+
+                        //For each site in Versioning compare it with that site in backboneDB
+                        foreach (SiteToHarvest? harvestingSite in newsites)
+                        {
+                            changes = await SiteChangeDetection(changes, previoussites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, sitesRelation);
+                        }
+
+                        //For each site in backboneDB check if the site still exists in Versioning
+                        foreach (SiteToHarvest? storedSite in referencedSites)
+                        {
+                            SiteToHarvest? harvestingSite = sitesVersioning.Where(s => s.SiteCode == storedSite.SiteCode).FirstOrDefault();
+                            if (harvestingSite == null)
+                            {
+                                SiteChangeDb siteChange = new SiteChangeDb();
+                                siteChange.SiteCode = storedSite.SiteCode;
+                                siteChange.Version = storedSite.VersionId;
+                                siteChange.ChangeCategory = "Network general structure";
+                                siteChange.ChangeType = "Site Deleted";
+                                siteChange.Country = envelope.CountryCode;
+                                siteChange.Level = Enumerations.Level.Critical;
+                                siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status);
+                                siteChange.Tags = string.Empty;
+                                siteChange.NewValue = null;
+                                siteChange.OldValue = storedSite.SiteCode;
+                                siteChange.Code = storedSite.SiteCode;
+                                siteChange.Section = "Site";
+                                siteChange.VersionReferenceId = storedSite.VersionId;
+                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                siteChange.N2KVersioningVersion = envelope.VersionId;
+                                changes.Add(siteChange);
+                            }
+                        }
+
+                        result.Add(new HarvestedEnvelope
+                        {
+                            CountryCode = envelope.CountryCode,
+                            VersionId = envelope.VersionId,
+                            NumChanges = changes.Count,
+                            Status = SiteChangeStatus.PreHarvested
+                        });
+
+                        try
+                        {
+                            await SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
+                        }
+                        catch (Exception ex)
+                        {
+                            await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - SaveBulkRecord", "", _dataContext.Database.GetConnectionString());
+                            throw ex;
+                        }
+
+                        await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE ChangeId NOT IN (SELECT MAX(ChangeId) AS MaxRecordID FROM dbo.Changes GROUP BY SiteCode, Version, ChangeType, Code)");
                     }
                     catch (Exception ex)
                     {
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - SaveBulkRecord", "", _dataContext.Database.GetConnectionString());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
                         throw ex;
+
                     }
-
-                    await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE ChangeId NOT IN (SELECT MAX(ChangeId) AS MaxRecordID FROM dbo.Changes GROUP BY SiteCode, Version, ChangeType, Code)");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", _dataContext.Database.GetConnectionString());
                 }
-                catch (Exception ex)
-                {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
-                    throw ex;
 
-                }
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", _dataContext.Database.GetConnectionString());
+                return result;
             }
-
-            return result;
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeDetection", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
 
 
@@ -501,18 +576,27 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<HarvestedEnvelope>> ChangeDetectionSingleSite(string siteCode, int versionId)
         {
-            SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
-            SqlParameter param2 = new SqlParameter("@version", versionId);
+            try
+            {
+                SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
+                SqlParameter param2 = new SqlParameter("@version", versionId);
 
-            List<SiteToHarvest>? sitesVersioning = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSitesBySitecodeAndVersion  @sitecode, @version",
-                                    param1, param2).ToListAsync();
+                List<SiteToHarvest>? sitesVersioning = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSitesBySitecodeAndVersion  @sitecode, @version",
+                                        param1, param2).ToListAsync();
 
-            SiteToHarvest? harvestingSite = sitesVersioning.FirstOrDefault();
+                SiteToHarvest? harvestingSite = sitesVersioning.FirstOrDefault();
 
-            List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
-            result = await ChangeDetectionSingleSiteObject(harvestingSite);
-            return result;
+                List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
+                result = await ChangeDetectionSingleSiteObject(harvestingSite);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeDetectionSingleSite", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
+
         public async Task<List<HarvestedEnvelope>> ChangeDetectionSingleSiteObject(SiteToHarvest harvestingSite)
         {
             EnvelopesToProcess envelope = new EnvelopesToProcess();
@@ -521,28 +605,34 @@ namespace N2K_BackboneBackEnd.Services
 
             SqlParameter countryParam1 = new SqlParameter("@country", envelope.CountryCode);
             SqlParameter countryParam2 = new SqlParameter("@version", envelope.VersionId);
-
-            //Get the changes status from ProcessedEnvelopes
-            List<ProcessedEnvelopes> processedEnvelopes = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"exec dbo.spGetProcessedEnvelopesByCountryAndVersion  @country, @version",
-                            countryParam1, countryParam2).ToListAsync();
-            ProcessedEnvelopes? processedEnvelope = processedEnvelopes.FirstOrDefault();
+            SqlParameter countryParam3 = new SqlParameter("@last_envelop", envelope.VersionId);
 
             List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
             List<SiteChangeDb> changes = new List<SiteChangeDb>();
 
-            //Get the lists of priority habitats and species
-            List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-            List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
-
             try
             {
-                SqlParameter param1 = new SqlParameter("@sitecode", harvestingSite.SiteCode);
-                SqlParameter param2 = new SqlParameter("@version", harvestingSite.VersionId);
+                //Get the changes status from ProcessedEnvelopes
+                List<ProcessedEnvelopes> processedEnvelopes = await _dataContext.Set<ProcessedEnvelopes>().FromSqlRaw($"exec dbo.spGetProcessedEnvelopesByCountryAndVersion  @country, @version",
+                            countryParam1, countryParam2).AsNoTracking().ToListAsync();
+                ProcessedEnvelopes? processedEnvelope = processedEnvelopes.FirstOrDefault();
 
-                List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSiteBySitecode  @sitecode",
-                                param1).ToListAsync();
+                List<RelatedSites>? sitesRelation = await _dataContext.Set<RelatedSites>().FromSqlRaw($"exec dbo.spGetSitesToDetectChanges  @last_envelop, @country",
+                                        countryParam3, countryParam1).ToListAsync();
 
-                changes = await SiteChangeDetection(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, true);
+                //Get the lists of priority habitats and species
+                List<HabitatPriority> habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+                List<SpeciePriority> speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+
+                RelatedSites siteRelation = sitesRelation.Where(s => s.NewSiteCode == harvestingSite.SiteCode && s.NewVersion == harvestingSite.VersionId).FirstOrDefault();
+
+                SqlParameter param1 = new SqlParameter("@sitecode", siteRelation.PreviousSiteCode);
+                SqlParameter param2 = new SqlParameter("@version", siteRelation.PreviousVersion);
+
+                List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSitesBySitecodeAndVersion  @sitecode, @version",
+                                    param1, param2).ToListAsync();
+
+                changes = await SiteChangeDetection(changes, referencedSites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, sitesRelation, true);
                 processedEnvelope.Status = HarvestingStatus.Harvested;
                 result.Add(new HarvestedEnvelope
                 {
@@ -556,27 +646,23 @@ namespace N2K_BackboneBackEnd.Services
 
                 try
                 {
-                    //processedEnvelope.Status = HarvestingStatus.Harvested;
-                    //SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
-                    //_dataContext.Update<ProcessedEnvelopes>(processedEnvelope);
-                    //await _dataContext.SaveChangesAsync();
+                    await SiteChangeDb.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), changes);
                 }
                 catch (Exception ex)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionSingleSiteObject - SaveBulkRecord", "", _dataContext.Database.GetConnectionString());
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeDetectionSingleSiteObject - SaveBulkRecord", "", _dataContext.Database.GetConnectionString());
                 }
 
                 await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE ChangeId NOT IN (SELECT MAX(ChangeId) AS MaxRecordID FROM dbo.Changes GROUP BY SiteCode, Version, ChangeType, Code)");
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionSingleSiteObject - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeDetectionSingleSiteObject - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
             }
-
             return result;
         }
 
-        public async Task<List<SiteChangeDb>> SiteChangeDetection(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, bool manualEdition = false)
+        public async Task<List<SiteChangeDb>> SiteChangeDetection(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, List<RelatedSites>? sitesRelation, bool manualEdition = false)
         {
             //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
             //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
@@ -587,8 +673,11 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 processedEnvelope.Status = await GetSiteChangeStatus(processedEnvelope.Status);
-                SiteToHarvest? storedSite = referencedSites.Where(s => s.SiteCode == harvestingSite.SiteCode).FirstOrDefault();
-                if (storedSite != null)
+                RelatedSites? siteRelation = sitesRelation.Where(s => s.NewSiteCode == harvestingSite.SiteCode && s.NewVersion == harvestingSite.VersionId).FirstOrDefault();
+                SiteToHarvest? storedSite = null;
+                if (siteRelation != null)
+                    storedSite = referencedSites.Where(s => s.SiteCode == siteRelation.PreviousSiteCode && s.VersionId == siteRelation.PreviousVersion).FirstOrDefault();
+                if (siteRelation != null && storedSite != null)
                 {
                     //These booleans declare whether or not each site is a priority
                     Boolean isStoredSitePriority = false;
@@ -808,17 +897,18 @@ namespace N2K_BackboneBackEnd.Services
 
         private async Task<List<HarvestedEnvelope>> _Harvest(EnvelopesToProcess[] envelopeIDs, HarvestingStatus finalStatus)
         {
-            List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
-            _speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
-            _dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
-            _ownerShipTypes = await _dataContext.Set<Models.backbone_db.OwnerShipTypes>().ToListAsync();
-
-            //save in memory the fixed codes like priority species and habitat codes
-            HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
-            siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-            siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
             try
             {
+                List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
+                _speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
+                _dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
+                _ownerShipTypes = await _dataContext.Set<Models.backbone_db.OwnerShipTypes>().ToListAsync();
+
+                //save in memory the fixed codes like priority species and habitat codes
+                HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
+                siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+                siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
@@ -829,7 +919,7 @@ namespace N2K_BackboneBackEnd.Services
                     //Not necessary 
                     //await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
                     DateTime SubmissionDate = envelope.SubmissionDate; //getOptimalDate(envelope);
-                    //create a new entry in the processed envelopes table to register that a new one is being harvested
+                                                                       //create a new entry in the processed envelopes table to register that a new one is being harvested
                     ProcessedEnvelopes envelopeToProcess = new ProcessedEnvelopes
                     {
                         Country = envelope.CountryCode
@@ -1337,17 +1427,25 @@ namespace N2K_BackboneBackEnd.Services
         /// <returns>Date time</returns>
         private async Task<DateTime> GetSubmissionDate(string country, int version)
         {
-            var param1 = new SqlParameter("@country", country);
-            var param2 = new SqlParameter("@version", version);
-
-            var list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.GetSubmissionDateFromCountryAndVersionId  @country, @version",
-                            param1, param2).ToListAsync();
-            if (list.Count > 0)
+            try
             {
-                return list.ElementAt(0).SubmissionDate;
+                var param1 = new SqlParameter("@country", country);
+                var param2 = new SqlParameter("@version", version);
+
+                var list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.GetSubmissionDateFromCountryAndVersionId  @country, @version",
+                                param1, param2).ToListAsync();
+                if (list.Count > 0)
+                {
+                    return list.ElementAt(0).SubmissionDate;
+                }
+                else
+                    return DateTime.MinValue;
             }
-            else
-                return DateTime.MinValue;
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - GetSubmissionDate", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
 
         private async Task<Sites> harvestSite(NaturaSite pVSite, EnvelopesToProcess pEnvelope)
