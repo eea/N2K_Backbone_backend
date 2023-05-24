@@ -401,11 +401,6 @@ namespace N2K_BackboneBackEnd.Services
                                         param1, param2).ToListAsync();
                         ProcessedEnvelopes? processedEnvelope = processedEnvelopes.FirstOrDefault();
 
-                        List<SiteToHarvest>? sitesVersioning = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSitesByCountryAndVersion  @country, @version",
-                                        param1, param2).ToListAsync();
-                        List<SiteToHarvest>? referencedSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetCurrentSitesByCountry  @country",
-                                        param1).ToListAsync();
-
                         List<RelatedSites>? sitesRelation = await _dataContext.Set<RelatedSites>().FromSqlRaw($"exec dbo.spGetSitesToDetectChanges  @last_envelop, @country",
                                         param3, param1).ToListAsync();
                         var previoussitecodesfilter = new DataTable("sitecodesfilter");
@@ -439,9 +434,9 @@ namespace N2K_BackboneBackEnd.Services
                         }
 
                         //For each site in backboneDB check if the site still exists in Versioning
-                        foreach (SiteToHarvest? storedSite in referencedSites)
+                        foreach (SiteToHarvest? storedSite in previoussites)
                         {
-                            SiteToHarvest? harvestingSite = sitesVersioning.Where(s => s.SiteCode == storedSite.SiteCode).FirstOrDefault();
+                            SiteToHarvest? harvestingSite = newsites.Where(s => s.SiteCode == storedSite.SiteCode).FirstOrDefault();
                             if (harvestingSite == null)
                             {
                                 SiteChangeDb siteChange = new SiteChangeDb();
