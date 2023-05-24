@@ -795,6 +795,27 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             await Task.Delay(1);
             try
             {
+                if (harvestingSite.SiteCode != storedSite.SiteCode)
+                {
+                    SiteChangeDb siteChange = new SiteChangeDb();
+                    siteChange.SiteCode = harvestingSite.SiteCode;
+                    siteChange.Version = harvestingSite.VersionId;
+                    siteChange.ChangeCategory = "Lineage";
+                    siteChange.ChangeType = "Site Recoded";
+                    siteChange.Country = envelope.CountryCode;
+                    siteChange.Level = Enumerations.Level.Critical;
+                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                    siteChange.Tags = string.Empty;
+                    siteChange.NewValue = harvestingSite.SiteCode;
+                    siteChange.OldValue = storedSite.SiteCode;
+                    siteChange.Code = harvestingSite.SiteCode;
+                    siteChange.Section = "Site";
+                    siteChange.VersionReferenceId = storedSite.VersionId;
+                    siteChange.FieldName = "SiteCode";
+                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    siteChange.N2KVersioningVersion = envelope.VersionId;
+                    changes.Add(siteChange);
+                }
                 if (harvestingSite.SiteName != storedSite.SiteName)
                 {
                     SiteChangeDb siteChange = new SiteChangeDb();
