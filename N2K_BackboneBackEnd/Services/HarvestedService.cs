@@ -842,7 +842,7 @@ namespace N2K_BackboneBackEnd.Services
                     await _dataContext.SaveChangesAsync();
 
                     //Add justification files and comments from the current to the new version
-                    Sites current = _dataContext.Set<Sites>().Single(x => x.SiteCode == harvestingSite.SiteCode && x.Current == true);
+                    Sites current = _dataContext.Set<Sites>().Where(x => x.SiteCode == harvestingSite.SiteCode && x.Current == true).FirstOrDefault();
                     if (current != null)
                     {
                         SqlParameter paramSitecode = new SqlParameter("@sitecode", harvestingSite.SiteCode);
