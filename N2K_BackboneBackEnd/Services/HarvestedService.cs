@@ -9,16 +9,18 @@ using N2K_BackboneBackEnd.Services.HarvestingProcess;
 using N2K_BackboneBackEnd.Enumerations;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json;
 using System.Data;
 
 namespace N2K_BackboneBackEnd.Services
 {
     public class HarvestedService : IHarvestedService
     {
-        private readonly N2KBackboneContext _dataContext;
+        private N2KBackboneContext _dataContext;
         private readonly N2K_VersioningContext _versioningContext;
         private readonly IOptions<ConfigSettings> _appSettings;
         private bool _ThereAreChanges = false;
+        private IBackgroundSpatialHarvestJobs _fmeHarvestJobs;
 
 
         private IList<SpeciesTypes> _speciesTypes = new List<SpeciesTypes>();
@@ -26,13 +28,12 @@ namespace N2K_BackboneBackEnd.Services
         private IList<Models.backbone_db.OwnerShipTypes> _ownerShipTypes = new List<Models.backbone_db.OwnerShipTypes>();
         private IList<Models.backbone_db.SpecieBase> _countrySpecies = new List<Models.backbone_db.SpecieBase>();
 
-        private IDictionary<Type, object> _siteItems = new Dictionary<Type, object>();
-        private struct SiteVersion
+
+        private IDictionary<Type, object> _siteItems = new Dictionary<Type, object>(); private struct SiteVersion
         {
             public string SiteCode;
             public int MaxVersion;
         }
-
 
         /// <summary>
         /// Constructor 
@@ -40,12 +41,15 @@ namespace N2K_BackboneBackEnd.Services
         /// <param name="dataContext">Context for the BackBone database</param>
         /// <param name="versioningContext">Context for the Versioning database</param>
         /// <param name="app">Configuration options</param>
-        public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app)
+        /// <param name="harvestJobs">Queue of FME harvest spatial processes </param>
+        public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app, IBackgroundSpatialHarvestJobs harvestJobs)
+
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
             _appSettings = app;
             InitialiseBulkItems();
+            _fmeHarvestJobs = harvestJobs;
         }
 
         /// <summary>
@@ -54,9 +58,7 @@ namespace N2K_BackboneBackEnd.Services
         /// <returns></returns>
         public async Task<List<Harvesting>> GetHarvestedAsync()
         {
-            var a = new List<Harvesting>();
-            return await Task.FromResult(a);
-
+            return await Task.FromResult(new List<Harvesting>());
         }
 
         /// <summary>
@@ -73,17 +75,17 @@ namespace N2K_BackboneBackEnd.Services
         private void InitialiseBulkItems()
         {
             _siteItems.Add(typeof(List<Respondents>), new List<Respondents>());
-            _siteItems.Add(typeof(List<BioRegions>), new List<BioRegions>());
+            _siteItems.Add(typeof(List<BioRegions>), new List<BioRegions>());            
             _siteItems.Add(typeof(List<NutsBySite>), new List<NutsBySite>());
             _siteItems.Add(typeof(List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy>), new List<N2K_BackboneBackEnd.Models.backbone_db.IsImpactedBy>());
             _siteItems.Add(typeof(List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection>), new List<N2K_BackboneBackEnd.Models.backbone_db.HasNationalProtection>());
             _siteItems.Add(typeof(List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>), new List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>());
-            _siteItems.Add(typeof(List<SiteLargeDescriptions>), new List<SiteLargeDescriptions>());
+            _siteItems.Add(typeof(List<SiteLargeDescriptions>), new  List<SiteLargeDescriptions>());
             _siteItems.Add(typeof(List<SiteOwnerType>), new List<SiteOwnerType>());
             _siteItems.Add(typeof(List<Habitats>), new List<Habitats>());
             _siteItems.Add(typeof(List<DescribeSites>), new List<DescribeSites>());
             _siteItems.Add(typeof(List<SpeciesOther>), new List<SpeciesOther>());
-            _siteItems.Add(typeof(List<Species>), new List<Species>());
+            _siteItems.Add(typeof(List<Species>), new List<Species>());         
         }
 
         private void ClearBulkItems()
@@ -112,7 +114,7 @@ namespace N2K_BackboneBackEnd.Services
                 try
                 {
                     List<Respondents> _listed = (List<Respondents>)_siteItems[typeof(List<Respondents>)];
-                    await Respondents.SaveBulkRecord(db, _listed);
+                    await Respondents.SaveBulkRecord(db, _listed);                    
                 }
                 catch (Exception ex)
                 {
@@ -462,13 +464,13 @@ namespace N2K_BackboneBackEnd.Services
                             }
                         }
 
-                        result.Add(new HarvestedEnvelope
-                        {
-                            CountryCode = envelope.CountryCode,
-                            VersionId = envelope.VersionId,
-                            NumChanges = changes.Count,
-                            Status = SiteChangeStatus.PreHarvested
-                        });
+                    result.Add(new HarvestedEnvelope
+                    {
+                        CountryCode = envelope.CountryCode,
+                        VersionId = envelope.VersionId,
+                        NumChanges = changes.Count,
+                        Status = HarvestingStatus.PreHarvested
+                    });
 
                         try
                         {
@@ -637,7 +639,7 @@ namespace N2K_BackboneBackEnd.Services
                     CountryCode = envelope.CountryCode,
                     VersionId = envelope.VersionId,
                     NumChanges = changes.Count,
-                    Status = SiteChangeStatus.Harvested
+                    Status = HarvestingStatus.Harvested
                 });
 
                 //for the time being do not load the changes and keep using test_table 
@@ -947,7 +949,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         //create a list with the existing version per site in the current country
                         //to avoid querying the db for every single site
-                        List<SiteVersion> versionsPerSite = await _dataContext.Set<Sites>().AsNoTracking().Where(v => v.CountryCode == envelope.CountryCode).GroupBy(a => a.SiteCode)
+                        List<SiteVersion> versionsPerSite =await _dataContext.Set<Sites>().AsNoTracking().Where(v => v.CountryCode == envelope.CountryCode).GroupBy(a => a.SiteCode)
                             .Select(g => new SiteVersion
                             {
                                 SiteCode = g.Key,
@@ -977,13 +979,13 @@ namespace N2K_BackboneBackEnd.Services
 
                         //Harvest habitats by country
                         HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
-                        await habitats.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes, bbSites);
+                        await habitats.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes , bbSites);
                         //Console.WriteLine(String.Format("END habitats country {0}", (DateTime.Now - start1).TotalSeconds));
 
-                        HarvestSiteCode sites = new HarvestSiteCode(_dataContext, _versioningContext);
+                        HarvestSiteCode sites =new HarvestSiteCode(_dataContext, _versioningContext);
                         await sites.HarvestSite(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes, _ownerShipTypes, bbSites);
 
-
+                    
                         //set the enevelope as successfully completed
                         envelopeToProcess.Status = HarvestingStatus.DataLoaded;
                         _dataContext.Set<ProcessedEnvelopes>().Update(envelopeToProcess);
@@ -993,7 +995,7 @@ namespace N2K_BackboneBackEnd.Services
                                 CountryCode = envelope.CountryCode,
                                 VersionId = envelope.VersionId,
                                 NumChanges = 0,
-                                Status = SiteChangeStatus.DataLoaded
+                                Status = HarvestingStatus.DataLoaded
                             }
                          );
                     }
@@ -1008,7 +1010,7 @@ namespace N2K_BackboneBackEnd.Services
                                 CountryCode = envelope.CountryCode,
                                 VersionId = envelope.VersionId,
                                 NumChanges = 0,
-                                Status = SiteChangeStatus.Error //SiteChangeStatus.Error
+                                Status = HarvestingStatus.Error //SiteChangeStatus.Error
                             }
                          );
                     }
@@ -1062,84 +1064,120 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
-                catch { }
+                catch  { }
             }
             return returnDate;
         }
 
 
-        private async Task<List<HarvestedEnvelope>> HarvestSpatialData(EnvelopesToProcess[] envelopeIDs)
+        public async Task HarvestSpatialData(EnvelopesToProcess[] envelopeIDs, IMemoryCache cache)
         {
             try
             {
-                List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
-
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
-                    HttpClient client = new HttpClient();
-                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialload, envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
                     try
                     {
-                        //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
-                        client.Timeout = TimeSpan.FromHours(5);
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Start harvest spatial", "HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
-                        Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
-                        var response1 = client.GetAsync(serverUrl);
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Launched {0}", serverUrl), "HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
-                        string content = await response.Result.Content.ReadAsStringAsync();
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Harvest spatial completed", "HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
-                        /*
-                        result.Add(
-                            new HarvestedEnvelope
-                            {
-                                CountryCode = envelope.CountryCode,
-                                VersionId = envelope.VersionId,
-                                NumChanges = 0,
-                                Status = SiteChangeStatus.Harvested
-                            }
-                         );
-                        */
+                        await _fmeHarvestJobs.LaunchFMESpatialHarvestBackground(envelope);
                     }
                     catch (Exception ex)
                     {
                         await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestGeodata", "", _dataContext.Database.GetConnectionString());
-                        /*
-                        result.Add(
-                            new HarvestedEnvelope
-                            {
-                                CountryCode = envelope.CountryCode,
-                                VersionId = envelope.VersionId,
-                                NumChanges = 0,
-                                Status = SiteChangeStatus.Rejected
-                            }
-                         );
-                        */
                     }
-                    finally
-                    {
-                        client.Dispose();
-                        client = null;
-                        //TimeLog.setTimeStamp("Geodata for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString().ToString(), "End");
-                    }
-
                 }
-                return result;
-            }
+                _fmeHarvestJobs.FMEJobCompleted += (sender, env) =>
+                {
+                    FMEJobCompleted(sender, env, cache);
+                };
 
+            }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
-                return new List<HarvestedEnvelope>();
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "", _dataContext.Database.GetConnectionString());
             }
             finally
             {
                 //TimeLog.setTimeStamp("Harvesting process ", "End");
             }
-
-
-
         }
+
+
+        private void FMEJobCompleted(object sender, FMEJobEventArgs env, IMemoryCache cache)
+        {
+            string _connectionString = "";
+            try
+            {
+                //create a new DBContext to avoid concurrency errors
+                _dataContext = ((BackgroundSpatialHarvestJobs)sender).GetDataContext();
+                _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext()
+                    .Database.GetConnectionString();
+                var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_connectionString).Options;
+                using (var ctx = new N2KBackboneContext(options))
+                {
+                    ProcessedEnvelopes _procEnv = ctx.Set<ProcessedEnvelopes>().Where(pe => pe.Country == env.Envelope.CountryCode && pe.Version == env.Envelope.VersionId).FirstOrDefault();
+                    if (_procEnv != null)
+                    {
+                        //avoid processing the event twice
+                        if (_procEnv.Status == HarvestingStatus.DataLoaded || _procEnv.Status == HarvestingStatus.SpatialDataLoaded)
+                            return;
+
+                        Console.WriteLine(String.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId));
+                        if (_procEnv.Status == HarvestingStatus.TabularDataLoaded)
+                            _procEnv.Status = HarvestingStatus.DataLoaded;
+                        else
+                            //Spatial data loaded instead
+                            _procEnv.Status = HarvestingStatus.SpatialDataLoaded;
+
+                        // (DateTime) processedEnvelope.N2K_VersioningDate;
+                        _procEnv.N2K_VersioningDate = new DateTime(_procEnv.N2K_VersioningDate.Year, _procEnv.N2K_VersioningDate.Month, _procEnv.N2K_VersioningDate.Day);
+                        _procEnv.ImportDate = new DateTime(_procEnv.ImportDate.Year, _procEnv.ImportDate.Month, _procEnv.ImportDate.Day);
+
+                        ctx.Set<ProcessedEnvelopes>().Update(_procEnv);
+                        try
+                        {
+                            ctx.SaveChanges();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.Write("error:" + ex.Message);
+
+                        }
+                        //if the tabular data has been already harvested change the status to data loaded
+                        //if dataloading is completed launch change detection tool
+                        if (_procEnv.Status == HarvestingStatus.DataLoaded)
+                        {
+                            //When there is no previous envelopes to resolve for this country
+                            List<ProcessedEnvelopes> envelopes = ctx.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == env.Envelope.CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToList();
+
+                            if (envelopes.Count == 0 && env.FirstInCountry)
+                            {
+                                //change the status of the whole process to PreHarvested                    
+                                Task.Run(() =>
+                                    ChangeStatus(env.Envelope.CountryCode, env.Envelope.VersionId, HarvestingStatus.PreHarvested, cache)
+                                );
+                            }
+                        }
+                    }
+                }
+                if (env.AllFinished)
+                {
+                    Console.WriteLine("FME Spatial harvest completed");
+                    SystemLog.write(SystemLog.errorLevel.Info, "ALL FME Spatial harvest completed", "HarvestedService - FME Job Completed", "", _connectionString);
+                }
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex.Message, "FMEJobCompleted ", "", _connectionString);
+                Console.WriteLine("FME JOB completed with errors:" + ex.Message);
+            }
+            finally
+            {
+                SystemLog.write(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "HarvestedService - FME Job Completed", "", _connectionString);
+                Console.WriteLine(String.Format("FMEJobCompleted {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId));
+            }
+        }
+
 
 
         /// <summary>
@@ -1157,8 +1195,23 @@ namespace N2K_BackboneBackEnd.Services
                 //List<ProcessedEnvelopes> pEnvelopes = new List<ProcessedEnvelopes>();
 
                 List<HarvestedEnvelope> bbEnvelopes = new List<HarvestedEnvelope>();
+                List<EnvelopesToProcess> allEnvelopes = new List<EnvelopesToProcess>();
+                Dictionary<EnvelopesToProcess, List<Sites>> sitesPerEnvelope = new Dictionary<EnvelopesToProcess, List<Sites>>();
+                Dictionary<EnvelopesToProcess, DateTime> startEnvelopes = new Dictionary<EnvelopesToProcess, DateTime>();
+
                 if (vEnvelopes.Count > 0)
                 {
+                    //get the lists from master tables that will be used in all envelopes
+                    List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
+                    _speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
+                    _dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
+                    _ownerShipTypes = await _dataContext.Set<Models.backbone_db.OwnerShipTypes>().ToListAsync();
+
+                    //save in memory the fixed codes like priority species and habitat codes
+                    HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
+                    siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+                    siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+
                     foreach (Harvesting vEnvelope in vEnvelopes)
                     {
                         EnvelopesToProcess envelope = new EnvelopesToProcess
@@ -1168,34 +1221,98 @@ namespace N2K_BackboneBackEnd.Services
                             SubmissionDate = vEnvelope.SubmissionDate
                         };
                         EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { envelope };
-                        List<HarvestedEnvelope> bbEnvelope = await Harvest(_tempEnvelope);
-                        List<HarvestedEnvelope> bbGeoData = await HarvestSpatialData(_tempEnvelope);
 
-                        List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == _tempEnvelope[0].CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToListAsync();
+                        allEnvelopes.Add(envelope);
+                        startEnvelopes.Add(envelope, DateTime.Now);
 
-                        //Harvest proccess did its work successfully
-                        if (bbEnvelope.Count > 0)
+                        //Not necessary 
+                        //await resetEnvirontment(envelope.CountryCode, envelope.VersionId);
+                        DateTime SubmissionDate = envelope.SubmissionDate; //getOptimalDate(envelope);
+                                                                           //create a new entry in the processed envelopes table to register that a new one is being harvested
+                        ProcessedEnvelopes envelopeToProcess = new ProcessedEnvelopes
                         {
-                            //When there is no previous envelopes to resolve for this country
-                            if (envelopes.Count == 0)
+                            Country = envelope.CountryCode
+                            ,
+                            Version = envelope.VersionId
+                            ,
+                            ImportDate = envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
+                            ,
+                            Status = HarvestingStatus.Harvesting
+                            ,
+                            Importer = "AUTOIMPORT"
+                            ,
+                            N2K_VersioningDate = SubmissionDate // envelope.SubmissionDate //await GetSubmissionDate(envelope.CountryCode, envelope.VersionId)
+                        };
+
+                        //Save thes status of the envelope in the DB
+                        _dataContext.Set<ProcessedEnvelopes>().Add(envelopeToProcess);
+                        await _dataContext.SaveChangesAsync();
+
+                        Console.WriteLine(String.Format("Start envelope harvest {0} - {1}", envelope.CountryCode, envelope.VersionId));
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start envelope harvest {0} - {1}", envelope.CountryCode, envelope.VersionId), "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString() );
+
+                        //harvest SiteCode-version to fill Sites table.
+                        //Get the sites submitted in the envelope
+                        List<NaturaSite> vSites = await _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
+
+                        //save in memory the fixed codes like priority species and habitat codes
+                        DateTime start1 = DateTime.Now;
+
+                        //create a list with the existing version per site in the current country
+                        //to avoid querying the db for every single site
+                        List<SiteVersion> versionsPerSite = await _dataContext.Set<Sites>().AsNoTracking().Where(v => v.CountryCode == envelope.CountryCode).GroupBy(a => a.SiteCode)
+                            .Select(g => new SiteVersion
                             {
+                                SiteCode = g.Key,
+                                MaxVersion = g.Max(x => x.Version)
+                            }).ToListAsync();
 
-                                //Task tabChangeDetectionTask = ChangeDetection(_tempEnvelope);
-                                //Task spatialChangeDetectionTask = ChangeDetectionSpatialData(_tempEnvelope);
-                                //make sure they are all finished
-
-                                //await Task.When
-                                //All(tabChangeDetectionTask, spatialChangeDetectionTask);
-                                //change the status of the whole process to PreHarvested
-                                await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested, cache);
-                                bbEnvelope[0].Status = SiteChangeStatus.PreHarvested;
+                        //save to backbone database the site-versions
+                        List<Sites> _tempSites = new List<Sites>();
+                        foreach (NaturaSite vSite in vSites)
+                        {
+                            int versionNext = 0;
+                            if (versionsPerSite.Any(s => s.SiteCode == vSite.SITECODE))
+                            {
+                                SiteVersion? _versionPerSite = versionsPerSite.FirstOrDefault(s => s.SiteCode == vSite.SITECODE);
+                                versionNext = _versionPerSite.Value.MaxVersion + 1;
                             }
-
-                            bbEnvelopes.Add(bbEnvelope[0]);
+                            Sites? bbSite =await siteCode.harvestSiteCode(vSite, envelope, versionNext);
+                            if (bbSite != null) _tempSites.Add(bbSite);
                         }
+                        if (_tempSites.Count > 0)
+                            sitesPerEnvelope.Add(envelope, _tempSites);
+                        versionsPerSite.Clear();
 
+                        //save all sitecode-version in bulk mode
+                        await Sites.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), sitesPerEnvelope[envelope]);
                     }
 
+                    //send FME to harvest all envelopes in sync mode
+                    await HarvestSpatialData(allEnvelopes.ToArray(), cache);
+
+                    //while tabular data of the sites is harvested
+                    foreach (EnvelopesToProcess envelope in allEnvelopes.ToArray())
+                    {
+                        //harvest the extended tabular data
+                        HarvestedEnvelope bbEnvelope = await HarvestEnvelopeTabular(envelope, sitesPerEnvelope[envelope], startEnvelopes[envelope]);
+
+                        //Harvest proccess did its work successfully
+                        if (bbEnvelope.Status == HarvestingStatus.DataLoaded)
+                        {
+                            //When there is no previous envelopes to resolve for this country
+                            List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == envelope.CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToListAsync();
+
+                            if (envelopes.Count == 0)
+                            {
+                                //change the status of the whole process to PreHarvested
+                                await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested, cache);
+                                bbEnvelope.Status = HarvestingStatus.PreHarvested;
+                            }
+                            bbEnvelopes.Add(bbEnvelope);
+                        }
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Full Harvest completed {0} - {1}", bbEnvelope.CountryCode, bbEnvelope.VersionId  )  , "HarvestedService - FullHarvest", "", _dataContext.Database.GetConnectionString());
+                    }
                     return bbEnvelopes;
                 }
                 else
@@ -1215,7 +1332,88 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
+        private async Task<HarvestedEnvelope> HarvestEnvelopeTabular(EnvelopesToProcess envelope, List<Sites> bbSites, DateTime startEnvelope)
+        {
+            HarvestedEnvelope result = new HarvestedEnvelope();
+            ProcessedEnvelopes processedEnv = null;
 
+            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start envelope tabular {0} - {1} {2}", envelope.CountryCode, envelope.VersionId, (DateTime.Now - startEnvelope).TotalSeconds), "HarvestedService - _Harvest", "",_dataContext.Database.GetConnectionString());
+            Console.WriteLine(String.Format("Start envelope tabular {0} - {1} {2}", envelope.CountryCode, envelope.VersionId, (DateTime.Now - startEnvelope).TotalSeconds));
+
+            //for each envelope to process
+            try
+            {
+                //add the envelope to the DB
+                HarvestSpecies species = new HarvestSpecies(_dataContext, _versioningContext);
+                await species.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _speciesTypes, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), bbSites);
+                //Console.WriteLine(String.Format("END species country {0}", (DateTime.Now - start1).TotalSeconds));
+
+                //Harvest habitats by country
+                HarvestHabitats habitats = new HarvestHabitats(_dataContext, _versioningContext);
+                await habitats.HarvestByCountry(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes, bbSites);
+                //Console.WriteLine(String.Format("END habitats country {0}", (DateTime.Now - start1).TotalSeconds));
+
+                HarvestSiteCode sites = new HarvestSiteCode(_dataContext, _versioningContext);
+                await sites.HarvestSite(envelope.CountryCode, envelope.VersionId, _versioningContext.Database.GetConnectionString(), _dataContext.Database.GetConnectionString(), _dataQualityTypes, _ownerShipTypes, bbSites);
+
+                //set the enevelope as successfully completed 
+                //if the spatial harvesting is completed we can assign the envelope to DataLoaded
+                //TabluarDataLoaded instead
+                processedEnv = await _dataContext.Set<ProcessedEnvelopes>()
+                    .Where(_env => _env.Country == envelope.CountryCode && _env.Version == envelope.VersionId)
+                    .FirstOrDefaultAsync();
+                //if the tabular data has been already harvested change the status to data loaded
+                if (processedEnv.Status == HarvestingStatus.SpatialDataLoaded)
+                {
+                    processedEnv.Status = HarvestingStatus.DataLoaded;
+                }
+                else
+                    //Spatial data loaded instead
+                    processedEnv.Status = HarvestingStatus.TabularDataLoaded;
+
+
+                processedEnv.N2K_VersioningDate = new DateTime(processedEnv.N2K_VersioningDate.Year, processedEnv.N2K_VersioningDate.Month, processedEnv.N2K_VersioningDate.Day);
+                processedEnv.ImportDate = new DateTime(processedEnv.ImportDate.Year, processedEnv.ImportDate.Month, processedEnv.ImportDate.Day);
+                _dataContext.Set<ProcessedEnvelopes>().Update(processedEnv);
+
+                result =
+                    new HarvestedEnvelope
+                    {
+                        CountryCode = processedEnv.Country,
+                        VersionId = processedEnv.Version,
+                        NumChanges = 0,
+                        Status = processedEnv.Status
+                    };
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSite", "",_dataContext.Database.GetConnectionString());
+                if (processedEnv != null)
+                {
+                    processedEnv.Status = HarvestingStatus.Error;
+                    _dataContext.Set<ProcessedEnvelopes>().Update(processedEnv);
+                }
+                result =
+                    new HarvestedEnvelope
+                    {
+                        CountryCode = envelope.CountryCode,
+                        VersionId = envelope.VersionId,
+                        NumChanges = 0,
+                        Status = HarvestingStatus.Error //SiteChangeStatus.Error
+                    };
+            }
+            finally
+            {
+                //save the data of the site in backbone DB
+                await _dataContext.SaveChangesAsync();
+            }
+            _countrySpecies.Clear();
+            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End envelope tabular {0} - {1} {2}", envelope.CountryCode, envelope.VersionId, (DateTime.Now - startEnvelope).TotalSeconds), "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString());
+            Console.WriteLine(String.Format("End envelope tabular {0} - {1} {2}", envelope.CountryCode, envelope.VersionId, (DateTime.Now - startEnvelope).TotalSeconds));
+
+            return result;
+
+        }
 
         private HarvestingStatus getStatus(int pStatus)
         {
@@ -1239,6 +1437,10 @@ namespace N2K_BackboneBackEnd.Services
                     return HarvestingStatus.Discarded;
                 case 8:
                     return HarvestingStatus.Closed;
+                case 11:
+                    return HarvestingStatus.TabularDataLoaded;
+                case 12:
+                    return HarvestingStatus.SpatialDataLoaded;
                 default:
                     throw new Exception("No statuts definition found");
             }
@@ -1264,7 +1466,7 @@ namespace N2K_BackboneBackEnd.Services
                     //Get the version for the Sites 
                     //List<Sites> sites = _dataContext.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).Select(s=> s.Version).First();
                     //Sites site = sites.First();
-                    //int _version = _dataContext.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).First();
+                    int _version = _dataContext.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).First();
                     if (toStatus != envelope.Status)
                     {
                         if (envelope.Status == HarvestingStatus.DataLoaded)
@@ -1338,7 +1540,7 @@ namespace N2K_BackboneBackEnd.Services
                                 VersionId = version,
                                 CountryCode = country,
                                 NumChanges = 0,
-                                Status = SiteChangeStatus.Closed
+                                Status = HarvestingStatus.Closed
                             };
                             //accept sites with no changes
                             await AcceptIdenticalSites(bbEnvelope);
@@ -1608,13 +1810,22 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                SqlParameter paramCountryCode = new SqlParameter("@country", envelope.CountryCode);
-                SqlParameter paramVersionId = new SqlParameter("@version", envelope.VersionId);
+                List<Sites>? sites = await _dataContext.Set<Sites>().Where(e => e.CountryCode == envelope.CountryCode && e.N2KVersioningVersion == envelope.VersionId).ToListAsync();
 
-                await _dataContext.Database.ExecuteSqlRawAsync(
-                        "exec spAcceptIdenticalSiteCodesBulk @country, @version",
-                        paramCountryCode,
-                        paramVersionId);
+                foreach (Sites? site in sites)
+                {
+                    SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == site.SiteCode && e.Version == site.Version).FirstOrDefaultAsync();
+                    if (change == null)
+                    {
+                        SqlParameter paramSiteCode = new SqlParameter("@sitecode", site.SiteCode);
+                        SqlParameter paramVersionId = new SqlParameter("@version", site.Version);
+
+                        await _dataContext.Database.ExecuteSqlRawAsync(
+                                "exec spAcceptSiteCodeChanges @sitecode, @version",
+                                paramSiteCode,
+                                paramVersionId);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -1622,6 +1833,29 @@ namespace N2K_BackboneBackEnd.Services
             }
             return envelope;
         }
+
+        public async Task CompleteFMESpatial(string  webSocketMsg)
+        {
+            try
+            {
+                var dynamicObject = JsonConvert.DeserializeObject<dynamic>(webSocketMsg)!;
+                string country = dynamicObject.Country;
+                int version = dynamicObject.Version;
+                long jobId = dynamicObject.JobId;
+                EnvelopesToProcess env = new EnvelopesToProcess
+                {
+                    CountryCode = dynamicObject.Country,
+                    VersionId = dynamicObject.Version,
+                    JobId = dynamicObject.JobId
+                };
+                await _fmeHarvestJobs.CompleteTask(env);
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "FME Job Completed", "", _dataContext.Database.GetConnectionString());
+            }
+        }
+
 
     }
 }

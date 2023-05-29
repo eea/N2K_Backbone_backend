@@ -37,11 +37,14 @@ builder.Services.AddScoped<ISiteDetailsService, SiteDetailsService>();
 builder.Services.AddScoped<IHarvestedService, HarvestedService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<IEULoginService, EULoginService>();
-builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 builder.Services.AddScoped<IUnionListService, UnionListService>();
 builder.Services.AddScoped<IReleaseService, ReleaseService>();
 builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
+
+builder.Services.AddTransient<IFireForgetRepositoryHandler, FireForgetRepositoryHandler>();
+//builder.Services.AddHostedService<FMELongRunningService>();
+builder.Services.AddSingleton<IBackgroundSpatialHarvestJobs, BackgroundSpatialHarvestJobs>();
 
 builder.Services.AddResponseCompression(options =>
 {
@@ -138,11 +141,14 @@ builder.Services.AddControllers()
         options.ConstraintMap.Add("level",  typeof(RouteLevelConstraint));
     });
 
-
-
-
-
 var app = builder.Build();
+// <snippet_UseWebSockets>
+var webSocketOptions = new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromMinutes(2)
+};
+app.UseWebSockets(webSocketOptions);
+
 if (app.Environment.IsDevelopment())
 {
 app.UseCors(x => x
