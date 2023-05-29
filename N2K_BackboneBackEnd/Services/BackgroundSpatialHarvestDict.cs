@@ -62,8 +62,9 @@ namespace N2K_BackboneBackEnd.Services
 
                 string body = string.Format(@"{{""publishedParameters"":[" +
                     @"{{""name"":""CountryVersionId"",""value"":{0}}}," +
-                    @"{{""name"":""CountryCode"",""value"": ""{1}""}}]" +
-                    @"}}", envelope.VersionId, envelope.CountryCode);
+                    @"{{""name"":""Environment"",""value"":{1}}}," +
+                    @"{{""name"":""CountryCode"",""value"": ""{2}""}}]" +
+                    @"}}", envelope.VersionId, _appSettings.Value.Environment, envelope.CountryCode);
 
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("fmetoken", "token=" + _appSettings.Value.fme_security_token);
                 client.DefaultRequestHeaders.Accept

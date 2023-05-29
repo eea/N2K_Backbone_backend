@@ -40,6 +40,8 @@
         
         public bool InDevelopment { get; set; }
 
+        public string Environment { get; set; }
+
         public AttachedFilesConfig? AttachedFiles { get; set; }
 
         public string fme_security_token { get; set; } = "";
