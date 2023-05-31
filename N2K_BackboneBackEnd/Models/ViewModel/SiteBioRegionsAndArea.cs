@@ -10,7 +10,7 @@ using System.Data;
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
     [Keyless]
-    public class SiteBioRegions : IEntityModel, IEntityModelBackboneDB
+    public class SiteBioRegionsAndArea : IEntityModel, IEntityModelBackboneDB
     {
         public string SiteCode { get; set; }
         public int Version { get; set; }
@@ -19,7 +19,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<SiteBioRegions>();
+            builder.Entity<SiteBioRegionsAndArea>();
         }
     }
 }
