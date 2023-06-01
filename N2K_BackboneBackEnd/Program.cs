@@ -149,14 +149,11 @@ var webSocketOptions = new WebSocketOptions
 };
 app.UseWebSockets(webSocketOptions);
 
-if (app.Environment.IsDevelopment())
-{
 app.UseCors(x => x
     .AllowAnyMethod()
     .AllowAnyHeader()
     .SetIsOriginAllowed(origin => true) // allow any origin
     .AllowCredentials()); // allow credentials
-}
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
