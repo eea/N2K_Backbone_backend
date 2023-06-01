@@ -394,13 +394,15 @@ namespace N2K_BackboneBackEnd.Services
                         if (editionChange != null)
                             activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                     }
+                    SiteChangeDb recoded = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "Site Recoded").FirstOrDefaultAsync();
                     SiteCodeView temp = new SiteCodeView
                     {
                         SiteCode = change.SiteCode,
                         Version = change.Version,
                         Name = change.Name,
                         EditedBy = activity is null ? null : activity.Author,
-                        EditedDate = activity is null ? null : activity.Date
+                        EditedDate = activity is null ? null : activity.Date,
+                        Recoded = recoded is null ? false : true
                     };
                     result.Add(temp);
                 }
@@ -444,6 +446,9 @@ namespace N2K_BackboneBackEnd.Services
                                 param1).ToListAsync();
                     List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
                                     param1).ToListAsync();
+                    List<SiteChangeDb> recodeChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesSiteRecodedByCountry  @country",
+                                    param1).ToListAsync();
+
                     foreach (var change in (await changes.ToListAsync()))
                     {
                         SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
@@ -453,13 +458,15 @@ namespace N2K_BackboneBackEnd.Services
                             if (editionChange != null)
                                 activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                         }
+                        SiteChangeDb recoded = recodeChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "Site Recoded").FirstOrDefault();
                         SiteCodeView temp = new SiteCodeView
                         {
                             SiteCode = change.SiteCode,
                             Version = change.Version,
                             Name = change.Name,
                             EditedBy = activity is null ? null : activity.Author,
-                            EditedDate = activity is null ? null : activity.Date
+                            EditedDate = activity is null ? null : activity.Date,
+                            Recoded = recoded is null ? false : true
                         };
                         result.Add(temp);
                     }
