@@ -87,15 +87,21 @@ namespace N2K_BackboneBackEnd.Services
                                 SiteLineage temp = new SiteLineage();
                                 temp.SiteCode = lineage.SiteCode;
                                 temp.Release = headers.Where(c => c.idULHeader == lineage.Release).FirstOrDefault().Name;
-                                temp.Predecessors.SiteCode = string.Join(",", predecessors.Where(c => c.LineageID == lineage.ID).Select(r => r.SiteCode));
-                                temp.Predecessors.Release = headers.Where(c => c.idULHeader == (list.Where(c =>
-                                        c.SiteCode == predecessors.Where(c => c.LineageID == lineage.ID).FirstOrDefault().SiteCode &&
-                                        c.Version == predecessors.Where(c => c.LineageID == lineage.ID).FirstOrDefault().Version).FirstOrDefault().Release)).FirstOrDefault().Name;
-                                temp.Successors.SiteCode = string.Join(",", list.Where(c => predecessors.Where(c =>
-                                        c.SiteCode == lineage.SiteCode && c.Version == lineage.Version).Select(r => r.LineageID).Contains(c.ID)).Select(b => b.SiteCode));
-                                temp.Successors.Release = headers.Where(c => c.idULHeader == (list.Where(c =>
-                                        c.ID == predecessors.Where(c => c.SiteCode == lineage.SiteCode && c.Version == lineage.Version).FirstOrDefault().LineageID)
-                                            .FirstOrDefault().Release)).FirstOrDefault().Name;
+                                if (predecessors.Where(c => c.LineageID == lineage.ID).ToList().Count() > 0)
+                                {
+                                    temp.Predecessors.SiteCode = string.Join(",", predecessors.Where(c => c.LineageID == lineage.ID).Select(r => r.SiteCode));
+                                    temp.Predecessors.Release = headers.Where(c => c.idULHeader == (list.Where(c =>
+                                            c.SiteCode == predecessors.Where(c => c.LineageID == lineage.ID).FirstOrDefault().SiteCode &&
+                                            c.Version == predecessors.Where(c => c.LineageID == lineage.ID).FirstOrDefault().Version).FirstOrDefault().Release)).FirstOrDefault().Name;
+                                }
+                                if (predecessors.Where(c => c.SiteCode == lineage.SiteCode && c.Version == lineage.Version).ToList().Count() > 0)
+                                {
+                                    temp.Successors.SiteCode = string.Join(",", list.Where(c => predecessors.Where(c =>
+                                            c.SiteCode == lineage.SiteCode && c.Version == lineage.Version).Select(r => r.LineageID).Contains(c.ID)).Select(b => b.SiteCode));
+                                    temp.Successors.Release = headers.Where(c => c.idULHeader == (list.Where(c =>
+                                            c.ID == predecessors.Where(c => c.SiteCode == lineage.SiteCode && c.Version == lineage.Version).FirstOrDefault().LineageID)
+                                                .FirstOrDefault().Release)).FirstOrDefault().Name;
+                                }
                                 result.Add(temp);
                             }
                             catch (Exception ex)
