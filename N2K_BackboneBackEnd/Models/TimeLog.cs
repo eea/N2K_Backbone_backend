@@ -140,9 +140,9 @@ namespace N2K_BackboneBackEnd.Models
                 cmd.ExecuteNonQuery();
 
             }
-            catch
+            catch (Exception ex)
             {
-
+                var aaa = ex.Message;
             }
             finally
             {

@@ -444,6 +444,7 @@ namespace N2K_BackboneBackEnd.Services
         private async Task<List<SiteCodeView>> swapSiteInListCache(IMemoryCache pCache, SiteChangeStatus? pStatus, Level? pLevel, SiteChangeStatus? pListNameFrom, SiteCodeView pSite)
         {
 
+            await Task.Delay(10);
             List<SiteCodeView> cachedlist = new List<SiteCodeView>();
 
 

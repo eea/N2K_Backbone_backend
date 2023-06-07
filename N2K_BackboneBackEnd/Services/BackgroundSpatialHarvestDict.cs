@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
@@ -21,6 +22,8 @@ namespace N2K_BackboneBackEnd.Services
         private ConcurrentDictionary<string, long> _minCountryJobs = new ConcurrentDictionary<string, long>();
         private SemaphoreSlim _signal = new SemaphoreSlim(0);
         private List<HarvestedEnvelope> result = new List<HarvestedEnvelope> { };
+        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
+
 
         public BackgroundSpatialHarvestJobs(N2KBackboneContext dataContext, IOptions<ConfigSettings> appSettings, 
             ILogger<BackgroundSpatialHarvestJobs> logger)
@@ -60,6 +63,7 @@ namespace N2K_BackboneBackEnd.Services
                    _appSettings.Value.fme_service_spatialload.repository,
                    _appSettings.Value.fme_service_spatialload.workspace);
 
+                
                 string body = string.Format(@"{{""publishedParameters"":[" +
                     @"{{""name"":""CountryVersionId"",""value"":{0}}}," +
                     @"{{""name"":""Environment"",""value"":{1}}}," +
@@ -86,8 +90,8 @@ namespace N2K_BackboneBackEnd.Services
                 //add the jobId if it is the first of the country
                 if (!_minCountryJobs.ContainsKey(envelope.CountryCode))
                     _minCountryJobs.TryAdd(envelope.CountryCode, envelope.VersionId);
-                Console.WriteLine(string.Format(@"JobId {0} launched", jobId));
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format(@"JobId {0} launched", jobId), "HarvestGeodata", "", _dataContext.Database.GetConnectionString());
+                //Console.WriteLine(string.Format(@"JobId {0} launched", jobId));
+                //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format(@"JobId {0} launched", jobId), "HarvestGeodata", "", _dataContext.Database.GetConnectionString());
             }
             catch (Exception ex)
             {
@@ -151,7 +155,8 @@ namespace N2K_BackboneBackEnd.Services
 
         protected async virtual Task OnFMEJobIdCompleted(EnvelopesToProcess envelope)
         {
-            await Task.Delay(1);
+            await _semaphore.WaitAsync();
+
             bool firstInCountry = false;
             long minVersionCountry = 0;
             if (_minCountryJobs.ContainsKey(envelope.CountryCode))
@@ -172,6 +177,8 @@ namespace N2K_BackboneBackEnd.Services
                 _minCountryJobs.TryRemove(envelope.CountryCode, out jobId);
             }
             FMEJobCompleted?.Invoke(this, evt);
+            _semaphore.Release();
+
         }
 
     }

@@ -790,11 +790,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        public async Task<List<SiteChangeDb>> ChangeDetectionSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance, ProcessedEnvelopes? processedEnvelope)
+        public async Task<List<SiteChangeDb>> ChangeDetectionSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext? ctx=null)
         {
             await Task.Delay(1);
             try
             {
+                if (ctx == null) ctx = _dataContext;
                 if (harvestingSite.SiteCode != storedSite.SiteCode)
                 {
                     SiteChangeDb siteChange = new SiteChangeDb();
@@ -999,17 +1000,19 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionSiteAttributes - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionSiteAttributes - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", ctx.Database.GetConnectionString());
             }
             return changes;
         }
 
-        public async Task<List<SiteChangeDb>> ChangeDetectionBioRegions(List<BioRegions> bioRegionsVersioning, List<BioRegions> referencedBioRegions, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, ProcessedEnvelopes? processedEnvelope)
+        public async Task<List<SiteChangeDb>> ChangeDetectionBioRegions(List<BioRegions> bioRegionsVersioning, List<BioRegions> referencedBioRegions, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext? ctx=null)
         {
             try
             {
+                if (ctx == null) ctx =_dataContext;
+
                 //Get the lists of bioregion types
-                List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().AsNoTracking().ToListAsync();
+                List<BioRegionTypes> bioRegionTypes = await ctx.Set<BioRegionTypes>().AsNoTracking().ToListAsync();
 
                 //For each BioRegion in Versioning compare it with that BioRegion in backboneDB
                 foreach (BioRegions harvestingBioRegions in bioRegionsVersioning)
@@ -1067,7 +1070,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionBioRegions - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionBioRegions - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", ctx.Database.GetConnectionString());
             }
             return changes;
         }

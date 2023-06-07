@@ -391,7 +391,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
-                var processedEnvelope = await _harvestedService.ChangeDetection(envelopes);
+                var processedEnvelope = await _harvestedService.ChangeDetection(envelopes,null);
                 response.Success = true;
                 response.Message = "";
                 response.Data = processedEnvelope;

@@ -196,13 +196,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             return 1;
         }
 
-        public async Task<List<SiteChangeDb>> ChangeDetectionSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope)
+        public async Task<List<SiteChangeDb>> ChangeDetectionSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext ctx)
         {
             try
             {
-                List<SpeciesToHarvest> speciesOtherVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesOtherBySiteCodeAndVersion  @site, @versionId",
+                if (ctx == null) ctx = _dataContext;
+                List<SpeciesToHarvest> speciesOtherVersioning = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesOtherBySiteCodeAndVersion  @site, @versionId",
                                 param3, param4).ToListAsync();
-                List<SpeciesToHarvest> referencedSpeciesOther = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesOtherBySiteCodeAndVersion  @site, @versionId",
+                List<SpeciesToHarvest> referencedSpeciesOther = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesOtherBySiteCodeAndVersion  @site, @versionId",
                                 param3, param5).ToListAsync();
 
                 //For each species in Versioning compare it with that species in backboneDB
@@ -562,7 +563,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionSpecies - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionSpecies - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", ctx.Database.GetConnectionString());
             }
             return changes;
         }
