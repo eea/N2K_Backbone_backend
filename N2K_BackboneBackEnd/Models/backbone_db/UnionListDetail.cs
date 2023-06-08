@@ -14,6 +14,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public double? Length { get; set; }
         public double? Long { get; set; }
         public double? Lat { get; set; }
+        public int? version { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {

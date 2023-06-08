@@ -7,28 +7,26 @@ using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class Lineage : IEntityModel, IEntityModelBackboneDB
+    public class LineageAntecessors : IEntityModel, IEntityModelBackboneDB
     {
         public long ID { get; set; }
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
         public int? N2KVersioningVersion { get; set; }
-        public LineageTypes Type { get; set; }
-        public LineageStatus Status { get; set; }
-        public long? Release { get; set; }
+        public long LineageID { get; set; }
 
 
         private string dbConnection = "";
 
-        public Lineage() { }
+        public LineageAntecessors() { }
 
-        public Lineage(string db)
+        public LineageAntecessors(string db)
         {
             dbConnection = db;
         }
 
 
-        public async static Task<int> SaveBulkRecord(string db, List<Lineage> listData)
+        public async static Task<int> SaveBulkRecord(string db, List<LineageAntecessors> listData)
         {
             try
             {
@@ -36,9 +34,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 {
                     using (var copy = new SqlBulkCopy(db))
                     {
-                        copy.DestinationTableName = "Lineage";
+                        copy.DestinationTableName = "LineageAntecessors";
                         copy.BulkCopyTimeout = 3000;
-                        DataTable data = TypeConverters.PrepareDataForBulkCopy<Lineage>(listData, copy);
+                        DataTable data = TypeConverters.PrepareDataForBulkCopy<LineageAntecessors>(listData, copy);
                         await copy.WriteToServerAsync(data);
                     }
                 }
@@ -46,7 +44,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "Lineage - SaveBulkRecord", "", db);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "LineageAntecessors - SaveBulkRecord", "", db);
                 return 0;
             }
 
@@ -55,8 +53,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<Lineage>()
-                .ToTable("Lineage")
+            builder.Entity<LineageAntecessors>()
+                .ToTable("LineageAntecessors")
                 .HasKey(c => new { c.ID });
         }
     }
