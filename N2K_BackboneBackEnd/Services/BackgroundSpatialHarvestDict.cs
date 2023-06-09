@@ -145,11 +145,16 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task CompleteTask(EnvelopesToProcess envelope)
         {
+            
             await Task.Delay(1);
             EnvelopesToProcess _outEnv;
+            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Complete Task {0}-{1}", envelope.CountryCode, envelope.VersionId), "Complete task", "", _dataContext.Database.GetConnectionString());
             _fmeJobs.TryRemove(envelope.JobId, out _outEnv);
             if (_outEnv != null)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Complete Task with fme job {0}-{1}", envelope.CountryCode, envelope.VersionId), "Complete task", "", _dataContext.Database.GetConnectionString());
                 await OnFMEJobIdCompleted(envelope);
+            }
         }
 
 
