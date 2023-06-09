@@ -443,10 +443,9 @@ namespace N2K_BackboneBackEnd.Services
                         foreach (SiteToHarvest? harvestingSite in newsites)
                         {
                             changes = await SiteChangeDetection(changes, previoussites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, sitesRelation,false, ctx);
-                            if (i > 3000) break;
-                            if (i % 1000 ==0 )
+                            //if (i > 300) break;
+                            if (i % 5000 ==0 )
                                 await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Change detection {0} - {1}:{2}", envelope.CountryCode, envelope.VersionId,i.ToString()), "ChangeDetection", "", ctx.Database.GetConnectionString());
-
                             i = i + 1;
                         }                        
 
@@ -1190,7 +1189,6 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         _semaphore.Release();
 
-
                         //if the tabular data has been already harvested change the status to data loaded
                         //if dataloading is completed launch change detection tool
                         if (_procEnv.Status == HarvestingStatus.DataLoaded)
@@ -1361,7 +1359,6 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             //When there is no previous envelopes to resolve for this country
                             List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == envelope.CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToListAsync();
-
                             if (envelopes.Count == 0)
                             {
                                 //change the status of the whole process to PreHarvested
