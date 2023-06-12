@@ -1212,11 +1212,6 @@ namespace N2K_BackboneBackEnd.Services
 
                     }
                 }
-                if (env.AllFinished)
-                {
-                    Console.WriteLine("FME Spatial harvest completed");
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "ALL FME Spatial harvest completed", "HarvestedService - FME Job Completed", "", _connectionString);
-                }
             }
             catch (Exception ex)
             {
