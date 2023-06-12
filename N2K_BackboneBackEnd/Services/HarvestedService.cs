@@ -1115,7 +1115,7 @@ namespace N2K_BackboneBackEnd.Services
                     //check if the event has been handled previously to avoid duplicated handlers
                     //for that purpose we will use plain-text files
                     var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
-                                string.Format("FME-{0}-{1}.txt", env.Envelope.CountryCode, env.Envelope.VersionId));
+                                string.Format("FMECompleted-{0}-{1}.txt", env.Envelope.CountryCode, env.Envelope.VersionId));
 
                     
                     //if the file exists means that the event was handled and we ignore it
@@ -1207,15 +1207,10 @@ namespace N2K_BackboneBackEnd.Services
 
                         //remove the event from the cache as it is already finished and controlled accordingly
                         var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
-                                                          string.Format("FME-{0}-{1}.txt", env.Envelope.CountryCode, env.Envelope.VersionId));
+                                                          string.Format("FMECompleted-{0}-{1}.txt", env.Envelope.CountryCode, env.Envelope.VersionId));
                         if (File.Exists(fileName)) File.Delete(fileName);
 
                     }
-                }
-                if (env.AllFinished)
-                {
-                    Console.WriteLine("FME Spatial harvest completed");
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "ALL FME Spatial harvest completed", "HarvestedService - FME Job Completed", "", _connectionString);
                 }
             }
             catch (Exception ex)
@@ -1693,7 +1688,7 @@ namespace N2K_BackboneBackEnd.Services
             {
                 //remove the file than controls if the FME Completed event has been handled
                 var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
-                                                  string.Format("FME-{0}-{1}.txt", country, version));
+                                                  string.Format("FMECompleted-{0}-{1}.txt", country, version));
                 if (File.Exists(fileName)) File.Delete(fileName);
             }
         }

@@ -57,8 +57,9 @@ namespace N2K_BackboneBackEnd.Services
 
                         //await scopedProcessingService.DoWorkAsync(stoppingToken);
                         //fme_jobs.CheckFMEJobsStatus(_appSettings);
+                        await Task.Delay(10);
 
-                        await scopedProcessingService.CheckFMEJobsStatus(_appSettings);
+                        //await scopedProcessingService.CheckFMEJobsStatus(_appSettings);
 
                     }
                     // Sample count increment
