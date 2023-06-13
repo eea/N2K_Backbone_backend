@@ -541,7 +541,6 @@ namespace N2K_BackboneBackEnd.Services
 
                 SqlParameter param6 = new SqlParameter("@Character", string.IsNullOrEmpty(character) ? string.Empty : character);
                 SqlParameter param7 = new SqlParameter("@Comments", string.IsNullOrEmpty(comments) ? string.Empty : comments);
-
                 List<Releases> releaseID = await _releaseContext.Set<Releases>().FromSqlRaw("exec dbo.createNewRelease  @Title, @Author, @CreateDate, @ModifyDate, @IsOfficial, @Character, @Comments", param1, param2, param3, param4, param5, param6, param7).AsNoTracking().ToListAsync();
 
                 //Create UnionList entry
@@ -550,6 +549,7 @@ namespace N2K_BackboneBackEnd.Services
                 SqlParameter param10 = new SqlParameter("@final", isOfficial);
                 SqlParameter param11 = new SqlParameter("@release", releaseID.First().ID);
                 await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewReleaseUnionList  @name, @creator, @final, @release ", param8, param9, param10, param11);
+
 
                 return await GetReleaseHeadersByBioRegion(null);
             }

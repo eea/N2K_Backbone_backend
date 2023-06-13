@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
 using Newtonsoft.Json.Linq;
+using NuGet.Protocol.Plugins;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
@@ -18,9 +19,6 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2KBackboneContext _dataContext;
         private readonly ILogger<BackgroundSpatialHarvestJobs> _logger;
         private readonly IOptions<ConfigSettings> _appSettings;
-        private ConcurrentDictionary<long,EnvelopesToProcess> _fmeJobs = new ConcurrentDictionary< long, EnvelopesToProcess>();
-        private ConcurrentDictionary<string, long> _minCountryJobs = new ConcurrentDictionary<string, long>();
-        private SemaphoreSlim _signal = new SemaphoreSlim(0);
         private List<HarvestedEnvelope> result = new List<HarvestedEnvelope> { };
         private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
 
@@ -44,7 +42,7 @@ namespace N2K_BackboneBackEnd.Services
             {
                 throw new ArgumentNullException(nameof(envelope));
             }
-            if (_fmeJobs.Count == 0) _signal.Release();
+            //if (_fmeJobs.Count == 0) _signal.Release();
 
             HttpClient client = new HttpClient();
             try
@@ -78,7 +76,7 @@ namespace N2K_BackboneBackEnd.Services
                 request.Content = new StringContent(body,
                                                     Encoding.UTF8,
                                                     "application/json");//CONTENT-TYPE header
-
+                
                 //call the FME script in async 
                 var res = await client.SendAsync(request);
                 //get the JobId 
@@ -86,10 +84,19 @@ namespace N2K_BackboneBackEnd.Services
                 JObject jResponse = JObject.Parse(json);
                 string jobId = jResponse.GetValue("id").ToString();
 
-                _fmeJobs.TryAdd(long.Parse(jobId), envelope);
-                //add the jobId if it is the first of the country
-                if (!_minCountryJobs.ContainsKey(envelope.CountryCode))
-                    _minCountryJobs.TryAdd(envelope.CountryCode, envelope.VersionId);
+                //create a text file to control the FME Jobs (Countr-Version) launched
+                var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
+                            string.Format("FMELaunched-{0}-{1}.txt", envelope.CountryCode, envelope.VersionId));
+
+                //if the file exists means that the event was handled and we ignore it
+                if (!File.Exists(fileName))
+                {
+                    //if it doesn´t exist create a file
+                    StreamWriter sw = new StreamWriter(fileName, true, Encoding.ASCII);
+                    await sw.WriteAsync(jobId);
+                    //close the file
+                    sw.Close();
+                }
                 //Console.WriteLine(string.Format(@"JobId {0} launched", jobId));
                 //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format(@"JobId {0} launched", jobId), "HarvestGeodata", "", _dataContext.Database.GetConnectionString());
             }
@@ -105,6 +112,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        /*
         public async Task CheckFMEJobsStatus(IOptions<ConfigSettings> appSettings) //, string connString)
         {
             foreach (var spatialHarvestjob in _fmeJobs)
@@ -142,14 +150,16 @@ namespace N2K_BackboneBackEnd.Services
                 client.Dispose();
             }
         }
+        */
 
         public async Task CompleteTask(EnvelopesToProcess envelope)
         {
+            
             await Task.Delay(1);
-            EnvelopesToProcess _outEnv;
-            _fmeJobs.TryRemove(envelope.JobId, out _outEnv);
-            if (_outEnv != null)
-                await OnFMEJobIdCompleted(envelope);
+            //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Complete Task {0}-{1}", envelope.CountryCode, envelope.VersionId), "Complete task", "", _dataContext.Database.GetConnectionString());
+            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Complete Task with fme job {0}-{1}", envelope.CountryCode, envelope.VersionId), "Complete task", "", _dataContext.Database.GetConnectionString());
+            await OnFMEJobIdCompleted(envelope);
+
         }
 
 
@@ -158,27 +168,37 @@ namespace N2K_BackboneBackEnd.Services
             await _semaphore.WaitAsync();
 
             bool firstInCountry = false;
-            long minVersionCountry = 0;
-            if (_minCountryJobs.ContainsKey(envelope.CountryCode))
+            long minVersionCountry = long.MaxValue;
+
+
+            //fetch the FME jobs launched for the present country
+            var fmeFiles= Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Resources"),
+                string.Format("FMELaunched-{0}-*.txt", envelope.CountryCode));
+            //and from these get the one with the minimun version
+            foreach (var file in fmeFiles)
             {
-                minVersionCountry = _minCountryJobs[envelope.CountryCode];
-                firstInCountry = envelope.VersionId == minVersionCountry;
+                string _aux = file.Split(".txt")[0];
+                long _currVersion = 0;
+                if (long.TryParse(_aux.Replace(string.Format(Path.Combine(Directory.GetCurrentDirectory(), "Resources", "FMELaunched-{0}-"), envelope.CountryCode), ""), out _currVersion))
+                {
+                    if (_currVersion < minVersionCountry) minVersionCountry = _currVersion;
+                }
             }
+
+            firstInCountry = envelope.VersionId == minVersionCountry;
+            var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
+                        string.Format("FMELaunched-{0}-{1}.txt", envelope.CountryCode, envelope.VersionId));
+            //remove the file as the FME job has completed
+            if (!File.Exists(fileName)) File.Delete(fileName);
+
             FMEJobEventArgs evt = new FMEJobEventArgs
             {
-                AllFinished = _fmeJobs.Count == 0,
                 Envelope = envelope,
                 FirstInCountry = firstInCountry
             };
-            //remove country from _minCountryJob dictionary if the job is the latest of the country
-            if (_fmeJobs.Where(j => j.Value.CountryCode == envelope.CountryCode).ToList().Count == 0)
-            {
-                long jobId = 0;
-                _minCountryJobs.TryRemove(envelope.CountryCode, out jobId);
-            }
+
             FMEJobCompleted?.Invoke(this, evt);
             _semaphore.Release();
-
         }
 
     }
