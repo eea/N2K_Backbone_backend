@@ -17,7 +17,6 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public string? EditedBy { get; set; }
         public DateTime? EditedDate { get; set; }
-        public Boolean? Recoded { get; set; }
 
     }
 }
