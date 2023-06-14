@@ -20,7 +20,7 @@ namespace N2K_BackboneBackEnd.Services
         private readonly ILogger<BackgroundSpatialHarvestJobs> _logger;
         private readonly IOptions<ConfigSettings> _appSettings;
         private List<HarvestedEnvelope> result = new List<HarvestedEnvelope> { };
-        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
+        //private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
 
 
         public BackgroundSpatialHarvestJobs(N2KBackboneContext dataContext, IOptions<ConfigSettings> appSettings, 
@@ -165,15 +165,17 @@ namespace N2K_BackboneBackEnd.Services
 
         protected async virtual Task OnFMEJobIdCompleted(EnvelopesToProcess envelope)
         {
-            await _semaphore.WaitAsync();
-
+            //await _semaphore.WaitAsync();
+            await Task.Delay(100);
             bool firstInCountry = false;
             long minVersionCountry = long.MaxValue;
-
 
             //fetch the FME jobs launched for the present country
             var fmeFiles= Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Resources"),
                 string.Format("FMELaunched-{0}-*.txt", envelope.CountryCode));
+
+            //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Join(",", fmeFiles) , "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
+
             //and from these get the one with the minimun version
             foreach (var file in fmeFiles)
             {
@@ -189,7 +191,13 @@ namespace N2K_BackboneBackEnd.Services
             var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
                         string.Format("FMELaunched-{0}-{1}.txt", envelope.CountryCode, envelope.VersionId));
             //remove the file as the FME job has completed
-            if (!File.Exists(fileName)) File.Delete(fileName);
+            //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, fileName, "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
+
+            if (File.Exists(fileName))
+            {
+                //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, fileName + " Deleted ", "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
+                File.Delete(fileName);
+            }
 
             FMEJobEventArgs evt = new FMEJobEventArgs
             {
@@ -197,8 +205,9 @@ namespace N2K_BackboneBackEnd.Services
                 FirstInCountry = firstInCountry
             };
 
+            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Invoke {0} - {1}", envelope.CountryCode, envelope.VersionId)  , "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
             FMEJobCompleted?.Invoke(this, evt);
-            _semaphore.Release();
+            //_semaphore.Release();
         }
 
     }
