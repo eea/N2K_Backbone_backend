@@ -530,7 +530,7 @@ namespace N2K_BackboneBackEnd.Services
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info,string.Format("Start  Geospatial changes detection {0}-{1}", envelope.CountryCode, envelope.VersionId)  , "ChangeDetection - Geospatial change", "", ctx.Database.GetConnectionString());
 
                     HttpClient client = new HttpClient();
-                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialchanges, envelope.VersionId, envelope.CountryCode, _appSettings.Value.fme_security_token);
+                    String serverUrl = String.Format(_appSettings.Value.fme_service_spatialchanges, envelope.VersionId, envelope.CountryCode, _appSettings.Value.Environment,  _appSettings.Value.fme_security_token);
                     try
                     {
                         //TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
