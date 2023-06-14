@@ -34,8 +34,8 @@ namespace N2K_BackboneBackEnd.Services
         private IList<Models.backbone_db.OwnerShipTypes> _ownerShipTypes = new List<Models.backbone_db.OwnerShipTypes>();
         private IList<Models.backbone_db.SpecieBase> _countrySpecies = new List<Models.backbone_db.SpecieBase>();
 
-        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
-        private static readonly SemaphoreSlim _semaphoreFME = new SemaphoreSlim(initialCount: 1);
+        //private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
+        //private static readonly SemaphoreSlim _semaphoreFME = new SemaphoreSlim(initialCount: 1);
         private IDictionary<Type, object> _siteItems = new Dictionary<Type, object>(); private struct SiteVersion
         {
             public string SiteCode;
@@ -1122,12 +1122,12 @@ namespace N2K_BackboneBackEnd.Services
                     if (!File.Exists(fileName))
                     {
                         //if it doesn´t exist create a file
-                        await _semaphoreFME.WaitAsync();
+                        //await _semaphoreFME.WaitAsync();
                         StreamWriter sw = new StreamWriter(fileName, true, Encoding.ASCII);
                         await sw.WriteAsync(env.Envelope.JobId.ToString());
                         //close the file
                         sw.Close();
-                        _semaphoreFME.Release();
+                        //_semaphoreFME.Release();
                         await Task.Run(() => FMEJobCompleted(sender, env, cache));
                     }
                 };
@@ -1155,6 +1155,8 @@ namespace N2K_BackboneBackEnd.Services
                 _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext()
                     .Database.GetConnectionString();
 
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("FMEJobCompleted {0} - {1}", env.Envelope.CountryCode, env.Envelope.VersionId), "FMEJobCompleted", "", _connectionString);
+
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_connectionString, 
                     opt => opt.EnableRetryOnFailure()).Options;                
                 using (var ctx = new N2KBackboneContext(options))
@@ -1162,11 +1164,15 @@ namespace N2K_BackboneBackEnd.Services
                     ProcessedEnvelopes _procEnv = await ctx.Set<ProcessedEnvelopes>().Where(pe => pe.Country == env.Envelope.CountryCode && pe.Version == env.Envelope.VersionId).FirstOrDefaultAsync();
                     if (_procEnv != null)
                     {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("STAtus {0} - {1}=>{2}", env.Envelope.CountryCode, env.Envelope.VersionId, _procEnv.Status.ToString()), "FMEJobCompleted", "", _connectionString);
+
                         //avoid processing the event twice
                         if (_procEnv.Status == HarvestingStatus.DataLoaded || _procEnv.Status == HarvestingStatus.SpatialDataLoaded)
                             return;
 
                         Console.WriteLine(String.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId));
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId), "FMEJobCompleted", "", _connectionString);
+
                         if (_procEnv.Status == HarvestingStatus.TabularDataLoaded)
                             _procEnv.Status = HarvestingStatus.DataLoaded;
                         else
@@ -1177,7 +1183,7 @@ namespace N2K_BackboneBackEnd.Services
                         _procEnv.N2K_VersioningDate = new DateTime(_procEnv.N2K_VersioningDate.Year, _procEnv.N2K_VersioningDate.Month, _procEnv.N2K_VersioningDate.Day);
                         _procEnv.ImportDate = new DateTime(_procEnv.ImportDate.Year, _procEnv.ImportDate.Month, _procEnv.ImportDate.Day);
 
-                        await _semaphore.WaitAsync();
+                        //await _semaphore.WaitAsync();
                         ctx.Set<ProcessedEnvelopes>().Update(_procEnv);
                         try
                         {
@@ -1187,10 +1193,12 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             Console.Write("error:" + ex.Message);
                         }
-                        _semaphore.Release();
+                        //_semaphore.Release();
 
                         //if the tabular data has been already harvested change the status to data loaded
                         //if dataloading is completed launch change detection tool
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Updated STAtus {0} - {1}=>{2}2", env.Envelope.CountryCode, env.Envelope.VersionId, _procEnv.Status.ToString()), "FMEJobCompleted", "", _connectionString);
+
                         if (_procEnv.Status == HarvestingStatus.DataLoaded)
                         {
                             //When there is no previous envelopes to resolve for this country
