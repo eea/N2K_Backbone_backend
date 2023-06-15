@@ -421,13 +421,37 @@ namespace N2K_BackboneBackEnd.Services
                         newsitecodesfilter.Columns.Add("SiteCode", typeof(string));
                         newsitecodesfilter.Columns.Add("Version", typeof(int));
 
+                        var lineageInsertion = new DataTable("LineageInsertion");
+                        lineageInsertion.Columns.Add("SiteCode", typeof(string));
+                        lineageInsertion.Columns.Add("Version", typeof(int));
+                        lineageInsertion.Columns.Add("N2KVersioningVersion", typeof(int));
+                        lineageInsertion.Columns.Add("Type", typeof(int));
+                        lineageInsertion.Columns.Add("Status", typeof(int));
+                        lineageInsertion.Columns.Add("AntecessorSiteCode", typeof(string));
+                        lineageInsertion.Columns.Add("AntecessorVersion", typeof(int));
                         foreach (var sc in sitesRelation)
                         {
                             if (sc.PreviousSiteCode != null && sc.PreviousVersion != null)
                                 previoussitecodesfilter.Rows.Add(new Object[] { sc.PreviousSiteCode, sc.PreviousVersion });
                             if (sc.NewSiteCode != null && sc.NewVersion != null)
                                 newsitecodesfilter.Rows.Add(new Object[] { sc.NewSiteCode, sc.NewVersion });
+
+                            if (sc.PreviousSiteCode != null && sc.NewSiteCode != null)
+                            {
+                                if (sc.PreviousSiteCode == sc.NewSiteCode)
+                                {
+                                    lineageInsertion.Rows.Add(new Object[] { sc.NewSiteCode, sc.NewVersion, envelope.VersionId, LineageTypes.NoChanges, LineageStatus.Proposed, sc.PreviousSiteCode, sc.PreviousVersion });
+                                }
+                                else
+                                {
+                                    lineageInsertion.Rows.Add(new Object[] { sc.NewSiteCode, sc.NewVersion, envelope.VersionId, LineageTypes.Recode, LineageStatus.Proposed, sc.PreviousSiteCode, sc.PreviousVersion });
+                                }
+                            }
                         }
+                        SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                        paramTable.Value = lineageInsertion;
+                        paramTable.TypeName = "[dbo].[LineageInsertion]";
+                        await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spInsertIntoLineageBulk  @siteCodes", paramTable);
 
                         SqlParameter param4 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
                         param4.Value = previoussitecodesfilter;
