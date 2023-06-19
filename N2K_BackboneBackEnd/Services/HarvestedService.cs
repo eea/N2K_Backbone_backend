@@ -444,8 +444,8 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             changes = await SiteChangeDetection(changes, previoussites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, sitesRelation,false, ctx);
                             //if (i > 300) break;
-                            if (i % 5000 ==0 )
-                                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Change detection {0} - {1}:{2}", envelope.CountryCode, envelope.VersionId,i.ToString()), "ChangeDetection", "", ctx.Database.GetConnectionString());
+                            //if (i % 5000 ==0 )
+                            //    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Change detection {0} - {1}:{2}", envelope.CountryCode, envelope.VersionId,i.ToString()), "ChangeDetection", "", ctx.Database.GetConnectionString());
                             i = i + 1;
                         }                        
 
@@ -1164,14 +1164,11 @@ namespace N2K_BackboneBackEnd.Services
                     ProcessedEnvelopes _procEnv = await ctx.Set<ProcessedEnvelopes>().Where(pe => pe.Country == env.Envelope.CountryCode && pe.Version == env.Envelope.VersionId).FirstOrDefaultAsync();
                     if (_procEnv != null)
                     {
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("STAtus {0} - {1}=>{2}", env.Envelope.CountryCode, env.Envelope.VersionId, _procEnv.Status.ToString()), "FMEJobCompleted", "", _connectionString);
-
                         //avoid processing the event twice
                         if (_procEnv.Status == HarvestingStatus.DataLoaded || _procEnv.Status == HarvestingStatus.SpatialDataLoaded)
                             return;
 
                         Console.WriteLine(String.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId));
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Harvest spatial {0}-{1} completed", env.Envelope.CountryCode, env.Envelope.VersionId), "FMEJobCompleted", "", _connectionString);
 
                         if (_procEnv.Status == HarvestingStatus.TabularDataLoaded)
                             _procEnv.Status = HarvestingStatus.DataLoaded;
@@ -1191,13 +1188,13 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         catch (Exception ex)
                         {
-                            Console.Write("error:" + ex.Message);
+                            await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex.Message, "FMEJobCompleted", "Error updating status ", _connectionString);
+
                         }
                         //_semaphore.Release();
 
                         //if the tabular data has been already harvested change the status to data loaded
                         //if dataloading is completed launch change detection tool
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Updated STAtus {0} - {1}=>{2}2", env.Envelope.CountryCode, env.Envelope.VersionId, _procEnv.Status.ToString()), "FMEJobCompleted", "", _connectionString);
 
                         if (_procEnv.Status == HarvestingStatus.DataLoaded)
                         {

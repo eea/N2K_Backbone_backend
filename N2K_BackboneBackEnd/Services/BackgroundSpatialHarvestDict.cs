@@ -208,8 +208,7 @@ namespace N2K_BackboneBackEnd.Services
                 Envelope = envelope,
                 FirstInCountry = firstInCountry
             };
-
-            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Invoke {0} - {1}", envelope.CountryCode, envelope.VersionId)  , "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
+            
             FMEJobCompleted?.Invoke(this, evt);
             //_semaphore.Release();
         }
