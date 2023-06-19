@@ -170,12 +170,18 @@ namespace N2K_BackboneBackEnd.Services
             bool firstInCountry = false;
             long minVersionCountry = long.MaxValue;
 
+            var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
+                        string.Format("FMELaunched-{0}-{1}.txt", envelope.CountryCode, envelope.VersionId));
+
+            //process the message only if it has been sent from N2kBackbone
+            if (!File.Exists(fileName)) return; 
+
+
             //fetch the FME jobs launched for the present country
-            var fmeFiles= Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Resources"),
+            var fmeFiles = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Resources"),
                 string.Format("FMELaunched-{0}-*.txt", envelope.CountryCode));
 
             //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Join(",", fmeFiles) , "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
-
             //and from these get the one with the minimun version
             foreach (var file in fmeFiles)
             {
@@ -188,8 +194,6 @@ namespace N2K_BackboneBackEnd.Services
             }
 
             firstInCountry = envelope.VersionId == minVersionCountry;
-            var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
-                        string.Format("FMELaunched-{0}-{1}.txt", envelope.CountryCode, envelope.VersionId));
             //remove the file as the FME job has completed
             //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, fileName, "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
 
@@ -204,8 +208,7 @@ namespace N2K_BackboneBackEnd.Services
                 Envelope = envelope,
                 FirstInCountry = firstInCountry
             };
-
-            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Invoke {0} - {1}", envelope.CountryCode, envelope.VersionId)  , "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
+            
             FMEJobCompleted?.Invoke(this, evt);
             //_semaphore.Release();
         }
