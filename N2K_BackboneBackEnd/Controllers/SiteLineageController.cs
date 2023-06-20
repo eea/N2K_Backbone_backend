@@ -103,18 +103,18 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [Route("ConsolidateChanges")]
+        [Route("SaveEdition")]
         [HttpPost]
-        public async Task<ActionResult<List<long>>> ConsolidateChanges(LineageConsolidation[] consolidateChanges)
+        public async Task<ActionResult<long>> SaveEdition(LineageConsolidation consolidateChanges)
         {
-            var response = new ServiceResponse<List<long>>();
+            var response = new ServiceResponse<long>();
             try
             {
-                var siteChanges = await _siteLineageService.ConsolidateChanges(consolidateChanges);
+                var siteChanges = await _siteLineageService.SaveEdition(consolidateChanges);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
-                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                response.Count = (siteChanges == null) ? 0 : 1;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -122,33 +122,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<long>();
-                return Ok(response);
-            }
-        }
-
-
-        // POST api/<SiteChangesController>
-        [Route("SetChangesBackToProposed/")]
-        [HttpPost]
-        public async Task<ActionResult<List<long>>> SetChangesBackToProposed(long[] ChangeId)
-        {
-            var response = new ServiceResponse<List<long>>();
-            try
-            {
-                var siteChanges = await _siteLineageService.SetChangesBackToProposed(ChangeId);
-                response.Success = true;
-                response.Message = "";
-                response.Data = siteChanges;
-                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = new List<long>();
+                response.Data = -1;
                 return Ok(response);
             }
         }
