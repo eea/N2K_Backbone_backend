@@ -15,9 +15,7 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<LineageCount> GetCodesCount(string country, IMemoryCache cache, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true);
 
-        Task<List<long>> ConsolidateChanges(LineageConsolidation[] consolidateChanges);
-
-        Task<List<long>> SetChangesBackToProposed(long[] ChangeId);
+        Task<long> SaveEdition(LineageConsolidation consolidateChanges);
 
         Task<List<LineageEditionInfo>> GetPredecessorsInfo(long ChangeId);
 

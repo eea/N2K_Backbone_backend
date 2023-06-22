@@ -229,88 +229,42 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<long>> ConsolidateChanges(LineageConsolidation[] consolidateChanges)
+        public async Task<long> SaveEdition(LineageConsolidation consolidateChanges)
         {
-            List<long> result = new List<long>();
             try
             {
-                var lineageConsolidate = new DataTable("lineageConsolidate");
-                lineageConsolidate.Columns.Add("id", typeof(int));
-                lineageConsolidate.Columns.Add("Type", typeof(int));
-                lineageConsolidate.Columns.Add("predecessors", typeof(string));
-                SqlParameter paramTable = new SqlParameter("@lineageConsolidate", System.Data.SqlDbType.Structured);
-                paramTable.TypeName = "[dbo].[lineageConsolidate]";
+                Lineage lineage = await _dataContext.Set<Lineage>().Where(c => c.ID == consolidateChanges.ChangeId).FirstOrDefaultAsync();
 
-                if (consolidateChanges.Count() > 1)
+                SqlParameter param1 = new SqlParameter("@country", lineage.SiteCode.Substring(0, 2));
+                List<SiteBasic> resultSites = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
+                                    param1).ToListAsync();
+                resultSites = resultSites.Where(c => consolidateChanges.Predecessors.Contains(c.SiteCode)).ToList();
+
+                var sitecodesfilter = new DataTable("sitecodesfilter");
+                sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter.Columns.Add("Version", typeof(int));
+                resultSites.ToList().ForEach(cs =>
                 {
-                    consolidateChanges.ToList().ForEach(cs =>
-                    {
-                        lineageConsolidate.Rows.Add(new Object[] { cs.ChangeId, cs.Type, DBNull.Value });
-                        result.Add(cs.ChangeId);
-                    });
-                    paramTable.Value = lineageConsolidate;
-
-                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spConsolidateChanges  @lineageConsolidate", paramTable);
-                }
-                else
-                {
-                    Lineage lineage = await _dataContext.Set<Lineage>().Where(c => c.ID == consolidateChanges.FirstOrDefault().ChangeId).FirstOrDefaultAsync();
-
-                    SqlParameter param1 = new SqlParameter("@country", lineage.SiteCode.Substring(0, 2));
-                    List<SiteBasic> resultSites = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
-                                        param1).ToListAsync();
-                    resultSites = resultSites.Where(c => consolidateChanges.FirstOrDefault().Predecessors.Contains(c.SiteCode)).ToList();
-
-                    var sitecodesfilter = new DataTable("sitecodesfilter");
-                    sitecodesfilter.Columns.Add("SiteCode", typeof(string));
-                    sitecodesfilter.Columns.Add("Version", typeof(int));
-                    resultSites.ToList().ForEach(cs =>
-                    {
-                        sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.Version });
-                    });
-                    SqlParameter paramId = new SqlParameter("@id", consolidateChanges.FirstOrDefault().ChangeId);
-                    SqlParameter paramSitecodesTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-                    paramSitecodesTable.Value = sitecodesfilter;
-                    paramSitecodesTable.TypeName = "[dbo].[SiteCodeFilter]";
-
-                    await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spConsolidatePredecessors @id, @siteCodes", paramId, paramSitecodesTable);
-
-                    lineageConsolidate.Rows.Add(new Object[] { consolidateChanges.FirstOrDefault().ChangeId, consolidateChanges.FirstOrDefault().Type, DBNull.Value });
-                    paramTable.Value = lineageConsolidate;
-
-                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spConsolidateChanges  @lineageConsolidate", paramTable);
-
-                    result.Add(consolidateChanges.FirstOrDefault().ChangeId);
-                }
-            }
-            catch (Exception ex)
-            {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - ConsolidateChanges", "", _dataContext.Database.GetConnectionString());
-                throw ex;
-            }
-            return result;
-        }
-
-
-        public async Task<List<long>> SetChangesBackToProposed(long[] ChangeId)
-        {
-            List<long> result = new List<long>();
-            try
-            {
-                List<Lineage> lineageBackProposed = await _dataContext.Set<Lineage>().Where(c => c.Status == LineageStatus.Consolidated && ChangeId.Contains(c.ID)).ToListAsync();
-                lineageBackProposed.ForEach(y =>
-                {
-                    y.Status = LineageStatus.Proposed;
-                    result.Add(y.ID);
+                    sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.Version });
                 });
+                SqlParameter paramId = new SqlParameter("@id", consolidateChanges.ChangeId);
+                SqlParameter paramSitecodesTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramSitecodesTable.Value = sitecodesfilter;
+                paramSitecodesTable.TypeName = "[dbo].[SiteCodeFilter]";
+
+                await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spConsolidatePredecessors @id, @siteCodes", paramId, paramSitecodesTable);
+
+                lineage.Type = consolidateChanges.Type;
                 _dataContext.SaveChanges();
+
+
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - SetChangesBackToProposed", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - SaveEdition", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
-            return result;
+            return consolidateChanges.ChangeId;
         }
 
 
