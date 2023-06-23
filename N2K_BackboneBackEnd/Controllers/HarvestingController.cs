@@ -408,37 +408,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        /// <summary>
-        /// Executes the process of the ChangeDetection for a selected site (Sitecode and Version).
-        /// It must be hervested yet to perform this action
-        /// </summary>
-        /// <param name="envelopes"></param>
-        /// <returns></returns>
-        // POST api/<HarvestingController>
-        [Route("Harvest/ChangeDetectionSingleSite")]
-        [HttpPost]
-        public async Task<ActionResult<List<HarvestedEnvelope>>> ChangeDetectionSingleSite(string siteCode, int versionId)
-        {
-            var response = new ServiceResponse<List<HarvestedEnvelope>>();
-            try
-            {
-                var processedEnvelope = await _harvestedService.ChangeDetectionSingleSite(siteCode, versionId);
-                response.Success = true;
-                response.Message = "";
-                response.Data = processedEnvelope;
-                response.Count = (processedEnvelope == null) ? 0 : processedEnvelope.Count;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = new List<HarvestedEnvelope>();
-                return Ok(response);
-            }
-        }
-
         [AllowAnonymous]
         [Route("/ws")]
         [HttpGet]
