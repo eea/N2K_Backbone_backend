@@ -53,6 +53,30 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
+        [HttpGet("GetOverview")]
+        public async Task<ActionResult<List<LineageCountry>>> GetOverview()
+        {
+            var response = new ServiceResponse<List<LineageCountry>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetOverview();
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<LineageCountry>();
+                return Ok(response);
+            }
+        }
+
+
         [HttpGet("GetChanges")]
         public async Task<ActionResult<List<LineageChanges>>> GetChanges(string country, LineageStatus status, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {

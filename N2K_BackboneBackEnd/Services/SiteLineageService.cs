@@ -128,6 +128,20 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
+        public async Task<List<LineageCountry>> GetOverview()
+        {
+            try
+            {
+                return await _dataContext.Set<LineageCountry>().FromSqlRaw($"exec dbo.spGetLineageOverview").ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetOverview", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+
         public async Task<List<LineageChanges>> GetChanges(string country, LineageStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
             List<LineageChanges> result = new List<LineageChanges>();
