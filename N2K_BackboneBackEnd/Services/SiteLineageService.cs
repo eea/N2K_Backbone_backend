@@ -14,6 +14,7 @@ using System.Security.Policy;
 using System.Collections.Generic;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -22,11 +23,17 @@ namespace N2K_BackboneBackEnd.Services
     public class SiteLineageService : ISiteLineageService
     {
         private readonly N2KBackboneContext _dataContext;
+        private readonly N2K_VersioningContext _versioningContext;
+        private readonly IOptions<ConfigSettings> _appSettings;
+        private IBackgroundSpatialHarvestJobs _fmeHarvestJobs;
 
 
-        public SiteLineageService(N2KBackboneContext dataContext)
+        public SiteLineageService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app, IBackgroundSpatialHarvestJobs harvestJobs)
         {
             _dataContext = dataContext;
+            _versioningContext = versioningContext;
+            _appSettings = app;
+            _fmeHarvestJobs = harvestJobs;
         }
 
 
@@ -116,6 +123,20 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetSiteLineageAsync", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+
+        public async Task<List<LineageCountry>> GetOverview()
+        {
+            try
+            {
+                return await _dataContext.Set<LineageCountry>().FromSqlRaw($"exec dbo.spGetLineageOverview").ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetOverview", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -255,9 +276,10 @@ namespace N2K_BackboneBackEnd.Services
                 await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spConsolidatePredecessors @id, @siteCodes", paramId, paramSitecodesTable);
 
                 lineage.Type = consolidateChanges.Type;
-                _dataContext.SaveChanges();
+                await _dataContext.SaveChangesAsync();
 
-
+                HarvestedService harvest = new HarvestedService(_dataContext, _versioningContext, _appSettings, _fmeHarvestJobs);
+                await harvest.ChangeDetectionSingleSite(lineage.SiteCode, lineage.Version, _dataContext.Database.GetConnectionString());
             }
             catch (Exception ex)
             {

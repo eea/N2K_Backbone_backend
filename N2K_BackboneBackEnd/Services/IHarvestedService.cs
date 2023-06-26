@@ -26,9 +26,7 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<HarvestedEnvelope>> ChangeDetection(EnvelopesToProcess[] envelopeIDs, N2KBackboneContext? ctx=null);
 
-        Task<List<HarvestedEnvelope>> ChangeDetectionSingleSite(string siteCode, int versionId);
-
-        Task<List<HarvestedEnvelope>> ChangeDetectionSingleSiteObject(SiteToHarvest harvestingSite);
+        Task<List<HarvestedEnvelope>> ChangeDetectionSingleSite(string siteCode, int versionId, string connectionString);
 
         Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs);
 
