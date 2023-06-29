@@ -607,6 +607,9 @@ namespace N2K_BackboneBackEnd.Services
             {
                 int result = 0;
 
+                List<Lineage> list = await _dataContext.Set<Lineage>().Where(l => l.Release == id).ToListAsync();
+                list.Select(c => { c.Release = null; return c; }).ToList();
+
                 UnionListHeader? unionlistheader = await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(ulh => ulh.idULHeader == id);
                 if (unionlistheader != null)
                 {
