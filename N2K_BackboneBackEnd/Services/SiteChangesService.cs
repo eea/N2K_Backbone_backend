@@ -1604,12 +1604,14 @@ namespace N2K_BackboneBackEnd.Services
 
                         List<SiteActivities> activities = activitiesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode).ToList();
 
-                        //Was this site edited after being accepted?
+                        #region Was this site edited after being accepted?
                         SiteChangeDb? change = changes.Where(e => e.ChangeType == "User edition").FirstOrDefault();
                         if (change != null)
                         {
+                            Lineage temp = await _dataContext.Set<Lineage>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).FirstOrDefaultAsync();
+                            LineageAntecessors temp1 = await _dataContext.Set<LineageAntecessors>().Where(e => e.LineageID == temp.ID).FirstOrDefaultAsync();
                             //Select the max version for the site with the currentsatatus accepted, but not the version of the change and the referenced version
-                            previousCurrent = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version != modifiedSiteCode.VersionId && e.Version != change.VersionReferenceId && e.CurrentStatus == SiteChangeStatus.Accepted).Max(e => e.Version);
+                            previousCurrent = await _dataContext.Set<Sites>().Where(e => e.SiteCode == temp1.SiteCode && e.Version == temp1.Version && e.CurrentStatus == SiteChangeStatus.Accepted).Select(e => e.Version).FirstOrDefaultAsync();
                             //Search the previous activities
                             List<SiteActivities> activityDelete = activities.Where(e => (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition").ToList();
 
@@ -1634,7 +1636,9 @@ namespace N2K_BackboneBackEnd.Services
                             string previousName = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).Select(x => x.Name).First().ToString();
                             mySiteView.Name = previousName;
                         }
-                        //Was this site edited after being rejected?
+                        #endregion
+
+                        #region Was this site edited after being rejected?
                         List<SiteActivities> activityCheck = activities.Where(e => e.Action == "User edition after rejection of version " + modifiedSiteCode.VersionId).ToList();
                         if (activityCheck != null && activityCheck.Count > 0)
                         {
@@ -1658,7 +1662,9 @@ namespace N2K_BackboneBackEnd.Services
                             //Find the current site
                             siteToDelete = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Current == true).FirstOrDefault();
                         }
-                        //In both cases
+                        #endregion
+
+                        #region In both cases
                         if (change != null || (activityCheck != null && activityCheck.Count > 0))
                         {
                             //paramNewVersion2 = new SqlParameter("@newVersion", previousCurrent);
@@ -1675,6 +1681,8 @@ namespace N2K_BackboneBackEnd.Services
                                 sitecodesdelete.Rows.Add(new Object[] { siteToDelete.SiteCode, siteToDelete.Version });
                             }
                         }
+                        #endregion
+                        
                         #endregion
 
                         //Get the previous level and status to find the proper cached lists
