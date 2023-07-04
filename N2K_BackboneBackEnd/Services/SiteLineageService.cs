@@ -311,6 +311,9 @@ namespace N2K_BackboneBackEnd.Services
                                 paramTable).ToListAsync();
                 List<SiteBioRegionsAndArea> bioregions = await _dataContext.Set<SiteBioRegionsAndArea>().FromSqlRaw($"exec dbo.spGetBioRegionsAndAreaBySitecodeAndVersion  @siteCodes",
                                 paramTable).ToListAsync();
+                List<Lineage> antecessorsLineage = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetSiteLineageBySitecodeAndVersion  @siteCodes",
+                                paramTable).ToListAsync();
+                List<UnionListHeader> unionListHeader = await _dataContext.Set<UnionListHeader>().AsNoTracking().ToListAsync();
 
                 antecessorSites.ForEach(d =>
                 {
@@ -323,7 +326,8 @@ namespace N2K_BackboneBackEnd.Services
                         AreaSDF = d.AreaHa != null ? Convert.ToDouble(d.AreaHa) : null,
                         AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area) : null,
                         Length = d.LengthKm != null ? Convert.ToDouble(d.LengthKm) : null,
-                        Status = LineageStatus.Consolidated.ToString()
+                        Status = LineageStatus.Consolidated.ToString(),
+                        ReleaseDate = antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release != null ? unionListHeader.Where(b => b.idULHeader == antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release).FirstOrDefault().Date.Value.ToShortDateString() : null
                     });
                 });
                 result = result.DistinctBy(c => c.SiteCode).ToList();
