@@ -19,6 +19,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public double? AreaGEO { get; set; }
         public double? Length { get; set; }
         public string? Status { get; set; }
-        public string? ReleaseDate { get; set; }
+        public DateTime? ReleaseDate { get; set; }
     }
 }
