@@ -327,7 +327,7 @@ namespace N2K_BackboneBackEnd.Services
                         AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area) : null,
                         Length = d.LengthKm != null ? Convert.ToDouble(d.LengthKm) : null,
                         Status = LineageStatus.Consolidated.ToString(),
-                        ReleaseDate = antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release != null ? unionListHeader.Where(b => b.idULHeader == antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release).FirstOrDefault().Date.Value.ToShortDateString() : null
+                        ReleaseDate = antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release != null ? unionListHeader.Where(b => b.idULHeader == antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release).FirstOrDefault().Date : null
                     });
                 });
                 result = result.DistinctBy(c => c.SiteCode).ToList();
