@@ -33,14 +33,6 @@ jobs:
         with:
           name: .net-app
           path: ${{env.DOTNET_ROOT}}/myapp
-          
-      - name: Upload artifact to blob
-        uses: fixpoint/azblob-upload-artifact@v4
-        with:
-          connection-string: 'DefaultEndpointsProtocol=https;AccountName=n2kbackbonesharedfiles;AccountKey=TaX9fzQ20MLwsYrPfd9IU/0A2vBzMk0P1vSqrOf2bBoCq1inGPY3x5LoyWsUCt0yBvTztdF6tlY9+AStIBo5aQ==;EndpointSuffix=core.windows.net'
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
-
   deploy:
     runs-on: windows-latest
     needs: build
