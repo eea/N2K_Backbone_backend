@@ -54,7 +54,7 @@ jobs:
           # Artifact name
           name: .net-app
           # Directory containing files to upload
-          path: 'D:\a\N2K_Backbone_backend\N2K_Backbone_backend'
+          path:  ${{env.DOTNET_ROOT}}/myapp
           # Container name
           #container: # optional, default is github-action-artifacts
           # Remove all blobs under the target blob (use "true" to enable this option)
