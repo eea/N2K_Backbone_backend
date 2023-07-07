@@ -46,20 +46,6 @@ jobs:
         with:
           name: .net-app
 
-      - name: Upload a Build Artifact to Azure Blob Storage
-        uses: fixpoint/azblob-upload-artifact@v4
-        with:
-          # Connection string
-          connection-string: 'DefaultEndpointsProtocol=https;AccountName=n2kbackbonesharedfiles;AccountKey=TaX9fzQ20MLwsYrPfd9IU/0A2vBzMk0P1vSqrOf2bBoCq1inGPY3x5LoyWsUCt0yBvTztdF6tlY9+AStIBo5aQ==;EndpointSuffix=core.windows.net'
-          # Artifact name
-          name: .net-app
-          # Directory containing files to upload
-          path:  ${{env.DOTNET_ROOT}}/myapp
-          # Container name
-          #container: # optional, default is github-action-artifacts
-          # Remove all blobs under the target blob (use "true" to enable this option)
-          #cleanup: # optional, default is false
-
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
