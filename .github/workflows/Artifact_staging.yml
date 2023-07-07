@@ -10,6 +10,18 @@ on:
   workflow_dispatch:
 
 jobs:
+  delete:
+    runs-on: windows-latest
+    #needs: deploy
+
+    steps:
+      - name: Delete Old Artifacts
+        id: artifact
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: .net-app_staging
+          path: ${{env.DOTNET_ROOT}}/myapp          
+          
   build:
     runs-on: windows-latest
 
