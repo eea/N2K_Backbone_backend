@@ -6,7 +6,7 @@ name: Build  ASP.Net Core app for N2K Backbone Production
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
