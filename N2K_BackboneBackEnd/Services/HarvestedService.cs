@@ -1626,6 +1626,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             //When there is no previous envelopes to resolve for this country
                             List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == envelope.CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToListAsync();
+
                             if (envelopes.Count == 0)
                             {
                                 //change the status of the whole process to PreHarvested

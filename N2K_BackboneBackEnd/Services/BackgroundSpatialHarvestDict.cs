@@ -88,12 +88,42 @@ namespace N2K_BackboneBackEnd.Services
                 var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
                             string.Format("FMELaunched-{0}-{1}.txt", envelope.CountryCode, envelope.VersionId));
 
+
+                //check if there are FME jobs launched for the country
+                //if there are no such jobs, this FME job is the first
+                bool firstInCountry = false;
+                //fetch the FME jobs launched for the present country
+                var fmeFiles = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Resources"),
+                    string.Format("FMELaunched-{0}-*.txt", envelope.CountryCode));
+                if (fmeFiles.Any())
+                {
+                    long minVersionCountry = long.MaxValue;
+
+                    //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Join(",", fmeFiles) , "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
+                    //and from these get the one with the minimun version
+                    foreach (var file in fmeFiles)
+                    {
+                        string _aux = file.Split(".txt")[0];
+                        long _currVersion = 0;
+                        if (long.TryParse(_aux.Replace(string.Format(Path.Combine(Directory.GetCurrentDirectory(), "Resources", "FMELaunched-{0}-"), envelope.CountryCode), ""), out _currVersion))
+                        {
+                            if (_currVersion < minVersionCountry) minVersionCountry = _currVersion;
+                        }
+                    }
+                    firstInCountry = envelope.VersionId < minVersionCountry;
+
+                }
+                else
+                    firstInCountry = true;
+
+
                 //if the file exists means that the event was handled and we ignore it
                 if (!File.Exists(fileName))
                 {
-                    //if it doesn´t exist create a file
+                    //if it doesn´t exist create a file saying if it is the first of the country or not
                     StreamWriter sw = new StreamWriter(fileName, true, Encoding.ASCII);
-                    await sw.WriteAsync(jobId);
+                    await sw.WriteAsync(firstInCountry.ToString());
+                    //await sw.WriteAsync(jobId);
                     //close the file
                     sw.Close();
                 }
@@ -168,15 +198,18 @@ namespace N2K_BackboneBackEnd.Services
             //await _semaphore.WaitAsync();
             await Task.Delay(100);
             bool firstInCountry = false;
-            long minVersionCountry = long.MaxValue;
-
             var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
                         string.Format("FMELaunched-{0}-{1}.txt", envelope.CountryCode, envelope.VersionId));
 
             //process the message only if it has been sent from N2kBackbone
-            if (!File.Exists(fileName)) return; 
+            if (!File.Exists(fileName)) return;
+
+            //read the file. The first line shows if the job is the first of the country
+            string line1 = File.ReadLines(fileName).First();
+            firstInCountry = bool.Parse(line1);
 
 
+            /*
             //fetch the FME jobs launched for the present country
             var fmeFiles = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Resources"),
                 string.Format("FMELaunched-{0}-*.txt", envelope.CountryCode));
@@ -194,6 +227,7 @@ namespace N2K_BackboneBackEnd.Services
             }
 
             firstInCountry = envelope.VersionId == minVersionCountry;
+            */
             //remove the file as the FME job has completed
             //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, fileName, "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
 
