@@ -33,7 +33,6 @@ jobs:
         with:
           name: .net-app
           path: ${{env.DOTNET_ROOT}}/myapp
-
   deploy:
     runs-on: windows-latest
     needs: build
@@ -59,7 +58,6 @@ jobs:
   delete:
     runs-on: windows-latest
     needs: deploy
-
     steps:
       - name: Delete Old Artifacts
         id: artifact

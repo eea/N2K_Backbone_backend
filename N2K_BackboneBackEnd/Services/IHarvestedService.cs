@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
@@ -23,11 +24,9 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<EnvelopesToHarvest>> GetPreHarvestedEnvelopes();
 
-        Task<List<HarvestedEnvelope>> ChangeDetection(EnvelopesToProcess[] envelopeIDs);
+        Task<List<HarvestedEnvelope>> ChangeDetection(EnvelopesToProcess[] envelopeIDs, N2KBackboneContext? ctx=null);
 
-        Task<List<HarvestedEnvelope>> ChangeDetectionSingleSite(string siteCode, int versionId);
-
-        Task<List<HarvestedEnvelope>> ChangeDetectionSingleSiteObject(SiteToHarvest harvestingSite);
+        Task<List<HarvestedEnvelope>> ChangeDetectionSingleSite(string siteCode, int versionId, string connectionString);
 
         Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs);
 
@@ -35,7 +34,7 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<HarvestedEnvelope>> FullHarvest(IMemoryCache cache);
         Task<ProcessedEnvelopes> ChangeStatus(string country, int version, HarvestingStatus toStatus, IMemoryCache cache);
+        Task CompleteFMESpatial(string message);
 
-        //void CheckFMEJobsStatus(IOptions<ConfigSettings> appSettings, ConcurrentDictionary<EnvelopesToProcess, long> fmeJobs);
     }
 }

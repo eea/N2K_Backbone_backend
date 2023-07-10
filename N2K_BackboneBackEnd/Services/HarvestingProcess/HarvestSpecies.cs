@@ -37,68 +37,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        public async Task<int> HarvestByCountry(string pCountryCode, int pCountryVersion, int pVersion)
-        {
-            List<ContainsSpecies> elements = null;
-            try
-            {
-                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
-
-                elements = await _versioningContext.Set<ContainsSpecies>().Where(s => s.COUNTRYCODE == pCountryCode && s.COUNTRYVERSIONID == pCountryVersion).ToListAsync();
-
-                foreach (ContainsSpecies element in elements)
-                {
-
-                    SpecieBase item = new SpecieBase();
-                    item.SiteCode = element.SITECODE;
-                    item.Version = pVersion;
-                    item.SpecieCode = element.SPECIESCODE;
-                    item.PopulationMin = (element.LOWERBOUND != null) ? Int32.Parse(element.LOWERBOUND) : null;
-                    item.PopulationMax = (element.UPPERBOUND != null) ? Int32.Parse(element.UPPERBOUND) : null;
-                    //item.Group = element.GROUP; // PENDING
-                    item.SensitiveInfo = (element.LOWERBOUND != null) ? ((element.SENSITIVE == 1) ? true : false) : null;
-                    item.Resident = element.RESIDENT;
-                    item.Breeding = element.BREEDING;
-                    item.Winter = element.WINTER;
-                    item.Staging = element.STAGING;
-                    //item.Path = element.PATH; // ??? PENDING
-                    item.AbundaceCategory = element.ABUNDANCECATEGORY;
-                    item.Motivation = element.MOTIVATION;
-                    item.PopulationType = element.POPULATION_TYPE;
-                    item.CountingUnit = element.COUNTINGUNIT;
-                    item.Population = element.POPULATION;
-                    item.Insolation = element.ISOLATIONFACTOR;
-                    item.Conservation = element.CONSERVATION;
-                    item.Global = element.GLOBALIMPORTANCE;
-                    item.NonPersistence = (element.NONPRESENCEINSITE != null) ? ((element.NONPRESENCEINSITE == 1) ? true : false) : null;
-                    item.DataQuality = element.DATAQUALITY;
-                    item.SpecieType = element.SPTYPE;
-
-                    if (element.SPECIESCODE is null || _dataContext.Set<SpeciesTypes>().Where(a => a.Code == element.SPECIESCODE).Count() < 1)
-                    {
-                        //Use the specie name as a code
-                        item.SpecieCode = element.SPECIESNAMECLEAN;
-                        item.getSpeciesOther().SaveRecord(this._dataContext.Database.GetConnectionString());
-                    }
-                    else
-                    {
-                        item.getSpecies().SaveRecord(this._dataContext.Database.GetConnectionString());
-                    }
-
-
-                }
-
-                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "End");
-                return 1;
-            }
-            catch
-            {
-                //TimeLog.setTimeStamp("Species for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
-                return 0;
-            }
-
-        }                
-
         public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB, string backboneDb, List<Sites> sites)
         {
             SqlConnection versioningConn = null;
@@ -186,8 +124,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.DataQuality = TypeConverters.CheckNull<string>(reader["DataQuality"]);
                     item.SpecieType = TypeConverters.CheckNull<string>(reader["SpecieType"]);
 
-                    if (reader["SiteCode"] is null || reader["SpecieCode"].ToString() == "" ||
-                        _speciesTypes.Where(a => a.Code == item.SiteCode && a.Active == true).Count() < 1)
+                    if (reader["SpecieCode"] is null || reader["SpecieCode"].ToString() == "" ||
+                        _speciesTypes.Where(a => a.Code == item.SpecieCode && a.Active == true).Count() < 1)
                     {
                         //Replace the code (which is Null or empty or no stored in the system)
                         //item.SiteCode = element.SITECODE;
@@ -209,7 +147,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - SpeciesOther.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - SpeciesOther.SaveBulkRecord", "", backboneDb);
                 }
 
                 try
@@ -218,7 +156,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - Species.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - Species.SaveBulkRecord", "", backboneDb);
                 }
 
                 //Console.WriteLine(String.Format("End save to list species -> {0}", (DateTime.Now - start).TotalSeconds));
@@ -229,7 +167,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             catch (Exception ex)
 
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestSpecies - HarvestBySite", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSpecies - HarvestByCountry", "", backboneDb);
                 return 0;
             }
             finally
@@ -258,13 +196,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             return 1;
         }
 
-        public async Task<List<SiteChangeDb>> ChangeDetectionSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope)
+        public async Task<List<SiteChangeDb>> ChangeDetectionSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext ctx)
         {
             try
             {
-                List<SpeciesToHarvest> speciesOtherVersioning = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesOtherBySiteCodeAndVersion  @site, @versionId",
+                if (ctx == null) ctx = _dataContext;
+                List<SpeciesToHarvest> speciesOtherVersioning = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesOtherBySiteCodeAndVersion  @site, @versionId",
                                 param3, param4).ToListAsync();
-                List<SpeciesToHarvest> referencedSpeciesOther = await _dataContext.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesOtherBySiteCodeAndVersion  @site, @versionId",
+                List<SpeciesToHarvest> referencedSpeciesOther = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesOtherBySiteCodeAndVersion  @site, @versionId",
                                 param3, param5).ToListAsync();
 
                 //For each species in Versioning compare it with that species in backboneDB
@@ -624,7 +563,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ChangeDetectionSpecies - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionSpecies - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", ctx.Database.GetConnectionString());
             }
             return changes;
         }

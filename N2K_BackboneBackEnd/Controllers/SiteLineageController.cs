@@ -21,7 +21,7 @@ namespace N2K_BackboneBackEnd.Controllers
         private IMemoryCache _cache;
 
 
-        public SiteLineageController(ISiteLineageService siteLineageService, IMapper mapper,IMemoryCache cache)
+        public SiteLineageController(ISiteLineageService siteLineageService, IMapper mapper, IMemoryCache cache)
         {
             _siteLineageService = siteLineageService;
             _mapper = mapper;
@@ -48,6 +48,179 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Message = ex.Message;
                 response.Count = 0;
                 response.Data = new List<SiteLineage>();
+                return Ok(response);
+            }
+        }
+
+
+        [HttpGet("GetOverview")]
+        public async Task<ActionResult<List<LineageCountry>>> GetOverview()
+        {
+            var response = new ServiceResponse<List<LineageCountry>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetOverview();
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<LineageCountry>();
+                return Ok(response);
+            }
+        }
+
+
+        [HttpGet("GetChanges")]
+        public async Task<ActionResult<List<LineageChanges>>> GetChanges(string country, LineageStatus status, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
+        {
+            var response = new ServiceResponse<List<LineageChanges>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetChanges(country, status, _cache, page, pageLimit, creation, deletion, split, merge, recode);
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<LineageChanges>();
+                return Ok(response);
+            }
+
+        }
+
+
+        [HttpGet("GetCodesCount")]
+        public async Task<ActionResult<LineageCount>> GetCodesCount(string country, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
+        {
+            var response = new ServiceResponse<LineageCount>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetCodesCount(country, _cache, creation, deletion, split, merge, recode);
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = (siteChanges == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new LineageCount();
+                return Ok(response);
+            }
+
+        }
+
+
+        [Route("SaveEdition")]
+        [HttpPost]
+        public async Task<ActionResult<long>> SaveEdition(LineageConsolidation consolidateChanges)
+        {
+            var response = new ServiceResponse<long>();
+            try
+            {
+                var siteChanges = await _siteLineageService.SaveEdition(consolidateChanges);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = -1;
+                return Ok(response);
+            }
+        }
+
+
+        [HttpGet("GetPredecessorsInfo")]
+        public async Task<ActionResult<List<LineageEditionInfo>>> GetPredecessorsInfo(long ChangeId)
+        {
+            var response = new ServiceResponse<List<LineageEditionInfo>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetPredecessorsInfo(ChangeId);
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<LineageEditionInfo>();
+                return Ok(response);
+            }
+
+        }
+
+
+        [HttpGet("GetLineageChangesInfo")]
+        public async Task<ActionResult<LineageEditionInfo>> GetLineageChangesInfo(long ChangeId)
+        {
+            var response = new ServiceResponse<LineageEditionInfo>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetLineageChangesInfo(ChangeId);
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+
+        }
+
+
+        [HttpGet("GetLineageReferenceSites")]
+        public async Task<ActionResult<List<string>>> GetLineageReferenceSites(string country)
+        {
+            var response = new ServiceResponse<List<string>>();
+            try
+            {
+                var siteChanges = await _siteLineageService.GetLineageReferenceSites(country);
+                response.Data = siteChanges;
+                response.Success = true;
+                response.Message = "";
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<string>();
                 return Ok(response);
             }
         }

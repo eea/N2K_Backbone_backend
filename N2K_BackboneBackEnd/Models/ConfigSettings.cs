@@ -12,13 +12,14 @@
         public string PublicFilesUrl { get; set; } = "";
     }
 
-
     public class fme_service_config
     {
         public string server_url { get; set; } = "";
         public string repository { get; set; } = "";
         public string workspace { get; set; } = "";
     }
+
+
 
     public class ConfigSettings
     {
@@ -39,11 +40,12 @@
         
         public bool InDevelopment { get; set; }
 
+        public string Environment { get; set; }
+
         public AttachedFilesConfig? AttachedFiles { get; set; }
 
         public string fme_security_token { get; set; } = "";
-        public fme_service_config fme_service_spatialload { get; set; } 
-
+        public fme_service_config fme_service_spatialload { get; set; }
         public string fme_service_spatialchanges { get; set; } = "";
         public string fme_service_singlesite_spatialchanges { get; set; } = "";
         public string current_ul_name { get; set; } = "";

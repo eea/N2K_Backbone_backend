@@ -16,7 +16,6 @@ using System.Text;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Configuration;
 using Microsoft.Extensions.Options;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.ConfigureLogging(logging =>
@@ -38,15 +37,14 @@ builder.Services.AddScoped<ISiteDetailsService, SiteDetailsService>();
 builder.Services.AddScoped<IHarvestedService, HarvestedService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<IEULoginService, EULoginService>();
-builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 builder.Services.AddScoped<IUnionListService, UnionListService>();
 builder.Services.AddScoped<IReleaseService, ReleaseService>();
 builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
 
 builder.Services.AddTransient<IFireForgetRepositoryHandler, FireForgetRepositoryHandler>();
-builder.Services.AddHostedService<FMELongRunningService>();
-builder.Services.AddSingleton<IBackgroundSpatialHarvestJobs,BackgroundSpatialHarvestJobs>();
+//builder.Services.AddHostedService<FMELongRunningService>();
+builder.Services.AddSingleton<IBackgroundSpatialHarvestJobs, BackgroundSpatialHarvestJobs>();
 
 builder.Services.AddResponseCompression(options =>
 {
@@ -66,20 +64,16 @@ builder.Configuration.AddJsonFile("appsettings.json");
 builder.Services.AddDbContext<N2KBackboneContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
-    //options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);    
-}, ServiceLifetime.Transient);
-
+});
 
 builder.Services.AddDbContext<N2KReleasesContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_ReleasesBackEndContext"));
-    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
 
 builder.Services.AddDbContext<N2K_VersioningContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("N2K_VersioningBackEndContext"));
-    //options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
 
 
@@ -147,20 +141,19 @@ builder.Services.AddControllers()
         options.ConstraintMap.Add("level",  typeof(RouteLevelConstraint));
     });
 
-
-
-
-
 var app = builder.Build();
-//if (app.Environment.IsDevelopment())
-//{
+// <snippet_UseWebSockets>
+var webSocketOptions = new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromMinutes(2)
+};
+app.UseWebSockets(webSocketOptions);
+
 app.UseCors(x => x
-    .WithOrigins("http://localhost:3000")
     .AllowAnyMethod()
     .AllowAnyHeader()
     .SetIsOriginAllowed(origin => true) // allow any origin
     .AllowCredentials()); // allow credentials
-//}
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())

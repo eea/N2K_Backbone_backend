@@ -8,7 +8,7 @@ using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class HasNationalProtection : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
+    public class HasNationalProtection : IEntityModel, IEntityModelBackboneDB
     {
         public long ID { get; set; }
         public string? SiteCode { get; set; }
@@ -26,42 +26,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             dbConnection = db;
         }
 
-
-        public void SaveRecord(string db)
-        {
-            try
-            {
-                this.dbConnection = db;
-                SqlConnection conn = null;
-                SqlCommand cmd = null;
-
-                conn = new SqlConnection(this.dbConnection);
-                conn.Open();
-                cmd = conn.CreateCommand();
-                SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode is null ? DBNull.Value : this.SiteCode);
-                SqlParameter param2 = new SqlParameter("@Version", this.Version is null ? DBNull.Value : this.Version);
-                SqlParameter param3 = new SqlParameter("@DesignatedCode", this.DesignatedCode is null ? DBNull.Value : this.DesignatedCode);
-                SqlParameter param4 = new SqlParameter("@Percentage", this.Percentage is null ? DBNull.Value : this.Percentage);
-
-                cmd.CommandText = "INSERT INTO [HasNationalProtection] (  " +
-                    "[SiteCode],[Version],[DesignatedCode],[Percentage]) " +
-                    " VALUES (@SiteCode,@Version,@DesignatedCode,@Percentage) ";
-
-                cmd.Parameters.Add(param1);
-                cmd.Parameters.Add(param2);
-                cmd.Parameters.Add(param3);
-                cmd.Parameters.Add(param4);
-
-                cmd.ExecuteNonQuery();
-
-                cmd.Dispose();
-                conn.Dispose();
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HasNationalProtection - SaveRecord", "");
-            }
-        }
 
         public async static Task<int> SaveBulkRecord(string db, List<HasNationalProtection> listData)
         {
@@ -81,7 +45,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HasNationalProtection - SaveBulkRecord", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HasNationalProtection - SaveBulkRecord", "", db);
                 return 0;
             }
         }

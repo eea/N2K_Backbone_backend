@@ -33,6 +33,7 @@ namespace N2K_BackboneBackEnd.Enumerations
         [DataMember]
         SpatialDataLoaded = 12
 
+
     }
 
 }

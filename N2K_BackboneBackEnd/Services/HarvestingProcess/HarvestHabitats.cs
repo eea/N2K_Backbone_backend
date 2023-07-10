@@ -170,7 +170,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - Habitats.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - Habitats.SaveBulkRecord", "", backboneDb);
                 }
                 //Console.WriteLine(String.Format("End save to list habitats -> {0}", (DateTime.Now - start).TotalSeconds));
                 
@@ -179,7 +179,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestHabitatsByCountry", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestHabitatsByCountry", "", backboneDb);
                 return 0;
             }
             finally
@@ -210,10 +210,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
 
                 String queryString = @"select COUNTRYCODE as CountryCode,VERSIONID as Version,COUNTRYVERSIONID as CountryVersionId ,
-SITECODE as SiteCode,HABITATCODE as HabitatCode,PERCENTAGECOVER as PercentageCover,
-REPRESENTATIVITY as Representativity,RELSURFACE as RelSurface,CONSSTATUS as ConsStatus,
-GLOBALASSESMENT as GlobalAssesment,STARTDATE as StartDate,ENDDATE as EndDate,RID as Rid,NONPRESENCEINSITE as NonPresenceSite,
-CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
+                                       SITECODE as SiteCode,HABITATCODE as HabitatCode,PERCENTAGECOVER as PercentageCover,
+                                       REPRESENTATIVITY as Representativity,RELSURFACE as RelSurface,CONSSTATUS as ConsStatus,
+                                       GLOBALASSESMENT as GlobalAssesment,STARTDATE as StartDate,ENDDATE as EndDate,RID as Rid,NONPRESENCEINSITE as NonPresenceSite,
+                                       CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
                                        from CONTAINSHABITAT
                                        where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
@@ -269,7 +269,7 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - HarvestHabitatsBySite", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - HarvestHabitatsBySite", "", backboneDb);
                 return 0;
             }
             finally
@@ -341,7 +341,7 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
                 }
                 catch (Exception ex)
                 {
-                    SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - DescribeSites.SaveBulkRecord", "");
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - DescribeSites.SaveBulkRecord", "", backboneDb);
                 }
                 //Console.WriteLine(String.Format("End save to list describe sites -> {0}", (DateTime.Now - start).TotalSeconds));
 
@@ -349,7 +349,7 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestDescribeSitesByCountry", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestDescribeSitesByCountry", "", backboneDb);
                 return 0;
             }
             finally
@@ -409,7 +409,7 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestDescribeSitesBySite", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestDescribeSitesBySite", "", backboneDb);
                 return 0;
             }
             finally
@@ -432,10 +432,11 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
             return 1;
         }
 
-        public async Task<List<SiteChangeDb>> ChangeDetectionHabitat(List<HabitatToHarvest> habitatVersioning, List<HabitatToHarvest> referencedHabitats, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, double habitatCoverHaTolerance, List<HabitatPriority> habitatPriority, ProcessedEnvelopes? processedEnvelope)
+        public async Task<List<SiteChangeDb>> ChangeDetectionHabitat(List<HabitatToHarvest> habitatVersioning, List<HabitatToHarvest> referencedHabitats, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, double habitatCoverHaTolerance, List<HabitatPriority> habitatPriority, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext? ctx=null)
         {
             try
             {
+                if (ctx == null) ctx = _dataContext;
                 await Task.Delay(1);
                 //For each habitat in Versioning compare it with that habitat in backboneDB
                 foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
@@ -761,7 +762,7 @@ CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ChangeDetectionHabitats - Start - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetectionHabitat - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", ctx.Database.GetConnectionString());
             }
             return changes;
         }

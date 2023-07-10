@@ -8,6 +8,8 @@ using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
+using System.Text;
+using Newtonsoft.Json;
 
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -26,7 +28,6 @@ namespace N2K_BackboneBackEnd.Controllers
         //private readonly BackgroundWorkerQueue _backgroundWorkerQueue;
         private readonly IFireForgetRepositoryHandler _fireForgetRepositoryHandler;
 
-      
         public HarvestingController(IHarvestedService harvestedService, IMapper mapper, IMemoryCache cache, IFireForgetRepositoryHandler fireForgetRepositoryHandler)
         {
             _harvestedService = harvestedService;
@@ -35,6 +36,8 @@ namespace N2K_BackboneBackEnd.Controllers
             _fireForgetRepositoryHandler = fireForgetRepositoryHandler;
             //_backgroundWorkerQueue = backgroundWorkerQueue;
         }
+
+
 
         /*
         // GET: api/<HarvestingController>
@@ -271,6 +274,41 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         /// <summary>
+        /// Execute an unattended load of the data from versioning
+        /// </summary>
+        /// <returns></returns>
+        [Route("FullHarvest")]
+        [HttpPost]
+        public async Task<ActionResult<int>> FullHarvest()
+        {
+            var response = new ServiceResponse<int>();
+            try
+            {
+                await Task.Delay(1);
+                // Delegate the blog auditing to another task on the threadpool
+                _fireForgetRepositoryHandler.Execute(async repository =>
+                {
+                    // Will receive its own scoped repository on the executing task
+                    await repository.FullHarvest(_cache);
+                });
+                response.Success = true;
+                response.Message = "";
+                response.Data = 1;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = 0;
+                return Ok(response);
+            }
+        }
+
+
+        /// <summary>
         /// Executes the process of the harvesting for a selected envelop (Country and Version)
         /// </summary>
         /// <returns></returns>
@@ -306,41 +344,8 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        /// <summary>
-        /// Execute an unattended load of the data from versioning
-        /// </summary>
-        /// <returns></returns>
-        [Route("FullHarvest")]
-        [HttpPost]
-        public async Task<ActionResult<int>> FullHarvest()
-        {
-            var response = new ServiceResponse<int>();
-            try
-            {
-                await Task.Delay(1);
-                // Delegate the blog auditing to another task on the threadpool
-                _fireForgetRepositoryHandler.Execute(async repository =>
-                {
-                    // Will receive its own scoped repository on the executing task
-                    await repository.FullHarvest(_cache);
-                });
-                response.Success = true;
-                response.Message = "";
-                response.Data = 1;
-                response.Count = 1;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = 0;
-                return Ok(response);
-            }
-        }
 
-        
+
         /// <summary>
         /// Changes te status of a envelope
         /// </summary>
@@ -386,7 +391,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
-                var processedEnvelope = await _harvestedService.ChangeDetection(envelopes);
+                var processedEnvelope = await _harvestedService.ChangeDetection(envelopes,null);
                 response.Success = true;
                 response.Message = "";
                 response.Data = processedEnvelope;
@@ -403,35 +408,45 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        /// <summary>
-        /// Executes the process of the ChangeDetection for a selected site (Sitecode and Version).
-        /// It must be hervested yet to perform this action
-        /// </summary>
-        /// <param name="envelopes"></param>
-        /// <returns></returns>
-        // POST api/<HarvestingController>
-        [Route("Harvest/ChangeDetectionSingleSite")]
-        [HttpPost]
-        public async Task<ActionResult<List<HarvestedEnvelope>>> ChangeDetectionSingleSite([FromBody] string siteCode, int versionId)
+        [AllowAnonymous]
+        [Route("/ws")]
+        [HttpGet]
+        public async Task Get()
         {
-            var response = new ServiceResponse<List<HarvestedEnvelope>>();
-            try
+            if (HttpContext.WebSockets.IsWebSocketRequest)
             {
-                var processedEnvelope = await _harvestedService.ChangeDetectionSingleSite(siteCode, versionId);
-                response.Success = true;
-                response.Message = "";
-                response.Data = processedEnvelope;
-                response.Count = (processedEnvelope == null) ? 0 : processedEnvelope.Count;
-                return Ok(response);
+                using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                await Echo(webSocket);
             }
-            catch (Exception ex)
+            else
             {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = new List<HarvestedEnvelope>();
-                return Ok(response);
+                HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             }
         }
+
+        private  async Task Echo(System.Net.WebSockets.WebSocket webSocket)
+        {
+            var buffer = new byte[1024 * 4];
+            var receiveResult = await webSocket.ReceiveAsync(
+                new ArraySegment<byte>(buffer), CancellationToken.None);
+
+            while (!receiveResult.CloseStatus.HasValue)
+            {
+                receiveResult = await webSocket.ReceiveAsync(
+                    new ArraySegment<byte>(buffer), CancellationToken.None);
+
+                string msg = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
+                if (!string.IsNullOrEmpty(msg)) {
+                    await _harvestedService.CompleteFMESpatial(msg);
+                }
+                Console.WriteLine("New message received : " + msg);
+            }
+
+            await webSocket.CloseAsync(
+                receiveResult.CloseStatus.Value,
+                receiveResult.CloseStatusDescription,
+                CancellationToken.None);
+        }
+
     }
 }

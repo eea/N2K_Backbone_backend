@@ -6,7 +6,7 @@ using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class IsImpactedBy : IEntityModel, IEntityModelBackboneDB, IEntityModelBackboneDBHarvesting
+    public class IsImpactedBy : IEntityModel, IEntityModelBackboneDB
     {
         public string? SiteCode { get; set; }
         public int Version { get; set; }
@@ -32,58 +32,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         }
 
 
-        public void SaveRecord(string db)
-        {
-            try
-            {
-                this.dbConnection = db;
-                SqlConnection conn = null;
-                SqlCommand cmd = null;
-
-                conn = new SqlConnection(this.dbConnection);
-                conn.Open();
-                cmd = conn.CreateCommand();
-                SqlParameter param1 = new SqlParameter("@SiteCode", this.SiteCode is null ? DBNull.Value : this.SiteCode);
-                SqlParameter param2 = new SqlParameter("@Version", this.Version);
-                SqlParameter param3 = new SqlParameter("@ActivityCode", this.ActivityCode is null ? DBNull.Value : this.ActivityCode);
-                SqlParameter param4 = new SqlParameter("@InOut", this.InOut is null ? DBNull.Value : this.InOut);
-                SqlParameter param5 = new SqlParameter("@Intensity", this.Intensity is null ? DBNull.Value : this.Intensity);
-                SqlParameter param6 = new SqlParameter("@PercentageAff", this.PercentageAff is null ? DBNull.Value : this.PercentageAff);
-                SqlParameter param7 = new SqlParameter("@Influence", this.Influence is null ? DBNull.Value : this.Influence);
-                SqlParameter param8 = new SqlParameter("@StartDate", this.StartDate is null ? DBNull.Value : this.StartDate);
-                SqlParameter param9 = new SqlParameter("@EndDate", this.EndDate is null ? DBNull.Value : this.EndDate);
-                SqlParameter param10 = new SqlParameter("@PollutionCode", this.PollutionCode is null ? DBNull.Value : this.PollutionCode);
-                SqlParameter param11 = new SqlParameter("@Ocurrence", this.Ocurrence is null ? DBNull.Value : this.Ocurrence);
-                SqlParameter param12 = new SqlParameter("@ImpactType", this.ImpactType is null ? DBNull.Value : this.ImpactType);
-
-                cmd.CommandText = "INSERT INTO [IsImpactedBy] (  " +
-                    "[SiteCode],[Version],[ActivityCode],[InOut],[Intensity],[PercentageAff],[Influence],[StartDate],[EndDate],[PollutionCode],[Ocurrence],[ImpactType]) " +
-                    " VALUES (@SiteCode,@Version,@ActivityCode,@InOut,@Intensity,@PercentageAff,@Influence,@StartDate,@EndDate,@PollutionCode,@Ocurrence,@ImpactType) ";
-
-                cmd.Parameters.Add(param1);
-                cmd.Parameters.Add(param2);
-                cmd.Parameters.Add(param3);
-                cmd.Parameters.Add(param4);
-                cmd.Parameters.Add(param5);
-                cmd.Parameters.Add(param6);
-                cmd.Parameters.Add(param7);
-                cmd.Parameters.Add(param8);
-                cmd.Parameters.Add(param9);
-                cmd.Parameters.Add(param10);
-                cmd.Parameters.Add(param11);
-                cmd.Parameters.Add(param12);
-
-                cmd.ExecuteNonQuery();
-
-                cmd.Dispose();
-                conn.Dispose();
-            }
-            catch (Exception ex)
-            {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "IsImpactedBy - SaveRecord", "");
-            }
-        }
-
         public async static Task<int> SaveBulkRecord(string db, List<IsImpactedBy> listData)
         {
             try
@@ -102,7 +50,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "IsImpactedBy - SaveBulkRecord", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "IsImpactedBy - SaveBulkRecord", "", db);
                 return 0;
             }
         }
