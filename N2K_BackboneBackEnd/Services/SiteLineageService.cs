@@ -66,6 +66,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 List<SiteLineage> result = new List<SiteLineage>();
 
+
                 List<long?> releases = new List<long?>();
                 foreach (Lineage lineage in list)
                 {
@@ -189,8 +190,8 @@ namespace N2K_BackboneBackEnd.Services
                     else
                     {
                         temp.Reported = change.SiteCode;
+
                     }
-                    result.Add(temp);
                 }
 
                 var startRow = (page - 1) * pageLimit;
