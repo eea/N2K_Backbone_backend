@@ -384,22 +384,21 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<string>> GetLineageReferenceSites(string country)
+        public async Task<List<SiteBasic>> GetLineageReferenceSites(string country)
         {
-            List<string> result = new List<string>();
+            List<SiteBasic> result = new List<SiteBasic>();
             try
             {
                 SqlParameter param1 = new SqlParameter("@country", country);
-                List<SiteBasic> resultSites = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
+                result = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
                                     param1).ToListAsync();
-                result = resultSites.Select(s => s.SiteCode).ToList();
             }
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetLineageReferenceSites", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
-            return result.Distinct().ToList();
+            return result;
         }
 
 
