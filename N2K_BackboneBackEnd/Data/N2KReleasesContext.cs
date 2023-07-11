@@ -6,7 +6,7 @@ namespace N2K_BackboneBackEnd.Data
     {
         public N2KReleasesContext(DbContextOptions<N2KReleasesContext> options) : base(options)
         {
-            this.Database.SetCommandTimeout(600);
+            this.Database.SetCommandTimeout(6000);
         }
 
     }
