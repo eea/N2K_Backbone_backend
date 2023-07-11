@@ -6,7 +6,7 @@ name: Build  ASP.Net Core app for N2K Backbone Production
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
       - name: dotnet publish
         run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
-      - name: Upload artifact for deployment job in staging
+      - name: Upload artifact for deployment job in production
         uses: actions/upload-artifact@v2
         with:
           name: backend-app_prod
