@@ -30,5 +30,5 @@ jobs:
       - name: Upload artifact for deployment job in production
         uses: actions/upload-artifact@v2
         with:
-          name: .net-app_prod
+          name: backend-app_prod
           path: ${{env.DOTNET_ROOT}}/myapp
