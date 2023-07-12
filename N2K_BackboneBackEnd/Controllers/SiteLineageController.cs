@@ -203,9 +203,9 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         [HttpGet("GetLineageReferenceSites")]
-        public async Task<ActionResult<List<string>>> GetLineageReferenceSites(string country)
+        public async Task<ActionResult<List<SiteBasic>>> GetLineageReferenceSites(string country)
         {
-            var response = new ServiceResponse<List<string>>();
+            var response = new ServiceResponse<List<SiteBasic>>();
             try
             {
                 var siteChanges = await _siteLineageService.GetLineageReferenceSites(country);
@@ -220,7 +220,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<string>();
+                response.Data = new List<SiteBasic>();
                 return Ok(response);
             }
         }
