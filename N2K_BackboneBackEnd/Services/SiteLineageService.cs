@@ -66,7 +66,6 @@ namespace N2K_BackboneBackEnd.Services
 
                 List<SiteLineage> result = new List<SiteLineage>();
 
-
                 List<long?> releases = new List<long?>();
                 foreach (Lineage lineage in list)
                 {
@@ -190,8 +189,8 @@ namespace N2K_BackboneBackEnd.Services
                     else
                     {
                         temp.Reported = change.SiteCode;
-
                     }
+                    result.Add(temp);
                 }
 
                 var startRow = (page - 1) * pageLimit;
@@ -384,22 +383,21 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<string>> GetLineageReferenceSites(string country)
+        public async Task<List<SiteBasic>> GetLineageReferenceSites(string country)
         {
-            List<string> result = new List<string>();
+            List<SiteBasic> result = new List<SiteBasic>();
             try
             {
                 SqlParameter param1 = new SqlParameter("@country", country);
-                List<SiteBasic> resultSites = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
+                result = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
                                     param1).ToListAsync();
-                result = resultSites.Select(s => s.SiteCode).ToList();
             }
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetLineageReferenceSites", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
-            return result.Distinct().ToList();
+            return result;
         }
 
 
