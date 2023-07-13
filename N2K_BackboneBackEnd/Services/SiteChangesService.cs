@@ -335,6 +335,7 @@ namespace N2K_BackboneBackEnd.Services
 
 #pragma warning disable CS8601 // Posible asignación de referencia nula
                     changeDetailVM.Name = site.Name;
+                    changeDetailVM.Type = await _dataContext.Set<SiteTypes>().AsNoTracking().Where(t => t.Code == site.SiteType).Select(t => t.Classification).FirstOrDefaultAsync();
                     changeDetailVM.Status = (SiteChangeStatus?)site.CurrentStatus;
                     changeDetailVM.JustificationProvided = site.JustificationProvided.HasValue ? site.JustificationProvided.Value : false;
                     changeDetailVM.JustificationRequired = site.JustificationRequired.HasValue ? site.JustificationRequired.Value : false;
