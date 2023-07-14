@@ -684,6 +684,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
 
                     changes = await SingleSiteChangeDetection(changes, storedSite, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, ctx);
+                    changes.ForEach(cs => cs.Status = SiteChangeStatus.Pending);
                     result.Add(new HarvestedEnvelope
                     {
                         CountryCode = envelope.CountryCode,
