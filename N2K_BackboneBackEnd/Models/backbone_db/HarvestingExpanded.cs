@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
@@ -18,6 +19,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
         public HarvestingStatus Status { get; set; } = HarvestingStatus.Pending;
         public int Version { get; set; }
+        [NotMapped]
+        public int? DataLoaded { get; set; }
         public int ChangesTotal { get; set; }
         public int ChangesAccepted { get; set; }
         public int ChangesPending { get; set; }

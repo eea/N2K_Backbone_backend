@@ -17,6 +17,7 @@ using System.Reflection.Metadata;
 using System.Diagnostics.Metrics;
 using System.Threading;
 using System.Text;
+using System.Collections.Generic;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -267,6 +268,13 @@ namespace N2K_BackboneBackEnd.Services
 
                 List<HarvestingExpanded> result = await _dataContext.Set<HarvestingExpanded>().FromSqlRaw($"exec dbo.spGetEnvelopesByStatus  @status",
                                 param1).AsNoTracking().ToListAsync();
+
+                List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>().Where(e => e.Status == HarvestingStatus.DataLoaded).AsNoTracking().ToListAsync();
+
+                result.ForEach(r =>
+                {
+                    r.DataLoaded = envelopes.Where(e => e.Country == r.Country).Count();
+                });
 
                 return result;
             }
@@ -684,6 +692,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
 
                     changes = await SingleSiteChangeDetection(changes, storedSite, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, ctx);
+                    changes.ForEach(cs => cs.Status = SiteChangeStatus.Pending);
                     result.Add(new HarvestedEnvelope
                     {
                         CountryCode = envelope.CountryCode,
