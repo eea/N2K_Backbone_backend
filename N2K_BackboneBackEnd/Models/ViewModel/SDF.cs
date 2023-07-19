@@ -29,7 +29,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Directive { get; set; }
         public string? SiteCode { get; set; }
         public double? Area { get; set; }
-        public double? Est { get; set; }
+        public DateTime? Est { get; set; }
         public double? MarineArea { get; set; }
         public int? Habitats { get; set; }
         public int? Species { get; set; }
@@ -58,11 +58,12 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [NotMapped]
     public class SiteDesignation
     {
+        public DateTime? ClassifiedSPA { get; set; }
+        public string? ReferenceSPA { get; set; }
         public DateTime? ProposedSCI { get; set; }
         public DateTime? ConfirmedSCI { get; set; }
-        public DateTime? DesignatedSCI { get; set; }
-        public DateTime? DateSPA { get; set; }
-        public string? ReferenceSPA { get; set; }
+        public DateTime? DesignatedSAC { get; set; }
+        public string? ReferenceSAC { get; set; }
     }
 
     [NotMapped]
@@ -99,10 +100,10 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? HabitatName { get; set; }
         public string? Code { get; set; }
         public string? PF { get; set; }
-        public int? NonPresence { get; set; }
+        public string? NP { get; set; }
         public double? CoverHA { get; set; }
         public string? Cave { get; set; }
-        public int? DataQuality { get; set; }
+        public string? DataQuality { get; set; }
         public string? Representativity { get; set; }
         public string? RelativeSurface { get; set; }
         public string? Conservation { get; set; }
@@ -115,8 +116,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? SpeciesName { get; set; }
         public string? Code { get; set; }
         public string? Group { get; set; }
-        public int? Sensitive { get; set; }
-        public string? NonPersistence { get; set; }
+        public string? Sensitive { get; set; }
+        public string? NP { get; set; }
         public string? Type { get; set; }
         public int? Min { get; set; }
         public int? Max { get; set; }
@@ -209,6 +210,6 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class MapOfTheSite
     {
         public string? INSPIRE { get; set; }
-        public Boolean? MapDelivered { get; set; }
+        public string? MapDelivered { get; set; }
     }
 }
