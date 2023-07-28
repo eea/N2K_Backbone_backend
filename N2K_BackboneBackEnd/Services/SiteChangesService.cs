@@ -15,6 +15,7 @@ using System.Diagnostics;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Http;
 using System.Runtime.CompilerServices;
+using System.Globalization;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -679,6 +680,20 @@ namespace N2K_BackboneBackEnd.Services
                     else
                     {
                         fields.Add("Reported", nullCase);
+                    }
+                    if (catChange.ChangeCategory == "Change of area"
+                        || catChange.ChangeType == "Length Changed")
+                    {
+                        string? reportedString = null;
+                        string? referenceString = null;
+                        if (fields.TryGetValue("Reported", out reportedString) && fields.TryGetValue("Reference", out referenceString)
+                            && reportedString != "" && referenceString != "")
+                        {
+                            var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
+                            var reference = decimal.Parse(referenceString, CultureInfo.InvariantCulture);
+                            fields.Add("Difference", (reported - reference).ToString());
+                            fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 2).ToString());
+                        }
                     }
 
                     if (changeCategory == "Habitats" || changeCategory == "Species")
