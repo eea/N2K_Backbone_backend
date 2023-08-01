@@ -689,10 +689,13 @@ namespace N2K_BackboneBackEnd.Services
                         if (fields.TryGetValue("Reported", out reportedString) && fields.TryGetValue("Reference", out referenceString)
                             && reportedString != "" && referenceString != "")
                         {
+                            var culture = new CultureInfo("en-US");
                             var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
                             var reference = decimal.Parse(referenceString, CultureInfo.InvariantCulture);
-                            fields.Add("Difference", (reported - reference).ToString());
-                            fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 2).ToString());
+                            fields.Add("Difference", Math.Round((reported - reference), 4)
+                                .ToString("F4", culture));
+                            fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4)
+                                .ToString("F4", culture));
                         }
                     }
 
