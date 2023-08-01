@@ -684,8 +684,8 @@ namespace N2K_BackboneBackEnd.Services
                     if (catChange.ChangeCategory == "Change of area"
                         || catChange.ChangeType == "Length Changed")
                     {
-                        string? reportedString = null;
-                        string? referenceString = null;
+                        string? reportedString = nullCase;
+                        string? referenceString = nullCase;
                         if (fields.TryGetValue("Reported", out reportedString) && fields.TryGetValue("Reference", out referenceString)
                             && reportedString != "" && referenceString != "")
                         {
@@ -696,6 +696,11 @@ namespace N2K_BackboneBackEnd.Services
                                 .ToString("F4", culture));
                             fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4)
                                 .ToString("F4", culture));
+                        }
+                        else
+                        {
+                            fields.Add("Difference", nullCase);
+                            fields.Add("Percentage", nullCase);
                         }
                     }
 
