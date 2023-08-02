@@ -428,6 +428,18 @@ namespace N2K_BackboneBackEnd.Services
                         var newsitecodesfilter = new DataTable("sitecodesfilter");
                         newsitecodesfilter.Columns.Add("SiteCode", typeof(string));
                         newsitecodesfilter.Columns.Add("Version", typeof(int));
+                        foreach (var sc in sitesRelation)
+                        {
+                            if (sc.PreviousSiteCode != null && sc.PreviousVersion != null)
+                                previoussitecodesfilter.Rows.Add(new Object[] { sc.PreviousSiteCode, sc.PreviousVersion });
+                            if (sc.NewSiteCode != null && sc.NewVersion != null)
+                                newsitecodesfilter.Rows.Add(new Object[] { sc.NewSiteCode, sc.NewVersion });
+                        }
+                        SqlParameter paramDetection1 = new SqlParameter("@reported_envelop", envelope.VersionId);
+                        SqlParameter paramDetection2 = new SqlParameter("@country", envelope.CountryCode);
+                        SqlParameter paramDetection3 = new SqlParameter("@tol", 5);
+                        List<LineageDetection>? detectedLineageChanges = await ctx.Set<LineageDetection>().FromSqlRaw($"exec dbo.spGetSitesToDetectChangesWithLineage  @reported_envelop, @country, @tol",
+                                        paramDetection1, paramDetection2, paramDetection3).ToListAsync();
 
                         var lineageInsertion = new DataTable("LineageInsertion");
                         lineageInsertion.Columns.Add("SiteCode", typeof(string));
@@ -437,25 +449,40 @@ namespace N2K_BackboneBackEnd.Services
                         lineageInsertion.Columns.Add("Status", typeof(int));
                         lineageInsertion.Columns.Add("AntecessorSiteCode", typeof(string));
                         lineageInsertion.Columns.Add("AntecessorVersion", typeof(int));
-                        foreach (var sc in sitesRelation)
+                        detectedLineageChanges.ForEach(c =>
                         {
-                            if (sc.PreviousSiteCode != null && sc.PreviousVersion != null)
-                                previoussitecodesfilter.Rows.Add(new Object[] { sc.PreviousSiteCode, sc.PreviousVersion });
-                            if (sc.NewSiteCode != null && sc.NewVersion != null)
-                                newsitecodesfilter.Rows.Add(new Object[] { sc.NewSiteCode, sc.NewVersion });
-
-                            if (sc.PreviousSiteCode != null && sc.NewSiteCode != null)
+                            LineageTypes type = LineageTypes.NoChanges;
+                            if (c.op == "ADDED")
                             {
-                                if (sc.PreviousSiteCode == sc.NewSiteCode)
-                                {
-                                    lineageInsertion.Rows.Add(new Object[] { sc.NewSiteCode, sc.NewVersion, envelope.VersionId, LineageTypes.NoChanges, LineageStatus.Proposed, sc.PreviousSiteCode, sc.PreviousVersion });
-                                }
-                                else
-                                {
-                                    lineageInsertion.Rows.Add(new Object[] { sc.NewSiteCode, sc.NewVersion, envelope.VersionId, LineageTypes.Recode, LineageStatus.Proposed, sc.PreviousSiteCode, sc.PreviousVersion });
-                                }
+                                type = LineageTypes.Creation;
                             }
-                        }
+                            else if (c.op == "DELETED")
+                            {
+                                type = LineageTypes.Deletion;
+                            }
+                            else if (c.op == "SPLIT")
+                            {
+                                type = LineageTypes.Split;
+                            }
+                            else if (c.op == "MERGE")
+                            {
+                                type = LineageTypes.Merge;
+                            }
+                            else if (c.op == "RECODING")
+                            {
+                                type = LineageTypes.Recode;
+                            }
+                            lineageInsertion.Rows.Add(new Object[] { c.new_sitecode, c.new_version, envelope.VersionId, type, LineageStatus.Proposed, c.old_sitecode, c.old_version });
+                        });
+                        sitesRelation.ForEach(r =>
+                        {
+                            LineageDetection temp = detectedLineageChanges.Where(c => c.new_sitecode == r.NewSiteCode).FirstOrDefault();
+                            if (r.NewSiteCode ==  r.PreviousSiteCode && temp == null)
+                            {
+                                lineageInsertion.Rows.Add(new Object[] { r.NewSiteCode, r.NewVersion, envelope.VersionId, LineageTypes.NoChanges, LineageStatus.Proposed, r.PreviousSiteCode, r.PreviousVersion });
+                            }
+                        });
+
                         SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
                         paramTable.Value = lineageInsertion;
                         paramTable.TypeName = "[dbo].[LineageInsertion]";
