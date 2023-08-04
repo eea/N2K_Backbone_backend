@@ -681,8 +681,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         fields.Add("Reported", nullCase);
                     }
-                    if (catChange.ChangeCategory == "Change of area"
-                        || catChange.ChangeType == "Length Changed")
+                    if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed")
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
@@ -692,10 +691,15 @@ namespace N2K_BackboneBackEnd.Services
                             var culture = new CultureInfo("en-US");
                             var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
                             var reference = decimal.Parse(referenceString, CultureInfo.InvariantCulture);
-                            fields.Add("Difference", Math.Round((reported - reference), 4)
-                                .ToString("F4", culture));
-                            fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4)
-                                .ToString("F4", culture));
+                            fields.Add("Difference", Math.Round((reported - reference), 4).ToString("F4", culture));
+                            if (reference != 0)
+                            {
+                                fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4).ToString("F4", culture));
+                            }
+                            else
+                            {
+                                fields.Add("Percentage", Math.Round((reported - reference), 4).ToString("F4", culture));
+                            }
                         }
                         else
                         {
@@ -1706,7 +1710,7 @@ namespace N2K_BackboneBackEnd.Services
                             }
                         }
                         #endregion
-                        
+
                         #endregion
 
                         //Get the previous level and status to find the proper cached lists
