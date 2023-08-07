@@ -661,21 +661,21 @@ namespace N2K_BackboneBackEnd.Services
             return "OK";
         }
 
-        public async Task<ChangeEditionViewModelOriginal?> GetReferenceEditInfo(string siteCode)
+        public async Task<ChangeEditionViewModelOriginalExtended?> GetReferenceEditInfo(string siteCode)
         {
             try
             {
                 SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
-                List<ChangeEditionDb> list = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.[spGetReferenceEditInfo]  @sitecode",
+                List<ChangeEditionDbExtended> list = await _dataContext.Set<ChangeEditionDbExtended>().FromSqlRaw($"exec dbo.[spGetReferenceEditInfo]  @sitecode",
                                     param1).ToListAsync();
-                ChangeEditionDb changeEdition = list.FirstOrDefault();
+                ChangeEditionDbExtended changeEdition = list.FirstOrDefault();
                 if (changeEdition == null)
                 {
                     return null;
                 }
                 else
                 {
-                    ChangeEditionViewModelOriginal result = new ChangeEditionViewModelOriginal()
+                    ChangeEditionViewModelOriginalExtended result = new ChangeEditionViewModelOriginalExtended()
                     {
                         Area = changeEdition.Area is null ? null : changeEdition.Area,
                         BioRegion = !string.IsNullOrEmpty(changeEdition.BioRegion) ? changeEdition.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>(),
@@ -687,7 +687,8 @@ namespace N2K_BackboneBackEnd.Services
                         SiteType = changeEdition.SiteType,
                         Version = changeEdition.Version,
                         JustificationRequired = changeEdition.JustificationRequired,
-                        JustificationProvided = changeEdition.JustificationProvided
+                        JustificationProvided = changeEdition.JustificationProvided,
+                        ReleaseDate = changeEdition.ReleaseDate
                     };
                     SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == siteCode && e.Version == changeEdition.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
                     if (change != null)
