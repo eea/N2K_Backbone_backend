@@ -15,6 +15,7 @@ using System.Diagnostics;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Http;
 using System.Runtime.CompilerServices;
+using System.Globalization;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -679,6 +680,32 @@ namespace N2K_BackboneBackEnd.Services
                     else
                     {
                         fields.Add("Reported", nullCase);
+                    }
+                    if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed")
+                    {
+                        string? reportedString = nullCase;
+                        string? referenceString = nullCase;
+                        if (fields.TryGetValue("Reported", out reportedString) && fields.TryGetValue("Reference", out referenceString)
+                            && reportedString != "" && referenceString != "")
+                        {
+                            var culture = new CultureInfo("en-US");
+                            var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
+                            var reference = decimal.Parse(referenceString, CultureInfo.InvariantCulture);
+                            fields.Add("Difference", Math.Round((reported - reference), 4).ToString("F4", culture));
+                            if (reference != 0)
+                            {
+                                fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4).ToString("F4", culture));
+                            }
+                            else
+                            {
+                                fields.Add("Percentage", Math.Round((reported - reference), 4).ToString("F4", culture));
+                            }
+                        }
+                        else
+                        {
+                            fields.Add("Difference", nullCase);
+                            fields.Add("Percentage", nullCase);
+                        }
                     }
 
                     if (changeCategory == "Habitats" || changeCategory == "Species")
@@ -1683,7 +1710,7 @@ namespace N2K_BackboneBackEnd.Services
                             }
                         }
                         #endregion
-                        
+
                         #endregion
 
                         //Get the previous level and status to find the proper cached lists
