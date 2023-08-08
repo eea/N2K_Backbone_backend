@@ -1,6 +1,6 @@
 name: Copy To Branches
 on:
-  workflow_dispatch:
+  create
 jobs:
   copy:
     name: Copy my folder
