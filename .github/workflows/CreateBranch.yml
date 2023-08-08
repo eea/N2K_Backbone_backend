@@ -10,7 +10,7 @@ jobs:
       - name: copy
         env:
           SRC_FOLDER_PATH: 'N2K_BackboneBackEnd'
-          TARGET_BRANCH:  ${github.ref}
+          TARGET_BRANCH:  'dfgfd'
         run: |
           files=$(find $SRC_FOLDER_PATH -name 'appsettings_copy.json' ) # get the file list          
           git config --global user.name 'bilbomaticaeugis'
