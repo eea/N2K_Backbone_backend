@@ -1,8 +1,7 @@
 on:
-  push:
-    types: [created]
-    branches:
-      - 'main/**'
+  create:
+    branches: 
+      - main/*
 
   run:
     name: Add a text file
