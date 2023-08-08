@@ -1,7 +1,7 @@
 name: Copy dev appsettings to feature Branch
 on:
-  create
-  #workflow_dispatch
+  #create
+  workflow_dispatch
 
 jobs:
   copy:
