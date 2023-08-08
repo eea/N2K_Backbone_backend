@@ -9,14 +9,14 @@ jobs:
       - uses: actions/checkout@v2
       - name: copy
         env:
-          SRC_FOLDER_PATH: 'N2K_BackboneBackEnd/MyName'
-          TARGET_BRANCH: 'Test'
+          SRC_FOLDER_PATH: 'N2K_BackboneBackEnd'
+          TARGET_BRANCH:  ${github.ref}
         run: |
           files=$(find $SRC_FOLDER_PATH -name 'appsettings_copy.json' ) # get the file list          
           git config --global user.name 'bilbomaticaeugis'
           git config --global user.email 'oesparza@bilbomatica.es'
           git fetch                         # fetch branches
-          git checkout $TARGET_BRANCH       # checkout to your branch
+          git checkout ${github.ref}       # checkout to your branch
           git checkout ${GITHUB_REF##*/} -- $files   # copy files from the source branch
           git add -A
           git diff-index --quiet HEAD ||  git commit -am "deploy files"  # commit to the repository (ignore if no modification)
