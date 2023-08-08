@@ -14,7 +14,8 @@ jobs:
           SRC_FOLDER_PATH: 'N2K_BackboneBackEnd'
           TARGET_BRANCH:  'dfgfd'
         run: |
-          echo "ref_name=${{ github.base_ref }}"
+          echo "base_ref=${{ github.base_ref }}"
+          echo "ref_name=${{ github.ref_name  }}"        
           git fetch                         # fetch branches
           git checkout origin/Development -- N2K_BackboneBackEnd/appsettings.json   # copy files from the source branch          
           git checkout dfgfd        # checkout to your branch
