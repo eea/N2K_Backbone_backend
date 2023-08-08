@@ -62,7 +62,8 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
-N2K_BackboneBackEnd/appsettings.json
+#Configuration
+/N2K_BackboneBackEnd/appsettings.json
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
