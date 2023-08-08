@@ -64,6 +64,7 @@ project.fragment.lock.json
 artifacts/
 #Configuration
 /N2K_BackboneBackEnd/appsettings.json
+N2K_BackboneBackEnd/appsettings.json
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
