@@ -1,7 +1,6 @@
 on:
-  create:
-     branches:
-      - 'Test'
+  create
+
 jobs:
   run:
     name: Add a text file
