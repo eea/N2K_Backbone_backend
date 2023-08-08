@@ -12,7 +12,7 @@ jobs:
           SRC_FOLDER_PATH: 'N2K_BackboneBackEnd/MyName'
           TARGET_BRANCH: 'Test'
         run: |
-          files=$(find $SRC_FOLDER_PATH -type f) # get the file list
+          files=$(find $SRC_FOLDER_PATH -name 'appsettings_copy.json' ) # get the file list          
           git config --global user.name 'bilbomaticaeugis'
           git config --global user.email 'oesparza@bilbomatica.es'
           git fetch                         # fetch branches
