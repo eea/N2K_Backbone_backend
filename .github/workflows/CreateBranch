@@ -1,23 +1,23 @@
+name: Copy To Branches
 on:
-  create
-
+  workflow_dispatch:
 jobs:
-  run:
-    name: Add a text file
+  copy:
+    name: Copy my folder
     runs-on: ubuntu-latest
-
     steps:
-      # If you need to, you can check out your repo to a different location
-      - uses: actions/checkout@v3
-        with:
-          path: './'
-
-      # You can make whatever type of change to the repo...
-      - run: echo "123" > ./file.txt
-
-      # ...and then use the action as you would normally do, but providing the path to the repo
-      - uses: EndBug/add-and-commit@v9
-        with:
-          message: 'Add the very useful text file'
-          add: '*.txt --force'
-          cwd: './'
+      - uses: actions/checkout@v2
+      - name: copy
+        env:
+          SRC_FOLDER_PATH: 'N2K_BackboneBackEnd'
+          TARGET_BRANCH: 'Test'
+        run: |
+          files=appsettings.json  # get the file list
+          git config --global user.name 'bilbomaticaeugis'
+          git config --global user.email 'oesparza@bilbomatica.es'
+          git fetch                         # fetch branches
+          git checkout $TARGET_BRANCH       # checkout to your branch
+          git checkout Development -- $files # copy files from the source branch
+          git add -A
+          git diff-index --quiet HEAD ||  git commit -am "deploy files"  # commit to the repository (ignore if no modification)
+          git push origin $TARGET_BRANCH # push to remote branch
