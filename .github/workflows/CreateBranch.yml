@@ -12,7 +12,7 @@ jobs:
       - name: copy
         env:
           SRC_FOLDER_PATH: 'N2K_BackboneBackEnd'
-          TARGET_BRANCH:  'dfgfd'
+          TARGET_BRANCH:  ${{ github.ref_name  }}
         run: |
           echo "base_ref=${{ github.base_ref }}"
           echo "ref_name=${{ github.ref_name  }}"        
@@ -21,4 +21,4 @@ jobs:
           git checkout ${{ github.ref_name  }}        # checkout to your branch
           git add N2K_BackboneBackEnd/appsettings.json
           git diff-index --quiet HEAD ||  git commit -am "deploy files"  # commit to the repository (ignore if no modification)
-          git push origin $TARGET_BRANCH # push to remote branch
+          git push origin ${{ github.ref_name  }} # push to remote branch
