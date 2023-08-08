@@ -1,0 +1,23 @@
+name: Copy To Branches
+on:
+  create
+jobs:
+  copy:
+    name: Copy my folder
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: copy
+        env:
+          SRC_FOLDER_PATH: 'N2K_BackboneBackEnd'
+          TARGET_BRANCH:  'dfgfd'
+        run: |
+          files=$(find $SRC_FOLDER_PATH -name 'appsettings_copy.json' ) # get the file list          
+          git config --global user.name 'bilbomaticaeugis'
+          git config --global user.email 'oesparza@bilbomatica.es'
+          #git fetch                         # fetch branches
+          git checkout origin/Development -- N2K_BackboneBackEnd/appsettings.json   # copy files from the source branch          
+          git checkout $TARGET_BRANCH        # checkout to your branch
+          git add N2K_BackboneBackEnd/appsettings.json
+          git diff-index --quiet HEAD ||  git commit -am "deploy files"  # commit to the repository (ignore if no modification)
+          git push origin $TARGET_BRANCH # push to remote branch

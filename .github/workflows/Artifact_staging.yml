@@ -27,7 +27,7 @@ jobs:
       - name: dotnet publish
         run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
-      - name: Upload artifact for deployment job in staging 1
+      - name: Upload artifact for deployment job in Staging
         uses: actions/upload-artifact@v2
         with:
           name: backend-app_staging
