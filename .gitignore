@@ -62,8 +62,9 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
-#Configuration
 
+#Configuration
+appsettings.json
 /N2K_BackboneBackEnd/appsettings.json
 N2K_BackboneBackEnd/appsettings.json
 
