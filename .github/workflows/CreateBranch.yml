@@ -16,7 +16,7 @@ jobs:
           git config --global user.name 'bilbomaticaeugis'
           git config --global user.email 'oesparza@bilbomatica.es'
           #git fetch                         # fetch branches
-          git checkout development -- N2K_BackboneBackEnd/appsettings.json   # copy files from the source branch          
+          git checkout origin/Development -- N2K_BackboneBackEnd/appsettings.json   # copy files from the source branch          
           git checkout $TARGET_BRANCH        # checkout to your branch
           git add N2K_BackboneBackEnd/appsettings.json
           git diff-index --quiet HEAD ||  git commit -am "deploy files"  # commit to the repository (ignore if no modification)
