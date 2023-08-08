@@ -12,12 +12,12 @@ jobs:
           SRC_FOLDER_PATH: 'N2K_BackboneBackEnd'
           TARGET_BRANCH: 'Test'
         run: |
-          files=appsettings.json  # get the file list
+          #files=appsettings_copy.json  # get the file list
           git config --global user.name 'bilbomaticaeugis'
           git config --global user.email 'oesparza@bilbomatica.es'
           git fetch                         # fetch branches
           git checkout $TARGET_BRANCH       # checkout to your branch
-          git checkout Development -- $files # copy files from the source branch
+          git checkout ${GITHUB_REF##*/} -- appsettings_copy.json   # copy files from the source branch
           git add -A
           git diff-index --quiet HEAD ||  git commit -am "deploy files"  # commit to the repository (ignore if no modification)
           git push origin $TARGET_BRANCH # push to remote branch
