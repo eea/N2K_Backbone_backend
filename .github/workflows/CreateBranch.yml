@@ -15,8 +15,8 @@ jobs:
           TARGET_BRANCH:  'dfgfd'
         run: |
           #files=$(find $SRC_FOLDER_PATH -name 'appsettings_copy.json' ) # get the file list          
-          git config --global user.name 'bilbomaticaeugis'
-          git config --global user.email 'oesparza@bilbomatica.es'
+          #git config --global user.name 'bilbomaticaeugis'
+          #git config --global user.email 'oesparza@bilbomatica.es'
           git fetch                         # fetch branches
           #git checkout origin/Development -- N2K_BackboneBackEnd/appsettings.json   # copy files from the source branch          
           #git checkout $TARGET_BRANCH        # checkout to your branch
