@@ -18,7 +18,7 @@ jobs:
           echo "ref_name=${{ github.ref_name  }}"        
           git fetch                         # fetch branches
           git checkout origin/Development -- N2K_BackboneBackEnd/appsettings.json   # copy files from the source branch          
-          git checkout dfgfd        # checkout to your branch
+          git checkout ${{ github.ref_name  }}        # checkout to your branch
           git add N2K_BackboneBackEnd/appsettings.json
           git diff-index --quiet HEAD ||  git commit -am "deploy files"  # commit to the repository (ignore if no modification)
           git push origin $TARGET_BRANCH # push to remote branch
