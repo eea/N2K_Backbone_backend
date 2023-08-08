@@ -1,8 +1,5 @@
-on:
-  create:
-    branches: 
-      - main/*
-
+on: create
+jobs:
   run:
     name: Add a text file
     runs-on: ubuntu-latest
