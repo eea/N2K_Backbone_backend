@@ -1,4 +1,7 @@
-on: create
+on:
+  create:
+     branches:
+
 jobs:
   run:
     name: Add a text file
