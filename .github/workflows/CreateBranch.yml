@@ -16,6 +16,8 @@ jobs:
         run: |
           #echo "base_ref=${{ github.base_ref }}"
           #echo "ref_name=${{ github.ref_name  }}"        
+          git config --global user.email "oesparza@bilbomatica.es"
+          git config --global user.name "bilbomaticaeugis"          
           git fetch                         # fetch branches
           git checkout origin/Development -- N2K_BackboneBackEnd/appsettings.json   # copy files from the source branch          
           #git checkout ${{ github.ref_name  }}        # checkout to your branch
