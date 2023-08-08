@@ -1,7 +1,7 @@
 name: Copy dev appsettings to feature Branch
 on:
-  create
-#  workflow_dispatch
+  #create
+  workflow_dispatch
 
 jobs:
   copy:
@@ -17,7 +17,7 @@ jobs:
           #echo "base_ref=${{ github.base_ref }}"
           #echo "ref_name=${{ github.ref_name  }}"        
           git fetch                         # fetch branches
-          git checkout Development -- N2K_BackboneBackEnd/appsettings.json   # copy files from the source branch          
+          git checkout origin/Development -- N2K_BackboneBackEnd/appsettings.json   # copy files from the source branch          
           #git checkout ${{ github.ref_name  }}        # checkout to your branch
           git checkout OskarTest        # checkout to your branch
           git add N2K_BackboneBackEnd/appsettings.json
