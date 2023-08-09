@@ -65,4 +65,4 @@
 #do not merge appsettings.json file (each environment should have different values)
 appsettings.json merge=ours
 N2K_BackboneBackEnd/appsettings.json merge=ours
-#/N2K_BackboneBackEnd/appsettings.json merge=ours
+/N2K_BackboneBackEnd/appsettings.json merge=ours
