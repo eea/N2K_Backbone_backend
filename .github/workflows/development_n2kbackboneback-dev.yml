@@ -10,6 +10,15 @@ on:
   workflow_dispatch:
 
 jobs:
+  copy:
+    name: Copy dev appsettings to feature
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: copy
+        run: |
+          cp /Configs/appsettings_dev.json appsettings.json  
+
   build:
     runs-on: windows-latest
 
