@@ -64,9 +64,9 @@ project.fragment.lock.json
 artifacts/
 
 #Configuration
-appsettings.json
-/N2K_BackboneBackEnd/appsettings.json
-N2K_BackboneBackEnd/appsettings.json
+#appsettings.json
+#/N2K_BackboneBackEnd/appsettings.json
+#N2K_BackboneBackEnd/appsettings.json
 
 #CI/CD
 /.github/workflows/*.yml
@@ -372,4 +372,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /.editorconfig
-/N2K_BackboneBackEnd/appsettings.json
+#/N2K_BackboneBackEnd/appsettings.json
