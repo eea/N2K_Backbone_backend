@@ -131,6 +131,8 @@ namespace N2K_BackboneBackEnd.Services
                                 param1).ToListAsync();
                 List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
                                 param1).ToListAsync();
+                List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
+                                param1, new SqlParameter("@status", 0)).ToListAsync();
                 foreach (var sCode in orderedChanges)
                 {
                     //load all the changes for each of the site codes ordered by level
@@ -176,6 +178,8 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
                             siteChange.Recoded = recoded is null ? false : true;
+                            Lineage lineageChangeType = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
+                            siteChange.LineageChangeType = lineageChangeType.Type;
                             var changeView = new SiteChangeView
                             {
                                 ChangeId = change.ChangeId,
