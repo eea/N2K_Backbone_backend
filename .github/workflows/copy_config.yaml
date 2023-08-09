@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Copy config DEV
+name: Copy appropriate config to root
 
 on:
   #push:
@@ -17,5 +17,5 @@ jobs:
       - uses: actions/checkout@v2
       - name: copy
         run: |
-          #copy /Configs/appsettings_prod.json appsettings.json  
-          dir
+          copy N2K_BackboneBackEnd/Configs/appsettings_prod.json appsettings.json  
+          
