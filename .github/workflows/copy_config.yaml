@@ -17,4 +17,5 @@ jobs:
       - uses: actions/checkout@v2
       - name: copy
         run: |
-          copy /Configs/appsettings_prod.json appsettings.json  
+          #copy /Configs/appsettings_prod.json appsettings.json  
+          dir
