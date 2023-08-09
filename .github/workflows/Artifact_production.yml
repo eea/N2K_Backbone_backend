@@ -17,7 +17,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: copy
         run: |
-          copy N2K_BackboneBackEnd/Configs/appsettings_stg.json appsettings.json  
+          copy N2K_BackboneBackEnd/Configs/appsettings_stg.json N2K_BackboneBackEnd/appsettings.json  
+          del N2K_BackboneBackEnd/Configs/*.json
+          rmdir N2K_BackboneBackEnd/Configs
   build:
     runs-on: windows-latest
 
