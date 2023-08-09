@@ -477,7 +477,7 @@ namespace N2K_BackboneBackEnd.Services
                         sitesRelation.ForEach(r =>
                         {
                             LineageDetection temp = detectedLineageChanges.Where(c => c.new_sitecode == r.NewSiteCode).FirstOrDefault();
-                            if (r.NewSiteCode ==  r.PreviousSiteCode && temp == null)
+                            if (r.NewSiteCode == r.PreviousSiteCode && temp == null)
                             {
                                 lineageInsertion.Rows.Add(new Object[] { r.NewSiteCode, r.NewVersion, envelope.VersionId, LineageTypes.NoChanges, LineageStatus.Proposed, r.PreviousSiteCode, r.PreviousVersion });
                             }
@@ -811,7 +811,8 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (priorityCount.Priority == 2)
                             {
-                                if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true)
+                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && harvestingHabitat.Representativity.ToUpper() != "D")
+                                    || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
                                 {
                                     isHarvestingSitePriority = true;
                                     break;
@@ -834,7 +835,8 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (priorityCount.Priority == 2)
                             {
-                                if (storedHabitat.Representativity.ToUpper() != "D" && storedHabitat.PriorityForm == true)
+                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && storedHabitat.Representativity.ToUpper() != "D")
+                                    || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
                                 {
                                     isStoredSitePriority = true;
                                     break;
@@ -853,27 +855,33 @@ namespace N2K_BackboneBackEnd.Services
                     #endregion
 
                     #region SpeciesPriority
-                    foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
+                    if (!isHarvestingSitePriority)
                     {
-                        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
-                        if (priorityCount != null)
+                        foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
                         {
-                            if (harvestingSpecies.Population.ToUpper() != "D")
+                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+                            if (priorityCount != null)
                             {
-                                isHarvestingSitePriority = true;
-                                break;
+                                if (harvestingSpecies.Population.ToUpper() != "D")
+                                {
+                                    isHarvestingSitePriority = true;
+                                    break;
+                                }
                             }
                         }
                     }
-                    foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
+                    if (!isStoredSitePriority)
                     {
-                        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == storedSpecies.SpeciesCode).FirstOrDefault();
-                        if (priorityCount != null)
+                        foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
                         {
-                            if (storedSpecies.Population.ToUpper() != "D")
+                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == storedSpecies.SpeciesCode).FirstOrDefault();
+                            if (priorityCount != null)
                             {
-                                isStoredSitePriority = true;
-                                break;
+                                if (storedSpecies.Population.ToUpper() != "D")
+                                {
+                                    isStoredSitePriority = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -1028,7 +1036,8 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (priorityCount.Priority == 2)
                             {
-                                if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true)
+                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && harvestingHabitat.Representativity.ToUpper() != "D")
+                                    || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
                                 {
                                     isHarvestingSitePriority = true;
                                     break;
@@ -1051,7 +1060,8 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (priorityCount.Priority == 2)
                             {
-                                if (storedHabitat.Representativity.ToUpper() != "D" && storedHabitat.PriorityForm == true)
+                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && storedHabitat.Representativity.ToUpper() != "D")
+                                    || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
                                 {
                                     isStoredSitePriority = true;
                                     break;
@@ -1070,27 +1080,33 @@ namespace N2K_BackboneBackEnd.Services
                     #endregion
 
                     #region SpeciesPriority
-                    foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
+                    if (!isHarvestingSitePriority)
                     {
-                        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
-                        if (priorityCount != null)
+                        foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
                         {
-                            if (harvestingSpecies.Population.ToUpper() != "D")
+                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+                            if (priorityCount != null)
                             {
-                                isHarvestingSitePriority = true;
-                                break;
+                                if (harvestingSpecies.Population.ToUpper() != "D")
+                                {
+                                    isHarvestingSitePriority = true;
+                                    break;
+                                }
                             }
                         }
                     }
-                    foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
+                    if (!isStoredSitePriority)
                     {
-                        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == storedSpecies.SpeciesCode).FirstOrDefault();
-                        if (priorityCount != null)
+                        foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
                         {
-                            if (storedSpecies.Population.ToUpper() != "D")
+                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == storedSpecies.SpeciesCode).FirstOrDefault();
+                            if (priorityCount != null)
                             {
-                                isStoredSitePriority = true;
-                                break;
+                                if (storedSpecies.Population.ToUpper() != "D")
+                                {
+                                    isStoredSitePriority = true;
+                                    break;
+                                }
                             }
                         }
                     }
