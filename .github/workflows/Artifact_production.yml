@@ -10,6 +10,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  copy:
+    name: Copy dev appsettings to feature
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: copy
+        run: |
+          copy N2K_BackboneBackEnd/Configs/appsettings_stg.json appsettings.json  
   build:
     runs-on: windows-latest
 
