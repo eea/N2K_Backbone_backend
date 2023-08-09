@@ -1,0 +1,20 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Copy config DEV
+
+on:
+  #push:
+  #  branches:
+  #    - Development
+  workflow_dispatch:
+
+jobs:
+  copy:
+    name: Copy dev appsettings to feature
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: copy
+        run: |
+          copy /Configs/appsettings_prod.json appsettings.json  
