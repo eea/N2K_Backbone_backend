@@ -36,14 +36,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
         }
 
-        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  string versioningDB, string backboneDb, IList<DataQualityTypes> dataQualityTypes, List<Sites> bbSites)
+        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, IList<DataQualityTypes> dataQualityTypes, List<Sites> bbSites)
         {
             try
             {
                 //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Starting");
                 //Console.WriteLine("=>Start full habitat harvest by country...");
                 //string versioningDB = versioningContext.Database.GetConnectionString();
-                await HarvestHabitatsByCountry(countryCode, COUNTRYVERSIONID, versioningDB ,  backboneDb, dataQualityTypes, bbSites);
+                await HarvestHabitatsByCountry(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, dataQualityTypes, bbSites);
                 await HarvestDescribeSitesByCountry(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
 
                 //Console.WriteLine("=>End full habitat harvest by country...");
@@ -52,7 +52,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                Console.WriteLine(String.Format("=>End full habitat harvest by country with error... {0}",ex.Message) );
+                Console.WriteLine(String.Format("=>End full habitat harvest by country with error... {0}", ex.Message));
                 //TimeLog.setTimeStamp("Habitats for country " + pCountryCode + " - " + pCountryVersion.ToString(), "Exit");
                 return 0;
             }
@@ -65,7 +65,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Starting");
                 //Console.WriteLine("=>Start full habitat harvest by site...");
                 string versioningDB = versioningContext.Database.GetConnectionString();
-                await HarvestHabitatsBySite(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, dataQualityTypes,  _siteItems);
+                await HarvestHabitatsBySite(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, dataQualityTypes, _siteItems);
                 await HarvestDescribeSitesBySite(pVSite, bbSite.Version, this._dataContext.Database.GetConnectionString(), versioningDB, _siteItems);
 
                 //Console.WriteLine("=>End full habitat harvest by site...");
@@ -74,7 +74,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                Console.WriteLine(string.Format("=>End full habitat harvest by site with error... {0}",ex.Message) );
+                Console.WriteLine(string.Format("=>End full habitat harvest by site with error... {0}", ex.Message));
                 //TimeLog.setTimeStamp("Habitats for site " + pSiteCode + " - " + pSiteVersion.ToString(), "Exit");
                 return 0;
             }
@@ -173,7 +173,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - Habitats.SaveBulkRecord", "", backboneDb);
                 }
                 //Console.WriteLine(String.Format("End save to list habitats -> {0}", (DateTime.Now - start).TotalSeconds));
-                
+
                 return 1;
 
             }
@@ -244,14 +244,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.GlobalAssesments = TypeConverters.CheckNull<string>(reader["GlobalAssesment"]);
                     item.RelativeSurface = TypeConverters.CheckNull<string>(reader["RelSurface"]);
                     item.Percentage = null;
-                    if (reader["PercentageCover"]!=null)
-                        if (reader["PercentageCover"].ToString()!="")
+                    if (reader["PercentageCover"] != null)
+                        if (reader["PercentageCover"].ToString() != "")
                             item.Percentage = Convert.ToDecimal(TypeConverters.CheckNull<double>(reader["PercentageCover"]));
 
                     item.ConsStatus = TypeConverters.CheckNull<string>(reader["ConsStatus"]);
 
-                    if (reader["Caves"]!= null)
-                        item.Caves = TypeConverters.CheckNull<decimal>(reader["Caves"]).ToString() ; // ???
+                    if (reader["Caves"] != null)
+                        item.Caves = TypeConverters.CheckNull<decimal>(reader["Caves"]).ToString(); // ???
                     item.PF = TypeConverters.CheckNull<bool>(reader["PF"]).ToString(); // ??? PENDING The same as PriorityForm
 
                     if (reader["NonPresenceSite"] != null)
@@ -423,7 +423,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
             }
         }
-        
+
         public async Task<int> ChangeDetectionChanges(string countryCode, int versionId, int referenceVersionID)
         {
             Console.WriteLine("==>Start HarvestHabitats ChangeDetection...");
@@ -432,7 +432,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             return 1;
         }
 
-        public async Task<List<SiteChangeDb>> ChangeDetectionHabitat(List<HabitatToHarvest> habitatVersioning, List<HabitatToHarvest> referencedHabitats, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, double habitatCoverHaTolerance, List<HabitatPriority> habitatPriority, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext? ctx=null)
+        public async Task<List<SiteChangeDb>> ChangeDetectionHabitat(List<HabitatToHarvest> habitatVersioning, List<HabitatToHarvest> referencedHabitats, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, double habitatCoverHaTolerance, List<HabitatPriority> habitatPriority, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext? ctx = null)
         {
             try
             {
@@ -653,10 +653,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             if (priorityCount.Priority == 2)
                             {
                                 //If the Habitat is an exception, three conditions are checked
-                                if (storedHabitat.Representativity.ToUpper() != "D" && storedHabitat.PriorityForm == true)
-                                    isStoredPriority = true;
-                                if (harvestingHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.PriorityForm == true)
-                                    isHarvestingPriority = true;
+                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && storedHabitat.Representativity.ToUpper() != "D")
+                                    || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
+                                        isStoredPriority = true;
+                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && harvestingHabitat.Representativity.ToUpper() != "D")
+                                    || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
+                                        isHarvestingPriority = true;
                             }
                             else
                             {
