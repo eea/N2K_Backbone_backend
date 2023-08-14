@@ -179,8 +179,8 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
                             siteChange.Recoded = recoded is null ? false : true;
-                            Lineage lineageChangeType = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
-                            siteChange.LineageChangeType = lineageChangeType.Type;
+                            Lineage lineageChangeType = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode);
+                            siteChange.LineageChangeType = lineageChangeType is null ? LineageTypes.NoChanges : lineageChangeType.Type;
                             var changeView = new SiteChangeView
                             {
                                 ChangeId = change.ChangeId,
