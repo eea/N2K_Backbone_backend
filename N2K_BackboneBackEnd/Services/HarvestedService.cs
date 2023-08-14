@@ -472,7 +472,14 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 type = LineageTypes.Recode;
                             }
-                            lineageInsertion.Rows.Add(new Object[] { c.new_sitecode, c.new_version, envelope.VersionId, type, LineageStatus.Proposed, c.old_sitecode, c.old_version });
+                            if (c.op == "DELETED")
+                            {
+                                lineageInsertion.Rows.Add(new Object[] { c.old_sitecode, c.old_version, envelope.VersionId, type, LineageStatus.Proposed, c.old_sitecode, c.old_version });
+                            }
+                            else
+                            {
+                                lineageInsertion.Rows.Add(new Object[] { c.new_sitecode, c.new_version, envelope.VersionId, type, LineageStatus.Proposed, c.old_sitecode, c.old_version });
+                            }
                         });
                         sitesRelation.ForEach(r =>
                         {
