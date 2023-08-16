@@ -175,10 +175,8 @@ namespace N2K_BackboneBackEnd.Services
                                     activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Action == "User edition after rejection of version " + change.Version).FirstOrDefault();
                                 }
                             }
-                            SiteChangeDb recoded = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "Site Recoded").FirstOrDefaultAsync();
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
-                            siteChange.Recoded = recoded is null ? false : true;
                             Lineage lineageChangeType = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode);
                             siteChange.LineageChangeType = lineageChangeType is null ? LineageTypes.NoChanges : lineageChangeType.Type;
                             var changeView = new SiteChangeView
