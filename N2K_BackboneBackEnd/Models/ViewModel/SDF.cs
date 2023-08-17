@@ -6,14 +6,14 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [NotMapped]
     public class SDF : IEntityModel
     {
-        public SiteInfo? SiteInfo { get; set; }
-        public SiteIdentification? SiteIdentification { get; set; }
-        public SiteLocation? SiteLocation { get; set; }
-        public EcologicalInformation? EcologicalInformation { get; set; }
-        public SiteDescription? SiteDescription { get; set; }
-        public SiteProtectionStatus? SiteProtectionStatus { get; set; }
-        public SiteManagement? SiteManagement { get; set; }
-        public MapOfTheSite? MapOfTheSite { get; set; }
+        public SiteInfo SiteInfo { get; set; } = new SiteInfo();
+        public SiteIdentification SiteIdentification { get; set; } = new SiteIdentification();
+        public SiteLocation SiteLocation { get; set; } = new SiteLocation();
+        public EcologicalInformation EcologicalInformation { get; set; } = new EcologicalInformation();
+        public SiteDescription SiteDescription { get; set; } = new SiteDescription();
+        public SiteProtectionStatus SiteProtectionStatus { get; set; } = new SiteProtectionStatus();
+        public SiteManagement SiteManagement { get; set; } = new SiteManagement();
+        public MapOfTheSite MapOfTheSite { get; set; } = new MapOfTheSite();
 
         public static void OnModelCreating(ModelBuilder builder)
         {
@@ -28,9 +28,9 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Country { get; set; }
         public string? Directive { get; set; }
         public string? SiteCode { get; set; }
-        public double? Area { get; set; }
+        public decimal? Area { get; set; }
         public DateTime? Est { get; set; }
-        public double? MarineArea { get; set; }
+        public decimal? MarineArea { get; set; }
         public int? Habitats { get; set; }
         public int? Species { get; set; }
     }
@@ -43,7 +43,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? SiteName { get; set; }
         public DateTime? FirstCompletionDate { get; set; }
         public DateTime? UpdateDate { get; set; }
-        public Respondent? Respondent { get; set; }
+        public Respondent Respondent { get; set; } = new Respondent(); 
         public List<SiteDesignation> SiteDesignation { get; set; } = new List<SiteDesignation>();
     }
 
@@ -69,13 +69,12 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [NotMapped]
     public class SiteLocation
     {
-        public double? Longitude { get; set; }
-        public double? Latitude { get; set; }
-        public double? Area { get; set; }
-        public double? MarineArea { get; set; }
-        public double? SiteLength { get; set; }
-        public string? NUTSLevel2Code { get; set; }
-        public string? RegionName { get; set; }
+        public decimal? Longitude { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Area { get; set; }
+        public decimal? MarineArea { get; set; }
+        public decimal? SiteLength { get; set; }
+        public List<Region> Region { get; set; } = new List<Region>();
         public List<BiogeographicalRegions> BiogeographicalRegions { get; set; } = new List<BiogeographicalRegions>();
     }
 
@@ -84,6 +83,13 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     {
         public string? Name { get; set; }
         public double? Value { get; set; }
+    }
+
+    [NotMapped]
+    public class Region
+    {
+        public string? NUTSLevel2Code { get; set; }
+        public string? RegionName { get; set; }
     }
 
     [NotMapped]
@@ -101,7 +107,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Code { get; set; }
         public string? PF { get; set; }
         public string? NP { get; set; }
-        public double? CoverHA { get; set; }
+        public decimal? CoverHA { get; set; }
         public string? Cave { get; set; }
         public string? DataQuality { get; set; }
         public string? Representativity { get; set; }
@@ -138,7 +144,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public List<Threats> NegativeThreats { get; set; } = new List<Threats>();
         public List<Threats> PositiveThreats { get; set; } = new List<Threats>();
         public List<Ownership> Ownership { get; set; } = new List<Ownership>();
-        public List<string> Documents { get; set; } = new List<string>();
+        public string? Documents { get; set; }
         public List<string> Links { get; set; } = new List<string>();
     }
 
@@ -146,7 +152,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class CodeCover
     {
         public string? Code { get; set; }
-        public double? Cover { get; set; }
+        public decimal? Cover { get; set; }
     }
 
     [NotMapped]
@@ -162,7 +168,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class Ownership
     {
         public string? Type { get; set; }
-        public double? Percent { get; set; }
+        public decimal? Percent { get; set; }
     }
 
     [NotMapped]
@@ -180,7 +186,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? TypeCode { get; set; }
         public string? SiteName { get; set; }
         public string? Type { get; set; }
-        public double? Percent { get; set; }
+        public decimal? Percent { get; set; }
     }
 
     [NotMapped]
