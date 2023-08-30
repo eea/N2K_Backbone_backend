@@ -33,7 +33,7 @@ namespace N2K_BackboneBackEnd.Services
         Task HarvestSpatialData(EnvelopesToProcess[] envelopeIDs, IMemoryCache cache);
 
         Task<List<HarvestedEnvelope>> FullHarvest(IMemoryCache cache);
-        Task<ProcessedEnvelopes> ChangeStatus(string country, int version, HarvestingStatus toStatus, IMemoryCache cache);
+        Task<List<ProcessedEnvelopes>> ChangeStatus(CountryVersionToStatus envelopesToStatus, IMemoryCache cache);
         Task CompleteFMESpatial(string message);
 
     }
