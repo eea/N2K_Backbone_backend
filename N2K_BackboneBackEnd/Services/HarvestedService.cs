@@ -1036,7 +1036,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (priorityCount.Priority == 2)
                             {
-                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && harvestingHabitat.Representativity.ToUpper() != "D")
+                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
                                     || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
                                 {
                                     isHarvestingSitePriority = true;
@@ -1045,7 +1045,7 @@ namespace N2K_BackboneBackEnd.Services
                             }
                             else
                             {
-                                if (harvestingHabitat.Representativity.ToUpper() != "D")
+                                if (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null)
                                 {
                                     isHarvestingSitePriority = true;
                                     break;
@@ -1060,7 +1060,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (priorityCount.Priority == 2)
                             {
-                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && storedHabitat.Representativity.ToUpper() != "D")
+                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
                                     || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
                                 {
                                     isStoredSitePriority = true;
@@ -1069,7 +1069,7 @@ namespace N2K_BackboneBackEnd.Services
                             }
                             else
                             {
-                                if (storedHabitat.Representativity.ToUpper() != "D")
+                                if (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null)
                                 {
                                     isStoredSitePriority = true;
                                     break;
@@ -1087,7 +1087,7 @@ namespace N2K_BackboneBackEnd.Services
                             SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                             if (priorityCount != null)
                             {
-                                if (harvestingSpecies.Population.ToUpper() != "D")
+                                if (harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null)
                                 {
                                     isHarvestingSitePriority = true;
                                     break;
@@ -1102,7 +1102,7 @@ namespace N2K_BackboneBackEnd.Services
                             SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == storedSpecies.SpeciesCode).FirstOrDefault();
                             if (priorityCount != null)
                             {
-                                if (storedSpecies.Population.ToUpper() != "D")
+                                if (storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null)
                                 {
                                     isStoredSitePriority = true;
                                     break;
