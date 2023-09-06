@@ -1875,8 +1875,43 @@ namespace N2K_BackboneBackEnd.Services
                 ProcessedEnvelopes envelope = new ProcessedEnvelopes();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
                     opt => opt.EnableRetryOnFailure()).Options;
+
                 using (var ctx = new N2KBackboneContext(options))
                 {
+                    var countriesAndVersions = new DataTable("sitecodesfilter");
+                    countriesAndVersions.Columns.Add("CountryCode", typeof(string));
+                    countriesAndVersions.Columns.Add("Version", typeof(int));
+                    changeEnvelopes.countryVersion.ToList().ForEach(cs =>
+                    {
+                        countriesAndVersions.Rows.Add(new Object[] { cs.CountryCode, cs.VersionId });
+                    });
+
+                    SqlParameter param1 = new SqlParameter("@countryVersion", System.Data.SqlDbType.Structured);
+                    param1.Value = countriesAndVersions;
+                    param1.TypeName = "[dbo].[CountryVersion]";
+
+                    switch (toStatus)
+                    {
+                        case HarvestingStatus.Harvested:
+                            sqlToExecute = "exec dbo.setStatusToEnvelopeHarvested  @countryVersion;";
+                            break;
+                        case HarvestingStatus.Discarded:
+                            sqlToExecute = "exec dbo.setStatusToEnvelopeDiscarded  @countryVersion;";
+                            break;
+                        case HarvestingStatus.PreHarvested:
+                            sqlToExecute = "exec dbo.setStatusToEnvelopePreHarvested  @countryVersion;";
+                            break;
+                        case HarvestingStatus.Closed:
+                            sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @countryVersion;";
+                            break;
+                        case HarvestingStatus.Pending:
+                            sqlToExecute = "exec dbo.setStatusToEnvelopePending  @countryVersion;";
+                            break;
+                        default:
+                            break;
+                    }
+                    await ctx.Database.ExecuteSqlRawAsync(sqlToExecute, param1);
+
                     foreach (CountryVersion data in changeEnvelopes.countryVersion)
                     {
                         country = data.CountryCode;
@@ -1910,30 +1945,6 @@ namespace N2K_BackboneBackEnd.Services
                                     //make sure they are all finished
                                     await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
                                 }
-
-                                SqlParameter param1 = new SqlParameter("@country", country);
-                                SqlParameter param2 = new SqlParameter("@version", version);
-                                switch (toStatus)
-                                {
-                                    case HarvestingStatus.Harvested:
-                                        sqlToExecute = "exec dbo.setStatusToEnvelopeHarvested  @country, @version;";
-                                        break;
-                                    case HarvestingStatus.Discarded:
-                                        sqlToExecute = "exec dbo.setStatusToEnvelopeDiscarded  @country, @version;";
-                                        break;
-                                    case HarvestingStatus.PreHarvested:
-                                        sqlToExecute = "exec dbo.setStatusToEnvelopePreHarvested  @country, @version;";
-                                        break;
-                                    case HarvestingStatus.Closed:
-                                        sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @country, @version;";
-                                        break;
-                                    case HarvestingStatus.Pending:
-                                        sqlToExecute = "exec dbo.setStatusToEnvelopePending  @country, @version;";
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                await ctx.Database.ExecuteSqlRawAsync(sqlToExecute, param1, param2);
 
                                 if (toStatus == HarvestingStatus.Discarded || toStatus == HarvestingStatus.Closed)
                                 {
