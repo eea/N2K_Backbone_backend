@@ -177,8 +177,10 @@ namespace N2K_BackboneBackEnd.Services
                             }
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
-                            Lineage lineageChangeType = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode);
+                            Lineage? lineageChangeType = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode);
                             siteChange.LineageChangeType = lineageChangeType is null ? LineageTypes.NoChanges : lineageChangeType.Type;
+                            siteChange.AntecessorsSiteCodes = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode)?.AntecessorsSiteCodes;
+
                             var changeView = new SiteChangeView
                             {
                                 ChangeId = change.ChangeId,
@@ -450,7 +452,7 @@ namespace N2K_BackboneBackEnd.Services
                     List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                                 param1).ToListAsync();
                     List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
-                                    param1).ToListAsync();
+                                param1).ToListAsync();
                     foreach (var change in (await changes.ToListAsync()))
                     {
                         SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
