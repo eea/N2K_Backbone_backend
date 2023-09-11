@@ -80,6 +80,22 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
+        private CountryVersionToStatus GetCountryVersionToStatusFromSingleEnvelope(string countryCode, int version, HarvestingStatus status)
+        {
+            return new CountryVersionToStatus
+            {
+                countryVersion = new CountryVersion[]
+                {
+                    new CountryVersion
+                    {
+                        CountryCode = countryCode,
+                        VersionId = version
+                    }
+                },
+                toStatus = status
+            };
+        }
+
         private void InitialiseBulkItems()
         {
             _siteItems.Add(typeof(List<Respondents>), new List<Respondents>());
@@ -1043,7 +1059,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (priorityCount.Priority == 2)
                             {
-                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && harvestingHabitat.Representativity.ToUpper() != "D")
+                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
                                     || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
                                 {
                                     isHarvestingSitePriority = true;
@@ -1052,7 +1068,7 @@ namespace N2K_BackboneBackEnd.Services
                             }
                             else
                             {
-                                if (harvestingHabitat.Representativity.ToUpper() != "D")
+                                if (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null)
                                 {
                                     isHarvestingSitePriority = true;
                                     break;
@@ -1067,7 +1083,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (priorityCount.Priority == 2)
                             {
-                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && storedHabitat.Representativity.ToUpper() != "D")
+                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
                                     || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
                                 {
                                     isStoredSitePriority = true;
@@ -1076,7 +1092,7 @@ namespace N2K_BackboneBackEnd.Services
                             }
                             else
                             {
-                                if (storedHabitat.Representativity.ToUpper() != "D")
+                                if (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null)
                                 {
                                     isStoredSitePriority = true;
                                     break;
@@ -1094,7 +1110,7 @@ namespace N2K_BackboneBackEnd.Services
                             SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                             if (priorityCount != null)
                             {
-                                if (harvestingSpecies.Population.ToUpper() != "D")
+                                if (harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null)
                                 {
                                     isHarvestingSitePriority = true;
                                     break;
@@ -1109,7 +1125,7 @@ namespace N2K_BackboneBackEnd.Services
                             SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == storedSpecies.SpeciesCode).FirstOrDefault();
                             if (priorityCount != null)
                             {
-                                if (storedSpecies.Population.ToUpper() != "D")
+                                if (storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null)
                                 {
                                     isStoredSitePriority = true;
                                     break;
@@ -1531,7 +1547,9 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 //change the status of the whole process to PreHarvested                    
                                 await Task.Run(() =>
-                                    ChangeStatus(env.Envelope.CountryCode, env.Envelope.VersionId, HarvestingStatus.PreHarvested, cache)
+                                    ChangeStatus(
+                                        GetCountryVersionToStatusFromSingleEnvelope(env.Envelope.CountryCode, env.Envelope.VersionId, HarvestingStatus.PreHarvested)
+                                        , cache)
                                 );
                             }
                         }
@@ -1689,7 +1707,9 @@ namespace N2K_BackboneBackEnd.Services
                             if (envelopes.Count == 0)
                             {
                                 //change the status of the whole process to PreHarvested
-                                await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested, cache);
+                                await ChangeStatus(
+                                    GetCountryVersionToStatusFromSingleEnvelope(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested)
+                                    , cache);
                                 bbEnvelope.Status = HarvestingStatus.PreHarvested;
                             }
                             bbEnvelopes.Add(bbEnvelope);
@@ -1849,171 +1869,192 @@ namespace N2K_BackboneBackEnd.Services
         /// <param name="version"></param>
         /// <param name="toStatus"></param>
         /// <returns></returns>
-        public async Task<ProcessedEnvelopes> ChangeStatus(string country, int version, HarvestingStatus toStatus, IMemoryCache cache)
+        public async Task<List<ProcessedEnvelopes>> ChangeStatus(CountryVersionToStatus changeEnvelopes, IMemoryCache cache)
         {
             string sqlToExecute = "exec dbo.";
+            string country = "";
+            int version = 0;
+            HarvestingStatus toStatus = changeEnvelopes.toStatus;
             try
             {
                 await Task.Delay(1000);
+                List<ProcessedEnvelopes> envelopeList = new List<ProcessedEnvelopes>();
                 ProcessedEnvelopes envelope = new ProcessedEnvelopes();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
                     opt => opt.EnableRetryOnFailure()).Options;
+
                 using (var ctx = new N2KBackboneContext(options))
                 {
-
-                    envelope = await ctx.Set<ProcessedEnvelopes>().Where(e => e.Country == country && e.Version == version).FirstOrDefaultAsync();
-                    if (envelope != null)
+                    var countriesAndVersions = new DataTable("sitecodesfilter");
+                    countriesAndVersions.Columns.Add("CountryCode", typeof(string));
+                    countriesAndVersions.Columns.Add("Version", typeof(int));
+                    changeEnvelopes.countryVersion.ToList().ForEach(cs =>
                     {
-                        //Get the version for the Sites 
-                        //List<Sites> sites = ctx.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).Select(s=> s.Version).First();
-                        //Sites site = sites.First();
-                        int _version = await ctx.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).FirstOrDefaultAsync();
-                        if (toStatus != envelope.Status)
+                        countriesAndVersions.Rows.Add(new Object[] { cs.CountryCode, cs.VersionId });
+                    });
+
+                    SqlParameter param1 = new SqlParameter("@countryVersion", System.Data.SqlDbType.Structured);
+                    param1.Value = countriesAndVersions;
+                    param1.TypeName = "[dbo].[CountryVersion]";
+
+                    switch (toStatus)
+                    {
+                        case HarvestingStatus.Harvested:
+                            sqlToExecute = "exec dbo.setStatusToEnvelopeHarvested  @countryVersion;";
+                            break;
+                        case HarvestingStatus.Discarded:
+                            sqlToExecute = "exec dbo.setStatusToEnvelopeDiscarded  @countryVersion;";
+                            break;
+                        case HarvestingStatus.PreHarvested:
+                            sqlToExecute = "exec dbo.setStatusToEnvelopePreHarvested  @countryVersion;";
+                            break;
+                        case HarvestingStatus.Closed:
+                            sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @countryVersion;";
+                            break;
+                        case HarvestingStatus.Pending:
+                            sqlToExecute = "exec dbo.setStatusToEnvelopePending  @countryVersion;";
+                            break;
+                        default:
+                            break;
+                    }
+                    await ctx.Database.ExecuteSqlRawAsync(sqlToExecute, param1);
+
+                    foreach (CountryVersion data in changeEnvelopes.countryVersion)
+                    {
+                        country = data.CountryCode;
+                        version = data.VersionId;
+
+                        envelope = await ctx.Set<ProcessedEnvelopes>().Where(e => e.Country == country && e.Version == version).FirstOrDefaultAsync();
+                        if (envelope != null)
                         {
-                            if (envelope.Status == HarvestingStatus.DataLoaded)
+                            //Get the version for the Sites 
+                            //List<Sites> sites = ctx.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).Select(s=> s.Version).First();
+                            //Sites site = sites.First();
+                            int _version = await ctx.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).FirstOrDefaultAsync();
+                            if (toStatus != envelope.Status)
                             {
-                                Task tabChangeDetectionTask = ChangeDetection(new EnvelopesToProcess[] { new EnvelopesToProcess
+                                if (envelope.Status == HarvestingStatus.DataLoaded)
                                 {
-                                    CountryCode = country,
-                                    VersionId = version
-                                } }, ctx);
-
-
-                                Task spatialChangeDetectionTask = ChangeDetectionSpatialData(new EnvelopesToProcess[] { new EnvelopesToProcess
-                                {
-                                    CountryCode = country,
-                                    VersionId = version
-                                } }, ctx);
-
-
-                                //make sure they are all finished
-                                await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
-                            }
-
-                            SqlParameter param1 = new SqlParameter("@country", country);
-                            SqlParameter param2 = new SqlParameter("@version", version);
-                            switch (toStatus)
-                            {
-                                case HarvestingStatus.Harvested:
-                                    sqlToExecute = "exec dbo.setStatusToEnvelopeHarvested  @country, @version;";
-                                    break;
-                                case HarvestingStatus.Discarded:
-                                    sqlToExecute = "exec dbo.setStatusToEnvelopeDiscarded  @country, @version;";
-                                    break;
-                                case HarvestingStatus.PreHarvested:
-                                    sqlToExecute = "exec dbo.setStatusToEnvelopePreHarvested  @country, @version;";
-                                    break;
-                                case HarvestingStatus.Closed:
-                                    sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @country, @version;";
-                                    break;
-                                case HarvestingStatus.Pending:
-                                    sqlToExecute = "exec dbo.setStatusToEnvelopePending  @country, @version;";
-                                    break;
-                                default:
-                                    break;
-                            }
-                            await ctx.Database.ExecuteSqlRawAsync(sqlToExecute, param1, param2);
-
-                            if (toStatus == HarvestingStatus.Discarded || toStatus == HarvestingStatus.Closed)
-                            {
-                                ProcessedEnvelopes nextEnvelope = await ctx.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == country) && (pe.Status == HarvestingStatus.DataLoaded)).OrderBy(pe => pe.Version).FirstOrDefaultAsync();
-                                if (nextEnvelope != null)
-                                {
-                                    EnvelopesToProcess nextEnvelopeToChangeDetection = new EnvelopesToProcess
+                                    Task tabChangeDetectionTask = ChangeDetection(new EnvelopesToProcess[] { new EnvelopesToProcess
                                     {
-                                        VersionId = Int32.Parse(nextEnvelope.Version.ToString()),
-                                        CountryCode = nextEnvelope.Country,
-                                        SubmissionDate = DateTime.Now
-                                    };
-                                    EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { nextEnvelopeToChangeDetection };
-                                    if (nextEnvelope.Status != HarvestingStatus.DataLoaded)
+                                        CountryCode = country,
+                                        VersionId = version
+                                    } }, ctx);
+
+
+                                    Task spatialChangeDetectionTask = ChangeDetectionSpatialData(new EnvelopesToProcess[] { new EnvelopesToProcess
                                     {
-                                        Task tabChangeDetectionTask = ChangeDetection(_tempEnvelope);
-                                        Task spatialChangeDetectionTask = ChangeDetectionSpatialData(_tempEnvelope);
-                                        //make sure they are all finished
-                                        await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
-                                    }
-                                    //change the status of the whole process to PreHarvested
-                                    await ChangeStatus(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested, cache);
+                                        CountryCode = country,
+                                        VersionId = version
+                                    } }, ctx);
+
+
+                                    //make sure they are all finished
+                                    await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
                                 }
-                            }
 
-                            if (toStatus == HarvestingStatus.Closed)
-                            {
-                                HarvestedEnvelope bbEnvelope = new HarvestedEnvelope
+                                if (toStatus == HarvestingStatus.Discarded || toStatus == HarvestingStatus.Closed)
                                 {
-                                    VersionId = version,
-                                    CountryCode = country,
-                                    NumChanges = 0,
-                                    Status = HarvestingStatus.Closed
-                                };
-                                //accept sites with no changes
-                                await AcceptIdenticalSites(bbEnvelope);
-                            }
-
-                            if (toStatus == HarvestingStatus.Harvested || toStatus == HarvestingStatus.Closed)
-                            {
-                                //Remove country site changes cache
-                                var field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                                var collection = field.GetValue(cache) as System.Collections.ICollection;
-                                if (collection != null)
-                                {
-                                    foreach (var item in collection)
+                                    ProcessedEnvelopes nextEnvelope = await ctx.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == country) && (pe.Status == HarvestingStatus.DataLoaded)).OrderBy(pe => pe.Version).FirstOrDefaultAsync();
+                                    if (nextEnvelope != null)
                                     {
-                                        var methodInfo = item.GetType().GetProperty("Key");
-                                        string listName = methodInfo.GetValue(item).ToString();
-
-                                        if (!string.IsNullOrEmpty(listName))
+                                        EnvelopesToProcess nextEnvelopeToChangeDetection = new EnvelopesToProcess
                                         {
-                                            if (listName.IndexOf(country) != -1)
+                                            VersionId = Int32.Parse(nextEnvelope.Version.ToString()),
+                                            CountryCode = nextEnvelope.Country,
+                                            SubmissionDate = DateTime.Now
+                                        };
+                                        EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { nextEnvelopeToChangeDetection };
+                                        if (nextEnvelope.Status != HarvestingStatus.DataLoaded)
+                                        {
+                                            Task tabChangeDetectionTask = ChangeDetection(_tempEnvelope);
+                                            Task spatialChangeDetectionTask = ChangeDetectionSpatialData(_tempEnvelope);
+                                            //make sure they are all finished
+                                            await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
+                                        }
+
+                                        //change the status of the whole process to PreHarvested
+                                        await ChangeStatus(
+                                            GetCountryVersionToStatusFromSingleEnvelope(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested)
+                                            , cache);
+                                    }
+                                }
+
+                                if (toStatus == HarvestingStatus.Closed)
+                                {
+                                    HarvestedEnvelope bbEnvelope = new HarvestedEnvelope
+                                    {
+                                        VersionId = version,
+                                        CountryCode = country,
+                                        NumChanges = 0,
+                                        Status = HarvestingStatus.Closed
+                                    };
+                                    //accept sites with no changes
+                                    await AcceptIdenticalSites(bbEnvelope);
+                                }
+
+                                if (toStatus == HarvestingStatus.Harvested || toStatus == HarvestingStatus.Closed)
+                                {
+                                    //Remove country site changes cache
+                                    var field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                                    var collection = field.GetValue(cache) as System.Collections.ICollection;
+                                    if (collection != null)
+                                    {
+                                        foreach (var item in collection)
+                                        {
+                                            var methodInfo = item.GetType().GetProperty("Key");
+                                            string listName = methodInfo.GetValue(item).ToString();
+
+                                            if (!string.IsNullOrEmpty(listName))
                                             {
-                                                cache.Remove(listName);
+                                                if (listName.IndexOf(country) != -1)
+                                                {
+                                                    cache.Remove(listName);
+                                                }
                                             }
                                         }
                                     }
                                 }
+                                envelope.Status = toStatus;
+                                envelopeList.Add(envelope);
                             }
-
-                            envelope.Status = toStatus;
-                            return envelope;
+                            else
+                            {
+                                throw new Exception("Currently the package (" + country + " - " + version + ") has already the selected status.");
+                            }
                         }
                         else
                         {
-                            throw new Exception("Currently the package (" + country + " - " + version + ") has already the selected status.");
+                            //Manual harvest?
+
+                            PackageCountry package = _versioningContext.Set<PackageCountry>().Where(e => e.CountryCode == country && e.CountryVersionID == version).FirstOrDefault();
+
+                            if (package != null)
+                            {
+                                EnvelopesToProcess newEnvelope = new EnvelopesToProcess();
+                                newEnvelope.CountryCode = country;
+                                newEnvelope.VersionId = version;
+                                newEnvelope.SubmissionDate = (DateTime)package.Importdate;
+
+                                List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
+                                envelopes.Add(newEnvelope);
+
+                                await Harvest(envelopes.ToArray<EnvelopesToProcess>());
+
+                            }
+                            else
+                            {
+                                throw new Exception("The package doesn't exist on source database (" + country + " - " + version + ")");
+                            }
                         }
-                    }
-                    else
-                    {
-                        //Manual harvest?
-
-                        PackageCountry package = _versioningContext.Set<PackageCountry>().Where(e => e.CountryCode == country && e.CountryVersionID == version).FirstOrDefault();
-
-                        if (package != null)
-                        {
-                            EnvelopesToProcess newEnvelope = new EnvelopesToProcess();
-                            newEnvelope.CountryCode = country;
-                            newEnvelope.VersionId = version;
-                            newEnvelope.SubmissionDate = (DateTime)package.Importdate;
-
-                            List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
-                            envelopes.Add(newEnvelope);
-
-                            await Harvest(envelopes.ToArray<EnvelopesToProcess>());
-
-                        }
-                        else
-                        {
-                            throw new Exception("The package doesn't exist on source database (" + country + " - " + version + ")");
-                        }
-
                     }
                 }
-                return envelope;
+                return envelopeList;
             }
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeStatus - Envelope " + country + "/" + version.ToString() + " - Status " + toStatus.ToString(), "", _dataContext.Database.GetConnectionString());
-                return await Task.FromResult(new ProcessedEnvelopes());
+                return await Task.FromResult(new List<ProcessedEnvelopes>() { new ProcessedEnvelopes() });
                 //throw ex;
             }
             finally
