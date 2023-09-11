@@ -92,7 +92,7 @@ namespace N2K_BackboneBackEnd.Services
                         VersionId = version
                     }
                 },
-                toStatus = HarvestingStatus.PreHarvested
+                toStatus = status
             };
         }
 
