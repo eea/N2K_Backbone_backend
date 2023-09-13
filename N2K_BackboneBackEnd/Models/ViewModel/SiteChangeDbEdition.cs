@@ -14,6 +14,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? EditedBy { get; set; }
         public DateTime? EditedDate { get; set; }
         public Boolean? Recoded { get; set; }
+        public LineageTypes? LineageChangeType { get; set; }
 
         new public static void OnModelCreating(ModelBuilder builder)
         {

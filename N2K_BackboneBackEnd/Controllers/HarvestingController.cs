@@ -352,12 +352,12 @@ namespace N2K_BackboneBackEnd.Controllers
         /// <returns></returns>
         [Route("ChangeStatus")]
         [HttpPost]
-        public async Task<ActionResult<ProcessedEnvelopes>> ChangeStatus(string country, int version, HarvestingStatus toStatus)
+        public async Task<ActionResult<List<ProcessedEnvelopes>>> ChangeStatus([FromBody] CountryVersionToStatus envelopesToStatus)
         {
-            var response = new ServiceResponse<ProcessedEnvelopes>();
+            var response = new ServiceResponse<List<ProcessedEnvelopes>>();
             try
             {
-                var siteChanges = await _harvestedService.ChangeStatus(country, version, toStatus, _cache);
+                var siteChanges = await _harvestedService.ChangeStatus(envelopesToStatus, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -369,7 +369,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new ProcessedEnvelopes();
+                response.Data = new List<ProcessedEnvelopes>() { new ProcessedEnvelopes() };
                 return  Ok(response);
             }
         }
