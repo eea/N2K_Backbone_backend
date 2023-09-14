@@ -28,7 +28,7 @@
 
         public int client_id_issued_at { get; set; }
 
-        public string[] redirect_uris { get; set; } =new string[] { };
+        public string[] redirect_uris { get; set; } = new string[] { };
         public string authorisation_url { get; set; } = "";
         public string par_url { get; set; } = "";
 
@@ -37,15 +37,20 @@
         public int refresh_token_max_age { get; set; }
 
         public int id_token_max_age { get; set; }
-        
+
         public bool InDevelopment { get; set; }
 
         public string Environment { get; set; }
+
+        public string ReleaseDestDatasetFolder  { get; set; }
 
         public AttachedFilesConfig? AttachedFiles { get; set; }
 
         public string fme_security_token { get; set; } = "";
         public fme_service_config fme_service_spatialload { get; set; }
+
+        public fme_service_config fme_service_release { get; set; }
+
         public string fme_service_spatialchanges { get; set; } = "";
         public string fme_service_singlesite_spatialchanges { get; set; } = "";
         public string current_ul_name { get; set; } = "";
