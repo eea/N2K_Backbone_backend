@@ -26,16 +26,14 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<List<HarvestedEnvelope>> ChangeDetection(EnvelopesToProcess[] envelopeIDs, N2KBackboneContext? ctx=null);
 
-        Task<List<HarvestedEnvelope>> ChangeDetectionSingleSite(string siteCode, int versionId);
-
-        Task<List<HarvestedEnvelope>> ChangeDetectionSingleSiteObject(SiteToHarvest harvestingSite);
+        Task<List<HarvestedEnvelope>> ChangeDetectionSingleSite(string siteCode, int versionId, string connectionString);
 
         Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs);
 
         Task HarvestSpatialData(EnvelopesToProcess[] envelopeIDs, IMemoryCache cache);
 
         Task<List<HarvestedEnvelope>> FullHarvest(IMemoryCache cache);
-        Task<ProcessedEnvelopes> ChangeStatus(string country, int version, HarvestingStatus toStatus, IMemoryCache cache);
+        Task<List<ProcessedEnvelopes>> ChangeStatus(CountryVersionToStatus envelopesToStatus, IMemoryCache cache);
         Task CompleteFMESpatial(string message);
 
     }

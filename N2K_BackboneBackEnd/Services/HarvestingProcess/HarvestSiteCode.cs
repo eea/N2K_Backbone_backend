@@ -838,6 +838,27 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.N2KVersioningVersion = envelope.VersionId;
                     changes.Add(siteChange);
                 }
+                if (harvestingSite.SiteType != storedSite.SiteType)
+                {
+                    SiteChangeDb siteChange = new SiteChangeDb();
+                    siteChange.SiteCode = harvestingSite.SiteCode;
+                    siteChange.Version = harvestingSite.VersionId;
+                    siteChange.ChangeCategory = "Site General Info";
+                    siteChange.ChangeType = "SiteType Changed";
+                    siteChange.Country = envelope.CountryCode;
+                    siteChange.Level = Enumerations.Level.Critical;
+                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                    siteChange.Tags = string.Empty;
+                    siteChange.NewValue = harvestingSite.SiteType;
+                    siteChange.OldValue = storedSite.SiteType;
+                    siteChange.Code = harvestingSite.SiteCode;
+                    siteChange.Section = "Site";
+                    siteChange.VersionReferenceId = storedSite.VersionId;
+                    siteChange.FieldName = "SiteType";
+                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                    siteChange.N2KVersioningVersion = envelope.VersionId;
+                    changes.Add(siteChange);
+                }
                 if (!Convert.ToString(harvestingSite.DateConfSCI).Equals(Convert.ToString(storedSite.DateConfSCI)))
                 {
                     if (Convert.ToString(harvestingSite.DateConfSCI).Equals("01/01/1900 0:00:00") && !Convert.ToString(storedSite.DateConfSCI).Equals("01/01/1900 0:00:00"))

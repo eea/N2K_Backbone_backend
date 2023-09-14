@@ -192,9 +192,10 @@ namespace N2K_BackboneBackEnd.Models
 
         }
 
-        public static async Task WriteAsync(errorLevel pLevel, Exception pException, string pClass, string pSource, string connString)
+        public static async Task WriteAsync(errorLevel pLevel, Exception pException, string pClass, string pSource, string? connString)
         {
             //TODO: Log level configurable on the settings
+            if (connString == null) return;
             try
             {
                 await WriteAsync(pLevel, pException.Message, pClass, pSource, connString);

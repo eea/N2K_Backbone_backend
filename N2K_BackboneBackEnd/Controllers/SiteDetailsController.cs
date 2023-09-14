@@ -477,9 +477,9 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("GetReferenceEditInfo/")]
         [HttpGet]
-        public async Task<ActionResult<ChangeEditionViewModelOriginal>> GetReferenceEditInfo(string siteCode)
+        public async Task<ActionResult<ChangeEditionViewModelOriginalExtended>> GetReferenceEditInfo(string siteCode)
         {
-            var response = new ServiceResponse<ChangeEditionViewModelOriginal>();
+            var response = new ServiceResponse<ChangeEditionViewModelOriginalExtended>();
             try
             {
                 var siteChange = await _siteDetailsService.GetReferenceEditInfo(siteCode);

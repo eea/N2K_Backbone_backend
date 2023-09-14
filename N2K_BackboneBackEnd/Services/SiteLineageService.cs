@@ -14,6 +14,7 @@ using System.Security.Policy;
 using System.Collections.Generic;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -22,11 +23,17 @@ namespace N2K_BackboneBackEnd.Services
     public class SiteLineageService : ISiteLineageService
     {
         private readonly N2KBackboneContext _dataContext;
+        private readonly N2K_VersioningContext _versioningContext;
+        private readonly IOptions<ConfigSettings> _appSettings;
+        private IBackgroundSpatialHarvestJobs _fmeHarvestJobs;
 
 
-        public SiteLineageService(N2KBackboneContext dataContext)
+        public SiteLineageService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app, IBackgroundSpatialHarvestJobs harvestJobs)
         {
             _dataContext = dataContext;
+            _versioningContext = versioningContext;
+            _appSettings = app;
+            _fmeHarvestJobs = harvestJobs;
         }
 
 
@@ -116,6 +123,20 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetSiteLineageAsync", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+
+        public async Task<List<LineageCountry>> GetOverview()
+        {
+            try
+            {
+                return await _dataContext.Set<LineageCountry>().FromSqlRaw($"exec dbo.spGetLineageOverview").ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetOverview", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -229,88 +250,82 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<long>> ConsolidateChanges(LineageConsolidation[] consolidateChanges)
+        public async Task<long> SaveEdition(LineageConsolidation consolidateChanges)
         {
-            List<long> result = new List<long>();
             try
             {
-                var lineageConsolidate = new DataTable("lineageConsolidate");
-                lineageConsolidate.Columns.Add("id", typeof(int));
-                lineageConsolidate.Columns.Add("Type", typeof(int));
-                lineageConsolidate.Columns.Add("predecessors", typeof(string));
-                SqlParameter paramTable = new SqlParameter("@lineageConsolidate", System.Data.SqlDbType.Structured);
-                paramTable.TypeName = "[dbo].[lineageConsolidate]";
+                Lineage lineage = await _dataContext.Set<Lineage>().Where(c => c.ID == consolidateChanges.ChangeId).FirstOrDefaultAsync();
 
-                if (consolidateChanges.Count() > 1)
+                //When changing to Creation, check if antecessors have more successors, if not, create Deletion records for the antecessors
+                if (consolidateChanges.Type == LineageTypes.Creation)
                 {
-                    consolidateChanges.ToList().ForEach(cs =>
+                    var lineageInsertion = new DataTable("LineageInsertion");
+                    lineageInsertion.Columns.Add("SiteCode", typeof(string));
+                    lineageInsertion.Columns.Add("Version", typeof(int));
+                    lineageInsertion.Columns.Add("N2KVersioningVersion", typeof(int));
+                    lineageInsertion.Columns.Add("Type", typeof(int));
+                    lineageInsertion.Columns.Add("Status", typeof(int));
+                    lineageInsertion.Columns.Add("AntecessorSiteCode", typeof(string));
+                    lineageInsertion.Columns.Add("AntecessorVersion", typeof(int));
+
+                    List<LineageAntecessors> antecessors = await _dataContext.Set<LineageAntecessors>().Where(c => c.LineageID == consolidateChanges.ChangeId).ToListAsync();
+
+                    antecessors.ForEach(async a =>
                     {
-                        lineageConsolidate.Rows.Add(new Object[] { cs.ChangeId, cs.Type, DBNull.Value });
-                        result.Add(cs.ChangeId);
+                        LineageAntecessors hasSuccessors = await _dataContext.Set<LineageAntecessors>().Where(c => c.LineageID != consolidateChanges.ChangeId && c.SiteCode == a.SiteCode && c.Version == a.Version && c.N2KVersioningVersion == a.N2KVersioningVersion).FirstOrDefaultAsync();
+                        if (hasSuccessors == null)
+                        {
+                            lineageInsertion.Rows.Add(new Object[] { a.SiteCode, a.Version, lineage.N2KVersioningVersion, LineageTypes.Deletion, LineageStatus.Proposed, a.SiteCode, a.Version });
+                        }
                     });
-                    paramTable.Value = lineageConsolidate;
 
-                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spConsolidateChanges  @lineageConsolidate", paramTable);
+                    SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                    paramTable.Value = lineageInsertion;
+                    paramTable.TypeName = "[dbo].[LineageInsertion]";
+                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spInsertIntoLineageBulk  @siteCodes", paramTable);
                 }
-                else
+
+                SqlParameter param1 = new SqlParameter("@country", lineage.SiteCode.Substring(0, 2));
+                List<SiteBasic> resultSites = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
+                                    param1).ToListAsync();
+                resultSites = resultSites.Where(c => consolidateChanges.Predecessors.Contains(c.SiteCode)).ToList();
+
+                var sitecodesfilter = new DataTable("sitecodesfilter");
+                sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter.Columns.Add("Version", typeof(int));
+                resultSites.ToList().ForEach(cs =>
                 {
-                    Lineage lineage = await _dataContext.Set<Lineage>().Where(c => c.ID == consolidateChanges.FirstOrDefault().ChangeId).FirstOrDefaultAsync();
-
-                    SqlParameter param1 = new SqlParameter("@country", lineage.SiteCode.Substring(0, 2));
-                    List<SiteBasic> resultSites = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
-                                        param1).ToListAsync();
-                    resultSites = resultSites.Where(c => consolidateChanges.FirstOrDefault().Predecessors.Contains(c.SiteCode)).ToList();
-
-                    var sitecodesfilter = new DataTable("sitecodesfilter");
-                    sitecodesfilter.Columns.Add("SiteCode", typeof(string));
-                    sitecodesfilter.Columns.Add("Version", typeof(int));
-                    resultSites.ToList().ForEach(cs =>
-                    {
-                        sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.Version });
-                    });
-                    SqlParameter paramId = new SqlParameter("@id", consolidateChanges.FirstOrDefault().ChangeId);
-                    SqlParameter paramSitecodesTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-                    paramSitecodesTable.Value = sitecodesfilter;
-                    paramSitecodesTable.TypeName = "[dbo].[SiteCodeFilter]";
-
-                    await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spConsolidatePredecessors @id, @siteCodes", paramId, paramSitecodesTable);
-
-                    lineageConsolidate.Rows.Add(new Object[] { consolidateChanges.FirstOrDefault().ChangeId, consolidateChanges.FirstOrDefault().Type, DBNull.Value });
-                    paramTable.Value = lineageConsolidate;
-
-                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spConsolidateChanges  @lineageConsolidate", paramTable);
-
-                    result.Add(consolidateChanges.FirstOrDefault().ChangeId);
-                }
-            }
-            catch (Exception ex)
-            {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - ConsolidateChanges", "", _dataContext.Database.GetConnectionString());
-                throw ex;
-            }
-            return result;
-        }
-
-
-        public async Task<List<long>> SetChangesBackToProposed(long[] ChangeId)
-        {
-            List<long> result = new List<long>();
-            try
-            {
-                List<Lineage> lineageBackProposed = await _dataContext.Set<Lineage>().Where(c => c.Status == LineageStatus.Consolidated && ChangeId.Contains(c.ID)).ToListAsync();
-                lineageBackProposed.ForEach(y =>
-                {
-                    y.Status = LineageStatus.Proposed;
-                    result.Add(y.ID);
+                    sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.Version });
                 });
-                _dataContext.SaveChanges();
+                SqlParameter paramId = new SqlParameter("@id", consolidateChanges.ChangeId);
+                SqlParameter paramSitecodesTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramSitecodesTable.Value = sitecodesfilter;
+                paramSitecodesTable.TypeName = "[dbo].[SiteCodeFilter]";
+
+                await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spConsolidatePredecessors @id, @siteCodes", paramId, paramSitecodesTable);
+
+                lineage.Type = consolidateChanges.Type;
+
+                List<LineageAntecessors> antecessorsDeletion = await _dataContext.Set<LineageAntecessors>().Where(c => c.LineageID == consolidateChanges.ChangeId).ToListAsync();
+                antecessorsDeletion.ForEach(async a =>
+                {
+                    Lineage hasSuccessors = await _dataContext.Set<Lineage>().Where(c => c.SiteCode == a.SiteCode && c.Version == a.Version && c.Type == LineageTypes.Deletion).FirstOrDefaultAsync();
+                    if (hasSuccessors != null)
+                    {
+                        _dataContext.Set<Lineage>().Remove(hasSuccessors);
+                    }
+                });
+                await _dataContext.SaveChangesAsync();
+
+                HarvestedService harvest = new HarvestedService(_dataContext, _versioningContext, _appSettings, _fmeHarvestJobs);
+                await harvest.ChangeDetectionSingleSite(lineage.SiteCode, lineage.Version, _dataContext.Database.GetConnectionString());
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - SetChangesBackToProposed", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - SaveEdition", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
-            return result;
+            return consolidateChanges.ChangeId;
         }
 
 
@@ -335,6 +350,9 @@ namespace N2K_BackboneBackEnd.Services
                                 paramTable).ToListAsync();
                 List<SiteBioRegionsAndArea> bioregions = await _dataContext.Set<SiteBioRegionsAndArea>().FromSqlRaw($"exec dbo.spGetBioRegionsAndAreaBySitecodeAndVersion  @siteCodes",
                                 paramTable).ToListAsync();
+                List<Lineage> antecessorsLineage = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetSiteLineageBySitecodeAndVersion  @siteCodes",
+                                paramTable).ToListAsync();
+                List<UnionListHeader> unionListHeader = await _dataContext.Set<UnionListHeader>().AsNoTracking().ToListAsync();
 
                 antecessorSites.ForEach(d =>
                 {
@@ -347,7 +365,8 @@ namespace N2K_BackboneBackEnd.Services
                         AreaSDF = d.AreaHa != null ? Convert.ToDouble(d.AreaHa) : null,
                         AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area) : null,
                         Length = d.LengthKm != null ? Convert.ToDouble(d.LengthKm) : null,
-                        Status = LineageStatus.Consolidated.ToString()
+                        Status = LineageStatus.Consolidated.ToString(),
+                        ReleaseDate = antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release != null ? unionListHeader.Where(b => b.idULHeader == antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release).FirstOrDefault().Date : null
                     });
                 });
                 result = result.DistinctBy(c => c.SiteCode).ToList();
@@ -403,22 +422,21 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<List<string>> GetLineageReferenceSites(string country)
+        public async Task<List<SiteBasic>> GetLineageReferenceSites(string country)
         {
-            List<string> result = new List<string>();
+            List<SiteBasic> result = new List<SiteBasic>();
             try
             {
                 SqlParameter param1 = new SqlParameter("@country", country);
-                List<SiteBasic> resultSites = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
+                result = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
                                     param1).ToListAsync();
-                result = resultSites.Select(s => s.SiteCode).ToList();
             }
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetLineageReferenceSites", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
-            return result.Distinct().ToList();
+            return result;
         }
 
 
