@@ -953,13 +953,8 @@ namespace N2K_BackboneBackEnd.Services
                         changes.Add(siteChange);
                     }
 
-                    Sites stored = ctx.Set<Sites>().Where(ss => ss.SiteCode == storedSite.SiteCode && ss.Version == storedSite.VersionId).FirstOrDefault();
-                    Sites harvesting = ctx.Set<Sites>().Where(hs => hs.SiteCode == harvestingSite.SiteCode && hs.Version == harvestingSite.VersionId).FirstOrDefault();
-                    stored.Priority = isStoredSitePriority;
-                    harvesting.Priority = isHarvestingSitePriority;
-                    ctx.Set<Sites>().Update(stored);
-                    ctx.Set<Sites>().Update(harvesting);
-                    await ctx.SaveChangesAsync();
+                    await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isStoredSitePriority + "' WHERE [SiteCode] = '" + storedSite.SiteCode + "' AND [Version] = '" + storedSite.VersionId + "'");
+                    await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isHarvestingSitePriority + "' WHERE [SiteCode] = '" + harvestingSite.SiteCode + "' AND [Version] = '" + harvestingSite.VersionId + "'");
 
                     //Add justification files and comments from the current to the new version
                     Sites current = ctx.Set<Sites>().Where(x => x.SiteCode == harvestingSite.SiteCode && x.Current == true).FirstOrDefault();
@@ -1178,13 +1173,8 @@ namespace N2K_BackboneBackEnd.Services
                         changes.Add(siteChange);
                     }
 
-                    Sites stored = ctx.Set<Sites>().Where(ss => ss.SiteCode == storedSite.SiteCode && ss.Version == storedSite.VersionId).FirstOrDefault();
-                    Sites harvesting = ctx.Set<Sites>().Where(hs => hs.SiteCode == harvestingSite.SiteCode && hs.Version == harvestingSite.VersionId).FirstOrDefault();
-                    stored.Priority = isStoredSitePriority;
-                    harvesting.Priority = isHarvestingSitePriority;
-                    ctx.Set<Sites>().Update(stored);
-                    ctx.Set<Sites>().Update(harvesting);
-                    await ctx.SaveChangesAsync();
+                    await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isStoredSitePriority + "' WHERE [SiteCode] = '" + storedSite.SiteCode + "' AND [Version] = '" + storedSite.VersionId + "'");
+                    await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isHarvestingSitePriority + "' WHERE [SiteCode] = '" + harvestingSite.SiteCode + "' AND [Version] = '" + harvestingSite.VersionId + "'");
 
                     //Add justification files and comments from the current to the new version
                     Sites current = ctx.Set<Sites>().Where(x => x.SiteCode == harvestingSite.SiteCode && x.Current == true).FirstOrDefault();
