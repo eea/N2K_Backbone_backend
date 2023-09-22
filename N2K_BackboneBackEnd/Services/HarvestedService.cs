@@ -1872,43 +1872,8 @@ namespace N2K_BackboneBackEnd.Services
                 ProcessedEnvelopes envelope = new ProcessedEnvelopes();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
                     opt => opt.EnableRetryOnFailure()).Options;
-
                 using (var ctx = new N2KBackboneContext(options))
                 {
-                    var countriesAndVersions = new DataTable("sitecodesfilter");
-                    countriesAndVersions.Columns.Add("CountryCode", typeof(string));
-                    countriesAndVersions.Columns.Add("Version", typeof(int));
-                    changeEnvelopes.countryVersion.ToList().ForEach(cs =>
-                    {
-                        countriesAndVersions.Rows.Add(new Object[] { cs.CountryCode, cs.VersionId });
-                    });
-
-                    SqlParameter param1 = new SqlParameter("@countryVersion", System.Data.SqlDbType.Structured);
-                    param1.Value = countriesAndVersions;
-                    param1.TypeName = "[dbo].[CountryVersion]";
-
-                    switch (toStatus)
-                    {
-                        case HarvestingStatus.Harvested:
-                            sqlToExecute = "exec dbo.setStatusToEnvelopeHarvested  @countryVersion;";
-                            break;
-                        case HarvestingStatus.Discarded:
-                            sqlToExecute = "exec dbo.setStatusToEnvelopeDiscarded  @countryVersion;";
-                            break;
-                        case HarvestingStatus.PreHarvested:
-                            sqlToExecute = "exec dbo.setStatusToEnvelopePreHarvested  @countryVersion;";
-                            break;
-                        case HarvestingStatus.Closed:
-                            sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @countryVersion;";
-                            break;
-                        case HarvestingStatus.Pending:
-                            sqlToExecute = "exec dbo.setStatusToEnvelopePending  @countryVersion;";
-                            break;
-                        default:
-                            break;
-                    }
-                    await ctx.Database.ExecuteSqlRawAsync(sqlToExecute, param1);
-
                     foreach (CountryVersion data in changeEnvelopes.countryVersion)
                     {
                         country = data.CountryCode;
@@ -1920,28 +1885,59 @@ namespace N2K_BackboneBackEnd.Services
                             //Get the version for the Sites 
                             //List<Sites> sites = ctx.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).Select(s=> s.Version).First();
                             //Sites site = sites.First();
-                            int _version = await ctx.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).FirstOrDefaultAsync();
+                            //int _version = await ctx.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).FirstOrDefaultAsync();
                             if (toStatus != envelope.Status)
                             {
                                 if (envelope.Status == HarvestingStatus.DataLoaded)
                                 {
                                     Task tabChangeDetectionTask = ChangeDetection(new EnvelopesToProcess[] { new EnvelopesToProcess
-                                    {
-                                        CountryCode = country,
-                                        VersionId = version
-                                    } }, ctx);
+                                {
+                                    CountryCode = country,
+                                    VersionId = version
+                                } }, ctx);
 
 
                                     Task spatialChangeDetectionTask = ChangeDetectionSpatialData(new EnvelopesToProcess[] { new EnvelopesToProcess
-                                    {
-                                        CountryCode = country,
-                                        VersionId = version
-                                    } }, ctx);
+                                {
+                                    CountryCode = country,
+                                    VersionId = version
+                                } }, ctx);
 
 
                                     //make sure they are all finished
                                     await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
                                 }
+
+                                var countriesAndVersions = new DataTable("sitecodesfilter");
+                                countriesAndVersions.Columns.Add("CountryCode", typeof(string));
+                                countriesAndVersions.Columns.Add("Version", typeof(int));
+                                countriesAndVersions.Rows.Add(new Object[] { country, version });
+
+                                SqlParameter param1 = new SqlParameter("@countryVersion", System.Data.SqlDbType.Structured);
+                                param1.Value = countriesAndVersions;
+                                param1.TypeName = "[dbo].[CountryVersion]";
+
+                                switch (toStatus)
+                                {
+                                    case HarvestingStatus.Harvested:
+                                        sqlToExecute = "exec dbo.setStatusToEnvelopeHarvested  @countryVersion;";
+                                        break;
+                                    case HarvestingStatus.Discarded:
+                                        sqlToExecute = "exec dbo.setStatusToEnvelopeDiscarded  @countryVersion;";
+                                        break;
+                                    case HarvestingStatus.PreHarvested:
+                                        sqlToExecute = "exec dbo.setStatusToEnvelopePreHarvested  @countryVersion;";
+                                        break;
+                                    case HarvestingStatus.Closed:
+                                        sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @countryVersion;";
+                                        break;
+                                    case HarvestingStatus.Pending:
+                                        sqlToExecute = "exec dbo.setStatusToEnvelopePending  @countryVersion;";
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                await ctx.Database.ExecuteSqlRawAsync(sqlToExecute, param1);
 
                                 if (toStatus == HarvestingStatus.Discarded || toStatus == HarvestingStatus.Closed)
                                 {
@@ -1962,11 +1958,10 @@ namespace N2K_BackboneBackEnd.Services
                                             //make sure they are all finished
                                             await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
                                         }
-
                                         //change the status of the whole process to PreHarvested
                                         await ChangeStatus(
-                                            GetCountryVersionToStatusFromSingleEnvelope(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested)
-                                            , cache);
+                                                GetCountryVersionToStatusFromSingleEnvelope(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested)
+                                                , cache);
                                     }
                                 }
 
@@ -2030,7 +2025,6 @@ namespace N2K_BackboneBackEnd.Services
                                 envelopes.Add(newEnvelope);
 
                                 await Harvest(envelopes.ToArray<EnvelopesToProcess>());
-
                             }
                             else
                             {
