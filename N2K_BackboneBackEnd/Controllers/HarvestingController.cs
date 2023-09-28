@@ -448,5 +448,63 @@ namespace N2K_BackboneBackEnd.Controllers
                 CancellationToken.None);
         }
 
+        /// <summary>
+        /// Executes the process of checking priority
+        /// </summary>
+        /// <returns></returns>
+        // POST api/<HarvestingController>
+        [Route("PriorityChecker")]
+        [HttpPost]
+        public async Task<ActionResult<int>> PriorityChecker(string country = "-", int version = -1, Boolean current = false)
+        {
+            var response = new ServiceResponse<int>();
+            try
+            {
+                var priority = await _harvestedService.PriorityChecker(country, version, current, null);
+                response.Success = true;
+                response.Message = "";
+                response.Data = priority;
+                response.Count = (priority == null) ? 0 : priority;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = -1;
+                return Ok(response);
+            }
+        }
+
+        /// <summary>
+        /// Executes the process of checking priority on a single site
+        /// </summary>
+        /// <returns></returns>
+        // POST api/<HarvestingController>
+        [Route("SitePriorityChecker")]
+        [HttpPost]
+        public async Task<ActionResult<Boolean>> SitePriorityChecker(string sitecode, int version)
+        {
+            var response = new ServiceResponse<Boolean>();
+            try
+            {
+                var priority = await _harvestedService.SitePriorityChecker(sitecode, version, null, null);
+                response.Success = true;
+                response.Message = "";
+                response.Data = priority;
+                response.Count = (priority == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = false;
+                return Ok(response);
+            }
+        }
+
     }
 }
