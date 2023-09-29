@@ -789,10 +789,6 @@ namespace N2K_BackboneBackEnd.Services
                     storedSite = referencedSites.Where(s => s.SiteCode == siteRelation.PreviousSiteCode && s.VersionId == siteRelation.PreviousVersion).FirstOrDefault();
                 if (siteRelation != null && storedSite != null)
                 {
-                    //These booleans declare whether or not each site is a priority
-                    Boolean isStoredSitePriority = false;
-                    Boolean isHarvestingSitePriority = false;
-
                     //SiteAttributesChecking
                     HarvestSiteCode siteCode = new HarvestSiteCode(ctx, _versioningContext);
                     changes = await siteCode.ChangeDetectionSiteAttributes(changes, envelope, harvestingSite, storedSite, siteAreaHaTolerance, siteLengthKmTolerance, processedEnvelope, ctx);
@@ -826,89 +822,9 @@ namespace N2K_BackboneBackEnd.Services
                     HarvestSpecies species = new HarvestSpecies(ctx, _versioningContext);
                     changes = await species.ChangeDetectionSpecies(speciesVersioning, referencedSpecies, changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority, processedEnvelope, ctx);
 
-                    #region HabitatPriority
-                    foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
-                    {
-                        HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
-                        if (priorityCount != null)
-                        {
-                            if (priorityCount.Priority == 2)
-                            {
-                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && harvestingHabitat.Representativity.ToUpper() != "D")
-                                    || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if (harvestingHabitat.Representativity.ToUpper() != "D")
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    foreach (HabitatToHarvest storedHabitat in referencedHabitats)
-                    {
-                        HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == storedHabitat.HabitatCode).FirstOrDefault();
-                        if (priorityCount != null)
-                        {
-                            if (priorityCount.Priority == 2)
-                            {
-                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && storedHabitat.Representativity.ToUpper() != "D")
-                                    || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if (storedHabitat.Representativity.ToUpper() != "D")
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    #endregion
-
-                    #region SpeciesPriority
-                    if (!isHarvestingSitePriority)
-                    {
-                        foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
-                        {
-                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
-                            if (priorityCount != null)
-                            {
-                                if (harvestingSpecies.Population.ToUpper() != "D")
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (!isStoredSitePriority)
-                    {
-                        foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
-                        {
-                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == storedSpecies.SpeciesCode).FirstOrDefault();
-                            if (priorityCount != null)
-                            {
-                                if (storedSpecies.Population.ToUpper() != "D")
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    #endregion
+                    //These booleans declare whether or not each site is a priority
+                    Boolean isStoredSitePriority = await SitePriorityChecker(storedSite.SiteCode, storedSite.VersionId, habitatPriority, speciesPriority);
+                    Boolean isHarvestingSitePriority = await SitePriorityChecker(harvestingSite.SiteCode, harvestingSite.VersionId, habitatPriority, speciesPriority);
 
                     if (isStoredSitePriority && !isHarvestingSitePriority)
                     {
@@ -1009,10 +925,6 @@ namespace N2K_BackboneBackEnd.Services
             {
                 if (storedSite != null && harvestingSite != null)
                 {
-                    //These booleans declare whether or not each site is a priority
-                    Boolean isStoredSitePriority = false;
-                    Boolean isHarvestingSitePriority = false;
-
                     //SiteAttributesChecking
                     HarvestSiteCode siteCode = new HarvestSiteCode(ctx, _versioningContext);
                     changes = await siteCode.ChangeDetectionSiteAttributes(changes, envelope, harvestingSite, storedSite, siteAreaHaTolerance, siteLengthKmTolerance, processedEnvelope, ctx);
@@ -1046,89 +958,9 @@ namespace N2K_BackboneBackEnd.Services
                     HarvestSpecies species = new HarvestSpecies(ctx, _versioningContext);
                     changes = await species.ChangeDetectionSpecies(speciesVersioning, referencedSpecies, changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority, processedEnvelope, ctx);
 
-                    #region HabitatPriority
-                    foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
-                    {
-                        HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
-                        if (priorityCount != null)
-                        {
-                            if (priorityCount.Priority == 2)
-                            {
-                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
-                                    || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null)
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    foreach (HabitatToHarvest storedHabitat in referencedHabitats)
-                    {
-                        HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == storedHabitat.HabitatCode).FirstOrDefault();
-                        if (priorityCount != null)
-                        {
-                            if (priorityCount.Priority == 2)
-                            {
-                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
-                                    || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null)
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    #endregion
-
-                    #region SpeciesPriority
-                    if (!isHarvestingSitePriority)
-                    {
-                        foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
-                        {
-                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
-                            if (priorityCount != null)
-                            {
-                                if (harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null)
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (!isStoredSitePriority)
-                    {
-                        foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
-                        {
-                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == storedSpecies.SpeciesCode).FirstOrDefault();
-                            if (priorityCount != null)
-                            {
-                                if (storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null)
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    #endregion
+                    //These booleans declare whether or not each site is a priority
+                    Boolean isStoredSitePriority = await SitePriorityChecker(storedSite.SiteCode, storedSite.VersionId, habitatPriority, speciesPriority);
+                    Boolean isHarvestingSitePriority = await SitePriorityChecker(harvestingSite.SiteCode, harvestingSite.VersionId, habitatPriority, speciesPriority);
 
                     if (isStoredSitePriority && !isHarvestingSitePriority)
                     {
@@ -2286,6 +2118,177 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "FME Job Completed", "", _dataContext.Database.GetConnectionString());
+            }
+        }
+
+        /// <summary>
+        /// Method to check the priority of the sites
+        /// </summary>
+        /// <param name="country">Country code</param>
+        /// <param name="version">Country versionparam>
+        /// <param name="current">Check to only take current sites</param>
+        /// <returns>1</returns>
+        public async Task<int> PriorityChecker(string country, int version, Boolean current, N2KBackboneContext? ctx = null)
+        {
+            try
+            {
+                if (ctx == null) ctx = this._dataContext;
+
+                //Get the lists of priority habitats and species
+                List<HabitatPriority> habitatPriority = await ctx.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+                List<SpeciePriority> speciesPriority = await ctx.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+
+                try
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start PriorityChecker - Country: {0} - Version: {1} - Current: {2}", country, version, current), "PriorityChecker", "", ctx.Database.GetConnectionString());
+
+                    List<Sites> sites = new List<Sites>();
+
+                    if (country.Length == 2 && version != -1 && current == true)
+                    {
+                        sites = await ctx.Set<Sites>().Where(ss => ss.CountryCode == country && ss.N2KVersioningVersion == version && ss.Current == current).ToListAsync();
+                    }
+                    else if (country.Length == 2 && version != -1)
+                    {
+                        sites = await ctx.Set<Sites>().Where(ss => ss.CountryCode == country && ss.N2KVersioningVersion == version).ToListAsync();
+                    }
+                    else if (country.Length == 2 && current == true)
+                    {
+                        sites = await ctx.Set<Sites>().Where(ss => ss.CountryCode == country && ss.Current == current).ToListAsync();
+                    }
+                    else if (country.Length == 2)
+                    {
+                        sites = await ctx.Set<Sites>().Where(ss => ss.CountryCode == country).ToListAsync();
+                    }
+                    else if (current == true)
+                    {
+                        sites = await ctx.Set<Sites>().Where(ss => ss.Current == current).ToListAsync();
+                    }
+                    else
+                    {
+                        sites = await ctx.Set<Sites>().ToListAsync();
+                    }
+
+                    foreach (Sites temp in sites)
+                    {
+                        await SitePriorityChecker(temp.SiteCode, temp.Version, habitatPriority, speciesPriority);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "PriorityChecker - Country: " + country + " - Version: " + version + " - Current: " + current, "", ctx.Database.GetConnectionString());
+                    throw ex;
+
+                }
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End PriorityChecker - Country: {0} - Version: {1} - Current: {2}", country, version, current), "PriorityChecker", "", ctx.Database.GetConnectionString());
+
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - PriorityChecker - Country: " + country + " - Version: " + version + " - Current: " + current, "", ctx.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// Method to check the priority of the sites
+        /// </summary>
+        /// <param name="sitecode">Sitecode of the site to check priority</param>
+        /// <param name="version">Version of the site to check priority</param>
+        /// <param name="habitatPriority">List of priority Habitats</param>
+        /// <param name="speciesPriority">List of priority Species</param>
+        /// <returns>1</returns>
+        public async Task<Boolean> SitePriorityChecker(string sitecode, int version, List<HabitatPriority>? habitatPriority = null, List<SpeciePriority>? speciesPriority = null)
+        {
+            try
+            {
+                var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
+                    opt => opt.EnableRetryOnFailure()).Options;
+                using (var ctx = new N2KBackboneContext(options))
+                {
+
+                    //Get the lists of priority habitats and species
+                    if (habitatPriority == null) habitatPriority = await ctx.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+                    if (speciesPriority == null) speciesPriority = await ctx.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+
+                    try
+                    {
+
+                        //These booleans declare whether or not each site is a priority
+                        Boolean isSitePriority = false;
+
+                        SqlParameter param1 = new SqlParameter("@site", sitecode);
+                        SqlParameter param2 = new SqlParameter("@versionId", version);
+
+                        //HabitatChecking
+                        List<HabitatToHarvest> habitats = await ctx.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+                                        param1, param2).ToListAsync();
+
+                        //SpeciesChecking
+                        List<SpeciesToHarvest> species = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+                                        param1, param2).ToListAsync();
+
+                        #region HabitatPriority
+                        foreach (HabitatToHarvest habitat in habitats)
+                        {
+                            HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == habitat.HabitatCode).FirstOrDefault();
+                            if (priorityCount != null)
+                            {
+                                if (priorityCount.Priority == 2)
+                                {
+                                    if ((habitat.HabitatCode != "21A0" && habitat.PriorityForm == true && (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null))
+                                        || (habitat.HabitatCode == "21A0" && sitecode.Substring(0, Math.Min(sitecode.Length, 2)) == "IE"))
+                                    {
+                                        isSitePriority = true;
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    if (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null)
+                                    {
+                                        isSitePriority = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        #endregion
+
+                        #region SpeciesPriority
+                        if (!isSitePriority)
+                        {
+                            foreach (SpeciesToHarvest specie in species)
+                            {
+                                SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == specie.SpeciesCode).FirstOrDefault();
+                                if (priorityCount != null)
+                                {
+                                    if (specie.Population.ToUpper() != "D" || specie.Population == null)
+                                    {
+                                        isSitePriority = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        #endregion
+
+                        await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isSitePriority + "' WHERE [SiteCode] = '" + sitecode + "' AND [Version] = '" + version + "'");
+                        return isSitePriority;
+                    }
+                    catch (Exception ex)
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SitePriorityChecker - Sitecode: " + sitecode + " - Version: " + version, "", ctx.Database.GetConnectionString());
+                        throw ex;
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - SitePriorityChecker - Sitecode: " + sitecode + " - Version: " + version, "", _dataContext.Database.GetConnectionString());
+                throw ex;
             }
         }
 

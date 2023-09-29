@@ -36,5 +36,9 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<ProcessedEnvelopes>> ChangeStatus(CountryVersionToStatus envelopesToStatus, IMemoryCache cache);
         Task CompleteFMESpatial(string message);
 
+        Task<int> PriorityChecker(string country, int version, Boolean current, N2KBackboneContext? ctx = null);
+
+        Task<Boolean> SitePriorityChecker(string sitecode, int version, List<HabitatPriority>? habitatPriority = null, List<SpeciePriority>? speciesPriority = null);
+
     }
 }
