@@ -124,7 +124,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.DataQuality = TypeConverters.CheckNull<string>(reader["DataQuality"]);
                     item.SpecieType = TypeConverters.CheckNull<string>(reader["SpecieType"]);
 
-                    if (reader["SpecieCode"] is null || reader["SpecieCode"].ToString() == "" ||
+                    if (item.SpecieCode is null || item.SpecieCode == "" ||
                         _speciesTypes.Where(a => a.Code == item.SpecieCode && a.Active == true).Count() < 1)
                     {
                         //Replace the code (which is Null or empty or no stored in the system)
