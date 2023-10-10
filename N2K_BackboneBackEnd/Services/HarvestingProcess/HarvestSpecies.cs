@@ -37,7 +37,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID,  IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB, string backboneDb, List<Sites> sites)
+        public async Task<int> HarvestByCountry(string countryCode, decimal COUNTRYVERSIONID, IEnumerable<SpeciesTypes> _speciesTypes, string versioningDB, string backboneDb, List<Sites> sites)
         {
             SqlConnection versioningConn = null;
             SqlCommand command = null;
@@ -98,9 +98,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     SpecieBase item = new SpecieBase();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
                     item.Version = 0;
-                    if (sites.Any(s=> s.SiteCode== item.SiteCode))
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
-                        item.Version = sites.FirstOrDefault(s=>s.SiteCode== item.SiteCode).Version;
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
                     }
                     item.SpecieCode = TypeConverters.CheckNull<string>(reader["SpecieCode"]);
                     item.PopulationMin = TypeConverters.CheckNull<int?>(reader["PopulationMin"]);
@@ -124,7 +124,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     item.DataQuality = TypeConverters.CheckNull<string>(reader["DataQuality"]);
                     item.SpecieType = TypeConverters.CheckNull<string>(reader["SpecieType"]);
 
-                    if (reader["SpecieCode"] is null || reader["SpecieCode"].ToString() == "" ||
+                    if (item.SpecieCode is null || item.SpecieCode == "" ||
                         _speciesTypes.Where(a => a.Code == item.SpecieCode && a.Active == true).Count() < 1)
                     {
                         //Replace the code (which is Null or empty or no stored in the system)
@@ -152,7 +152,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 try
                 {
-                    await Species.SaveBulkRecord( backboneDb, itemsSpecies);
+                    await Species.SaveBulkRecord(backboneDb, itemsSpecies);
                 }
                 catch (Exception ex)
                 {
@@ -181,12 +181,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (command != null) command.Dispose();
                     if (reader != null) await reader.DisposeAsync();
                 }
-                
+
             }
         }
 
 
-        
+
 
         public async Task<int> ChangeDetectionChanges(string countryCode, int versionId, int referenceVersionID)
         {
@@ -283,9 +283,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             //These booleans declare whether or not each species is a priority
                             Boolean isStoredPriority = false;
                             Boolean isHarvestingPriority = false;
-                            if (storedSpecies.Population.ToUpper() != "D")
+                            if (storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null)
                                 isStoredPriority = true;
-                            if (harvestingSpecies.Population.ToUpper() != "D")
+                            if (harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null)
                                 isHarvestingPriority = true;
 
                             if (isStoredPriority && !isHarvestingPriority)
@@ -461,9 +461,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             //These booleans declare whether or not each species is a priority
                             Boolean isStoredPriority = false;
                             Boolean isHarvestingPriority = false;
-                            if (storedSpecies.Population.ToUpper() != "D")
+                            if (storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null)
                                 isStoredPriority = true;
-                            if (harvestingSpecies.Population.ToUpper() != "D")
+                            if (harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null)
                                 isHarvestingPriority = true;
 
                             if (isStoredPriority && !isHarvestingPriority)

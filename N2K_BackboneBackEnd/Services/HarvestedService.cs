@@ -85,6 +85,22 @@ namespace N2K_BackboneBackEnd.Services
             return Enum.GetName(type);
         }
 
+        private CountryVersionToStatus GetCountryVersionToStatusFromSingleEnvelope(string countryCode, int version, HarvestingStatus status)
+        {
+            return new CountryVersionToStatus
+            {
+                countryVersion = new CountryVersion[]
+                {
+                    new CountryVersion
+                    {
+                        CountryCode = countryCode,
+                        VersionId = version
+                    }
+                },
+                toStatus = status
+            };
+        }
+
         private void InitialiseBulkItems()
         {
             _siteItems.Add(typeof(List<Respondents>), new List<Respondents>());
@@ -477,7 +493,14 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 type = LineageTypes.Recode;
                             }
-                            lineageInsertion.Rows.Add(new Object[] { c.new_sitecode, c.new_version, envelope.VersionId, type, LineageStatus.Proposed, c.old_sitecode, c.old_version });
+                            if (c.op == "DELETED")
+                            {
+                                lineageInsertion.Rows.Add(new Object[] { c.old_sitecode, c.old_version, envelope.VersionId, type, LineageStatus.Proposed, c.old_sitecode, c.old_version });
+                            }
+                            else
+                            {
+                                lineageInsertion.Rows.Add(new Object[] { c.new_sitecode, c.new_version, envelope.VersionId, type, LineageStatus.Proposed, c.old_sitecode, c.old_version });
+                            }
                         });
                         sitesRelation.ForEach(r =>
                         {
@@ -783,10 +806,6 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (siteRelation != null && storedSite != null)
                 {
-                    //These booleans declare whether or not each site is a priority
-                    Boolean isStoredSitePriority = false;
-                    Boolean isHarvestingSitePriority = false;
-
                     //SiteAttributesChecking
                     HarvestSiteCode siteCode = new HarvestSiteCode(ctx, _versioningContext);
                     changes = await siteCode.ChangeDetectionSiteAttributes(changes, envelope, harvestingSite, storedSite, siteAreaHaTolerance, siteLengthKmTolerance, processedEnvelope, ctx);
@@ -820,89 +839,9 @@ namespace N2K_BackboneBackEnd.Services
                     HarvestSpecies species = new HarvestSpecies(ctx, _versioningContext);
                     changes = await species.ChangeDetectionSpecies(speciesVersioning, referencedSpecies, changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority, processedEnvelope, ctx);
 
-                    #region HabitatPriority
-                    foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
-                    {
-                        HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
-                        if (priorityCount != null)
-                        {
-                            if (priorityCount.Priority == 2)
-                            {
-                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && harvestingHabitat.Representativity.ToUpper() != "D")
-                                    || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if (harvestingHabitat.Representativity.ToUpper() != "D")
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    foreach (HabitatToHarvest storedHabitat in referencedHabitats)
-                    {
-                        HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == storedHabitat.HabitatCode).FirstOrDefault();
-                        if (priorityCount != null)
-                        {
-                            if (priorityCount.Priority == 2)
-                            {
-                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && storedHabitat.Representativity.ToUpper() != "D")
-                                    || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if (storedHabitat.Representativity.ToUpper() != "D")
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    #endregion
-
-                    #region SpeciesPriority
-                    if (!isHarvestingSitePriority)
-                    {
-                        foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
-                        {
-                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
-                            if (priorityCount != null)
-                            {
-                                if (harvestingSpecies.Population.ToUpper() != "D")
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (!isStoredSitePriority)
-                    {
-                        foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
-                        {
-                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == storedSpecies.SpeciesCode).FirstOrDefault();
-                            if (priorityCount != null)
-                            {
-                                if (storedSpecies.Population.ToUpper() != "D")
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    #endregion
+                    //These booleans declare whether or not each site is a priority
+                    Boolean isStoredSitePriority = await SitePriorityChecker(storedSite.SiteCode, storedSite.VersionId, habitatPriority, speciesPriority);
+                    Boolean isHarvestingSitePriority = await SitePriorityChecker(harvestingSite.SiteCode, harvestingSite.VersionId, habitatPriority, speciesPriority);
 
                     if (isStoredSitePriority && !isHarvestingSitePriority)
                     {
@@ -947,13 +886,8 @@ namespace N2K_BackboneBackEnd.Services
                         changes.Add(siteChange);
                     }
 
-                    Sites stored = ctx.Set<Sites>().Where(ss => ss.SiteCode == storedSite.SiteCode && ss.Version == storedSite.VersionId).FirstOrDefault();
-                    Sites harvesting = ctx.Set<Sites>().Where(hs => hs.SiteCode == harvestingSite.SiteCode && hs.Version == harvestingSite.VersionId).FirstOrDefault();
-                    stored.Priority = isStoredSitePriority;
-                    harvesting.Priority = isHarvestingSitePriority;
-                    ctx.Set<Sites>().Update(stored);
-                    ctx.Set<Sites>().Update(harvesting);
-                    await ctx.SaveChangesAsync();
+                    await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isStoredSitePriority + "' WHERE [SiteCode] = '" + storedSite.SiteCode + "' AND [Version] = '" + storedSite.VersionId + "'");
+                    await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isHarvestingSitePriority + "' WHERE [SiteCode] = '" + harvestingSite.SiteCode + "' AND [Version] = '" + harvestingSite.VersionId + "'");
 
                     //Add justification files and comments from the current to the new version
                     Sites current = ctx.Set<Sites>().Where(x => x.SiteCode == harvestingSite.SiteCode && x.Current == true).FirstOrDefault();
@@ -1014,10 +948,6 @@ namespace N2K_BackboneBackEnd.Services
             {
                 if (storedSite != null && harvestingSite != null)
                 {
-                    //These booleans declare whether or not each site is a priority
-                    Boolean isStoredSitePriority = false;
-                    Boolean isHarvestingSitePriority = false;
-
                     //SiteAttributesChecking
                     HarvestSiteCode siteCode = new HarvestSiteCode(ctx, _versioningContext);
                     changes = await siteCode.ChangeDetectionSiteAttributes(changes, envelope, harvestingSite, storedSite, siteAreaHaTolerance, siteLengthKmTolerance, processedEnvelope, ctx);
@@ -1051,89 +981,9 @@ namespace N2K_BackboneBackEnd.Services
                     HarvestSpecies species = new HarvestSpecies(ctx, _versioningContext);
                     changes = await species.ChangeDetectionSpecies(speciesVersioning, referencedSpecies, changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority, processedEnvelope, ctx);
 
-                    #region HabitatPriority
-                    foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
-                    {
-                        HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
-                        if (priorityCount != null)
-                        {
-                            if (priorityCount.Priority == 2)
-                            {
-                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && harvestingHabitat.Representativity.ToUpper() != "D")
-                                    || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if (harvestingHabitat.Representativity.ToUpper() != "D")
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    foreach (HabitatToHarvest storedHabitat in referencedHabitats)
-                    {
-                        HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == storedHabitat.HabitatCode).FirstOrDefault();
-                        if (priorityCount != null)
-                        {
-                            if (priorityCount.Priority == 2)
-                            {
-                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && storedHabitat.Representativity.ToUpper() != "D")
-                                    || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if (storedHabitat.Representativity.ToUpper() != "D")
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    #endregion
-
-                    #region SpeciesPriority
-                    if (!isHarvestingSitePriority)
-                    {
-                        foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
-                        {
-                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
-                            if (priorityCount != null)
-                            {
-                                if (harvestingSpecies.Population.ToUpper() != "D")
-                                {
-                                    isHarvestingSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (!isStoredSitePriority)
-                    {
-                        foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
-                        {
-                            SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == storedSpecies.SpeciesCode).FirstOrDefault();
-                            if (priorityCount != null)
-                            {
-                                if (storedSpecies.Population.ToUpper() != "D")
-                                {
-                                    isStoredSitePriority = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    #endregion
+                    //These booleans declare whether or not each site is a priority
+                    Boolean isStoredSitePriority = await SitePriorityChecker(storedSite.SiteCode, storedSite.VersionId, habitatPriority, speciesPriority);
+                    Boolean isHarvestingSitePriority = await SitePriorityChecker(harvestingSite.SiteCode, harvestingSite.VersionId, habitatPriority, speciesPriority);
 
                     if (isStoredSitePriority && !isHarvestingSitePriority)
                     {
@@ -1178,13 +1028,8 @@ namespace N2K_BackboneBackEnd.Services
                         changes.Add(siteChange);
                     }
 
-                    Sites stored = ctx.Set<Sites>().Where(ss => ss.SiteCode == storedSite.SiteCode && ss.Version == storedSite.VersionId).FirstOrDefault();
-                    Sites harvesting = ctx.Set<Sites>().Where(hs => hs.SiteCode == harvestingSite.SiteCode && hs.Version == harvestingSite.VersionId).FirstOrDefault();
-                    stored.Priority = isStoredSitePriority;
-                    harvesting.Priority = isHarvestingSitePriority;
-                    ctx.Set<Sites>().Update(stored);
-                    ctx.Set<Sites>().Update(harvesting);
-                    await ctx.SaveChangesAsync();
+                    await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isStoredSitePriority + "' WHERE [SiteCode] = '" + storedSite.SiteCode + "' AND [Version] = '" + storedSite.VersionId + "'");
+                    await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isHarvestingSitePriority + "' WHERE [SiteCode] = '" + harvestingSite.SiteCode + "' AND [Version] = '" + harvestingSite.VersionId + "'");
 
                     //Add justification files and comments from the current to the new version
                     Sites current = ctx.Set<Sites>().Where(x => x.SiteCode == harvestingSite.SiteCode && x.Current == true).FirstOrDefault();
@@ -1547,7 +1392,9 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 //change the status of the whole process to PreHarvested                    
                                 await Task.Run(() =>
-                                    ChangeStatus(env.Envelope.CountryCode, env.Envelope.VersionId, HarvestingStatus.PreHarvested, cache)
+                                    ChangeStatus(
+                                        GetCountryVersionToStatusFromSingleEnvelope(env.Envelope.CountryCode, env.Envelope.VersionId, HarvestingStatus.PreHarvested)
+                                        , cache)
                                 );
                             }
                         }
@@ -1705,7 +1552,9 @@ namespace N2K_BackboneBackEnd.Services
                             if (envelopes.Count == 0)
                             {
                                 //change the status of the whole process to PreHarvested
-                                await ChangeStatus(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested, cache);
+                                await ChangeStatus(
+                                    GetCountryVersionToStatusFromSingleEnvelope(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested)
+                                    , cache);
                                 bbEnvelope.Status = HarvestingStatus.PreHarvested;
                             }
                             bbEnvelopes.Add(bbEnvelope);
@@ -1865,171 +1714,186 @@ namespace N2K_BackboneBackEnd.Services
         /// <param name="version"></param>
         /// <param name="toStatus"></param>
         /// <returns></returns>
-        public async Task<ProcessedEnvelopes> ChangeStatus(string country, int version, HarvestingStatus toStatus, IMemoryCache cache)
+        public async Task<List<ProcessedEnvelopes>> ChangeStatus(CountryVersionToStatus changeEnvelopes, IMemoryCache cache)
         {
             string sqlToExecute = "exec dbo.";
+            string country = "";
+            int version = 0;
+            HarvestingStatus toStatus = changeEnvelopes.toStatus;
             try
             {
                 await Task.Delay(1000);
+                List<ProcessedEnvelopes> envelopeList = new List<ProcessedEnvelopes>();
                 ProcessedEnvelopes envelope = new ProcessedEnvelopes();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
                     opt => opt.EnableRetryOnFailure()).Options;
                 using (var ctx = new N2KBackboneContext(options))
                 {
-
-                    envelope = await ctx.Set<ProcessedEnvelopes>().Where(e => e.Country == country && e.Version == version).FirstOrDefaultAsync();
-                    if (envelope != null)
+                    foreach (CountryVersion data in changeEnvelopes.countryVersion)
                     {
-                        //Get the version for the Sites 
-                        //List<Sites> sites = ctx.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).Select(s=> s.Version).First();
-                        //Sites site = sites.First();
-                        int _version = await ctx.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).FirstOrDefaultAsync();
-                        if (toStatus != envelope.Status)
+                        country = data.CountryCode;
+                        version = data.VersionId;
+
+                        envelope = await ctx.Set<ProcessedEnvelopes>().Where(e => e.Country == country && e.Version == version).FirstOrDefaultAsync();
+                        if (envelope != null)
                         {
-                            if (envelope.Status == HarvestingStatus.DataLoaded)
+                            //Get the version for the Sites 
+                            //List<Sites> sites = ctx.Set<Sites>().Where(s => s.CountryCode == pCountry && s.N2KVersioningVersion == pVersion).Select(s=> s.Version).First();
+                            //Sites site = sites.First();
+                            //int _version = await ctx.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).FirstOrDefaultAsync();
+                            if (toStatus != envelope.Status)
                             {
-                                Task tabChangeDetectionTask = ChangeDetection(new EnvelopesToProcess[] { new EnvelopesToProcess
+                                if (envelope.Status == HarvestingStatus.DataLoaded)
+                                {
+                                    Task tabChangeDetectionTask = ChangeDetection(new EnvelopesToProcess[] { new EnvelopesToProcess
                                 {
                                     CountryCode = country,
                                     VersionId = version
                                 } }, ctx);
 
 
-                                Task spatialChangeDetectionTask = ChangeDetectionSpatialData(new EnvelopesToProcess[] { new EnvelopesToProcess
+                                    Task spatialChangeDetectionTask = ChangeDetectionSpatialData(new EnvelopesToProcess[] { new EnvelopesToProcess
                                 {
                                     CountryCode = country,
                                     VersionId = version
                                 } }, ctx);
 
 
-                                //make sure they are all finished
-                                await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
-                            }
-
-                            SqlParameter param1 = new SqlParameter("@country", country);
-                            SqlParameter param2 = new SqlParameter("@version", version);
-                            switch (toStatus)
-                            {
-                                case HarvestingStatus.Harvested:
-                                    sqlToExecute = "exec dbo.setStatusToEnvelopeHarvested  @country, @version;";
-                                    break;
-                                case HarvestingStatus.Discarded:
-                                    sqlToExecute = "exec dbo.setStatusToEnvelopeDiscarded  @country, @version;";
-                                    break;
-                                case HarvestingStatus.PreHarvested:
-                                    sqlToExecute = "exec dbo.setStatusToEnvelopePreHarvested  @country, @version;";
-                                    break;
-                                case HarvestingStatus.Closed:
-                                    sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @country, @version;";
-                                    break;
-                                case HarvestingStatus.Pending:
-                                    sqlToExecute = "exec dbo.setStatusToEnvelopePending  @country, @version;";
-                                    break;
-                                default:
-                                    break;
-                            }
-                            await ctx.Database.ExecuteSqlRawAsync(sqlToExecute, param1, param2);
-
-                            if (toStatus == HarvestingStatus.Discarded || toStatus == HarvestingStatus.Closed)
-                            {
-                                ProcessedEnvelopes nextEnvelope = await ctx.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == country) && (pe.Status == HarvestingStatus.DataLoaded)).OrderBy(pe => pe.Version).FirstOrDefaultAsync();
-                                if (nextEnvelope != null)
-                                {
-                                    EnvelopesToProcess nextEnvelopeToChangeDetection = new EnvelopesToProcess
-                                    {
-                                        VersionId = Int32.Parse(nextEnvelope.Version.ToString()),
-                                        CountryCode = nextEnvelope.Country,
-                                        SubmissionDate = DateTime.Now
-                                    };
-                                    EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { nextEnvelopeToChangeDetection };
-                                    if (nextEnvelope.Status != HarvestingStatus.DataLoaded)
-                                    {
-                                        Task tabChangeDetectionTask = ChangeDetection(_tempEnvelope);
-                                        Task spatialChangeDetectionTask = ChangeDetectionSpatialData(_tempEnvelope);
-                                        //make sure they are all finished
-                                        await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
-                                    }
-                                    //change the status of the whole process to PreHarvested
-                                    await ChangeStatus(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested, cache);
+                                    //make sure they are all finished
+                                    await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
                                 }
-                            }
 
-                            if (toStatus == HarvestingStatus.Closed)
-                            {
-                                HarvestedEnvelope bbEnvelope = new HarvestedEnvelope
-                                {
-                                    VersionId = version,
-                                    CountryCode = country,
-                                    NumChanges = 0,
-                                    Status = HarvestingStatus.Closed
-                                };
-                                //accept sites with no changes
-                                await AcceptIdenticalSites(bbEnvelope);
-                            }
+                                var countriesAndVersions = new DataTable("sitecodesfilter");
+                                countriesAndVersions.Columns.Add("CountryCode", typeof(string));
+                                countriesAndVersions.Columns.Add("Version", typeof(int));
+                                countriesAndVersions.Rows.Add(new Object[] { country, version });
 
-                            if (toStatus == HarvestingStatus.Harvested || toStatus == HarvestingStatus.Closed)
-                            {
-                                //Remove country site changes cache
-                                var field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                                var collection = field.GetValue(cache) as System.Collections.ICollection;
-                                if (collection != null)
+                                SqlParameter param1 = new SqlParameter("@countryVersion", System.Data.SqlDbType.Structured);
+                                param1.Value = countriesAndVersions;
+                                param1.TypeName = "[dbo].[CountryVersion]";
+
+                                switch (toStatus)
                                 {
-                                    foreach (var item in collection)
+                                    case HarvestingStatus.Harvested:
+                                        sqlToExecute = "exec dbo.setStatusToEnvelopeHarvested  @countryVersion;";
+                                        break;
+                                    case HarvestingStatus.Discarded:
+                                        sqlToExecute = "exec dbo.setStatusToEnvelopeDiscarded  @countryVersion;";
+                                        break;
+                                    case HarvestingStatus.PreHarvested:
+                                        sqlToExecute = "exec dbo.setStatusToEnvelopePreHarvested  @countryVersion;";
+                                        break;
+                                    case HarvestingStatus.Closed:
+                                        sqlToExecute = "exec dbo.setStatusToEnvelopeClosed  @countryVersion;";
+                                        break;
+                                    case HarvestingStatus.Pending:
+                                        sqlToExecute = "exec dbo.setStatusToEnvelopePending  @countryVersion;";
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                await ctx.Database.ExecuteSqlRawAsync(sqlToExecute, param1);
+
+                                if (toStatus == HarvestingStatus.Discarded || toStatus == HarvestingStatus.Closed)
+                                {
+                                    ProcessedEnvelopes nextEnvelope = await ctx.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == country) && (pe.Status == HarvestingStatus.DataLoaded)).OrderBy(pe => pe.Version).FirstOrDefaultAsync();
+                                    if (nextEnvelope != null)
                                     {
-                                        var methodInfo = item.GetType().GetProperty("Key");
-                                        string listName = methodInfo.GetValue(item).ToString();
-
-                                        if (!string.IsNullOrEmpty(listName))
+                                        EnvelopesToProcess nextEnvelopeToChangeDetection = new EnvelopesToProcess
                                         {
-                                            if (listName.IndexOf(country) != -1)
+                                            VersionId = Int32.Parse(nextEnvelope.Version.ToString()),
+                                            CountryCode = nextEnvelope.Country,
+                                            SubmissionDate = DateTime.Now
+                                        };
+                                        EnvelopesToProcess[] _tempEnvelope = new EnvelopesToProcess[] { nextEnvelopeToChangeDetection };
+                                        if (nextEnvelope.Status != HarvestingStatus.DataLoaded)
+                                        {
+                                            Task tabChangeDetectionTask = ChangeDetection(_tempEnvelope);
+                                            Task spatialChangeDetectionTask = ChangeDetectionSpatialData(_tempEnvelope);
+                                            //make sure they are all finished
+                                            await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
+                                        }
+                                        //change the status of the whole process to PreHarvested
+                                        await ChangeStatus(
+                                                GetCountryVersionToStatusFromSingleEnvelope(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested)
+                                                , cache);
+                                    }
+                                }
+
+                                if (toStatus == HarvestingStatus.Closed)
+                                {
+                                    HarvestedEnvelope bbEnvelope = new HarvestedEnvelope
+                                    {
+                                        VersionId = version,
+                                        CountryCode = country,
+                                        NumChanges = 0,
+                                        Status = HarvestingStatus.Closed
+                                    };
+                                    //accept sites with no changes
+                                    await AcceptIdenticalSites(bbEnvelope);
+                                }
+
+                                if (toStatus == HarvestingStatus.Harvested || toStatus == HarvestingStatus.Closed)
+                                {
+                                    //Remove country site changes cache
+                                    var field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                                    var collection = field.GetValue(cache) as System.Collections.ICollection;
+                                    if (collection != null)
+                                    {
+                                        foreach (var item in collection)
+                                        {
+                                            var methodInfo = item.GetType().GetProperty("Key");
+                                            string listName = methodInfo.GetValue(item).ToString();
+
+                                            if (!string.IsNullOrEmpty(listName))
                                             {
-                                                cache.Remove(listName);
+                                                if (listName.IndexOf(country) != -1)
+                                                {
+                                                    cache.Remove(listName);
+                                                }
                                             }
                                         }
                                     }
                                 }
+                                envelope.Status = toStatus;
+                                envelopeList.Add(envelope);
                             }
-
-                            envelope.Status = toStatus;
-                            return envelope;
+                            else
+                            {
+                                throw new Exception("Currently the package (" + country + " - " + version + ") has already the selected status.");
+                            }
                         }
                         else
                         {
-                            throw new Exception("Currently the package (" + country + " - " + version + ") has already the selected status.");
+                            //Manual harvest?
+
+                            PackageCountry package = _versioningContext.Set<PackageCountry>().Where(e => e.CountryCode == country && e.CountryVersionID == version).FirstOrDefault();
+
+                            if (package != null)
+                            {
+                                EnvelopesToProcess newEnvelope = new EnvelopesToProcess();
+                                newEnvelope.CountryCode = country;
+                                newEnvelope.VersionId = version;
+                                newEnvelope.SubmissionDate = (DateTime)package.Importdate;
+
+                                List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
+                                envelopes.Add(newEnvelope);
+
+                                await Harvest(envelopes.ToArray<EnvelopesToProcess>());
+                            }
+                            else
+                            {
+                                throw new Exception("The package doesn't exist on source database (" + country + " - " + version + ")");
+                            }
                         }
-                    }
-                    else
-                    {
-                        //Manual harvest?
-
-                        PackageCountry package = _versioningContext.Set<PackageCountry>().Where(e => e.CountryCode == country && e.CountryVersionID == version).FirstOrDefault();
-
-                        if (package != null)
-                        {
-                            EnvelopesToProcess newEnvelope = new EnvelopesToProcess();
-                            newEnvelope.CountryCode = country;
-                            newEnvelope.VersionId = version;
-                            newEnvelope.SubmissionDate = (DateTime)package.Importdate;
-
-                            List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
-                            envelopes.Add(newEnvelope);
-
-                            await Harvest(envelopes.ToArray<EnvelopesToProcess>());
-
-                        }
-                        else
-                        {
-                            throw new Exception("The package doesn't exist on source database (" + country + " - " + version + ")");
-                        }
-
                     }
                 }
-                return envelope;
+                return envelopeList;
             }
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeStatus - Envelope " + country + "/" + version.ToString() + " - Status " + toStatus.ToString(), "", _dataContext.Database.GetConnectionString());
-                return await Task.FromResult(new ProcessedEnvelopes());
+                return await Task.FromResult(new List<ProcessedEnvelopes>() { new ProcessedEnvelopes() });
                 //throw ex;
             }
             finally
@@ -2277,6 +2141,177 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "FME Job Completed", "", _dataContext.Database.GetConnectionString());
+            }
+        }
+
+        /// <summary>
+        /// Method to check the priority of the sites
+        /// </summary>
+        /// <param name="country">Country code</param>
+        /// <param name="version">Country versionparam>
+        /// <param name="current">Check to only take current sites</param>
+        /// <returns>1</returns>
+        public async Task<int> PriorityChecker(string country, int version, Boolean current, N2KBackboneContext? ctx = null)
+        {
+            try
+            {
+                if (ctx == null) ctx = this._dataContext;
+
+                //Get the lists of priority habitats and species
+                List<HabitatPriority> habitatPriority = await ctx.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+                List<SpeciePriority> speciesPriority = await ctx.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+
+                try
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start PriorityChecker - Country: {0} - Version: {1} - Current: {2}", country, version, current), "PriorityChecker", "", ctx.Database.GetConnectionString());
+
+                    List<Sites> sites = new List<Sites>();
+
+                    if (country.Length == 2 && version != -1 && current == true)
+                    {
+                        sites = await ctx.Set<Sites>().Where(ss => ss.CountryCode == country && ss.N2KVersioningVersion == version && ss.Current == current).ToListAsync();
+                    }
+                    else if (country.Length == 2 && version != -1)
+                    {
+                        sites = await ctx.Set<Sites>().Where(ss => ss.CountryCode == country && ss.N2KVersioningVersion == version).ToListAsync();
+                    }
+                    else if (country.Length == 2 && current == true)
+                    {
+                        sites = await ctx.Set<Sites>().Where(ss => ss.CountryCode == country && ss.Current == current).ToListAsync();
+                    }
+                    else if (country.Length == 2)
+                    {
+                        sites = await ctx.Set<Sites>().Where(ss => ss.CountryCode == country).ToListAsync();
+                    }
+                    else if (current == true)
+                    {
+                        sites = await ctx.Set<Sites>().Where(ss => ss.Current == current).ToListAsync();
+                    }
+                    else
+                    {
+                        sites = await ctx.Set<Sites>().ToListAsync();
+                    }
+
+                    foreach (Sites temp in sites)
+                    {
+                        await SitePriorityChecker(temp.SiteCode, temp.Version, habitatPriority, speciesPriority);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "PriorityChecker - Country: " + country + " - Version: " + version + " - Current: " + current, "", ctx.Database.GetConnectionString());
+                    throw ex;
+
+                }
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End PriorityChecker - Country: {0} - Version: {1} - Current: {2}", country, version, current), "PriorityChecker", "", ctx.Database.GetConnectionString());
+
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - PriorityChecker - Country: " + country + " - Version: " + version + " - Current: " + current, "", ctx.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// Method to check the priority of the sites
+        /// </summary>
+        /// <param name="sitecode">Sitecode of the site to check priority</param>
+        /// <param name="version">Version of the site to check priority</param>
+        /// <param name="habitatPriority">List of priority Habitats</param>
+        /// <param name="speciesPriority">List of priority Species</param>
+        /// <returns>1</returns>
+        public async Task<Boolean> SitePriorityChecker(string sitecode, int version, List<HabitatPriority>? habitatPriority = null, List<SpeciePriority>? speciesPriority = null)
+        {
+            try
+            {
+                var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
+                    opt => opt.EnableRetryOnFailure()).Options;
+                using (var ctx = new N2KBackboneContext(options))
+                {
+
+                    //Get the lists of priority habitats and species
+                    if (habitatPriority == null) habitatPriority = await ctx.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
+                    if (speciesPriority == null) speciesPriority = await ctx.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+
+                    try
+                    {
+
+                        //These booleans declare whether or not each site is a priority
+                        Boolean isSitePriority = false;
+
+                        SqlParameter param1 = new SqlParameter("@site", sitecode);
+                        SqlParameter param2 = new SqlParameter("@versionId", version);
+
+                        //HabitatChecking
+                        List<HabitatToHarvest> habitats = await ctx.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
+                                        param1, param2).ToListAsync();
+
+                        //SpeciesChecking
+                        List<SpeciesToHarvest> species = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
+                                        param1, param2).ToListAsync();
+
+                        #region HabitatPriority
+                        foreach (HabitatToHarvest habitat in habitats)
+                        {
+                            HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == habitat.HabitatCode).FirstOrDefault();
+                            if (priorityCount != null)
+                            {
+                                if (priorityCount.Priority == 2)
+                                {
+                                    if ((habitat.HabitatCode != "21A0" && habitat.PriorityForm == true && (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null))
+                                        || (habitat.HabitatCode == "21A0" && sitecode.Substring(0, Math.Min(sitecode.Length, 2)) == "IE"))
+                                    {
+                                        isSitePriority = true;
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    if (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null)
+                                    {
+                                        isSitePriority = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        #endregion
+
+                        #region SpeciesPriority
+                        if (!isSitePriority)
+                        {
+                            foreach (SpeciesToHarvest specie in species)
+                            {
+                                SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == specie.SpeciesCode).FirstOrDefault();
+                                if (priorityCount != null)
+                                {
+                                    if (specie.Population.ToUpper() != "D" || specie.Population == null)
+                                    {
+                                        isSitePriority = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        #endregion
+
+                        await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isSitePriority + "' WHERE [SiteCode] = '" + sitecode + "' AND [Version] = '" + version + "'");
+                        return isSitePriority;
+                    }
+                    catch (Exception ex)
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SitePriorityChecker - Sitecode: " + sitecode + " - Version: " + version, "", ctx.Database.GetConnectionString());
+                        throw ex;
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - SitePriorityChecker - Sitecode: " + sitecode + " - Version: " + version, "", _dataContext.Database.GetConnectionString());
+                throw ex;
             }
         }
 
