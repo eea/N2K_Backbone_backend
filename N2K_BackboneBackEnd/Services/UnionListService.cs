@@ -17,6 +17,7 @@ using DocumentFormat.OpenXml;
 using System.IO.Compression;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.BackboneDB;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -442,7 +443,16 @@ namespace N2K_BackboneBackEnd.Services
 
             try
             {
-                string[] bioRegions = bioregs.Split(',');
+                string[] bioRegions;
+                if (bioregs.Length > 0)
+                {
+                    bioRegions = bioregs.Split(',');
+                }
+                else
+                {
+                    List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().Where(a => a.BioRegionShortCode != null).AsNoTracking().ToListAsync();
+                    bioRegions = bioRegionTypes.Select(a => a.BioRegionShortCode).ToArray();
+                }
                 foreach (string bioRegion in bioRegions)
                 {
                     //The file path must be parametrized in the web.config

@@ -63,6 +63,16 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 
+#Configuration
+#appsettings.json
+#/N2K_BackboneBackEnd/appsettings.json
+#N2K_BackboneBackEnd/appsettings.json
+
+#CI/CD
+/.github/workflows/*.yml
+.github/workflows/*.yml
+
+
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 
@@ -362,3 +372,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /.editorconfig
+#/N2K_BackboneBackEnd/appsettings.json

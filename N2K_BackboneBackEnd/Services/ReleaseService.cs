@@ -19,6 +19,9 @@ using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
 using System.Data;
 using DocumentFormat.OpenXml.ExtendedProperties;
+using Newtonsoft.Json.Linq;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -538,10 +541,66 @@ namespace N2K_BackboneBackEnd.Services
                 SqlParameter param3 = new SqlParameter("@CreateDate", DateTime.Now);
                 SqlParameter param4 = new SqlParameter("@ModifyDate", DateTime.Now);
                 SqlParameter param5 = new SqlParameter("@IsOfficial", isOfficial);
-
                 SqlParameter param6 = new SqlParameter("@Character", string.IsNullOrEmpty(character) ? string.Empty : character);
                 SqlParameter param7 = new SqlParameter("@Comments", string.IsNullOrEmpty(comments) ? string.Empty : comments);
                 List<Releases> releaseID = await _releaseContext.Set<Releases>().FromSqlRaw("exec dbo.createNewRelease  @Title, @Author, @CreateDate, @ModifyDate, @IsOfficial, @Character, @Comments", param1, param2, param3, param4, param5, param6, param7).AsNoTracking().ToListAsync();
+
+                //call the FME service that creates the SHP, MDB and GPKG
+                
+                if (isOfficial.HasValue && isOfficial.Value)
+                {
+                    if (releaseID.Count > 0)
+                    {
+                        long _releaseID = releaseID.ElementAt(0).ID;
+
+                        //call the FME in Async mode and do not wait for it.
+                        //FME will send an email to the user when it´s finished
+                        HttpClient client = new HttpClient();
+                        try
+                        {
+                            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Launch FME release creation", "CreateRelease", "", _dataContext.Database.GetConnectionString());
+                            client.Timeout = TimeSpan.FromHours(5);
+                            string url = string.Format("{0}/fmerest/v3/transformations/submit/{1}/{2}",
+                               _appSettings.Value.fme_service_release.server_url,
+                               _appSettings.Value.fme_service_release.repository,
+                               _appSettings.Value.fme_service_release.workspace);
+
+                            string body = string.Format(@"{{""publishedParameters"":[" +
+                                @"{{""name"":""ReleaseId"",""value"":{0}}}," +
+                                @"{{""name"":""DestDatasetFolder"",""value"":""{1}""}}," +
+                                @"{{""name"":""OutputName"",""value"": ""{2}""}}," +
+                                @"{{""name"":""Environment"",""value"": ""{3}""}}," +
+                                @"{{""name"":""EMail"",""value"": ""{4}""}}]" +
+                                @"}}", _releaseID, _appSettings.Value.ReleaseDestDatasetFolder, title, _appSettings.Value.Environment, GlobalData.Username);
+
+                            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("fmetoken", "token=" + _appSettings.Value.fme_security_token);
+                            client.DefaultRequestHeaders.Accept
+                                .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));//ACCEPT header
+
+                            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
+                            request.Content = new StringContent(body,
+                                                                Encoding.UTF8,
+                                                                "application/json");//CONTENT-TYPE header
+
+                            //call the FME script in async 
+                            var res = await client.SendAsync(request);
+                            //get the JobId 
+                            var json = await res.Content.ReadAsStringAsync();
+                            JObject jResponse = JObject.Parse(json);
+                            string jobId = jResponse.GetValue("id").ToString();
+                            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("FME release creation Launched with jobId:{0}", jobId), "CreateRelease", "", _dataContext.Database.GetConnectionString());
+                        }
+                        catch (Exception ex)
+                        {
+                            await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("Error Launching FME:{0}", ex.Message), "CreateRelease", "", _dataContext.Database.GetConnectionString());
+                        }
+                        finally
+                        {
+                            client.Dispose();
+                        }
+                    }
+                }
+
 
                 //Create UnionList entry
                 SqlParameter param8 = new SqlParameter("@name", title);
