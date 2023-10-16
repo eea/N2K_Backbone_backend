@@ -642,6 +642,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             changes.Add(siteChange);
                         }
 
+                        //Priority check is also present in HarvestedService/SitePriorityChecker
                         #region HabitatPriority
                         HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
                         if (priorityCount != null)
@@ -654,10 +655,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             {
                                 //If the Habitat is an exception, three conditions are checked
                                 if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
-                                    || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
+                                    || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE") && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
                                         isStoredPriority = true;
                                 if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
-                                    || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
+                                    || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE") && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
                                         isHarvestingPriority = true;
                             }
                             else
