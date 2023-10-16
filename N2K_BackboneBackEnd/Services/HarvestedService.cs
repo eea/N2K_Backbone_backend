@@ -2229,6 +2229,7 @@ namespace N2K_BackboneBackEnd.Services
                         List<SpeciesToHarvest> species = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
                                         param1, param2).ToListAsync();
 
+                        //Priority check is also present in HarvestHabitat/ChangeDetectionHabitat
                         #region HabitatPriority
                         foreach (HabitatToHarvest habitat in habitats)
                         {
@@ -2238,7 +2239,8 @@ namespace N2K_BackboneBackEnd.Services
                                 if (priorityCount.Priority == 2)
                                 {
                                     if ((habitat.HabitatCode != "21A0" && habitat.PriorityForm == true && (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null))
-                                        || (habitat.HabitatCode == "21A0" && sitecode.Substring(0, Math.Min(sitecode.Length, 2)) == "IE"))
+                                        || (habitat.HabitatCode == "21A0" && sitecode.Substring(0, Math.Min(sitecode.Length, 2)) == "IE")
+                                             && (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null))
                                     {
                                         isSitePriority = true;
                                         break;
@@ -2256,6 +2258,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         #endregion
 
+                        //Priority check is also present in HarvestSpecies/ChangeDetectionSpecies
                         #region SpeciesPriority
                         if (!isSitePriority)
                         {

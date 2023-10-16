@@ -276,6 +276,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             changes.Add(siteChange);
                         }
 
+                        //Priority check is also present in HarvestedService/SitePriorityChecker
                         #region SpeciesPriority
                         SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                         if (priorityCount != null)
