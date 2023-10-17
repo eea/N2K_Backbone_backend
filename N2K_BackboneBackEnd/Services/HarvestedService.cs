@@ -2238,8 +2238,8 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 if (priorityCount.Priority == 2)
                                 {
-                                    if ((habitat.HabitatCode != "21A0" && habitat.PriorityForm == true && (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null))
-                                        || (habitat.HabitatCode == "21A0" && sitecode.Substring(0, Math.Min(sitecode.Length, 2)) == "IE")
+                                    if (((habitat.HabitatCode != "21A0" && habitat.PriorityForm == true)
+                                        || (habitat.HabitatCode == "21A0" && sitecode.Substring(0, Math.Min(sitecode.Length, 2)) == "IE"))
                                              && (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null))
                                     {
                                         isSitePriority = true;
