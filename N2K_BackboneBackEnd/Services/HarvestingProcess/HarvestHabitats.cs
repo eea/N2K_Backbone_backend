@@ -654,12 +654,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             if (priorityCount.Priority == 2)
                             {
                                 //If the Habitat is an exception, three conditions are checked
-                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
-                                    || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE") && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
-                                        isStoredPriority = true;
-                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
-                                    || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE") && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
-                                        isHarvestingPriority = true;
+                                if (((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true)
+                                    || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
+                                        && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
+                                            isStoredPriority = true;
+                                if (((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true)
+                                    || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
+                                        && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
+                                            isHarvestingPriority = true;
                             }
                             else
                             {
