@@ -2267,7 +2267,7 @@ namespace N2K_BackboneBackEnd.Services
                                 SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == specie.SpeciesCode).FirstOrDefault();
                                 if (priorityCount != null)
                                 {
-                                    if (specie.Population.ToUpper() != "D" || specie.Population == null)
+                                    if ((specie.Population.ToUpper() != "D" || specie.Population == null) && specie.Motivation == null)
                                     {
                                         isSitePriority = true;
                                         break;
