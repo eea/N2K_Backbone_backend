@@ -284,9 +284,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             //These booleans declare whether or not each species is a priority
                             Boolean isStoredPriority = false;
                             Boolean isHarvestingPriority = false;
-                            if (storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null)
+                            if ((storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null) && storedSpecies.Motivation == null)
                                 isStoredPriority = true;
-                            if (harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null)
+                            if ((harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null) && harvestingSpecies.Motivation == null)
                                 isHarvestingPriority = true;
 
                             if (isStoredPriority && !isHarvestingPriority)
@@ -462,9 +462,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             //These booleans declare whether or not each species is a priority
                             Boolean isStoredPriority = false;
                             Boolean isHarvestingPriority = false;
-                            if (storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null)
+                            if ((storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null) && storedSpecies.Motivation == null)
                                 isStoredPriority = true;
-                            if (harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null)
+                            if ((harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null) && harvestingSpecies.Motivation == null)
                                 isHarvestingPriority = true;
 
                             if (isStoredPriority && !isHarvestingPriority)
