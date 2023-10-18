@@ -8,6 +8,7 @@ namespace N2K_BackboneBackEnd.Models
         public int VersionId { get; set; }
         public string? Population { get; set; } = string.Empty;
         public string? PopulationType { get; set; } = string.Empty;
+        public string? Motivation { get; set; } = string.Empty;
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SpeciesToHarvest>()
