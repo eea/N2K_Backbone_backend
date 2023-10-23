@@ -94,6 +94,8 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 UnionListComparerSummaryViewModel res = new UnionListComparerSummaryViewModel();
+                if (idSource == null || idTarget == null)
+                    return res;
                 List<BioRegionSiteCode> resultCodes = await GetBioregionSiteCodesInUnionListComparer(idSource, idTarget, bioRegions, cache);
                 res.BioRegSiteCodes = resultCodes.ToList();
 
@@ -704,7 +706,7 @@ namespace N2K_BackboneBackEnd.Services
                 //Get Current
                 UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
 
-                return await GetCompareSummary(latestUnionList.idULHeader, currentUnionList.idULHeader, null, _cache);
+                return await GetCompareSummary(latestUnionList?.idULHeader, currentUnionList?.idULHeader, null, _cache);
             }
             catch (Exception ex)
             {
