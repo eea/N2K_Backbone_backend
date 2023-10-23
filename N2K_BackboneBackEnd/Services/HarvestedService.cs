@@ -499,7 +499,7 @@ namespace N2K_BackboneBackEnd.Services
                         });
                         sitesRelation.ForEach(r =>
                         {
-                            LineageDetection temp = detectedLineageChanges.Where(c => c.new_sitecode == r.NewSiteCode).FirstOrDefault();
+                            LineageDetection temp = detectedLineageChanges.Where(c => c.new_sitecode == r.NewSiteCode || (c.old_sitecode == r.NewSiteCode && c.op == "DELETED")).FirstOrDefault();
                             if (r.NewSiteCode == r.PreviousSiteCode && temp == null)
                             {
                                 lineageInsertion.Rows.Add(new Object[] { r.NewSiteCode, r.NewVersion, envelope.VersionId, LineageTypes.NoChanges, LineageStatus.Proposed, r.PreviousSiteCode, r.PreviousVersion });
