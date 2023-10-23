@@ -184,11 +184,11 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     if (change.Type == LineageTypes.Deletion)
                     {
-                        temp.Reported = "-";
+                        temp.Submission = "-";
                     }
                     else
                     {
-                        temp.Reported = change.SiteCode;
+                        temp.Submission = change.SiteCode;
                     }
                     result.Add(temp);
                 }
