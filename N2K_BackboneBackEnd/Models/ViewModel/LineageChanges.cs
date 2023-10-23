@@ -16,7 +16,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string SiteName { get; set; } = string.Empty;
         public LineageTypes? Type { get; set; }
         public string Reference { get; set; } = string.Empty;
-        public string Reported { get; set; } = string.Empty;
+        public string Submission { get; set; } = string.Empty;
 
 
         public static void OnModelCreating(ModelBuilder builder)

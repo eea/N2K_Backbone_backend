@@ -680,17 +680,17 @@ namespace N2K_BackboneBackEnd.Services
 
                     if (changedItem.NewValue != null && changedItem.NewValue.ToUpper() != "NULL")
                     {
-                        fields.Add("Reported", changedItem.NewValue);
+                        fields.Add("Submission", changedItem.NewValue);
                     }
                     else
                     {
-                        fields.Add("Reported", nullCase);
+                        fields.Add("Submission", nullCase);
                     }
                     if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed")
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
-                        if (fields.TryGetValue("Reported", out reportedString) && fields.TryGetValue("Reference", out referenceString)
+                        if (fields.TryGetValue("Submission", out reportedString) && fields.TryGetValue("Reference", out referenceString)
                             && reportedString != "" && referenceString != "")
                         {
                             var culture = new CultureInfo("en-US");
