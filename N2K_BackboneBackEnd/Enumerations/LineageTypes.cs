@@ -16,7 +16,11 @@ namespace N2K_BackboneBackEnd.Enumerations
         [DataMember]
         Merge = 4,
         [DataMember]
-        Recode = 5
+        Recode = 5,
+        [DataMember]
+        NewGeometryReported = 6,
+        [DataMember]
+        NoGeometryReported = 7
 
     }
 }
