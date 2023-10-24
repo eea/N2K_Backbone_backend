@@ -540,23 +540,28 @@ namespace N2K_BackboneBackEnd.Services
                                 harvestingSite = newsites.Where(s => s.SiteCode == siteRelation.NewSiteCode && s.VersionId == siteRelation.NewVersion).FirstOrDefault();
                             if (siteRelation != null && harvestingSite == null)
                             {
-                                SiteChangeDb siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = storedSite.SiteCode;
-                                siteChange.Version = storedSite.VersionId;
-                                siteChange.ChangeCategory = "Network general structure";
-                                siteChange.ChangeType = "Site Deleted";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Critical;
-                                siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx);
-                                siteChange.Tags = string.Empty;
-                                siteChange.NewValue = null;
-                                siteChange.OldValue = storedSite.SiteCode;
-                                siteChange.Code = storedSite.SiteCode;
-                                siteChange.Section = "Site";
-                                siteChange.VersionReferenceId = storedSite.VersionId;
-                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                siteChange.N2KVersioningVersion = envelope.VersionId;
-                                changes.Add(siteChange);
+                                //if the is the site has been recoded do not add it to the changed sites
+                                LineageDetection temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
+                                if (temp ==null) //the site has not been RECODED
+                                {
+                                    SiteChangeDb siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = storedSite.SiteCode;
+                                    siteChange.Version = storedSite.VersionId;
+                                    siteChange.ChangeCategory = "Network general structure";
+                                    siteChange.ChangeType = "Site Deleted";
+                                    siteChange.Country = envelope.CountryCode;
+                                    siteChange.Level = Enumerations.Level.Critical;
+                                    siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx);
+                                    siteChange.Tags = string.Empty;
+                                    siteChange.NewValue = null;
+                                    siteChange.OldValue = storedSite.SiteCode;
+                                    siteChange.Code = storedSite.SiteCode;
+                                    siteChange.Section = "Site";
+                                    siteChange.VersionReferenceId = storedSite.VersionId;
+                                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                    siteChange.N2KVersioningVersion = envelope.VersionId;
+                                    changes.Add(siteChange);
+                                }
                             }
                         }
 
