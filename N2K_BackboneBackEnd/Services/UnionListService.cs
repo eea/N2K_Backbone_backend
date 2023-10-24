@@ -719,6 +719,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
+                if (bioregions == null)
+                    return new List<UnionListComparerDetailedViewModel>();
                 //Get latest release
                 UnionListHeader? latestUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) && (ulh.CreatedBy != _appSettings.Value.current_ul_createdby) && (ulh.Final == true)).OrderByDescending(ulh => ulh.Date).FirstOrDefaultAsync();
 
