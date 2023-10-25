@@ -848,6 +848,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
                         siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
+                        lineage.Version = harvestingSite.VersionId;
                         lineage.Type = LineageTypes.NoGeometryReported;
                     }
                     else if ((storedGeometry == null || storedGeometry.data == false) && harvestingGeometry != null && harvestingGeometry.data == true)
@@ -871,6 +872,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                         lineage.Type = LineageTypes.NewGeometryReported;
+                        LineageAntecessors antecessor = new LineageAntecessors();
+                        antecessor.SiteCode = storedSite.SiteCode;
+                        antecessor.Version = storedSite.VersionId;
+                        antecessor.LineageID = lineage.ID;
+                        antecessor.N2KVersioningVersion = storedSite.N2KVersioningVersion;
+                        _dataContext.Set<LineageAntecessors>().Add(antecessor);
                     }
                     _dataContext.Set<Lineage>().Update(lineage);
                     _dataContext.SaveChanges();
