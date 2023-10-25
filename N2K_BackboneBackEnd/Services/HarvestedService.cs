@@ -457,6 +457,7 @@ namespace N2K_BackboneBackEnd.Services
                         List<LineageDetection>? detectedLineageChanges = await ctx.Set<LineageDetection>().FromSqlRaw($"exec dbo.spGetSitesToDetectChangesWithLineage  @reported_envelop, @country, @tol",
                                         paramDetection1, paramDetection2, paramDetection3).ToListAsync();
 
+
                         var lineageInsertion = new DataTable("LineageInsertion");
                         lineageInsertion.Columns.Add("SiteCode", typeof(string));
                         lineageInsertion.Columns.Add("Version", typeof(int));
@@ -540,23 +541,29 @@ namespace N2K_BackboneBackEnd.Services
                                 harvestingSite = newsites.Where(s => s.SiteCode == siteRelation.NewSiteCode && s.VersionId == siteRelation.NewVersion).FirstOrDefault();
                             if (siteRelation != null && harvestingSite == null)
                             {
-                                SiteChangeDb siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = storedSite.SiteCode;
-                                siteChange.Version = storedSite.VersionId;
-                                siteChange.ChangeCategory = "Network general structure";
-                                siteChange.ChangeType = "Site Deleted";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Critical;
-                                siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx);
-                                siteChange.Tags = string.Empty;
-                                siteChange.NewValue = null;
-                                siteChange.OldValue = storedSite.SiteCode;
-                                siteChange.Code = storedSite.SiteCode;
-                                siteChange.Section = "Site";
-                                siteChange.VersionReferenceId = storedSite.VersionId;
-                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                siteChange.N2KVersioningVersion = envelope.VersionId;
-                                changes.Add(siteChange);
+                                //if the is the site has been recoded do not add it to the changed sites
+                                LineageDetection temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
+                                if (temp ==null) //the site has not been RECODED
+                                {
+                                    SiteChangeDb siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = storedSite.SiteCode;
+                                    siteChange.Version = storedSite.VersionId;
+                                    siteChange.ChangeCategory = "Network general structure";
+                                    siteChange.ChangeType = "Site Deleted";
+                                    siteChange.Country = envelope.CountryCode;
+                                    siteChange.Level = Enumerations.Level.Critical;
+                                    siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx);
+                                    siteChange.Tags = string.Empty;
+                                    siteChange.NewValue = null;
+                                    siteChange.OldValue = storedSite.SiteCode;
+                                    siteChange.Code = storedSite.SiteCode;
+                                    siteChange.Section = "Site";
+                                    siteChange.VersionReferenceId = storedSite.VersionId;
+                                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                    siteChange.N2KVersioningVersion = envelope.VersionId;
+                                    changes.Add(siteChange);
+                                }
+
                             }
                         }
 
@@ -923,6 +930,12 @@ namespace N2K_BackboneBackEnd.Services
 
             try
             {
+                SqlParameter paramDetection1 = new SqlParameter("@reported_envelop", envelope.VersionId);
+                SqlParameter paramDetection2 = new SqlParameter("@country", envelope.CountryCode);
+                SqlParameter paramDetection3 = new SqlParameter("@tol", 5);
+                List<LineageDetection>? detectedLineageChanges = await ctx.Set<LineageDetection>().FromSqlRaw($"exec dbo.spGetSitesToDetectChangesWithLineage  @reported_envelop, @country, @tol",
+                                paramDetection1, paramDetection2, paramDetection3).ToListAsync();
+
                 if (storedSite != null && harvestingSite != null)
                 {
                     //SiteAttributesChecking
@@ -961,6 +974,7 @@ namespace N2K_BackboneBackEnd.Services
                     //These booleans declare whether or not each site is a priority
                     Boolean isStoredSitePriority = await SitePriorityChecker(storedSite.SiteCode, storedSite.VersionId, habitatPriority, speciesPriority);
                     Boolean isHarvestingSitePriority = await SitePriorityChecker(harvestingSite.SiteCode, harvestingSite.VersionId, habitatPriority, speciesPriority);
+
 
                     if (isStoredSitePriority && !isHarvestingSitePriority)
                     {
@@ -1042,23 +1056,28 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else if (storedSite != null && harvestingSite == null)
                 {
-                    SiteChangeDb siteChange = new SiteChangeDb();
-                    siteChange.SiteCode = storedSite.SiteCode;
-                    siteChange.Version = storedSite.VersionId;
-                    siteChange.ChangeCategory = "Network general structure";
-                    siteChange.ChangeType = "Site Deleted";
-                    siteChange.Country = envelope.CountryCode;
-                    siteChange.Level = Enumerations.Level.Critical;
-                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                    siteChange.Tags = string.Empty;
-                    siteChange.NewValue = null;
-                    siteChange.OldValue = storedSite.SiteCode;
-                    siteChange.Code = storedSite.SiteCode;
-                    siteChange.Section = "Site";
-                    siteChange.VersionReferenceId = storedSite.VersionId;
-                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                    siteChange.N2KVersioningVersion = envelope.VersionId;
-                    changes.Add(siteChange);
+                    //if the is the site has been recoded do not add it to the changed sites
+                    LineageDetection temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
+                    if (temp == null)
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = storedSite.SiteCode;
+                        siteChange.Version = storedSite.VersionId;
+                        siteChange.ChangeCategory = "Network general structure";
+                        siteChange.ChangeType = "Site Deleted";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Critical;
+                        siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx);
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = null;
+                        siteChange.OldValue = storedSite.SiteCode;
+                        siteChange.Code = storedSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        changes.Add(siteChange);
+                    }
                 }
             }
             catch (Exception ex)

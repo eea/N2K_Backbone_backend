@@ -74,7 +74,7 @@ namespace N2K_BackboneBackEnd.Controllers
 
 
         [HttpGet("GetUnionListComparer")]
-        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer(string bioregions, int page, int limit)
+        public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer(string? bioregions, int page, int limit)
         {
             var response = new ServiceResponse<List<UnionListComparerDetailedViewModel>>();
             try
