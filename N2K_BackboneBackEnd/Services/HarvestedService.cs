@@ -1099,8 +1099,17 @@ namespace N2K_BackboneBackEnd.Services
                 siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
                 siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
+                // get active RepPeriod dateRange
+                RepPeriod? dateRange = await _dataContext.Set<RepPeriod>().Where(a => a.Active).FirstOrDefaultAsync();
+
+                // discard envelopes that do not match the dateRange
+                List<EnvelopesToProcess> filteredEnvelopes = envelopeIDs.ToList();
+                if(dateRange != null)
+                    filteredEnvelopes = envelopeIDs
+                        .Where(e => e.SubmissionDate >= dateRange.InitDate && e.SubmissionDate <= dateRange.EndDate).ToList();
+
                 //for each envelope to process
-                foreach (EnvelopesToProcess envelope in envelopeIDs)
+                foreach (EnvelopesToProcess envelope in filteredEnvelopes)
                 {
                     ClearBulkItems();
                     Console.WriteLine(String.Format("Start envelope harvest {0} - {1}", envelope.CountryCode, envelope.VersionId));
