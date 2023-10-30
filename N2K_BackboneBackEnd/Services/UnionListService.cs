@@ -428,7 +428,10 @@ namespace N2K_BackboneBackEnd.Services
             }
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
 
-            string repositoryPath = Path.Combine(Directory.GetCurrentDirectory(), _appSettings.Value.AttachedFiles.JustificationFolder);
+            string repositoryPath = string.IsNullOrEmpty(_appSettings.Value.AttachedFiles.FilesRootPath) ?
+                            Path.Combine(Directory.GetCurrentDirectory(), _appSettings.Value.AttachedFiles.JustificationFolder) :
+                            Path.Combine(_appSettings.Value.AttachedFiles.FilesRootPath, _appSettings.Value.AttachedFiles.JustificationFolder);
+
             string tempZipFile = repositoryPath + "//" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + GlobalData.Username.Split("@")[0] + "_Union List.zip";
 
             //Delete file to avoid duplicates with the same name
