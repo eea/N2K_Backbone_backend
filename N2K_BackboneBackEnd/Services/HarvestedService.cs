@@ -897,7 +897,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.ChangeCategory = "Network general structure";
                     siteChange.ChangeType = "Site Added";
                     siteChange.Country = envelope.CountryCode;
-                    siteChange.Level = Enumerations.Level.Info;
+                    siteChange.Level = Enumerations.Level.Critical;
                     siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                     siteChange.Tags = string.Empty;
                     siteChange.NewValue = harvestingSite.SiteCode;
@@ -1033,7 +1033,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.ChangeCategory = "Network general structure";
                     siteChange.ChangeType = "Site Added";
                     siteChange.Country = envelope.CountryCode;
-                    siteChange.Level = Enumerations.Level.Info;
+                    siteChange.Level = Enumerations.Level.Critical;
                     siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                     siteChange.Tags = string.Empty;
                     siteChange.NewValue = harvestingSite.SiteCode;
