@@ -433,7 +433,6 @@ namespace N2K_BackboneBackEnd.Services
                 Path.Combine(Directory.GetCurrentDirectory(), _appSettings.Value.AttachedFiles.JustificationFolder) :
                 Path.Combine(_appSettings.Value.AttachedFiles.FilesRootPath, _appSettings.Value.AttachedFiles.JustificationFolder);
 
-
             string tempZipFile = repositoryPath + "//" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + GlobalData.Username.Split("@")[0] + "_Union List.zip";
 
             //Delete file to avoid duplicates with the same name
