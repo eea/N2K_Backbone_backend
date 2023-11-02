@@ -534,6 +534,7 @@ namespace N2K_BackboneBackEnd.Services
                             //if (i % 5000 ==0 )
                             //    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Change detection {0} - {1}:{2}", envelope.CountryCode, envelope.VersionId,i.ToString()), "ChangeDetection", "", ctx.Database.GetConnectionString());
                             i = i + 1;
+                            List<SiteChangeDb> a = changes.Where(c => c.LineageChangeType != null).ToList();
                         }
                         
                         //For each site in backboneDB check if the site still exists in Versioning
@@ -791,6 +792,8 @@ namespace N2K_BackboneBackEnd.Services
             double siteLengthKmTolerance = 0.0;
             double habitatCoverHaTolerance = 0.0;
 
+            string a = null;
+
             if (ctx == null) ctx = this._dataContext;
 
             try
@@ -850,6 +853,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Version = harvestingSite.VersionId;
                         siteChange.ChangeCategory = "Site General Info";
                         siteChange.ChangeType = "Site Losing Priority";
+                        siteChange.LineageChangeType = LineageTypes.NoChanges;
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Critical;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -871,6 +875,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Version = harvestingSite.VersionId;
                         siteChange.ChangeCategory = "Site General Info";
                         siteChange.ChangeType = "Site Getting Priority";
+                        siteChange.LineageChangeType = LineageTypes.NoChanges;
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -908,6 +913,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.Version = harvestingSite.VersionId;
                     siteChange.ChangeCategory = "Network general structure";
                     siteChange.ChangeType = "Site Added";
+                    siteChange.LineageChangeType = LineageTypes.Creation;
                     if(ld != null)
                     {
                         siteChange.ChangeType = "Site ";
