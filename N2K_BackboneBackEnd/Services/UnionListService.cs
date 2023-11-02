@@ -453,6 +453,10 @@ namespace N2K_BackboneBackEnd.Services
                     List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().Where(a => a.BioRegionShortCode != null).AsNoTracking().ToListAsync();
                     bioRegions = bioRegionTypes.Select(a => a.BioRegionShortCode).ToArray();
                 }
+
+                //Get the current UnionList
+                UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
+                
                 foreach (string bioRegion in bioRegions)
                 {
                     //The file path must be parametrized in the web.config
@@ -482,8 +486,6 @@ namespace N2K_BackboneBackEnd.Services
                     {
 
                         #region Retrive the data to insert
-                        UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
-
                         SqlParameter param1 = new SqlParameter("@idHeader", currentUnionList.idULHeader);
                         SqlParameter param2 = new SqlParameter("@bioregion", bioRegion);
                         List<UnionListDetailExcel> currentDetails = await _dataContext.Set<UnionListDetailExcel>().FromSqlRaw("exec dbo.spGetCurrentUnionListDetailByHeaderIdAndBioRegion  @idHeader, @bioregion ", param1, param2).AsNoTracking().ToListAsync();
@@ -624,25 +626,25 @@ namespace N2K_BackboneBackEnd.Services
                             //Area of SCI (ha)
                             cell = new Cell();
                             cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                            cell.CellValue = new CellValue((double)ulde.Area);
+                            cell.CellValue = new CellValue(ulde.Area);
                             cell.StyleIndex = 1;
                             row.AppendChild(cell);
                             //Length of SCI (km)
                             cell = new Cell();
                             cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                            cell.CellValue = new CellValue((double)ulde.Length);
+                            cell.CellValue = new CellValue(ulde.Length);
                             cell.StyleIndex = 1;
                             row.AppendChild(cell);
                             //Longitude
                             cell = new Cell();
                             cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                            cell.CellValue = new CellValue((double)ulde.Long);
+                            cell.CellValue = new CellValue(ulde.Long);
                             cell.StyleIndex = 1;
                             row.AppendChild(cell);
                             //Latitude
                             cell = new Cell();
                             cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                            cell.CellValue = new CellValue((double)ulde.Lat);
+                            cell.CellValue = new CellValue(ulde.Lat);
                             cell.StyleIndex = 1;
                             row.AppendChild(cell);
                             #endregion
