@@ -301,13 +301,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
-                String queryString = @"select COUNTRYCODE as CountryCode,
+                String queryString = @"select DISTINCT COUNTRYCODE as CountryCode,
                                        VERSIONID as  Version,
                                        COUNTRYVERSIONID as CountryVersionID,
                                        SITECODE as SiteCode,
                                        HABITATCODE as HabitatCode,
-                                       PERCENTAGECOVER as PercentageCover,
-                                       RID 
+                                       PERCENTAGECOVER as PercentageCover
                                        from DESCRIBESSITES 
                                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
