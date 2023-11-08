@@ -354,8 +354,6 @@ namespace N2K_BackboneBackEnd.Services
                                 paramTable).ToListAsync();
                 List<UnionListHeader> unionListHeader = await _dataContext.Set<UnionListHeader>().AsNoTracking().ToListAsync();
 
-                Lineage? a = antecessorsLineage.Count() == 0 ? null : (Lineage)antecessorsLineage.Where(a => a.SiteCode == "a");
-
                 antecessorSites.ForEach(d =>
                 {
                     result.Add(new LineageEditionInfo

@@ -237,7 +237,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
 
-                String queryString = @"select SITECODE as SiteCode,BIOREGID as BGRID, sum(PERCENTAGE) as Percentage
+                String queryString = @"select SITECODE as SiteCode,BIOREGID as BGRID, max(PERCENTAGE) as Percentage
                                      from BelongsToBioRegion
                                      where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID
                                      group by SITECODE, BIOREGID";
@@ -757,7 +757,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
                     }
                     //6-Unknown for those types not found in the reference OwnerShipTypes
-                    item.Type = _ownerShipTypes.Where(s => s.Description == TypeConverters.CheckNull<string>(reader["Type"])).Select(s => s.Id).FirstOrDefault();
+                    item.Type = TypeConverters.CheckNull<string>(reader["Type"]);
                     item.Percent = TypeConverters.CheckNull<decimal>(reader["Percent"]);
                     items.Add(item);
 
