@@ -14,7 +14,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     {
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
-        public int Type { get; set; }
+        public string? Type { get; set; }
 
         [Column(TypeName = "decimal(18, 2)")]
         public decimal? Percent { get; set; }
