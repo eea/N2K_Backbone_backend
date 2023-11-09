@@ -128,38 +128,41 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     Habitats item = new Habitats();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
-                    item.Version = 0;
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                        item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]);
+                        item.CoverHA = null;
+                        if (reader["Cover_HA"] != null)
+                            if (reader["Cover_HA"].ToString() != "")
+                                item.CoverHA = Convert.ToDecimal(TypeConverters.CheckNull<double>(reader["Cover_HA"]));
+                        item.PriorityForm = TypeConverters.CheckNull<bool>(reader["PF"]);
+                        item.Representativity = TypeConverters.CheckNull<string>(reader["Representativity"]);
+                        item.DataQty = null;
+                        if (reader["DataQuality"] != null)
+                            item.DataQty = dataQualityTypes.Where(d => d.HabitatCode == reader["DataQuality"].ToString()).Select(d => d.Id).FirstOrDefault();
+                        item.GlobalAssesments = TypeConverters.CheckNull<string>(reader["GlobalAssesment"]);
+                        item.RelativeSurface = TypeConverters.CheckNull<string>(reader["RelSurface"]);
+                        item.Percentage = null;
+                        if (reader["PercentageCover"] != null)
+                            if (reader["PercentageCover"].ToString() != "")
+                                item.Percentage = Convert.ToDecimal(TypeConverters.CheckNull<double>(reader["PercentageCover"]));
+
+                        item.ConsStatus = TypeConverters.CheckNull<string>(reader["ConsStatus"]);
+
+                        if (reader["Caves"] != null)
+                            item.Caves = TypeConverters.CheckNull<decimal>(reader["Caves"]).ToString(); // ???
+                        item.PF = TypeConverters.CheckNull<bool>(reader["PF"]).ToString(); // ??? PENDING The same as PriorityForm
+
+                        if (reader["NonPresenceSite"] != null)
+                            if (reader["NonPresenceSite"].ToString() != "")
+                                item.NonPresenciInSite = Convert.ToInt32(reader["NonPresenceSite"].ToString()); // ???TypeConverters.CheckNull<string>(reader["PercentageCover"]);
+                        items.Add(item);
                     }
-                    item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]);
-                    item.CoverHA = null;
-                    if (reader["Cover_HA"] != null)
-                        if (reader["Cover_HA"].ToString() != "")
-                            item.CoverHA = Convert.ToDecimal(TypeConverters.CheckNull<double>(reader["Cover_HA"]));
-                    item.PriorityForm = TypeConverters.CheckNull<bool>(reader["PF"]);
-                    item.Representativity = TypeConverters.CheckNull<string>(reader["Representativity"]);
-                    item.DataQty = null;
-                    if (reader["DataQuality"] != null)
-                        item.DataQty = dataQualityTypes.Where(d => d.HabitatCode == reader["DataQuality"].ToString()).Select(d => d.Id).FirstOrDefault();
-                    item.GlobalAssesments = TypeConverters.CheckNull<string>(reader["GlobalAssesment"]);
-                    item.RelativeSurface = TypeConverters.CheckNull<string>(reader["RelSurface"]);
-                    item.Percentage = null;
-                    if (reader["PercentageCover"] != null)
-                        if (reader["PercentageCover"].ToString() != "")
-                            item.Percentage = Convert.ToDecimal(TypeConverters.CheckNull<double>(reader["PercentageCover"]));
-
-                    item.ConsStatus = TypeConverters.CheckNull<string>(reader["ConsStatus"]);
-
-                    if (reader["Caves"] != null)
-                        item.Caves = TypeConverters.CheckNull<decimal>(reader["Caves"]).ToString(); // ???
-                    item.PF = TypeConverters.CheckNull<bool>(reader["PF"]).ToString(); // ??? PENDING The same as PriorityForm
-
-                    if (reader["NonPresenceSite"] != null)
-                        if (reader["NonPresenceSite"].ToString() != "")
-                            item.NonPresenciInSite = Convert.ToInt32(reader["NonPresenceSite"].ToString()); // ???TypeConverters.CheckNull<string>(reader["PercentageCover"]);
-                    items.Add(item);
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestHabitats - Habitats", "", backboneDb);
+                    }
                 }
 
                 //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
@@ -170,7 +173,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - Habitats.SaveBulkRecord", "", backboneDb);
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestHabitats - Habitats.SaveBulkRecord", "", backboneDb);
                 }
                 //Console.WriteLine(String.Format("End save to list habitats -> {0}", (DateTime.Now - start).TotalSeconds));
 
@@ -269,7 +272,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - HarvestHabitatsBySite", "", backboneDb);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestHabitats - HarvestHabitatsBySite", "", backboneDb);
                 return 0;
             }
             finally
@@ -301,14 +304,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
-                String queryString = @"select DISTINCT COUNTRYCODE as CountryCode,
-                                       VERSIONID as  Version,
-                                       COUNTRYVERSIONID as CountryVersionID,
-                                       SITECODE as SiteCode,
+                String queryString = @"select DISTINCT SITECODE as SiteCode,
                                        HABITATCODE as HabitatCode,
-                                       PERCENTAGECOVER as PercentageCover
+                                       max(PERCENTAGECOVER) as PercentageCover
                                        from DESCRIBESSITES 
-                                       where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                                       where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID
+									   group by SITECODE,HABITATCODE";
 
                 //Console.WriteLine(String.Format("Start describeSites Query -> {0}", (DateTime.Now - start).TotalSeconds));
 
@@ -324,14 +325,17 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     DescribeSites item = new DescribeSites();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]); ;
-                    item.Version = 0;
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                        item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]); ;
+                        item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]); ;
+                        items.Add(item);
                     }
-                    item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]); ;
-                    item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]); ;
-                    items.Add(item);
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestHabitats - DescribeSites", "", backboneDb);
+                    }
                 }
                 //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
@@ -340,7 +344,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - DescribeSites.SaveBulkRecord", "", backboneDb);
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestHabitats - DescribeSites.SaveBulkRecord", "", backboneDb);
                 }
                 //Console.WriteLine(String.Format("End save to list describe sites -> {0}", (DateTime.Now - start).TotalSeconds));
 
@@ -656,11 +660,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 if (((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true)
                                     || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
                                         && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
-                                            isStoredPriority = true;
+                                    isStoredPriority = true;
                                 if (((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true)
                                     || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
                                         && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
-                                            isHarvestingPriority = true;
+                                    isHarvestingPriority = true;
                             }
                             else
                             {
