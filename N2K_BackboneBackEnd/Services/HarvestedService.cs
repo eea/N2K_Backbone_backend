@@ -96,6 +96,18 @@ namespace N2K_BackboneBackEnd.Services
             };
         }
 
+        private async Task<RepPeriod?> GetActiveRepPeriodAsync()
+        {
+            return await _dataContext.Set<RepPeriod>().Where(a => a.Active).FirstOrDefaultAsync();
+        }
+
+        private Boolean IsInRepPeriodRange(DateTime? date, RepPeriod? period)
+        {
+            if (date == null || period == null)
+                return false;
+            return period.InitDate <= date && period.EndDate >= date;
+        }
+
         private void InitialiseBulkItems()
         {
             _siteItems.Add(typeof(List<Respondents>), new List<Respondents>());
@@ -345,11 +357,14 @@ namespace N2K_BackboneBackEnd.Services
 
                     List<Harvesting> list = await _versioningContext.Set<Harvesting>().FromSqlRaw($"exec dbo.spGetPendingCountryVersion  @country, @version,@importdate",
                                     param1, param2, param3).AsNoTracking().ToListAsync();
+
+                    RepPeriod? dateRange = await GetActiveRepPeriodAsync();
+
                     if (list.Count > 0)
                     {
                         foreach (Harvesting pendEnv in list)
                         {
-                            if (!result.Contains(pendEnv))
+                            if (!result.Contains(pendEnv) && IsInRepPeriodRange(pendEnv.SubmissionDate, dateRange))
                             {
                                 if (allEnvs.Where(e => e.Version == pendEnv.Id && e.Country == pendEnv.Country && e.Status == HarvestingStatus.Harvesting).ToList().Count == 0)
                                 {
@@ -1112,17 +1127,8 @@ namespace N2K_BackboneBackEnd.Services
                 siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
                 siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
-                // get active RepPeriod dateRange
-                RepPeriod? dateRange = await _dataContext.Set<RepPeriod>().Where(a => a.Active).FirstOrDefaultAsync();
-
-                // discard envelopes that do not match the dateRange
-                List<EnvelopesToProcess> filteredEnvelopes = envelopeIDs.ToList();
-                if(dateRange != null)
-                    filteredEnvelopes = envelopeIDs
-                        .Where(e => e.SubmissionDate >= dateRange.InitDate && e.SubmissionDate <= dateRange.EndDate).ToList();
-
                 //for each envelope to process
-                foreach (EnvelopesToProcess envelope in filteredEnvelopes)
+                foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
                     ClearBulkItems();
                     Console.WriteLine(String.Format("Start envelope harvest {0} - {1}", envelope.CountryCode, envelope.VersionId));
@@ -1728,7 +1734,7 @@ namespace N2K_BackboneBackEnd.Services
             {
                 await Task.Delay(1000);
                 List<ProcessedEnvelopes> envelopeList = new List<ProcessedEnvelopes>();
-                ProcessedEnvelopes envelope = new ProcessedEnvelopes();
+                ProcessedEnvelopes? envelope = new ProcessedEnvelopes();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
                     opt => opt.EnableRetryOnFailure()).Options;
                 using (var ctx = new N2KBackboneContext(options))
@@ -1739,6 +1745,7 @@ namespace N2K_BackboneBackEnd.Services
                         version = data.VersionId;
 
                         envelope = await ctx.Set<ProcessedEnvelopes>().Where(e => e.Country == country && e.Version == version).FirstOrDefaultAsync();
+
                         if (envelope != null)
                         {
                             //Get the version for the Sites 
@@ -1881,6 +1888,7 @@ namespace N2K_BackboneBackEnd.Services
                                 newEnvelope.SubmissionDate = (DateTime)package.Importdate;
 
                                 List<EnvelopesToProcess> envelopes = new List<EnvelopesToProcess>();
+
                                 envelopes.Add(newEnvelope);
 
                                 await Harvest(envelopes.ToArray<EnvelopesToProcess>());
