@@ -276,6 +276,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             changes.Add(siteChange);
                         }
 
+                        //Priority check is also present in HarvestedService/SitePriorityChecker
                         #region SpeciesPriority
                         SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                         if (priorityCount != null)
@@ -283,9 +284,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             //These booleans declare whether or not each species is a priority
                             Boolean isStoredPriority = false;
                             Boolean isHarvestingPriority = false;
-                            if (storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null)
+                            if ((storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null) && (storedSpecies.Motivation == null || storedSpecies.Motivation == ""))
                                 isStoredPriority = true;
-                            if (harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null)
+                            if ((harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null) && (harvestingSpecies.Motivation == null || harvestingSpecies.Motivation == ""))
                                 isHarvestingPriority = true;
 
                             if (isStoredPriority && !isHarvestingPriority)
@@ -461,9 +462,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             //These booleans declare whether or not each species is a priority
                             Boolean isStoredPriority = false;
                             Boolean isHarvestingPriority = false;
-                            if (storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null)
+                            if ((storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null) && (storedSpecies.Motivation == null || storedSpecies.Motivation == ""))
                                 isStoredPriority = true;
-                            if (harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null)
+                            if ((harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null) && (harvestingSpecies.Motivation == null || harvestingSpecies.Motivation == ""))
                                 isHarvestingPriority = true;
 
                             if (isStoredPriority && !isHarvestingPriority)

@@ -237,9 +237,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
 
-                String queryString = @"select SITECODE as SiteCode,BIOREGID as BGRID, PERCENTAGE as Percentage
+                String queryString = @"select SITECODE as SiteCode,BIOREGID as BGRID, max(PERCENTAGE) as Percentage
                                      from BelongsToBioRegion
-                                     where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                                     where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID
+                                     group by SITECODE, BIOREGID";
                 command = new SqlCommand(queryString, versioningConn);
                 versioningConn.Open();
 
@@ -388,7 +389,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             SqlCommand command = null;
             SqlDataReader reader = null;
 
-            var start =DateTime.Now;
+            var start = DateTime.Now;
 
             try
             {
@@ -483,7 +484,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
-            var start= DateTime.Now;
+            var start = DateTime.Now;
             try
             {
                 versioningConn = new SqlConnection(versioningDB);
@@ -493,7 +494,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID",COUNTRYVERSIONID);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
@@ -572,7 +573,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             from DetailedProtectionStatus 
                             where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE",countryCode);
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 versioningConn.Open();
@@ -756,15 +757,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
                     }
                     //6-Unknown for those types not found in the reference OwnerShipTypes
-                    item.Type = _ownerShipTypes.Where(s => s.Description == reader["Type"].ToString()).Select(s => s.Id).FirstOrDefault();
+                    item.Type = TypeConverters.CheckNull<string>(reader["Type"]);
                     item.Percent = TypeConverters.CheckNull<decimal>(reader["Percent"]);
                     items.Add(item);
 
                 }
-                try 
+                try
                 {
                     await Models.backbone_db.SiteOwnerType.SaveBulkRecord(backboneDb, items);
-                } 
+                }
                 catch (Exception ex)
                 {
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - SiteOwnerType.SaveBulkRecord", "", backboneDb);
@@ -790,7 +791,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         }
 
-        public async Task<List<SiteChangeDb>> ChangeDetectionSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext? ctx=null)
+        public async Task<List<SiteChangeDb>> ChangeDetectionSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext? ctx = null)
         {
             await Task.Delay(1);
             try
@@ -816,6 +817,71 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.ReferenceSiteCode = storedSite.SiteCode;
                     siteChange.N2KVersioningVersion = envelope.VersionId;
                     changes.Add(siteChange);
+                }
+                var param1 = new SqlParameter("@sitecode", storedSite.SiteCode);
+                var param2 = new SqlParameter("@version", storedSite.VersionId);
+                List<SiteSpatialBasic> storedGeometries = await ctx.Set<SiteSpatialBasic>().FromSqlRaw($"exec dbo.spHasSiteGeometry @sitecode, @version", param1, param2).AsNoTracking().ToListAsync();
+                SiteSpatialBasic storedGeometry = storedGeometries.FirstOrDefault();
+                param1 = new SqlParameter("@sitecode", harvestingSite.SiteCode);
+                param2 = new SqlParameter("@version", harvestingSite.VersionId);
+                List<SiteSpatialBasic> harvestingGeometries = await ctx.Set<SiteSpatialBasic>().FromSqlRaw($"exec dbo.spHasSiteGeometry @sitecode, @version", param1, param2).AsNoTracking().ToListAsync();
+                SiteSpatialBasic harvestingGeometry = harvestingGeometries.FirstOrDefault();
+                if (storedGeometry == null || harvestingGeometry == null || storedGeometry.data != harvestingGeometry.data)
+                {
+                    Lineage lineage = await ctx.Set<Lineage>().Where(s => s.SiteCode == harvestingSite.SiteCode && s.N2KVersioningVersion == harvestingSite.N2KVersioningVersion).FirstOrDefaultAsync();
+                    if (storedGeometry != null && storedGeometry.data == true && (harvestingGeometry == null || harvestingGeometry.data == false))
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Lineage";
+                        siteChange.ChangeType = "No geometry reported";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Critical;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = "";
+                        siteChange.OldValue = storedSite.SiteCode;
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.FieldName = "SiteCode";
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        changes.Add(siteChange);
+                        lineage.Version = harvestingSite.VersionId;
+                        lineage.Type = LineageTypes.NoGeometryReported;
+                    }
+                    else if ((storedGeometry == null || storedGeometry.data == false) && harvestingGeometry != null && harvestingGeometry.data == true)
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Lineage";
+                        siteChange.ChangeType = "New geometry reported";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Critical;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = harvestingSite.SiteCode;
+                        siteChange.OldValue = "";
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.FieldName = "SiteCode";
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        changes.Add(siteChange);
+                        lineage.Type = LineageTypes.NewGeometryReported;
+                        LineageAntecessors antecessor = new LineageAntecessors();
+                        antecessor.SiteCode = storedSite.SiteCode;
+                        antecessor.Version = storedSite.VersionId;
+                        antecessor.LineageID = lineage.ID;
+                        antecessor.N2KVersioningVersion = storedSite.N2KVersioningVersion;
+                        _dataContext.Set<LineageAntecessors>().Add(antecessor);
+                    }
+                    _dataContext.Set<Lineage>().Update(lineage);
+                    _dataContext.SaveChanges();
                 }
                 if (harvestingSite.SiteName != storedSite.SiteName)
                 {
@@ -1026,11 +1092,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             return changes;
         }
 
-        public async Task<List<SiteChangeDb>> ChangeDetectionBioRegions(List<BioRegions> bioRegionsVersioning, List<BioRegions> referencedBioRegions, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext? ctx=null)
+        public async Task<List<SiteChangeDb>> ChangeDetectionBioRegions(List<BioRegions> bioRegionsVersioning, List<BioRegions> referencedBioRegions, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext? ctx = null)
         {
             try
             {
-                if (ctx == null) ctx =_dataContext;
+                if (ctx == null) ctx = _dataContext;
 
                 //Get the lists of bioregion types
                 List<BioRegionTypes> bioRegionTypes = await ctx.Set<BioRegionTypes>().AsNoTracking().ToListAsync();

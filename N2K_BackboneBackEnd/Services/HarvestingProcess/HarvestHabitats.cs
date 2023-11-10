@@ -301,13 +301,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
-                String queryString = @"select COUNTRYCODE as CountryCode,
+                String queryString = @"select DISTINCT COUNTRYCODE as CountryCode,
                                        VERSIONID as  Version,
                                        COUNTRYVERSIONID as CountryVersionID,
                                        SITECODE as SiteCode,
                                        HABITATCODE as HabitatCode,
-                                       PERCENTAGECOVER as PercentageCover,
-                                       RID 
+                                       PERCENTAGECOVER as PercentageCover
                                        from DESCRIBESSITES 
                                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
@@ -642,6 +641,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             changes.Add(siteChange);
                         }
 
+                        //Priority check is also present in HarvestedService/SitePriorityChecker
                         #region HabitatPriority
                         HabitatPriority priorityCount = habitatPriority.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
                         if (priorityCount != null)
@@ -653,12 +653,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             if (priorityCount.Priority == 2)
                             {
                                 //If the Habitat is an exception, three conditions are checked
-                                if ((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
+                                if (((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true)
                                     || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
-                                        isStoredPriority = true;
-                                if ((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
+                                        && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
+                                            isStoredPriority = true;
+                                if (((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true)
                                     || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
-                                        isHarvestingPriority = true;
+                                        && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
+                                            isHarvestingPriority = true;
                             }
                             else
                             {

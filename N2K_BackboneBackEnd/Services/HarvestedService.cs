@@ -462,6 +462,7 @@ namespace N2K_BackboneBackEnd.Services
                         List<LineageDetection>? detectedLineageChanges = await ctx.Set<LineageDetection>().FromSqlRaw($"exec dbo.spGetSitesToDetectChangesWithLineage  @reported_envelop, @country, @tol",
                                         paramDetection1, paramDetection2, paramDetection3).ToListAsync();
 
+
                         var lineageInsertion = new DataTable("LineageInsertion");
                         lineageInsertion.Columns.Add("SiteCode", typeof(string));
                         lineageInsertion.Columns.Add("Version", typeof(int));
@@ -504,7 +505,7 @@ namespace N2K_BackboneBackEnd.Services
                         });
                         sitesRelation.ForEach(r =>
                         {
-                            LineageDetection temp = detectedLineageChanges.Where(c => c.new_sitecode == r.NewSiteCode).FirstOrDefault();
+                            LineageDetection temp = detectedLineageChanges.Where(c => c.new_sitecode == r.NewSiteCode || (c.old_sitecode == r.NewSiteCode && c.op == "DELETED")).FirstOrDefault();
                             if (r.NewSiteCode == r.PreviousSiteCode && temp == null)
                             {
                                 lineageInsertion.Rows.Add(new Object[] { r.NewSiteCode, r.NewVersion, envelope.VersionId, LineageTypes.NoChanges, LineageStatus.Proposed, r.PreviousSiteCode, r.PreviousVersion });
@@ -547,29 +548,33 @@ namespace N2K_BackboneBackEnd.Services
                                 harvestingSite = newsites.Where(s => s.SiteCode == siteRelation.NewSiteCode && s.VersionId == siteRelation.NewVersion).FirstOrDefault();
                             if (siteRelation != null && harvestingSite == null)
                             {
-                                SiteChangeDb siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = storedSite.SiteCode;
-                                siteChange.Version = storedSite.VersionId;
-                                siteChange.ChangeCategory = "Network general structure";
-                                siteChange.ChangeType = "Site Deleted";
-                                if(ld != null)
+                                LineageDetection temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
+                                if (temp == null) //the site has not been RECODED
                                 {
-                                    siteChange.ChangeType = "Site ";
-                                    siteChange.ChangeType += ld.op.ToLower() == "split" ? "Split" : "";
-                                    siteChange.ChangeType += ld.op.ToLower() == "merge" ? "Merge" : "";
+                                    SiteChangeDb siteChange = new SiteChangeDb();
+                                    siteChange.SiteCode = storedSite.SiteCode;
+                                    siteChange.Version = storedSite.VersionId;
+                                    siteChange.ChangeCategory = "Network general structure";
+                                    siteChange.ChangeType = "Site Deleted";
+                                    if (ld != null)
+                                    {
+                                        siteChange.ChangeType = "Site ";
+                                        siteChange.ChangeType += ld.op.ToLower() == "split" ? "Split" : "";
+                                        siteChange.ChangeType += ld.op.ToLower() == "merge" ? "Merge" : "";
+                                    }
+                                    siteChange.Country = envelope.CountryCode;
+                                    siteChange.Level = Enumerations.Level.Critical;
+                                    siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx);
+                                    siteChange.Tags = string.Empty;
+                                    siteChange.NewValue = null;
+                                    siteChange.OldValue = storedSite.SiteCode;
+                                    siteChange.Code = storedSite.SiteCode;
+                                    siteChange.Section = "Site";
+                                    siteChange.VersionReferenceId = storedSite.VersionId;
+                                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                                    siteChange.N2KVersioningVersion = envelope.VersionId;
+                                    changes.Add(siteChange);
                                 }
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Critical;
-                                siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx);
-                                siteChange.Tags = string.Empty;
-                                siteChange.NewValue = null;
-                                siteChange.OldValue = storedSite.SiteCode;
-                                siteChange.Code = storedSite.SiteCode;
-                                siteChange.Section = "Site";
-                                siteChange.VersionReferenceId = storedSite.VersionId;
-                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                siteChange.N2KVersioningVersion = envelope.VersionId;
-                                changes.Add(siteChange);
                             }
 
                         }
@@ -921,7 +926,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.ChangeType += ld.op.ToLower() == "merge" ? "Merge" : "";
                     }
                     siteChange.Country = envelope.CountryCode;
-                    siteChange.Level = Enumerations.Level.Info;
+                    siteChange.Level = Enumerations.Level.Critical;
                     siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                     siteChange.Tags = string.Empty;
                     siteChange.NewValue = harvestingSite.SiteCode;
@@ -952,6 +957,12 @@ namespace N2K_BackboneBackEnd.Services
 
             try
             {
+                SqlParameter paramDetection1 = new SqlParameter("@reported_envelop", envelope.VersionId);
+                SqlParameter paramDetection2 = new SqlParameter("@country", envelope.CountryCode);
+                SqlParameter paramDetection3 = new SqlParameter("@tol", 5);
+                List<LineageDetection>? detectedLineageChanges = await ctx.Set<LineageDetection>().FromSqlRaw($"exec dbo.spGetSitesToDetectChangesWithLineage  @reported_envelop, @country, @tol",
+                                paramDetection1, paramDetection2, paramDetection3).ToListAsync();
+
                 if (storedSite != null && harvestingSite != null)
                 {
                     //SiteAttributesChecking
@@ -990,6 +1001,7 @@ namespace N2K_BackboneBackEnd.Services
                     //These booleans declare whether or not each site is a priority
                     Boolean isStoredSitePriority = await SitePriorityChecker(storedSite.SiteCode, storedSite.VersionId, habitatPriority, speciesPriority);
                     Boolean isHarvestingSitePriority = await SitePriorityChecker(harvestingSite.SiteCode, harvestingSite.VersionId, habitatPriority, speciesPriority);
+
 
                     if (isStoredSitePriority && !isHarvestingSitePriority)
                     {
@@ -1057,7 +1069,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.ChangeCategory = "Network general structure";
                     siteChange.ChangeType = "Site Added";
                     siteChange.Country = envelope.CountryCode;
-                    siteChange.Level = Enumerations.Level.Info;
+                    siteChange.Level = Enumerations.Level.Critical;
                     siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
                     siteChange.Tags = string.Empty;
                     siteChange.NewValue = harvestingSite.SiteCode;
@@ -1071,23 +1083,28 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else if (storedSite != null && harvestingSite == null)
                 {
-                    SiteChangeDb siteChange = new SiteChangeDb();
-                    siteChange.SiteCode = storedSite.SiteCode;
-                    siteChange.Version = storedSite.VersionId;
-                    siteChange.ChangeCategory = "Network general structure";
-                    siteChange.ChangeType = "Site Deleted";
-                    siteChange.Country = envelope.CountryCode;
-                    siteChange.Level = Enumerations.Level.Critical;
-                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                    siteChange.Tags = string.Empty;
-                    siteChange.NewValue = null;
-                    siteChange.OldValue = storedSite.SiteCode;
-                    siteChange.Code = storedSite.SiteCode;
-                    siteChange.Section = "Site";
-                    siteChange.VersionReferenceId = storedSite.VersionId;
-                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                    siteChange.N2KVersioningVersion = envelope.VersionId;
-                    changes.Add(siteChange);
+                    //if the is the site has been recoded do not add it to the changed sites
+                    LineageDetection temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
+                    if (temp == null)
+                    {
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = storedSite.SiteCode;
+                        siteChange.Version = storedSite.VersionId;
+                        siteChange.ChangeCategory = "Network general structure";
+                        siteChange.ChangeType = "Site Deleted";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Critical;
+                        siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx);
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = null;
+                        siteChange.OldValue = storedSite.SiteCode;
+                        siteChange.Code = storedSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        changes.Add(siteChange);
+                    }
                 }
             }
             catch (Exception ex)
@@ -1123,8 +1140,17 @@ namespace N2K_BackboneBackEnd.Services
                 siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
                 siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
+                // get active RepPeriod dateRange
+                RepPeriod? dateRange = await _dataContext.Set<RepPeriod>().Where(a => a.Active).FirstOrDefaultAsync();
+
+                // discard envelopes that do not match the dateRange
+                List<EnvelopesToProcess> filteredEnvelopes = envelopeIDs.ToList();
+                if(dateRange != null)
+                    filteredEnvelopes = envelopeIDs
+                        .Where(e => e.SubmissionDate >= dateRange.InitDate && e.SubmissionDate <= dateRange.EndDate).ToList();
+
                 //for each envelope to process
-                foreach (EnvelopesToProcess envelope in envelopeIDs)
+                foreach (EnvelopesToProcess envelope in filteredEnvelopes)
                 {
                     ClearBulkItems();
                     Console.WriteLine(String.Format("Start envelope harvest {0} - {1}", envelope.CountryCode, envelope.VersionId));
@@ -2258,6 +2284,7 @@ namespace N2K_BackboneBackEnd.Services
                         List<SpeciesToHarvest> species = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
                                         param1, param2).ToListAsync();
 
+                        //Priority check is also present in HarvestHabitat/ChangeDetectionHabitat
                         #region HabitatPriority
                         foreach (HabitatToHarvest habitat in habitats)
                         {
@@ -2266,8 +2293,9 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 if (priorityCount.Priority == 2)
                                 {
-                                    if ((habitat.HabitatCode != "21A0" && habitat.PriorityForm == true && (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null))
+                                    if (((habitat.HabitatCode != "21A0" && habitat.PriorityForm == true)
                                         || (habitat.HabitatCode == "21A0" && sitecode.Substring(0, Math.Min(sitecode.Length, 2)) == "IE"))
+                                             && (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null))
                                     {
                                         isSitePriority = true;
                                         break;
@@ -2285,6 +2313,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         #endregion
 
+                        //Priority check is also present in HarvestSpecies/ChangeDetectionSpecies
                         #region SpeciesPriority
                         if (!isSitePriority)
                         {
@@ -2293,7 +2322,7 @@ namespace N2K_BackboneBackEnd.Services
                                 SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == specie.SpeciesCode).FirstOrDefault();
                                 if (priorityCount != null)
                                 {
-                                    if (specie.Population.ToUpper() != "D" || specie.Population == null)
+                                    if ((specie.Population.ToUpper() != "D" || specie.Population == null) && (specie.Motivation == null || specie.Motivation == ""))
                                     {
                                         isSitePriority = true;
                                         break;
