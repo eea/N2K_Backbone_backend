@@ -686,7 +686,8 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         fields.Add("Submission", nullCase);
                     }
-                    if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed")
+                    if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed"
+                        || catChange.ChangeType == "Change of spatial area")
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
