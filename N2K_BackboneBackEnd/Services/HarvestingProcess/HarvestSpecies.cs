@@ -97,44 +97,47 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     SpecieBase item = new SpecieBase();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
-                    item.Version = 0;
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
-                    }
-                    item.SpecieCode = TypeConverters.CheckNull<string>(reader["SpecieCode"]);
-                    item.PopulationMin = TypeConverters.CheckNull<int?>(reader["PopulationMin"]);
-                    item.PopulationMax = TypeConverters.CheckNull<int?>(reader["PopulationMax"]);
-                    //item.Group = element.GROUP; // PENDING
-                    item.SensitiveInfo = TypeConverters.CheckNull<bool?>(reader["SensitiveInfo"]);
-                    item.Resident = TypeConverters.CheckNull<string>(reader["Resident"]);
-                    item.Breeding = TypeConverters.CheckNull<string>(reader["Breeding"]);
-                    item.Winter = TypeConverters.CheckNull<string>(reader["Winter"]);
-                    item.Staging = TypeConverters.CheckNull<string>(reader["Staging"]);
-                    //item.Path = element.PATH; // ??? PENDING
-                    item.AbundaceCategory = TypeConverters.CheckNull<string>(reader["AbundaceCategory"]);
-                    item.Motivation = TypeConverters.CheckNull<string>(reader["Motivation"]);
-                    item.PopulationType = TypeConverters.CheckNull<string>(reader["PopulationType"]);
-                    item.CountingUnit = TypeConverters.CheckNull<string>(reader["CountingUnit"]);
-                    item.Population = TypeConverters.CheckNull<string>(reader["Population"]);
-                    item.Insolation = TypeConverters.CheckNull<string>(reader["Insolation"]);
-                    item.Conservation = TypeConverters.CheckNull<string>(reader["Conservation"]);
-                    item.Global = TypeConverters.CheckNull<string>(reader["Global"]);
-                    item.NonPersistence = TypeConverters.CheckNull<bool>(reader["NonPersistence"]);
-                    item.DataQuality = TypeConverters.CheckNull<string>(reader["DataQuality"]);
-                    item.SpecieType = TypeConverters.CheckNull<string>(reader["SpecieType"]);
+                        item.SpecieCode = TypeConverters.CheckNull<string>(reader["SpecieCode"]);
+                        item.PopulationMin = TypeConverters.CheckNull<int?>(reader["PopulationMin"]);
+                        item.PopulationMax = TypeConverters.CheckNull<int?>(reader["PopulationMax"]);
+                        //item.Group = element.GROUP; // PENDING
+                        item.SensitiveInfo = TypeConverters.CheckNull<bool?>(reader["SensitiveInfo"]);
+                        item.Resident = TypeConverters.CheckNull<string>(reader["Resident"]);
+                        item.Breeding = TypeConverters.CheckNull<string>(reader["Breeding"]);
+                        item.Winter = TypeConverters.CheckNull<string>(reader["Winter"]);
+                        item.Staging = TypeConverters.CheckNull<string>(reader["Staging"]);
+                        //item.Path = element.PATH; // ??? PENDING
+                        item.AbundaceCategory = TypeConverters.CheckNull<string>(reader["AbundaceCategory"]);
+                        item.Motivation = TypeConverters.CheckNull<string>(reader["Motivation"]);
+                        item.PopulationType = TypeConverters.CheckNull<string>(reader["PopulationType"]);
+                        item.CountingUnit = TypeConverters.CheckNull<string>(reader["CountingUnit"]);
+                        item.Population = TypeConverters.CheckNull<string>(reader["Population"]);
+                        item.Insolation = TypeConverters.CheckNull<string>(reader["Insolation"]);
+                        item.Conservation = TypeConverters.CheckNull<string>(reader["Conservation"]);
+                        item.Global = TypeConverters.CheckNull<string>(reader["Global"]);
+                        item.NonPersistence = TypeConverters.CheckNull<bool>(reader["NonPersistence"]);
+                        item.DataQuality = TypeConverters.CheckNull<string>(reader["DataQuality"]);
+                        item.SpecieType = TypeConverters.CheckNull<string>(reader["SpecieType"]);
 
-                    if (item.SpecieCode is null || item.SpecieCode == "" ||
-                        _speciesTypes.Where(a => a.Code == item.SpecieCode && a.Active == true).Count() < 1)
-                    {
-                        //Replace the code (which is Null or empty or no stored in the system)
-                        //item.SiteCode = element.SITECODE;
-                        item.SpecieCode = (reader["SPECIESNAMECLEAN"] != null) ? reader["SPECIESNAMECLEAN"].ToString() : reader["SPECIESNAME"].ToString();
-                        itemsSpeciesOthers.Add(item.getSpeciesOther());
+                        if (item.SpecieCode is null || item.SpecieCode == "" ||
+                            _speciesTypes.Where(a => a.Code == item.SpecieCode && a.Active == true).Count() < 1)
+                        {
+                            //Replace the code (which is Null or empty or no stored in the system)
+                            //item.SiteCode = element.SITECODE;
+                            item.SpecieCode = (reader["SPECIESNAMECLEAN"] != null) ? reader["SPECIESNAMECLEAN"].ToString() : reader["SPECIESNAME"].ToString();
+                            itemsSpeciesOthers.Add(item.getSpeciesOther());
+                        }
+                        else
+                        {
+                            itemsSpecies.Add(item.getSpecies());
+                        }
                     }
                     else
                     {
-                        itemsSpecies.Add(item.getSpecies());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSpecies - Species", "", backboneDb);
                     }
                 }
 
@@ -147,7 +150,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - SpeciesOther.SaveBulkRecord", "", backboneDb);
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSpecies - SpeciesOther.SaveBulkRecord", "", backboneDb);
                 }
 
                 try
@@ -156,7 +159,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - Species.SaveBulkRecord", "", backboneDb);
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSpecies - Species.SaveBulkRecord", "", backboneDb);
                 }
 
                 //Console.WriteLine(String.Format("End save to list species -> {0}", (DateTime.Now - start).TotalSeconds));
