@@ -431,7 +431,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 //Get the lists of priority habitats and species
                 List<HabitatPriority> habitatPriority = await ctx.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-                List<SpeciePriority> speciesPriority = await ctx.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+                List<SpeciesPriority> speciesPriority = await ctx.Set<SpeciesPriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
                 //from the view vLatest//processedEnvelopes (backbonedb) load the sites with the latest versionid of the countries
 
@@ -739,7 +739,7 @@ namespace N2K_BackboneBackEnd.Services
 
                     //Get the lists of priority habitats and species
                     List<HabitatPriority> habitatPriority = await ctx.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-                    List<SpeciePriority> speciesPriority = await ctx.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+                    List<SpeciesPriority> speciesPriority = await ctx.Set<SpeciesPriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
                     SiteToHarvest storedSite = null;
 
@@ -791,7 +791,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<SiteChangeDb>> SiteChangeDetection(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, List<RelatedSites>? sitesRelation, bool manualEdition = false, N2KBackboneContext? ctx = null)
+        public async Task<List<SiteChangeDb>> SiteChangeDetection(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciesPriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, List<RelatedSites>? sitesRelation, bool manualEdition = false, N2KBackboneContext? ctx = null)
         {
             //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
             //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
@@ -934,7 +934,7 @@ namespace N2K_BackboneBackEnd.Services
             return changes;
         }
 
-        public async Task<List<SiteChangeDb>> SingleSiteChangeDetection(List<SiteChangeDb> changes, SiteToHarvest? storedSite, SiteToHarvest? harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext ctx)
+        public async Task<List<SiteChangeDb>> SingleSiteChangeDetection(List<SiteChangeDb> changes, SiteToHarvest? storedSite, SiteToHarvest? harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciesPriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext ctx)
         {
             //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
             //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
@@ -1125,7 +1125,7 @@ namespace N2K_BackboneBackEnd.Services
                 //save in memory the fixed codes like priority species and habitat codes
                 HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
                 siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-                siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+                siteCode.speciesPriority = await _dataContext.Set<SpeciesPriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
@@ -1461,7 +1461,7 @@ namespace N2K_BackboneBackEnd.Services
                     //save in memory the fixed codes like priority species and habitat codes
                     HarvestSiteCode siteCode = new HarvestSiteCode(_dataContext, _versioningContext);
                     siteCode.habitatPriority = await _dataContext.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-                    siteCode.speciesPriority = await _dataContext.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+                    siteCode.speciesPriority = await _dataContext.Set<SpeciesPriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
                     foreach (Harvesting vEnvelope in vEnvelopes)
                     {
@@ -2171,7 +2171,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 //Get the lists of priority habitats and species
                 List<HabitatPriority> habitatPriority = await ctx.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-                List<SpeciePriority> speciesPriority = await ctx.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+                List<SpeciesPriority> speciesPriority = await ctx.Set<SpeciesPriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
                 try
                 {
@@ -2234,7 +2234,7 @@ namespace N2K_BackboneBackEnd.Services
         /// <param name="habitatPriority">List of priority Habitats</param>
         /// <param name="speciesPriority">List of priority Species</param>
         /// <returns>1</returns>
-        public async Task<Boolean> SitePriorityChecker(string sitecode, int version, List<HabitatPriority>? habitatPriority = null, List<SpeciePriority>? speciesPriority = null)
+        public async Task<Boolean> SitePriorityChecker(string sitecode, int version, List<HabitatPriority>? habitatPriority = null, List<SpeciesPriority>? speciesPriority = null)
         {
             try
             {
@@ -2245,7 +2245,7 @@ namespace N2K_BackboneBackEnd.Services
 
                     //Get the lists of priority habitats and species
                     if (habitatPriority == null) habitatPriority = await ctx.Set<HabitatPriority>().FromSqlRaw($"exec dbo.spGetPriorityHabitats").ToListAsync();
-                    if (speciesPriority == null) speciesPriority = await ctx.Set<SpeciePriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
+                    if (speciesPriority == null) speciesPriority = await ctx.Set<SpeciesPriority>().FromSqlRaw($"exec dbo.spGetPrioritySpecies").ToListAsync();
 
                     try
                     {
@@ -2299,7 +2299,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             foreach (SpeciesToHarvest specie in species)
                             {
-                                SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == specie.SpeciesCode).FirstOrDefault();
+                                SpeciesPriority priorityCount = speciesPriority.Where(s => s.SpecieCode == specie.SpeciesCode).FirstOrDefault();
                                 if (priorityCount != null)
                                 {
                                     if ((specie.Population.ToUpper() != "D" || specie.Population == null) && (specie.Motivation == null || specie.Motivation == ""))

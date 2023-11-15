@@ -26,7 +26,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         }
 
         public List<HabitatPriority> habitatPriority = new List<HabitatPriority>();
-        public List<SpeciePriority> speciesPriority = new List<SpeciePriority>();
+        public List<SpeciesPriority> speciesPriority = new List<SpeciesPriority>();
 
         /// <summary>
         /// This mehtod calls for teh process to harvest the complete data for all sites 
@@ -158,7 +158,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             //{
             //    foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
             //    {
-            //        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+            //        SpeciesPriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
             //        if (priorityCount != null)
             //        {
             //            if (harvestingSpecies.Population.ToUpper() != "D")

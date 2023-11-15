@@ -2,14 +2,14 @@
 
 namespace N2K_BackboneBackEnd.Models
 {
-    public class SpeciePriority : IEntityModel
+    public class SpeciesPriority : IEntityModel
     {
         public string SpecieCode { get; set; } = string.Empty;
         public string? TaxGroup { get; set; }
         public int? Priority { get; set; }
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<SpeciePriority>()
+            builder.Entity<SpeciesPriority>()
                 .HasNoKey();
         }
     }
