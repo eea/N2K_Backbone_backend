@@ -456,13 +456,55 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else
                 {
-                    List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().Where(a => a.BioRegionShortCode != null).AsNoTracking().ToListAsync();
-                    bioRegions = bioRegionTypes.Select(a => a.BioRegionShortCode).ToArray();
+                    //List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().Where(a => a.BioRegionShortCode != null).AsNoTracking().ToListAsync();
+                    //bioRegions = bioRegionTypes.Select(a => a.BioRegionShortCode).ToArray();
+                    bioRegions = "ALP,ATL,MED,BLA,BOR,CON,MAC,PAN,STP".Split(',');
                 }
 
                 //Get the current UnionList
                 UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
-                
+
+                List<UnionListDetail?> currentUnionListSites = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(ulh => ulh.idUnionListHeader == currentUnionList.idULHeader).ToListAsync();
+
+                foreach (UnionListDetail currentUnionListSite in currentUnionListSites)
+                {
+                    List<UnionListDetail?> bioregionCount = currentUnionListSites.Where(l => l.SCI_code == currentUnionListSite.SCI_code && l.version == currentUnionListSite.version).ToList();
+
+                    //If a site only has a marine region it will be reassigned to the corresponding terrestrial bioregion
+                    if ((currentUnionListSite.BioRegion == "MAT" || currentUnionListSite.BioRegion == "MBA" || currentUnionListSite.BioRegion == "MBL"
+                        || currentUnionListSite.BioRegion == "MMA" || currentUnionListSite.BioRegion == "MME") && bioregionCount.Count == 1)
+                    {
+                        if (currentUnionListSite.BioRegion == "MBL") //Marine Black Sea
+                        {
+                            currentUnionListSite.BioRegion = "BLA";
+                        }
+                        else if (currentUnionListSite.BioRegion == "MMA") //Marine Macaronesian
+                        {
+                            currentUnionListSite.BioRegion = "MAC";
+                        }
+                        else if (currentUnionListSite.BioRegion == "MME") //Marine Mediterranean
+                        {
+                            currentUnionListSite.BioRegion = "MED";
+                        }
+                        else if (currentUnionListSite.BioRegion == "MAT" && currentUnionListSite.SCI_code.Substring(0, 2) != "DK") //Marine Atlantic
+                        {
+                            currentUnionListSite.BioRegion = "ATL";
+                        }
+                        else if (currentUnionListSite.BioRegion == "MBA" && currentUnionListSite.SCI_code.Substring(0, 2) != "DK") //Marine Baltic
+                        {
+                            if (currentUnionListSite.SCI_code.Substring(0, 2) == "FI" || currentUnionListSite.SCI_code.Substring(0, 2) == "LV"
+                                || currentUnionListSite.SCI_code.Substring(0, 2) == "EE" || currentUnionListSite.SCI_code.Substring(0, 2) == "LT")
+                            {
+                                currentUnionListSite.BioRegion = "BOR";
+                            }
+                            else if (currentUnionListSite.SCI_code.Substring(0, 2) == "DE" || currentUnionListSite.SCI_code.Substring(0, 2) == "PL")
+                            {
+                                currentUnionListSite.BioRegion = "CON";
+                            }
+                        }
+                    }
+                }
+
                 foreach (string bioRegion in bioRegions)
                 {
                     //The file path must be parametrized in the web.config
@@ -492,9 +534,22 @@ namespace N2K_BackboneBackEnd.Services
                     {
 
                         #region Retrive the data to insert
-                        SqlParameter param1 = new SqlParameter("@idHeader", currentUnionList.idULHeader);
-                        SqlParameter param2 = new SqlParameter("@bioregion", bioRegion);
-                        List<UnionListDetailExcel> currentDetails = await _dataContext.Set<UnionListDetailExcel>().FromSqlRaw("exec dbo.spGetCurrentUnionListDetailByHeaderIdAndBioRegion  @idHeader, @bioregion ", param1, param2).AsNoTracking().ToListAsync();
+                        List<UnionListDetailExcel> currentDetails = new List<UnionListDetailExcel>();
+
+                        foreach (UnionListDetail site in currentUnionListSites.Where(l => l.BioRegion == bioRegion).ToList())
+                        {
+                            UnionListDetailExcel temp = new UnionListDetailExcel()
+                            {
+                                SCI_code = site.SCI_code,
+                                SCI_Name = site.SCI_Name,
+                                Priority = (site.Priority == null) ? "" : ((site.Priority == true) ? "*" : ""),
+                                Area = (site.Area == null) ? "" : site.Area.ToString(),
+                                Length = (site.Length == null) ? "" : site.Length.ToString(),
+                                Long = (site.Long == null) ? "" : site.Long.ToString(),
+                                Lat = (site.Lat == null) ? "" : site.Lat.ToString()
+                            };
+                            currentDetails.Add(temp);
+                        }
                         #endregion
 
                         #region Styling
@@ -631,25 +686,25 @@ namespace N2K_BackboneBackEnd.Services
                             row.AppendChild(cell);
                             //Area of SCI (ha)
                             cell = new Cell();
-                            cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                            cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
                             cell.CellValue = new CellValue(ulde.Area);
                             cell.StyleIndex = 1;
                             row.AppendChild(cell);
                             //Length of SCI (km)
                             cell = new Cell();
-                            cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                            cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
                             cell.CellValue = new CellValue(ulde.Length);
                             cell.StyleIndex = 1;
                             row.AppendChild(cell);
                             //Longitude
                             cell = new Cell();
-                            cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                            cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
                             cell.CellValue = new CellValue(ulde.Long);
                             cell.StyleIndex = 1;
                             row.AppendChild(cell);
                             //Latitude
                             cell = new Cell();
-                            cell.DataType = CellValues.Number; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                            cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
                             cell.CellValue = new CellValue(ulde.Lat);
                             cell.StyleIndex = 1;
                             row.AppendChild(cell);

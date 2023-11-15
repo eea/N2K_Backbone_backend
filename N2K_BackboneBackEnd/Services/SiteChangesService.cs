@@ -45,6 +45,8 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2KBackboneContext _dataContext;
         private readonly IEnumerable<SpeciesTypes> _speciesTypes;
         private readonly IEnumerable<HabitatTypes> _habitatTypes;
+        private readonly IEnumerable<SpeciesPriority> _speciesPriority;
+        private readonly IEnumerable<HabitatPriority> _habitatPriority;
         private readonly IEnumerable<Countries> _countries;
         private IEnumerable<Habitats>? _siteHabitats;
         private IEnumerable<Species>? _siteSpecies;
@@ -59,6 +61,8 @@ namespace N2K_BackboneBackEnd.Services
             _dataContext = dataContext;
             _speciesTypes = _dataContext.Set<SpeciesTypes>().AsNoTracking().ToList();
             _habitatTypes = _dataContext.Set<HabitatTypes>().AsNoTracking().ToList();
+            _speciesPriority = _dataContext.Set<SpeciesPriority>().AsNoTracking().ToList();
+            _habitatPriority = _dataContext.Set<HabitatPriority>().AsNoTracking().ToList();
             _countries = _dataContext.Set<Countries>().AsNoTracking().ToList();
         }
 
@@ -686,7 +690,8 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         fields.Add("Submission", nullCase);
                     }
-                    if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed")
+                    if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed"
+                        || catChange.ChangeType == "Change of spatial area")
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
@@ -815,13 +820,19 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     case "Species":
                         string? specName = null;
+                        string? priorityS = "-";
                         string? population = null;
                         string? specType = null;
 
                         if (code != null)
                         {
                             SpeciesTypes? _spectype = _speciesTypes.FirstOrDefault(s => s.Code.ToLower() == code.ToLower());
-                            if (_spectype != null) specName = _spectype.Name;
+                            if (_spectype != null)
+                            {
+                                specName = _spectype.Name;
+                                SpeciesPriority? _specpriority = _speciesPriority.FirstOrDefault(s => s.SpecieCode.ToLower() == code.ToLower());
+                                priorityS = (_specpriority == null) ? priorityS : "*";
+                            }
 
                             var specDetails = _siteSpecies.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
                                 .Select(spc => new
@@ -862,6 +873,7 @@ namespace N2K_BackboneBackEnd.Services
                                 specType = specDetails.SpecType;
                             }
                         }
+                        fields.Add("Priority", priorityS);
                         fields.Add("Population", population);
                         fields.Add("SpeciesType", specType);
 
@@ -890,6 +902,7 @@ namespace N2K_BackboneBackEnd.Services
 
                     case "Habitats":
                         string? habName = null;
+                        string? priorityH = "-";
                         string? coverHa = null;
                         string? relSurface = null;
                         if (code != null)
@@ -898,11 +911,14 @@ namespace N2K_BackboneBackEnd.Services
                             var habType = _habitatTypes.Where(s => s.Code.ToLower() == code.ToLower()).Select(spc => spc.Name).FirstOrDefault();
                             if (habType != null) habName = habType;
 
+                            HabitatPriority? _habpriority = _habitatPriority.FirstOrDefault(h => h.HabitatCode.ToLower() == code.ToLower());
+
                             var habDetails = _siteHabitats.Where(sh => sh.HabitatCode.ToLower() == code.ToLower())
                                 .Select(hab => new
                                 {
                                     CoverHA = hab.CoverHA.ToString(),
-                                    RelativeSurface = hab.RelativeSurface
+                                    RelativeSurface = hab.RelativeSurface,
+                                    PriorityForm = hab.PriorityForm
                                 }).FirstOrDefault();
 
                             if (habDetails == null)
@@ -911,15 +927,18 @@ namespace N2K_BackboneBackEnd.Services
                                 .Select(hab => new
                                 {
                                     CoverHA = hab.CoverHA.ToString(),
-                                    RelativeSurface = hab.RelativeSurface
+                                    RelativeSurface = hab.RelativeSurface,
+                                    PriorityForm = hab.PriorityForm
                                 }).FirstOrDefault();
                             }
                             if (habDetails != null)
                             {
                                 relSurface = habDetails.RelativeSurface;
                                 coverHa = habDetails.CoverHA;
+                                priorityH = (_habpriority == null) ? priorityH : ((_habpriority.Priority == 1 || (_habpriority.Priority == 2 && habDetails.PriorityForm == true)) ? "*" : priorityH);
                             }
                         }
+                        fields.Add("Priority", priorityH);
                         fields.Add("CoverHa", coverHa);
                         fields.Add("RelativeSurface", relSurface);
 
