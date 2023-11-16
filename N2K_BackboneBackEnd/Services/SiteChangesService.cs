@@ -398,6 +398,8 @@ namespace N2K_BackboneBackEnd.Services
                 List<SiteCodeView> result = new List<SiteCodeView>();
                 List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                                 param1).ToListAsync();
+                List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
+                                param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
                 foreach (var change in (await changes.ToListAsync()))
                 {
                     SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
@@ -407,13 +409,21 @@ namespace N2K_BackboneBackEnd.Services
                         if (editionChange != null)
                             activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                     }
+
+                    // Get Lineage change type from lineageChanges
+                    LineageTypes? changeLineage = lineageChanges.FirstOrDefault(
+                        l => l.SiteCode == change.SiteCode
+                            && l.Version == change.Version
+                        )?.Type ?? LineageTypes.NoChanges;
+
                     SiteCodeView temp = new SiteCodeView
                     {
                         SiteCode = change.SiteCode,
                         Version = change.Version,
                         Name = change.Name,
                         EditedBy = activity is null ? null : activity.Author,
-                        EditedDate = activity is null ? null : activity.Date
+                        EditedDate = activity is null ? null : activity.Date,
+                        LineageChangeType = changeLineage
                     };
                     result.Add(temp);
                 }
