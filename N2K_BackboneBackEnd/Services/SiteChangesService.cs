@@ -466,13 +466,23 @@ namespace N2K_BackboneBackEnd.Services
                             if (editionChange != null)
                                 activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                         }
+                        
+                        // Get Lineage change type from editionChanges
+                        LineageTypes changeLineage;
+                        bool lineageFound = Enum.TryParse(
+                            editionChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode
+                                && e.Version == change.Version
+                                && e.ChangeCategory == "Lineage")?.ChangeType
+                            , out changeLineage);
+
                         SiteCodeView temp = new SiteCodeView
                         {
                             SiteCode = change.SiteCode,
                             Version = change.Version,
                             Name = change.Name,
                             EditedBy = activity is null ? null : activity.Author,
-                            EditedDate = activity is null ? null : activity.Date
+                            EditedDate = activity is null ? null : activity.Date,
+                            LineageChangeType = lineageFound ? changeLineage : LineageTypes.NoChanges
                         };
                         result.Add(temp);
                     }
