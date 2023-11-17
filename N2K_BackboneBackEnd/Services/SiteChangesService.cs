@@ -324,6 +324,14 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetailVM.Info = new SiteChangesLevelDetail();
                 changeDetailVM.Critical = new SiteChangesLevelDetail();
 
+                // Get lineage change type from Lineage table
+                Lineage? lineageChange = await _dataContext.Set<Lineage>().AsNoTracking().FirstOrDefaultAsync(l => l.SiteCode == pSiteCode && l.Version == pCountryVersion);
+
+                lineageChange.AntecessorsSiteCodes = String.Join(",", await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                    .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync());
+
+                changeDetailVM.LineageChangeType = lineageChange?.Type;
+                changeDetailVM.AffectedSites = lineageChange?.AntecessorsSiteCodes;
 
                 var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
                 if (site != null)
