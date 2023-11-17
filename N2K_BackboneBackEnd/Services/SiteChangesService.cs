@@ -175,11 +175,14 @@ namespace N2K_BackboneBackEnd.Services
                                     activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Action == "User edition after rejection of version " + change.Version).FirstOrDefault();
                                 }
                             }
+
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
-                            Lineage lineageChangeType = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
-                            siteChange.LineageChangeType = lineageChangeType is null ? LineageTypes.NoChanges : lineageChangeType.Type;
-                            siteChange.AntecessorsSiteCodes = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode)?.AntecessorsSiteCodes;
+                            Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
+                            siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
+                            siteChange.AntecessorsSiteCodes = String.Join(",", await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                                .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync());
+
 
                             var changeView = new SiteChangeView
                             {
@@ -330,8 +333,11 @@ namespace N2K_BackboneBackEnd.Services
                 lineageChange.AntecessorsSiteCodes = String.Join(",", await _dataContext.Set<LineageAntecessors>().AsNoTracking()
                     .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync());
 
+                List<long> successorsIDs = await _dataContext.Set<LineageAntecessors>().AsNoTracking().Where(l => l.SiteCode == pSiteCode).Select(l => l.LineageID).ToListAsync();
+                String? successorSiteCodes = String.Join(",", await _dataContext.Set<Lineage>().AsNoTracking().Where(l => successorsIDs.Contains(l.ID)).Select(l => l.SiteCode).ToListAsync());
+
                 changeDetailVM.LineageChangeType = lineageChange?.Type;
-                changeDetailVM.AffectedSites = lineageChange?.AntecessorsSiteCodes;
+                changeDetailVM.AffectedSites = lineageChange?.AntecessorsSiteCodes + successorSiteCodes;
 
                 var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
                 if (site != null)
@@ -360,9 +366,9 @@ namespace N2K_BackboneBackEnd.Services
                 changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
                 if (changesDb != null)
                 {
-                    if (changesDb.FirstOrDefault().ChangeType == "Site Deleted")
+                    if (changesDb.FirstOrDefault()?.ChangeType == "Site Deleted")
                     {
-                        changeDetailVM.Status = changesDb.FirstOrDefault().Status;
+                        changeDetailVM.Status = changesDb.FirstOrDefault()?.Status;
                     }
                 }
 
