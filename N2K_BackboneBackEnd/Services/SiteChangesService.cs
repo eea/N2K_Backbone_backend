@@ -642,7 +642,7 @@ namespace N2K_BackboneBackEnd.Services
                             foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
                             {
                                 _Section.DeletedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
+                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.VersionReferenceId, changedItem.VersionReferenceId)
                                 );
                             }
                         }
@@ -854,7 +854,7 @@ namespace N2K_BackboneBackEnd.Services
                                 priorityS = (_specpriority == null) ? priorityS : "*";
                             }
 
-                            var specDetails = _siteSpecies.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
+                            var specDetails = _siteSpecies.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == pCountryVersion)
                                 .Select(spc => new
                                 {
                                     Population = spc.Population,
@@ -862,7 +862,7 @@ namespace N2K_BackboneBackEnd.Services
                                 }).FirstOrDefault();
                             if (specDetails == null)
                             {
-                                specDetails = _siteSpeciesOther.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
+                                specDetails = _siteSpeciesOther.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == pCountryVersion)
                                 .Select(spc => new
                                 {
                                     Population = spc.Population,
@@ -933,7 +933,7 @@ namespace N2K_BackboneBackEnd.Services
 
                             HabitatPriority? _habpriority = _habitatPriority.FirstOrDefault(h => h.HabitatCode.ToLower() == code.ToLower());
 
-                            var habDetails = _siteHabitats.Where(sh => sh.HabitatCode.ToLower() == code.ToLower())
+                            var habDetails = _siteHabitats.Where(sh => sh.HabitatCode.ToLower() == code.ToLower() && sh.Version == pCountryVersion)
                                 .Select(hab => new
                                 {
                                     CoverHA = hab.CoverHA.ToString(),
