@@ -16,6 +16,7 @@ using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Http;
 using System.Runtime.CompilerServices;
 using System.Globalization;
+using System.Linq;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -562,7 +563,6 @@ namespace N2K_BackboneBackEnd.Services
                     switch (_levelDetail.Section)
                     {
                         case "Site":
-                        case "BioRegions":
                             /*
                             if (_levelDetail.ChangeType.IndexOf("Added") > -1)
                             {
@@ -599,6 +599,10 @@ namespace N2K_BackboneBackEnd.Services
                             */
                             if (_levelDetail.ChangeType != "User edition")
                                 changesPerLevel.SiteInfo.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
+                            break;
+                        case "BioRegions":
+                            if (_levelDetail.ChangeType != "User edition")
+                                changesPerLevel.SiteInfo.ChangesByCategory.Add(GetBioregionChangeDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
                             break;
 
                         case "Species":
@@ -778,6 +782,97 @@ namespace N2K_BackboneBackEnd.Services
                             );
                     }
                 }
+                return catChange;
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetChangeCategoryDetail", "");
+                throw ex;
+            }
+        }
+
+
+        private CategoryChangeDetail GetBioregionChangeDetail(string changeCategory, string changeType, List<SiteChangeDb> changeList)
+        {
+            try
+            {
+                var catChange = new CategoryChangeDetail();
+                catChange.ChangeType = changeType;
+                catChange.ChangeCategory = changeCategory;
+
+                List<BioRegions> referenceBioregions = _dataContext.Set<BioRegions>().Where(bgr => bgr.SiteCode == changeList.FirstOrDefault().SiteCode && bgr.Version == changeList.FirstOrDefault().VersionReferenceId).ToList();
+                List<BioRegions> submissionBioregions = _dataContext.Set<BioRegions>().Where(bgr => bgr.SiteCode == changeList.FirstOrDefault().SiteCode && bgr.Version == changeList.FirstOrDefault().Version).ToList();
+                List<BioRegionTypes> bioregionTypes = _dataContext.Set<BioRegionTypes>().ToList();
+
+                if (changeType == "Sites added due to a change of BGR")
+                {
+                    foreach (BioRegions changedItem in submissionBioregions)
+                    {
+                        var fields = new Dictionary<string, string>();
+                        string nullCase = "-";
+                        BioRegions reference = referenceBioregions.Where(r => r.BGRID == changedItem.BGRID).FirstOrDefault();
+                        if (reference != null)
+                        {
+                            fields.Add("Reference", bioregionTypes.Where(t => t.Code == reference.BGRID).FirstOrDefault().RefBioGeoName + " " + ((reference.Percentage != null) ? reference.Percentage : "-") + "%");
+                        }
+                        else
+                        {
+                            fields.Add("Reference", nullCase);
+                        }
+
+                        if (changedItem != null)
+                        {
+                            fields.Add("Submission", bioregionTypes.Where(t => t.Code == changedItem.BGRID).FirstOrDefault().RefBioGeoName + " " + ((changedItem.Percentage != null) ? changedItem.Percentage : "-") + "%");
+                        }
+                        else
+                        {
+                            fields.Add("Submission", nullCase);
+                        }
+
+                        catChange.ChangedCodesDetail.Add(
+                                    new CodeChangeDetail
+                                    {
+                                        ChangeId = changeList.FirstOrDefault().ChangeId,
+                                        Fields = fields
+                                    }
+                                );
+                    }
+                }
+                else if (changeType == "Sites deleted due to a change of BGR")
+                {
+                    foreach (BioRegions reference in referenceBioregions)
+                    {
+                        var fields = new Dictionary<string, string>();
+                        string nullCase = "-";
+                        BioRegions changedItem = submissionBioregions.Where(r => r.BGRID == reference.BGRID).FirstOrDefault();
+                        if (reference != null)
+                        {
+                            fields.Add("Reference", bioregionTypes.Where(t => t.Code == reference.BGRID).FirstOrDefault().RefBioGeoName + " " + ((reference.Percentage != null) ? reference.Percentage : "-") + "%");
+                        }
+                        else
+                        {
+                            fields.Add("Reference", nullCase);
+                        }
+
+                        if (changedItem != null)
+                        {
+                            fields.Add("Submission", bioregionTypes.Where(t => t.Code == changedItem.BGRID).FirstOrDefault().RefBioGeoName + " " + ((changedItem.Percentage != null) ? changedItem.Percentage : "-") + "%");
+                        }
+                        else
+                        {
+                            fields.Add("Submission", nullCase);
+                        }
+
+                        catChange.ChangedCodesDetail.Add(
+                                    new CodeChangeDetail
+                                    {
+                                        ChangeId = changeList.FirstOrDefault().ChangeId,
+                                        Fields = fields
+                                    }
+                                );
+                    }
+                }
+
                 return catChange;
             }
             catch (Exception ex)
