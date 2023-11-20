@@ -54,6 +54,11 @@ namespace N2K_BackboneBackEnd.Services
         private IEnumerable<SpeciesOther>? _siteSpeciesOtherReference;
 
 
+        // this list is used to check if the affected sites field should return null or not
+        private List<LineageTypes> lineageCases =
+            new List<LineageTypes> { LineageTypes.Recode, LineageTypes.Split, LineageTypes.Merge };
+
+
         public SiteChangesService(N2KBackboneContext dataContext)
         {
             _dataContext = dataContext;
@@ -180,8 +185,10 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.EditedDate = activity is null ? null : activity.Date;
                             Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
                             siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
-                            siteChange.AntecessorsSiteCodes = String.Join(",", await _dataContext.Set<LineageAntecessors>().AsNoTracking()
-                                .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync());
+
+                            if(lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
+                                siteChange.AntecessorsSiteCodes = String.Join(",", await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                                    .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync());
 
 
                             var changeView = new SiteChangeView
@@ -332,7 +339,6 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetailVM.LineageChangeType = lineageChange?.Type;
 
                 // get affected sites list only in certain lineage change types
-                List<LineageTypes> lineageCases = new List<LineageTypes> { LineageTypes.Recode, LineageTypes.Split, LineageTypes.Merge };
                 if (lineageCases.Contains((LineageTypes)changeDetailVM.LineageChangeType))
                 {
                     // Get antecessors from LineageAntecessors table matching lineageID
