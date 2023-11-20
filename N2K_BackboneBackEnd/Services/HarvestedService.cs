@@ -558,7 +558,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 //if the is the site has been recoded do not add it to the changed sites
                                 LineageDetection temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
-                                if (temp ==null) //the site has not been RECODED
+                                if (temp == null) //the site has not been RECODED
                                 {
                                     SiteChangeDb siteChange = new SiteChangeDb();
                                     siteChange.SiteCode = storedSite.SiteCode;
@@ -1754,26 +1754,6 @@ namespace N2K_BackboneBackEnd.Services
                             //int _version = await ctx.Set<Sites>().Where(s => s.CountryCode == country && s.N2KVersioningVersion == version).Select(s => s.Version).FirstOrDefaultAsync();
                             if (toStatus != envelope.Status)
                             {
-                                if (envelope.Status == HarvestingStatus.DataLoaded)
-                                {
-                                    Task tabChangeDetectionTask = ChangeDetection(new EnvelopesToProcess[] { new EnvelopesToProcess
-                                {
-                                    CountryCode = country,
-                                    VersionId = version
-                                } }, ctx);
-
-
-                                    Task spatialChangeDetectionTask = ChangeDetectionSpatialData(new EnvelopesToProcess[] { new EnvelopesToProcess
-                                {
-                                    CountryCode = country,
-                                    VersionId = version
-                                } }, ctx);
-
-
-                                    //make sure they are all finished
-                                    await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
-                                }
-
                                 var countriesAndVersions = new DataTable("sitecodesfilter");
                                 countriesAndVersions.Columns.Add("CountryCode", typeof(string));
                                 countriesAndVersions.Columns.Add("Version", typeof(int));
@@ -1782,6 +1762,28 @@ namespace N2K_BackboneBackEnd.Services
                                 SqlParameter param1 = new SqlParameter("@countryVersion", System.Data.SqlDbType.Structured);
                                 param1.Value = countriesAndVersions;
                                 param1.TypeName = "[dbo].[CountryVersion]";
+
+                                await ctx.Database.ExecuteSqlRawAsync("exec dbo.setStatusToEnvelopeProcessing  @countryVersion;", param1);
+
+                                if (envelope.Status == HarvestingStatus.DataLoaded)
+                                {
+                                    Task tabChangeDetectionTask = ChangeDetection(new EnvelopesToProcess[] { new EnvelopesToProcess
+                                    {
+                                        CountryCode = country,
+                                        VersionId = version
+                                    } }, ctx);
+
+
+                                    Task spatialChangeDetectionTask = ChangeDetectionSpatialData(new EnvelopesToProcess[] { new EnvelopesToProcess
+                                    {
+                                        CountryCode = country,
+                                        VersionId = version
+                                    } }, ctx);
+
+
+                                    //make sure they are all finished
+                                    await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
+                                }
 
                                 switch (toStatus)
                                 {

@@ -1139,7 +1139,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.OldValue = null;
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "BioRegions";
-                        siteChange.VersionReferenceId = harvestingSite.VersionId;
+                        siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
                         siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
