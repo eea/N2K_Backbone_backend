@@ -26,7 +26,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         }
 
         public List<HabitatPriority> habitatPriority = new List<HabitatPriority>();
-        public List<SpeciePriority> speciesPriority = new List<SpeciePriority>();
+        public List<SpeciesPriority> speciesPriority = new List<SpeciesPriority>();
 
         /// <summary>
         /// This mehtod calls for teh process to harvest the complete data for all sites 
@@ -98,7 +98,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestSite", "", backboneDb);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - HarvestSite", "", backboneDb);
                 return 0;
             }
 
@@ -158,7 +158,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             //{
             //    foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
             //    {
-            //        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+            //        SpeciesPriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
             //        if (priorityCount != null)
             //        {
             //            if (harvestingSpecies.Population.ToUpper() != "D")
@@ -205,7 +205,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSiteCode", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestSiteCode", "", _dataContext.Database.GetConnectionString());
                 return null;
             }
             finally
@@ -254,16 +254,19 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     BioRegions item = new BioRegions();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
-                    item.Version = 0;
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                        item.BGRID = TypeConverters.CheckNull<int>(reader["BGRID"]);
+                        item.Percentage = null;
+                        if (reader["Percentage"] != DBNull.Value)
+                            item.Percentage = decimal.ToDouble(TypeConverters.CheckNull<decimal>(reader["Percentage"]));
+                        items.Add(item);
                     }
-                    item.BGRID = TypeConverters.CheckNull<int>(reader["BGRID"]);
-                    item.Percentage = null;
-                    if (reader["Percentage"] != DBNull.Value)
-                        item.Percentage = decimal.ToDouble(TypeConverters.CheckNull<decimal>(reader["Percentage"]));
-                    items.Add(item);
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSiteCode - BioRegions", "", backboneDb);
+                    }
                 }
                 //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
@@ -272,7 +275,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedSiteCode - BioRegions.SaveBulkRecord", "", backboneDb);
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - BioRegions.SaveBulkRecord", "", backboneDb);
                 }
                 //Console.WriteLine(String.Format("End save to list bioregions -> {0}", (DateTime.Now - start).TotalSeconds));
 
@@ -280,7 +283,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedSiteCode - harvestBioregions", "", backboneDb);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestBioregions", "", backboneDb);
                 return 0;
             }
             finally
@@ -333,17 +336,20 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     NutsBySite item = new NutsBySite();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
-                    item.Version = 0;
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
-                    }
-                    item.NutId = TypeConverters.CheckNull<string>(reader["NutId"]);
-                    item.CoverPercentage = null;
-                    if (reader["CoverPercentage"] != DBNull.Value)
-                        item.CoverPercentage = decimal.ToDouble(TypeConverters.CheckNull<decimal>(reader["CoverPercentage"]));
+                        item.NutId = TypeConverters.CheckNull<string>(reader["NutId"]);
+                        item.CoverPercentage = null;
+                        if (reader["CoverPercentage"] != DBNull.Value)
+                            item.CoverPercentage = decimal.ToDouble(TypeConverters.CheckNull<decimal>(reader["CoverPercentage"]));
 
-                    items.Add(item);
+                        items.Add(item);
+                    }
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSiteCode - NutsBySite", "", backboneDb);
+                    }
                 }
                 //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
@@ -360,7 +366,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestNutsBySite", "", backboneDb);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestNutsBySite", "", backboneDb);
                 return 0;
             }
             finally
@@ -418,25 +424,28 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     Models.backbone_db.IsImpactedBy item = new Models.backbone_db.IsImpactedBy();
 
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
-                    item.Version = 0;
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
-                    }
-                    item.ActivityCode = TypeConverters.CheckNull<string>(reader["ActivityCode"]);
-                    item.InOut = TypeConverters.CheckNull<string>(reader["InOut"]);
-                    item.Intensity = TypeConverters.CheckNull<string>(reader["Intensity"]);
-                    item.PercentageAff = null;
-                    if (reader["PercentageAff"] != DBNull.Value)
-                        item.PercentageAff = decimal.ToDouble(TypeConverters.CheckNull<decimal>(reader["PercentageAff"]));
-                    item.Influence = TypeConverters.CheckNull<string>(reader["Influence"]);
-                    item.StartDate = TypeConverters.CheckNull<DateTime>(reader["StartDate"]);
-                    item.EndDate = TypeConverters.CheckNull<DateTime>(reader["EndDate"]);
-                    item.PollutionCode = TypeConverters.CheckNull<string>(reader["PollutionCode"]);
-                    item.Ocurrence = TypeConverters.CheckNull<string>(reader["Ocurrence"]);
-                    item.ImpactType = TypeConverters.CheckNull<string>(reader["ImpactType"]);
+                        item.ActivityCode = TypeConverters.CheckNull<string>(reader["ActivityCode"]);
+                        item.InOut = TypeConverters.CheckNull<string>(reader["InOut"]);
+                        item.Intensity = TypeConverters.CheckNull<string>(reader["Intensity"]);
+                        item.PercentageAff = null;
+                        if (reader["PercentageAff"] != DBNull.Value)
+                            item.PercentageAff = decimal.ToDouble(TypeConverters.CheckNull<decimal>(reader["PercentageAff"]));
+                        item.Influence = TypeConverters.CheckNull<string>(reader["Influence"]);
+                        item.StartDate = TypeConverters.CheckNull<DateTime>(reader["StartDate"]);
+                        item.EndDate = TypeConverters.CheckNull<DateTime>(reader["EndDate"]);
+                        item.PollutionCode = TypeConverters.CheckNull<string>(reader["PollutionCode"]);
+                        item.Ocurrence = TypeConverters.CheckNull<string>(reader["Ocurrence"]);
+                        item.ImpactType = TypeConverters.CheckNull<string>(reader["ImpactType"]);
 
-                    items.Add(item);
+                        items.Add(item);
+                    }
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSiteCode - IsImpactedBy", "", backboneDb);
+                    }
                 }
 
                 //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
@@ -454,7 +463,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestIsImpactedBy", "", backboneDb);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestIsImpactedBy", "", backboneDb);
                 return 0;
             }
             finally
@@ -479,7 +488,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <returns>List of HasNationalProtection stored</returns>
         private async Task<int> harvestHasNationalProtection(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-
             List<Models.backbone_db.HasNationalProtection> items = new List<Models.backbone_db.HasNationalProtection>();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
@@ -504,17 +512,19 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
-
                     Models.backbone_db.HasNationalProtection item = new Models.backbone_db.HasNationalProtection();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
-                    item.Version = 0;
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                        item.DesignatedCode = TypeConverters.CheckNull<string>(reader["DesignatedCode"]);
+                        item.Percentage = TypeConverters.CheckNull<decimal>(reader["Percentage"]);
+                        items.Add(item);
                     }
-                    item.DesignatedCode = TypeConverters.CheckNull<string>(reader["DesignatedCode"]);
-                    item.Percentage = TypeConverters.CheckNull<decimal>(reader["Percentage"]);
-                    items.Add(item);
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSiteCode - HasNationalProtection", "", backboneDb);
+                    }
                 }
 
                 //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
@@ -532,7 +542,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestHasNationalProtection", "", backboneDb);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestHasNationalProtection", "", backboneDb);
                 return 0;
             }
             finally
@@ -586,16 +596,19 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     Models.backbone_db.DetailedProtectionStatus item = new Models.backbone_db.DetailedProtectionStatus();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
-                    item.Version = 0;
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                        item.DesignationCode = TypeConverters.CheckNull<string>(reader["DesignationCode"]);
+                        item.OverlapCode = TypeConverters.CheckNull<string>(reader["OverlapCode"]);
+                        item.OverlapPercentage = TypeConverters.CheckNull<decimal>(reader["OverlapPercentage"]);
+                        item.Convention = TypeConverters.CheckNull<string>(reader["Convention"]);
+                        items.Add(item);
                     }
-                    item.DesignationCode = TypeConverters.CheckNull<string>(reader["DesignationCode"]);
-                    item.OverlapCode = TypeConverters.CheckNull<string>(reader["OverlapCode"]);
-                    item.OverlapPercentage = TypeConverters.CheckNull<decimal>(reader["OverlapPercentage"]);
-                    item.Convention = TypeConverters.CheckNull<string>(reader["Convention"]);
-                    items.Add(item);
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSiteCode - DetailedProtectionStatus", "", backboneDb);
+                    }
                 }
 
                 //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
@@ -613,7 +626,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestDetailedProtectionStatus", "", backboneDb);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestDetailedProtectionStatus", "", backboneDb);
                 return 0;
             }
             finally
@@ -667,22 +680,25 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                     SiteLargeDescriptions item = new SiteLargeDescriptions();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
-                    item.Version = 0;
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
-                    }
-                    item.Quality = TypeConverters.CheckNull<string>(reader["Quality"]);
-                    item.Vulnarab = TypeConverters.CheckNull<string>(reader["Vulnarab"]);
-                    item.Designation = TypeConverters.CheckNull<string>(reader["Designation"]);
-                    item.ManagPlan = TypeConverters.CheckNull<string>(reader["ManagPlan"]);
-                    item.Documentation = TypeConverters.CheckNull<string>(reader["Documentation"]);
-                    item.OtherCharact = TypeConverters.CheckNull<string>(reader["OtherCharact"]);
-                    item.ManagConservMeasures = TypeConverters.CheckNull<string>(reader["ManagConservMeasures"]);
-                    item.ManagPlanUrl = TypeConverters.CheckNull<string>(reader["ManagPlanUrl"]);
-                    item.ManagStatus = TypeConverters.CheckNull<string>(reader["ManagStatus"]);
+                        item.Quality = TypeConverters.CheckNull<string>(reader["Quality"]);
+                        item.Vulnarab = TypeConverters.CheckNull<string>(reader["Vulnarab"]);
+                        item.Designation = TypeConverters.CheckNull<string>(reader["Designation"]);
+                        item.ManagPlan = TypeConverters.CheckNull<string>(reader["ManagPlan"]);
+                        item.Documentation = TypeConverters.CheckNull<string>(reader["Documentation"]);
+                        item.OtherCharact = TypeConverters.CheckNull<string>(reader["OtherCharact"]);
+                        item.ManagConservMeasures = TypeConverters.CheckNull<string>(reader["ManagConservMeasures"]);
+                        item.ManagPlanUrl = TypeConverters.CheckNull<string>(reader["ManagPlanUrl"]);
+                        item.ManagStatus = TypeConverters.CheckNull<string>(reader["ManagStatus"]);
 
-                    items.Add(item);
+                        items.Add(item);
+                    }
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSiteCode - SiteLargeDescriptions", "", backboneDb);
+                    }
                 }
                 //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
@@ -699,7 +715,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSiteLargeDescriptions", "", backboneDb);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestSiteLargeDescriptions", "", backboneDb);
                 return 0;
             }
             finally
@@ -751,16 +767,18 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     SiteOwnerType item = new SiteOwnerType();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
-                    item.Version = 0;
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                        //6-Unknown for those types not found in the reference OwnerShipTypes
+                        item.Type = TypeConverters.CheckNull<string>(reader["Type"]);
+                        item.Percent = TypeConverters.CheckNull<decimal>(reader["Percent"]);
+                        items.Add(item);
                     }
-                    //6-Unknown for those types not found in the reference OwnerShipTypes
-                    item.Type = TypeConverters.CheckNull<string>(reader["Type"]);
-                    item.Percent = TypeConverters.CheckNull<decimal>(reader["Percent"]);
-                    items.Add(item);
-
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSiteCode - SiteOwnerType", "", backboneDb);
+                    }
                 }
                 try
                 {
@@ -775,7 +793,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestSiteOwnerType", "", backboneDb);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestSiteOwnerType", "", backboneDb);
                 return 0;
             }
             finally
@@ -1196,22 +1214,25 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     Respondents respondent = new Respondents();
                     respondent.SiteCode = reader["SiteCode"].ToString();
-                    respondent.Version = 0;
                     if (sites.Any(s => s.SiteCode == respondent.SiteCode))
                     {
                         respondent.Version = sites.FirstOrDefault(s => s.SiteCode == respondent.SiteCode).Version;
+                        respondent.locatorName = TypeConverters.CheckNull<string>(reader["locatorName"]);
+                        respondent.addressArea = TypeConverters.CheckNull<string>(reader["addressArea"]);
+                        respondent.postName = TypeConverters.CheckNull<string>(reader["postName"]);
+                        respondent.postCode = TypeConverters.CheckNull<string>(reader["postCode"]);
+                        respondent.thoroughfare = TypeConverters.CheckNull<string>(reader["thoroughfare"]);
+                        respondent.addressUnstructured = TypeConverters.CheckNull<string>(reader["addressUnstructured"]);
+                        respondent.name = TypeConverters.CheckNull<string>(reader["name"]);
+                        respondent.Email = TypeConverters.CheckNull<string>(reader["Email"]);
+                        respondent.AdminUnit = TypeConverters.CheckNull<string>(reader["AdminUnit"]);
+                        respondent.LocatorDesignator = TypeConverters.CheckNull<string>(reader["LocatorDesignator"]);
+                        items.Add(respondent);
                     }
-                    respondent.locatorName = TypeConverters.CheckNull<string>(reader["locatorName"]);
-                    respondent.addressArea = TypeConverters.CheckNull<string>(reader["addressArea"]);
-                    respondent.postName = TypeConverters.CheckNull<string>(reader["postName"]);
-                    respondent.postCode = TypeConverters.CheckNull<string>(reader["postCode"]);
-                    respondent.thoroughfare = TypeConverters.CheckNull<string>(reader["thoroughfare"]);
-                    respondent.addressUnstructured = TypeConverters.CheckNull<string>(reader["addressUnstructured"]);
-                    respondent.name = TypeConverters.CheckNull<string>(reader["name"]);
-                    respondent.Email = TypeConverters.CheckNull<string>(reader["Email"]);
-                    respondent.AdminUnit = TypeConverters.CheckNull<string>(reader["AdminUnit"]);
-                    respondent.LocatorDesignator = TypeConverters.CheckNull<string>(reader["LocatorDesignator"]);
-                    items.Add(respondent);
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", respondent.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSiteCode - Respondents", "", backboneDb);
+                    }
                 }
                 //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
                 try
@@ -1220,7 +1241,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedHabitats - Respondents.SaveBulkRecord", "", backboneDb);
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - Respondents.SaveBulkRecord", "", backboneDb);
                 }
                 //Console.WriteLine(String.Format("End save to list describe sites -> {0}", (DateTime.Now - start).TotalSeconds));
 
@@ -1228,7 +1249,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - harvestRespondents", "", backboneDb);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestRespondents", "", backboneDb);
                 return 0;
             }
             finally

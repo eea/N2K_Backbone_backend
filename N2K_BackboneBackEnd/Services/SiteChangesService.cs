@@ -45,6 +45,8 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2KBackboneContext _dataContext;
         private readonly IEnumerable<SpeciesTypes> _speciesTypes;
         private readonly IEnumerable<HabitatTypes> _habitatTypes;
+        private readonly IEnumerable<SpeciesPriority> _speciesPriority;
+        private readonly IEnumerable<HabitatPriority> _habitatPriority;
         private readonly IEnumerable<Countries> _countries;
         private IEnumerable<Habitats>? _siteHabitats;
         private IEnumerable<Species>? _siteSpecies;
@@ -64,6 +66,8 @@ namespace N2K_BackboneBackEnd.Services
             _dataContext = dataContext;
             _speciesTypes = _dataContext.Set<SpeciesTypes>().AsNoTracking().ToList();
             _habitatTypes = _dataContext.Set<HabitatTypes>().AsNoTracking().ToList();
+            _speciesPriority = _dataContext.Set<SpeciesPriority>().AsNoTracking().ToList();
+            _habitatPriority = _dataContext.Set<HabitatPriority>().AsNoTracking().ToList();
             _countries = _dataContext.Set<Countries>().AsNoTracking().ToList();
         }
 
@@ -429,6 +433,8 @@ namespace N2K_BackboneBackEnd.Services
                 List<SiteCodeView> result = new List<SiteCodeView>();
                 List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                                 param1).ToListAsync();
+                List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
+                                param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
                 foreach (var change in (await changes.ToListAsync()))
                 {
                     SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
@@ -438,13 +444,21 @@ namespace N2K_BackboneBackEnd.Services
                         if (editionChange != null)
                             activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                     }
+
+                    // Get Lineage change type from lineageChanges
+                    LineageTypes? changeLineage = lineageChanges.FirstOrDefault(
+                        l => l.SiteCode == change.SiteCode
+                            && l.Version == change.Version
+                        )?.Type ?? LineageTypes.NoChanges;
+
                     SiteCodeView temp = new SiteCodeView
                     {
                         SiteCode = change.SiteCode,
                         Version = change.Version,
                         Name = change.Name,
                         EditedBy = activity is null ? null : activity.Author,
-                        EditedDate = activity is null ? null : activity.Date
+                        EditedDate = activity is null ? null : activity.Date,
+                        LineageChangeType = changeLineage
                     };
                     result.Add(temp);
                 }
@@ -488,6 +502,9 @@ namespace N2K_BackboneBackEnd.Services
                                 param1).ToListAsync();
                     List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
                                 param1).ToListAsync();
+                    List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
+                                    param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
+                    
                     foreach (var change in (await changes.ToListAsync()))
                     {
                         SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
@@ -497,13 +514,21 @@ namespace N2K_BackboneBackEnd.Services
                             if (editionChange != null)
                                 activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                         }
+
+                        // Get Lineage change type from lineageChanges
+                        LineageTypes? changeLineage = lineageChanges.FirstOrDefault(
+                            l => l.SiteCode == change.SiteCode
+                                && l.Version == change.Version
+                            )?.Type ?? LineageTypes.NoChanges;
+
                         SiteCodeView temp = new SiteCodeView
                         {
                             SiteCode = change.SiteCode,
                             Version = change.Version,
                             Name = change.Name,
                             EditedBy = activity is null ? null : activity.Author,
-                            EditedDate = activity is null ? null : activity.Date
+                            EditedDate = activity is null ? null : activity.Date,
+                            LineageChangeType = changeLineage
                         };
                         result.Add(temp);
                     }
@@ -653,7 +678,7 @@ namespace N2K_BackboneBackEnd.Services
                             foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
                             {
                                 _Section.DeletedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
+                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.VersionReferenceId, changedItem.VersionReferenceId)
                                 );
                             }
                         }
@@ -721,7 +746,8 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         fields.Add("Submission", nullCase);
                     }
-                    if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed")
+                    if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed"
+                        || catChange.ChangeType == "Change of spatial area")
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
@@ -850,15 +876,23 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     case "Species":
                         string? specName = null;
+                        string? annexII = "-";
+                        string? priorityS = "-";
                         string? population = null;
                         string? specType = null;
 
                         if (code != null)
                         {
                             SpeciesTypes? _spectype = _speciesTypes.FirstOrDefault(s => s.Code.ToLower() == code.ToLower());
-                            if (_spectype != null) specName = _spectype.Name;
+                            if (_spectype != null)
+                            {
+                                specName = _spectype.Name;
+                                annexII = (_spectype.AnnexII == null) ? annexII : _spectype.AnnexII;
+                                SpeciesPriority? _specpriority = _speciesPriority.FirstOrDefault(s => s.SpecieCode.ToLower() == code.ToLower());
+                                priorityS = (_specpriority == null) ? priorityS : "*";
+                            }
 
-                            var specDetails = _siteSpecies.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
+                            var specDetails = _siteSpecies.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == pCountryVersion)
                                 .Select(spc => new
                                 {
                                     Population = spc.Population,
@@ -866,7 +900,7 @@ namespace N2K_BackboneBackEnd.Services
                                 }).FirstOrDefault();
                             if (specDetails == null)
                             {
-                                specDetails = _siteSpeciesOther.Where(sp => sp.SpecieCode.ToLower() == code.ToLower())
+                                specDetails = _siteSpeciesOther.Where(sp => sp.SpecieCode.ToLower() == code.ToLower() && sp.Version == pCountryVersion)
                                 .Select(spc => new
                                 {
                                     Population = spc.Population,
@@ -897,6 +931,8 @@ namespace N2K_BackboneBackEnd.Services
                                 specType = specDetails.SpecType;
                             }
                         }
+                        fields.Add("AnnexII", annexII);
+                        fields.Add("Priority", priorityS);
                         fields.Add("Population", population);
                         fields.Add("SpeciesType", specType);
 
@@ -925,6 +961,7 @@ namespace N2K_BackboneBackEnd.Services
 
                     case "Habitats":
                         string? habName = null;
+                        string? priorityH = "-";
                         string? coverHa = null;
                         string? relSurface = null;
                         if (code != null)
@@ -933,11 +970,14 @@ namespace N2K_BackboneBackEnd.Services
                             var habType = _habitatTypes.Where(s => s.Code.ToLower() == code.ToLower()).Select(spc => spc.Name).FirstOrDefault();
                             if (habType != null) habName = habType;
 
-                            var habDetails = _siteHabitats.Where(sh => sh.HabitatCode.ToLower() == code.ToLower())
+                            HabitatPriority? _habpriority = _habitatPriority.FirstOrDefault(h => h.HabitatCode.ToLower() == code.ToLower());
+
+                            var habDetails = _siteHabitats.Where(sh => sh.HabitatCode.ToLower() == code.ToLower() && sh.Version == pCountryVersion)
                                 .Select(hab => new
                                 {
                                     CoverHA = hab.CoverHA.ToString(),
-                                    RelativeSurface = hab.RelativeSurface
+                                    RelativeSurface = hab.RelativeSurface,
+                                    PriorityForm = hab.PriorityForm
                                 }).FirstOrDefault();
 
                             if (habDetails == null)
@@ -946,15 +986,18 @@ namespace N2K_BackboneBackEnd.Services
                                 .Select(hab => new
                                 {
                                     CoverHA = hab.CoverHA.ToString(),
-                                    RelativeSurface = hab.RelativeSurface
+                                    RelativeSurface = hab.RelativeSurface,
+                                    PriorityForm = hab.PriorityForm
                                 }).FirstOrDefault();
                             }
                             if (habDetails != null)
                             {
                                 relSurface = habDetails.RelativeSurface;
                                 coverHa = habDetails.CoverHA;
+                                priorityH = (_habpriority == null) ? priorityH : ((_habpriority.Priority == 1 || (_habpriority.Priority == 2 && habDetails.PriorityForm == true)) ? "*" : priorityH);
                             }
                         }
+                        fields.Add("Priority", priorityH);
                         fields.Add("CoverHa", coverHa);
                         fields.Add("RelativeSurface", relSurface);
 
