@@ -14,8 +14,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 		public string? Group { get; set; }
 		public string? Type { get; set; }
 		public bool? Active { get; set; }
+        public string? AnnexII { get; set; }
 
-		public static void OnModelCreating(ModelBuilder builder)
+        public static void OnModelCreating(ModelBuilder builder)
 		{
 			builder.Entity<SpeciesTypes>()
 				.ToTable("SpeciesTypes")
