@@ -840,6 +840,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     case "Species":
                         string? specName = null;
+                        string? annexII = "-";
                         string? priorityS = "-";
                         string? population = null;
                         string? specType = null;
@@ -850,6 +851,7 @@ namespace N2K_BackboneBackEnd.Services
                             if (_spectype != null)
                             {
                                 specName = _spectype.Name;
+                                annexII = (_spectype.AnnexII == null) ? annexII : _spectype.AnnexII;
                                 SpeciesPriority? _specpriority = _speciesPriority.FirstOrDefault(s => s.SpecieCode.ToLower() == code.ToLower());
                                 priorityS = (_specpriority == null) ? priorityS : "*";
                             }
@@ -893,6 +895,7 @@ namespace N2K_BackboneBackEnd.Services
                                 specType = specDetails.SpecType;
                             }
                         }
+                        fields.Add("AnnexII", annexII);
                         fields.Add("Priority", priorityS);
                         fields.Add("Population", population);
                         fields.Add("SpeciesType", specType);

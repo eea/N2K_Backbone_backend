@@ -35,6 +35,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [Keyless]
     public class CodeChangeDetailAddedRemovedSpecies : CodeChangeDetail
     {
+        public string? AnnexII { get; set; } = "";
         public string? Priority { get; set; } = "";
         public string? Population { get; set; } = "";
         public string? SpeciesType { get; set; } = "";
