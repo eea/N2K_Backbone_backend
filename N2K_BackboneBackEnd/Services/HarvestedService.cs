@@ -812,8 +812,6 @@ namespace N2K_BackboneBackEnd.Services
             double siteLengthKmTolerance = 0.0;
             double habitatCoverHaTolerance = 0.0;
 
-            string a = null;
-
             if (ctx == null) ctx = this._dataContext;
 
             try
