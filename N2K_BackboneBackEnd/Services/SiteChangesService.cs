@@ -56,6 +56,11 @@ namespace N2K_BackboneBackEnd.Services
         private IEnumerable<SpeciesOther>? _siteSpeciesOtherReference;
 
 
+        // this list is used to check if the affected sites field should return null or not
+        private List<LineageTypes> lineageCases =
+            new List<LineageTypes> { LineageTypes.Recode, LineageTypes.Split, LineageTypes.Merge };
+
+
         public SiteChangesService(N2KBackboneContext dataContext)
         {
             _dataContext = dataContext;
@@ -179,12 +184,17 @@ namespace N2K_BackboneBackEnd.Services
                                     activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Action == "User edition after rejection of version " + change.Version).FirstOrDefault();
                                 }
                             }
-                            SiteChangeDb recoded = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "Site Recoded").FirstOrDefaultAsync();
+
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
-                            siteChange.Recoded = recoded is null ? false : true;
-                            Lineage lineageChangeType = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
-                            siteChange.LineageChangeType = lineageChangeType is null ? LineageTypes.NoChanges : lineageChangeType.Type;
+                            Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
+                            siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
+
+                            if(lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
+                                siteChange.AntecessorsSiteCodes = String.Join(",", await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                                    .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync());
+
+
                             var changeView = new SiteChangeView
                             {
                                 ChangeId = change.ChangeId,
@@ -328,6 +338,31 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetailVM.Info = new SiteChangesLevelDetail();
                 changeDetailVM.Critical = new SiteChangesLevelDetail();
 
+                // Get lineage change type from Lineage table
+                Lineage? lineageChange = await _dataContext.Set<Lineage>().AsNoTracking().FirstOrDefaultAsync(l => l.SiteCode == pSiteCode && l.Version == pCountryVersion);
+                changeDetailVM.LineageChangeType = lineageChange?.Type;
+
+                // get affected sites list only in certain lineage change types
+                if (lineageCases.Contains((LineageTypes)changeDetailVM.LineageChangeType))
+                {
+                    // Get antecessors from LineageAntecessors table matching lineageID
+                    List<String>? antecessorsSiteCodes = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                        .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync();
+                    lineageChange.AntecessorsSiteCodes = String.Join(",", antecessorsSiteCodes);
+
+                    // Get successor siteCodes by searching for successor lineage IDs
+                    List<long> successorsIDs = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                        .Where(l => l.SiteCode == pSiteCode).Select(l => l.LineageID).ToListAsync();
+                    List<String>? successorSiteCodes = await _dataContext.Set<Lineage>().AsNoTracking()
+                        .Where(l => successorsIDs.Contains(l.ID)).Select(l => l.SiteCode).ToListAsync();
+
+                    // include current sitecode, antecessor sitecodes and successor sitecodes, comma separated
+                    changeDetailVM.AffectedSites = String.Join(",",
+                        new List<String> { pSiteCode }
+                        .Concat(antecessorsSiteCodes
+                        .Concat(successorSiteCodes))
+                    .ToHashSet());
+                }
 
                 var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
                 if (site != null)
@@ -356,9 +391,9 @@ namespace N2K_BackboneBackEnd.Services
                 changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
                 if (changesDb != null)
                 {
-                    if (changesDb.FirstOrDefault().ChangeType == "Site Deleted")
+                    if (changesDb.FirstOrDefault()?.ChangeType == "Site Deleted")
                     {
-                        changeDetailVM.Status = changesDb.FirstOrDefault().Status;
+                        changeDetailVM.Status = changesDb.FirstOrDefault()?.Status;
                     }
                 }
 
@@ -466,9 +501,10 @@ namespace N2K_BackboneBackEnd.Services
                     List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                                 param1).ToListAsync();
                     List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
-                                    param1).ToListAsync();
+                                param1).ToListAsync();
                     List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
                                     param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
+                    
                     foreach (var change in (await changes.ToListAsync()))
                     {
                         SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();

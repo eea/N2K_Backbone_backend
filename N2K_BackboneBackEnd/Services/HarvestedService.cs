@@ -80,6 +80,11 @@ namespace N2K_BackboneBackEnd.Services
 
         }
 
+        private String GetLineageOPType(LineageTypes type)
+        {
+            return Enum.GetName(type);
+        }
+
         private CountryVersionToStatus GetCountryVersionToStatusFromSingleEnvelope(string countryCode, int version, HarvestingStatus status)
         {
             return new CountryVersionToStatus
@@ -540,23 +545,24 @@ namespace N2K_BackboneBackEnd.Services
                         var i = 0;
                         foreach (SiteToHarvest? harvestingSite in newsites)
                         {
-                            changes = await SiteChangeDetection(changes, previoussites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, sitesRelation, false, ctx);
+                            changes = await SiteChangeDetection(changes, detectedLineageChanges, previoussites, harvestingSite, envelope, habitatPriority, speciesPriority, processedEnvelope, sitesRelation, false, ctx);
                             //if (i > 300) break;
                             //if (i % 5000 ==0 )
                             //    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Change detection {0} - {1}:{2}", envelope.CountryCode, envelope.VersionId,i.ToString()), "ChangeDetection", "", ctx.Database.GetConnectionString());
                             i = i + 1;
+                            List<SiteChangeDb> a = changes.Where(c => c.LineageChangeType != null).ToList();
                         }
-
+                        
                         //For each site in backboneDB check if the site still exists in Versioning
                         foreach (SiteToHarvest? storedSite in previoussites)
                         {
                             RelatedSites? siteRelation = sitesRelation.Where(s => s.PreviousSiteCode == storedSite.SiteCode && s.PreviousVersion == storedSite.VersionId).FirstOrDefault();
                             SiteToHarvest? harvestingSite = null;
+                            LineageDetection ld = detectedLineageChanges.FirstOrDefault(e => e.new_sitecode == storedSite.SiteCode && e.new_version == storedSite.VersionId);
                             if (siteRelation != null)
                                 harvestingSite = newsites.Where(s => s.SiteCode == siteRelation.NewSiteCode && s.VersionId == siteRelation.NewVersion).FirstOrDefault();
                             if (siteRelation != null && harvestingSite == null)
                             {
-                                //if the is the site has been recoded do not add it to the changed sites
                                 LineageDetection temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
                                 if (temp == null) //the site has not been RECODED
                                 {
@@ -565,6 +571,12 @@ namespace N2K_BackboneBackEnd.Services
                                     siteChange.Version = storedSite.VersionId;
                                     siteChange.ChangeCategory = "Network general structure";
                                     siteChange.ChangeType = "Site Deleted";
+                                    if (ld != null)
+                                    {
+                                        siteChange.ChangeType = "Site ";
+                                        siteChange.ChangeType += ld.op.ToLower() == "split" ? "Split" : "";
+                                        siteChange.ChangeType += ld.op.ToLower() == "merge" ? "Merge" : "";
+                                    }
                                     siteChange.Country = envelope.CountryCode;
                                     siteChange.Level = Enumerations.Level.Critical;
                                     siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx);
@@ -579,6 +591,7 @@ namespace N2K_BackboneBackEnd.Services
                                     changes.Add(siteChange);
                                 }
                             }
+
                         }
 
                         result.Add(new HarvestedEnvelope
@@ -791,7 +804,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<SiteChangeDb>> SiteChangeDetection(List<SiteChangeDb> changes, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciesPriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, List<RelatedSites>? sitesRelation, bool manualEdition = false, N2KBackboneContext? ctx = null)
+        public async Task<List<SiteChangeDb>> SiteChangeDetection(List<SiteChangeDb> changes, List<LineageDetection>? detectedLineageChanges, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciesPriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, List<RelatedSites>? sitesRelation, bool manualEdition = false, N2KBackboneContext? ctx = null)
         {
             //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
             //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
@@ -806,8 +819,12 @@ namespace N2K_BackboneBackEnd.Services
                 processedEnvelope.Status = await GetSiteChangeStatus(processedEnvelope.Status, ctx);
                 RelatedSites? siteRelation = sitesRelation.Where(s => s.NewSiteCode == harvestingSite.SiteCode && s.NewVersion == harvestingSite.VersionId).FirstOrDefault();
                 SiteToHarvest? storedSite = null;
+                LineageDetection ld = null;
                 if (siteRelation != null)
+                {
                     storedSite = referencedSites.Where(s => s.SiteCode == siteRelation.PreviousSiteCode && s.VersionId == siteRelation.PreviousVersion).FirstOrDefault();
+                    ld = detectedLineageChanges.FirstOrDefault(e => e.new_sitecode == storedSite.SiteCode && e.new_version == storedSite.VersionId);
+                }
                 if (siteRelation != null && storedSite != null)
                 {
                     //SiteAttributesChecking
@@ -854,6 +871,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Version = harvestingSite.VersionId;
                         siteChange.ChangeCategory = "Site General Info";
                         siteChange.ChangeType = "Site Losing Priority";
+                        siteChange.LineageChangeType = LineageTypes.NoChanges;
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Critical;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -875,6 +893,7 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Version = harvestingSite.VersionId;
                         siteChange.ChangeCategory = "Site General Info";
                         siteChange.ChangeType = "Site Getting Priority";
+                        siteChange.LineageChangeType = LineageTypes.NoChanges;
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -912,6 +931,13 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.Version = harvestingSite.VersionId;
                     siteChange.ChangeCategory = "Network general structure";
                     siteChange.ChangeType = "Site Added";
+                    siteChange.LineageChangeType = LineageTypes.Creation;
+                    if(ld != null)
+                    {
+                        siteChange.ChangeType = "Site ";
+                        siteChange.ChangeType += ld.op.ToLower() == "split" ? "Split" : "";
+                        siteChange.ChangeType += ld.op.ToLower() == "merge" ? "Merge" : "";
+                    }
                     siteChange.Country = envelope.CountryCode;
                     siteChange.Level = Enumerations.Level.Critical;
                     siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
