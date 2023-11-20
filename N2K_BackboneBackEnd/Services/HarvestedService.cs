@@ -1758,7 +1758,6 @@ namespace N2K_BackboneBackEnd.Services
             HarvestingStatus toStatus = changeEnvelopes.toStatus;
             try
             {
-                await Task.Delay(1000);
                 List<ProcessedEnvelopes> envelopeList = new List<ProcessedEnvelopes>();
                 ProcessedEnvelopes? envelope = new ProcessedEnvelopes();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
