@@ -37,7 +37,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         [NotMapped]
         public LineageTypes? LineageChangeType { get; set; }
         [NotMapped]
-        public String? AntecessorsSiteCodes { get; set; }
+        public String? AffectedSites { get; set; }
 
 
         [NotMapped]
