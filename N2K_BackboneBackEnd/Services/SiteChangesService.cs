@@ -188,13 +188,12 @@ namespace N2K_BackboneBackEnd.Services
 
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
+
                             Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
                             siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
 
                             if(lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
-                                siteChange.AntecessorsSiteCodes = String.Join(",", await _dataContext.Set<LineageAntecessors>().AsNoTracking()
-                                    .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync());
-
+                                siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
 
                             var changeView = new SiteChangeView
                             {
@@ -327,6 +326,29 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        private async Task<String>? GetAffectedSites(string pSiteCode, Lineage? lineageChange)
+        {
+            if (lineageChange == null)
+                return "";
+
+            // Get antecessors from LineageAntecessors table matching lineageID
+            List<String>? antecessorsSiteCodes = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync();
+            lineageChange.AntecessorsSiteCodes = String.Join(",", antecessorsSiteCodes);
+
+            // Get successor siteCodes by searching for successor lineage IDs
+            List<long> successorsIDs = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                .Where(l => l.SiteCode == pSiteCode).Select(l => l.LineageID).ToListAsync();
+            List<String>? successorSiteCodes = await _dataContext.Set<Lineage>().AsNoTracking()
+                .Where(l => successorsIDs.Contains(l.ID)).Select(l => l.SiteCode).ToListAsync();
+
+            return String.Join(",",
+                new List<String> { pSiteCode }
+                .Concat(antecessorsSiteCodes
+                .Concat(successorSiteCodes))
+            .ToHashSet());
+
+        }
 
         public async Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion)
         {
@@ -345,25 +367,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 // get affected sites list only in certain lineage change types
                 if (lineageCases.Contains((LineageTypes)changeDetailVM.LineageChangeType))
-                {
-                    // Get antecessors from LineageAntecessors table matching lineageID
-                    List<String>? antecessorsSiteCodes = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
-                        .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync();
-                    lineageChange.AntecessorsSiteCodes = String.Join(",", antecessorsSiteCodes);
-
-                    // Get successor siteCodes by searching for successor lineage IDs
-                    List<long> successorsIDs = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
-                        .Where(l => l.SiteCode == pSiteCode).Select(l => l.LineageID).ToListAsync();
-                    List<String>? successorSiteCodes = await _dataContext.Set<Lineage>().AsNoTracking()
-                        .Where(l => successorsIDs.Contains(l.ID)).Select(l => l.SiteCode).ToListAsync();
-
-                    // include current sitecode, antecessor sitecodes and successor sitecodes, comma separated
-                    changeDetailVM.AffectedSites = String.Join(",",
-                        new List<String> { pSiteCode }
-                        .Concat(antecessorsSiteCodes
-                        .Concat(successorSiteCodes))
-                    .ToHashSet());
-                }
+                    changeDetailVM.AffectedSites = GetAffectedSites(pSiteCode, lineageChange).Result;
 
                 var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
                 if (site != null)
