@@ -2,6 +2,7 @@
 
 namespace N2K_BackboneBackEnd.Models
 {
+    [Keyless]
     public class SpeciesToHarvest : IEntityModel
     {
         public string? SpeciesCode { get; set; } = string.Empty;
