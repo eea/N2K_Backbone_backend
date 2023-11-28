@@ -192,7 +192,7 @@ namespace N2K_BackboneBackEnd.Services
                             Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
                             siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
 
-                            if(lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
+                            if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
                                 siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
 
                             var changeView = new SiteChangeView
@@ -509,7 +509,7 @@ namespace N2K_BackboneBackEnd.Services
                                 param1).ToListAsync();
                     List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
                                     param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
-                    
+
                     foreach (var change in (await changes.ToListAsync()))
                     {
                         SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
@@ -755,7 +755,8 @@ namespace N2K_BackboneBackEnd.Services
                         fields.Add("Submission", nullCase);
                     }
                     if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed"
-                        || catChange.ChangeType == "Change of spatial area")
+                        || catChange.ChangeType == "Change of spatial area" || catChange.ChangeType == "Spatial Area Decreased" ||
+                        catChange.ChangeType == "Spatial Area Increased")
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
