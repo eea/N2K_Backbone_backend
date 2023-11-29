@@ -782,6 +782,38 @@ namespace N2K_BackboneBackEnd.Services
                             fields.Add("Percentage", nullCase);
                         }
                     }
+                    if (catChange.ChangeType == "Deletion of Spatial Area" ||
+                        catChange.ChangeType == "Additon of Spatial Area"
+                        )
+                    {
+                        string? reportedString = nullCase;
+                        string? referenceString = nullCase;
+                        string? detail = changedItem.Detail;
+                        if (fields.TryGetValue("Submission", out reportedString) 
+                            && reportedString != "" && !string.IsNullOrEmpty(detail))
+                        {
+                            var culture = new CultureInfo("en-US");
+                            var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
+                            var totalArea = decimal.Parse(detail, CultureInfo.InvariantCulture);
+                            if (totalArea != 0)
+                            {
+                                fields.Add("Total Area", Math.Round(totalArea, 4).ToString("F4", culture));
+                                fields.Add("Percentage", Math.Round(((reported *  100) / totalArea), 4).ToString("F4", culture));
+                            }
+                            else
+                            {
+                                fields.Add("Total Area", Math.Round(totalArea, 4).ToString("F4", culture));
+                                fields.Add("Percentage", "0.0");
+                            }
+                            fields["Reference"] = "";
+                        }
+                        else
+                        {
+                            fields.Add("Percentage", nullCase);
+                        }
+
+                    }
+
 
                     if (changeCategory == "Habitats" || changeCategory == "Species")
                     {
