@@ -813,7 +813,7 @@ namespace N2K_BackboneBackEnd.Services
 
                             if (totalArea != 0)
                             {
-                                fields[deleted ? "Deleted":"Added"] = string.Format("{0}{1}", deleted?"-":"", Math.Round((reported , 4).ToString("F4", culture)));
+                                fields[deleted ? "Deleted" : "Added"] = string.Format("{0}{1}", deleted ? "-" : "", Math.Round(reported , 4).ToString("F4", culture));
                                 fields.Add("Percentage", string.Format("{0}{1}", deleted?"-":"", Math.Round(((reported * 100) / totalArea), 4).ToString("F4", culture)));
                             }
                             else
