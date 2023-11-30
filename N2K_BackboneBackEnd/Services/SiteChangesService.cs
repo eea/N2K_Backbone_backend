@@ -789,27 +789,44 @@ namespace N2K_BackboneBackEnd.Services
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
                         string? detail = changedItem.Detail;
+                        bool deleted = false;
+
+                        switch (catChange.ChangeType)
+                        {
+                            case "Deletion of Spatial Area":
+                                fields.Add("Deleted", "");
+                                deleted = true;
+                                break;
+                            case "Additon of Spatial Area":
+                                fields.Add("Added", "");
+                                break;
+                        }
+
+
                         if (fields.TryGetValue("Submission", out reportedString) 
                             && reportedString != "" && !string.IsNullOrEmpty(detail))
                         {
+
                             var culture = new CultureInfo("en-US");
                             var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
                             var totalArea = decimal.Parse(detail, CultureInfo.InvariantCulture);
+
                             if (totalArea != 0)
                             {
-                                fields.Add("Percentage", Math.Round(((reported *  100) / totalArea), 4).ToString("F4", culture));
+                                fields[deleted ? "Deleted":"Added"] = string.Format("{0}{1}", deleted?"-":"", Math.Round((reported , 4).ToString("F4", culture)));
+                                fields.Add("Percentage", string.Format("{0}{1}", deleted?"-":"", Math.Round(((reported * 100) / totalArea), 4).ToString("F4", culture)));
                             }
                             else
                             {
                                 fields.Add("Percentage", "0.0");
                             }
-                            fields["Reference"] = "";
                         }
                         else
                         {
                             fields.Add("Percentage", nullCase);
                         }
-
+                        fields.Remove("Reference");
+                        fields.Remove("Submission");
                     }
 
 
