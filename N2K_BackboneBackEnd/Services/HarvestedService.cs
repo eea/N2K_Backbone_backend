@@ -598,6 +598,14 @@ namespace N2K_BackboneBackEnd.Services
                             List<SiteChangeDb> a = changes.Where(c => c.LineageChangeType != null).ToList();
                         }
 
+                        //clean memory lists
+                        habitatsVersioningEnvelope.Clear();
+                        habitatsReferenceEnvelope.Clear();
+                        speciesVersioningEnvelope.Clear();
+                        speciesReferenceEnvelope.Clear();
+                        speciesOtherVersioningEnvelope.Clear();
+                        speciesOtherReferenceEnvelope.Clear();
+
                         //For each site in backboneDB check if the site still exists in Versioning
                         foreach (SiteToHarvest? storedSite in previoussites)
                         {
@@ -959,7 +967,6 @@ namespace N2K_BackboneBackEnd.Services
                     changes = await species.ChangeDetectionSpecies(speciesVersioning, referencedSpecies, changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority, processedEnvelope, ctx,                         
                             speciesOtherVersioningEnvelope, speciesOtherReferenceEnvelope);
 
-                    var a = 1;
                     //These booleans declare whether or not each site is a priority
                     Boolean isStoredSitePriority = await SitePriorityChecker(storedSite.SiteCode, storedSite.VersionId, habitatPriority, speciesPriority, habitatVersioning, speciesVersioning);
                     Boolean isHarvestingSitePriority = await SitePriorityChecker(harvestingSite.SiteCode, harvestingSite.VersionId, habitatPriority, speciesPriority, referencedHabitats, referencedSpecies);
