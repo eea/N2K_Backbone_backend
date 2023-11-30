@@ -837,6 +837,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     changes.Add(siteChange);
                 }
 
+                /*
                 var param1 = new SqlParameter("@sitecode", storedSite.SiteCode);
                 var param2 = new SqlParameter("@version", storedSite.VersionId);
                 List<SiteSpatialBasic> storedGeometries = await ctx.Set<SiteSpatialBasic>().FromSqlRaw($"exec dbo.spHasSiteGeometry @sitecode, @version", param1, param2).AsNoTracking().ToListAsync();
@@ -846,13 +847,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 param2 = new SqlParameter("@version", harvestingSite.VersionId);
                 List<SiteSpatialBasic> harvestingGeometries = await ctx.Set<SiteSpatialBasic>().FromSqlRaw($"exec dbo.spHasSiteGeometry @sitecode, @version", param1, param2).AsNoTracking().ToListAsync();
                 SiteSpatialBasic harvestingGeometry = harvestingGeometries.FirstOrDefault();
+                */
                 
-                if (storedGeometry == null || harvestingGeometry == null || storedGeometry.data != harvestingGeometry.data)
-                //if (!storedSite.HasGeometry  || !harvestingSite.HasGeometry  || storedSite.HasGeometry != harvestingSite.HasGeometry)
+                //if (storedGeometry == null || harvestingGeometry == null || storedGeometry.data != harvestingGeometry.data)
+                if (!storedSite.HasGeometry  || !harvestingSite.HasGeometry  || storedSite.HasGeometry != harvestingSite.HasGeometry)
                 {
                     Lineage lineage = await ctx.Set<Lineage>().Where(s => s.SiteCode == harvestingSite.SiteCode && s.N2KVersioningVersion == harvestingSite.N2KVersioningVersion).FirstOrDefaultAsync();
-                    if (storedGeometry != null && storedGeometry.data == true && (harvestingGeometry == null || harvestingGeometry.data == false))
-                    //if (storedSite.HasGeometry && !harvestingSite.HasGeometry)
+                    //if (storedGeometry != null && storedGeometry.data == true && (harvestingGeometry == null || harvestingGeometry.data == false))
+                    if (storedSite.HasGeometry && !harvestingSite.HasGeometry)
                     {
                         SiteChangeDb siteChange = new SiteChangeDb();
                         siteChange.SiteCode = harvestingSite.SiteCode;
@@ -876,8 +878,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         lineage.Type = LineageTypes.NoGeometryReported;
                     }
 
-                    else if ((storedGeometry == null || storedGeometry.data == false) && harvestingGeometry != null && harvestingGeometry.data == true)
-                    //else if ((!storedSite.HasGeometry) && harvestingSite.HasGeometry )
+                    //else if ((storedGeometry == null || storedGeometry.data == false) && harvestingGeometry != null && harvestingGeometry.data == true)
+                    else if ((!storedSite.HasGeometry) && harvestingSite.HasGeometry )
                     {
                         SiteChangeDb siteChange = new SiteChangeDb();
                         siteChange.SiteCode = harvestingSite.SiteCode;
