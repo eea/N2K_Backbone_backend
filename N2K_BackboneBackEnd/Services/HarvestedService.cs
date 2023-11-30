@@ -955,19 +955,8 @@ namespace N2K_BackboneBackEnd.Services
                         referencedSpecies = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
                                    param3, param5).ToListAsync();
                     }
-
-
-                    //List<SpeciesToHarvest> speciesVersioning = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
-                    //                param3, param4).ToListAsync();
-                    //List<SpeciesToHarvest> referencedSpecies = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
-                    //                param3, param5).ToListAsync();
-
                     HarvestSpecies species = new HarvestSpecies(ctx, _versioningContext);
-
-                    
-                    
-                    changes = await species.ChangeDetectionSpecies(speciesVersioning, referencedSpecies, changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority, processedEnvelope, ctx,
-                         
+                    changes = await species.ChangeDetectionSpecies(speciesVersioning, referencedSpecies, changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority, processedEnvelope, ctx,                         
                             speciesOtherVersioningEnvelope, speciesOtherReferenceEnvelope);
 
                     var a = 1;
