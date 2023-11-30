@@ -797,12 +797,10 @@ namespace N2K_BackboneBackEnd.Services
                             var totalArea = decimal.Parse(detail, CultureInfo.InvariantCulture);
                             if (totalArea != 0)
                             {
-                                fields.Add("Total Area", Math.Round(totalArea, 4).ToString("F4", culture));
                                 fields.Add("Percentage", Math.Round(((reported *  100) / totalArea), 4).ToString("F4", culture));
                             }
                             else
                             {
-                                fields.Add("Total Area", Math.Round(totalArea, 4).ToString("F4", culture));
                                 fields.Add("Percentage", "0.0");
                             }
                             fields["Reference"] = "";
