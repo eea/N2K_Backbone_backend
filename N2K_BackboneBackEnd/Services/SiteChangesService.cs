@@ -794,11 +794,11 @@ namespace N2K_BackboneBackEnd.Services
                         switch (catChange.ChangeType)
                         {
                             case "Deletion of Spatial Area":
-                                fields.Add("Deleted (ha)", "");
+                                fields.Add("Cumulative deleted spatial area (ha)", "");
                                 deleted = true;
                                 break;
                             case "Additon of Spatial Area":
-                                fields.Add("Added (ha)", "");
+                                fields.Add("Cumulative added spatial area (ha)", "");
                                 break;
                         }
 
@@ -813,7 +813,7 @@ namespace N2K_BackboneBackEnd.Services
 
                             if (totalArea != 0)
                             {
-                                fields[deleted ? "Cumulative deleted spatial area (ha)" : "Cumulative added spatial area (ha)"] = string.Format("{1}", Math.Round(reported , 4).ToString("F4", culture));
+                                fields[deleted ? "Cumulative deleted spatial area (ha)" : "Cumulative added spatial area (ha)"] = string.Format("{0}", Math.Round(reported , 4).ToString("F4", culture));
                                 fields.Add("Percentage", string.Format("{0}{1}", deleted?"-":"", Math.Round(((reported * 100) / totalArea), 4).ToString("F4", culture)));
                             }
                             else
