@@ -794,11 +794,11 @@ namespace N2K_BackboneBackEnd.Services
                         switch (catChange.ChangeType)
                         {
                             case "Deletion of Spatial Area":
-                                fields.Add("Deleted", "");
+                                fields.Add("Deleted (ha)", "");
                                 deleted = true;
                                 break;
                             case "Additon of Spatial Area":
-                                fields.Add("Added", "");
+                                fields.Add("Added (ha)", "");
                                 break;
                         }
 
