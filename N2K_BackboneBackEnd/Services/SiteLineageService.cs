@@ -169,10 +169,12 @@ namespace N2K_BackboneBackEnd.Services
 
                 foreach (LineageExtended change in changes)
                 {
+                    var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == change.SiteCode && site.Version == change.Version).FirstOrDefaultAsync();
                     LineageChanges temp = new LineageChanges();
                     temp.ChangeId = change.ID;
                     temp.SiteCode = change.SiteCode;
                     temp.SiteName = change.Name;
+                    temp.SiteType = await _dataContext.Set<SiteTypes>().AsNoTracking().Where(t => t.Code == site.SiteType).Select(t => t.Classification).FirstOrDefaultAsync();
                     temp.Type = change.Type;
                     if (change.AntecessorsSiteCodes != null)
                     {
