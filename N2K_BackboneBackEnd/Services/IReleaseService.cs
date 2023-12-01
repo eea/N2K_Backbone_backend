@@ -12,7 +12,7 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<Releases>> GetReleaseHeadersById(long? id);
         Task<UnionListComparerSummaryViewModel> GetCompareSummary(long? idSource, long? idTarget, string? bioRegions, IMemoryCache cache);
         Task<List<UnionListComparerDetailedViewModel>> CompareReleases(long? idSource, long? idTarget, string? bioRegions, string? country, IMemoryCache cache, int page = 1, int pageLimit = 0);
-        Task<List<Releases>> CreateRelease(string title, Boolean? isOfficial, string? character, string? comments);
+        Task<List<Releases>> CreateRelease(string title, Boolean? Final, string? character);
         Task<List<Releases>> UpdateRelease(long id, string name, Boolean final);
         Task<int> DeleteRelease(long id);
     }
