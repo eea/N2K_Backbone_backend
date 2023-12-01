@@ -691,7 +691,7 @@ namespace N2K_BackboneBackEnd.Services
                         fields.Add("Submission", nullCase);
                     }
                     if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed"
-                        || catChange.ChangeType == "Change of spatial area")
+                        || catChange.ChangeType == "Change of spatial area" || catChange.ChangeType.StartsWith("Cover_ha"))
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
@@ -702,13 +702,16 @@ namespace N2K_BackboneBackEnd.Services
                             var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
                             var reference = decimal.Parse(referenceString, CultureInfo.InvariantCulture);
                             fields.Add("Difference", Math.Round((reported - reference), 4).ToString("F4", culture));
-                            if (reference != 0)
+                            if (!catChange.ChangeType.StartsWith("Cover_ha"))
                             {
-                                fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4).ToString("F4", culture));
-                            }
-                            else
-                            {
-                                fields.Add("Percentage", Math.Round((reported - reference), 4).ToString("F4", culture));
+                                if (reference != 0)
+                                {
+                                    fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4).ToString("F4", culture));
+                                }
+                                else
+                                {
+                                    fields.Add("Percentage", Math.Round((reported - reference), 4).ToString("F4", culture));
+                                }
                             }
                         }
                         else
