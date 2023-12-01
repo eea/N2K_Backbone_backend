@@ -836,18 +836,25 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.N2KVersioningVersion = envelope.VersionId;
                     changes.Add(siteChange);
                 }
+
+                /*
                 var param1 = new SqlParameter("@sitecode", storedSite.SiteCode);
                 var param2 = new SqlParameter("@version", storedSite.VersionId);
                 List<SiteSpatialBasic> storedGeometries = await ctx.Set<SiteSpatialBasic>().FromSqlRaw($"exec dbo.spHasSiteGeometry @sitecode, @version", param1, param2).AsNoTracking().ToListAsync();
                 SiteSpatialBasic storedGeometry = storedGeometries.FirstOrDefault();
+                
                 param1 = new SqlParameter("@sitecode", harvestingSite.SiteCode);
                 param2 = new SqlParameter("@version", harvestingSite.VersionId);
                 List<SiteSpatialBasic> harvestingGeometries = await ctx.Set<SiteSpatialBasic>().FromSqlRaw($"exec dbo.spHasSiteGeometry @sitecode, @version", param1, param2).AsNoTracking().ToListAsync();
                 SiteSpatialBasic harvestingGeometry = harvestingGeometries.FirstOrDefault();
-                if (storedGeometry == null || harvestingGeometry == null || storedGeometry.data != harvestingGeometry.data)
+                */
+                
+                //if (storedGeometry == null || harvestingGeometry == null || storedGeometry.data != harvestingGeometry.data)
+                if (!storedSite.HasGeometry  || !harvestingSite.HasGeometry  || storedSite.HasGeometry != harvestingSite.HasGeometry)
                 {
                     Lineage lineage = await ctx.Set<Lineage>().Where(s => s.SiteCode == harvestingSite.SiteCode && s.N2KVersioningVersion == harvestingSite.N2KVersioningVersion).FirstOrDefaultAsync();
-                    if (storedGeometry != null && storedGeometry.data == true && (harvestingGeometry == null || harvestingGeometry.data == false))
+                    //if (storedGeometry != null && storedGeometry.data == true && (harvestingGeometry == null || harvestingGeometry.data == false))
+                    if (storedSite.HasGeometry && !harvestingSite.HasGeometry)
                     {
                         SiteChangeDb siteChange = new SiteChangeDb();
                         siteChange.SiteCode = harvestingSite.SiteCode;
@@ -870,7 +877,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         lineage.Version = harvestingSite.VersionId;
                         lineage.Type = LineageTypes.NoGeometryReported;
                     }
-                    else if ((storedGeometry == null || storedGeometry.data == false) && harvestingGeometry != null && harvestingGeometry.data == true)
+
+                    //else if ((storedGeometry == null || storedGeometry.data == false) && harvestingGeometry != null && harvestingGeometry.data == true)
+                    else if ((!storedSite.HasGeometry) && harvestingSite.HasGeometry )
                     {
                         SiteChangeDb siteChange = new SiteChangeDb();
                         siteChange.SiteCode = harvestingSite.SiteCode;
@@ -1017,7 +1026,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.SiteCode = harvestingSite.SiteCode;
                         siteChange.Version = harvestingSite.VersionId;
                         siteChange.ChangeCategory = "Change of area";
-                        siteChange.ChangeType = "Area Increased";
+                        siteChange.ChangeType = "SDF Area Increase";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Info;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -1041,7 +1050,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.SiteCode = harvestingSite.SiteCode;
                         siteChange.Version = harvestingSite.VersionId;
                         siteChange.ChangeCategory = "Change of area";
-                        siteChange.ChangeType = "Area Decreased";
+                        siteChange.ChangeType = "SDF Area Decrease";
                         siteChange.Country = envelope.CountryCode;
                         siteChange.Level = Enumerations.Level.Warning;
                         siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -1063,7 +1072,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     siteChange.SiteCode = harvestingSite.SiteCode;
                     siteChange.Version = harvestingSite.VersionId;
                     siteChange.ChangeCategory = "Change of area";
-                    siteChange.ChangeType = "Area Change";
+                    siteChange.ChangeType = "SDF Area Change";
                     siteChange.Country = envelope.CountryCode;
                     siteChange.Level = Enumerations.Level.Info;
                     siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -1139,7 +1148,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         siteChange.OldValue = null;
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "BioRegions";
-                        siteChange.VersionReferenceId = harvestingSite.VersionId;
+                        siteChange.VersionReferenceId = storedSite.VersionId;
                         siteChange.ReferenceSiteCode = storedSite.SiteCode;
                         siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);

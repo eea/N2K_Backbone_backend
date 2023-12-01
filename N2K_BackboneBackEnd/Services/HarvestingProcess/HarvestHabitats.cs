@@ -444,7 +444,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //For each habitat in Versioning compare it with that habitat in backboneDB
                 foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
                 {
-                    HabitatToHarvest storedHabitat = referencedHabitats.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode && s.PriorityForm == harvestingHabitat.PriorityForm).FirstOrDefault();
+                    HabitatToHarvest storedHabitat = referencedHabitats.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
                     if (storedHabitat != null)
                     {
                         if (((storedHabitat.RelSurface.ToUpper() == "A" || storedHabitat.RelSurface.ToUpper() == "B") && harvestingHabitat.RelSurface.ToUpper() == "C")
@@ -644,6 +644,27 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.N2KVersioningVersion = envelope.VersionId;
                             changes.Add(siteChange);
                         }
+                        if (storedHabitat.PriorityForm != harvestingHabitat.PriorityForm)
+                        {
+                            SiteChangeDb siteChange = new SiteChangeDb();
+                            siteChange.SiteCode = harvestingSite.SiteCode;
+                            siteChange.Version = harvestingSite.VersionId;
+                            siteChange.ChangeCategory = "Habitats";
+                            siteChange.ChangeType = "PriorityForm Change";
+                            siteChange.Country = envelope.CountryCode;
+                            siteChange.Level = Enumerations.Level.Critical;
+                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                            siteChange.NewValue = harvestingHabitat.PriorityForm == true ? "Y" : "N";
+                            siteChange.OldValue = storedHabitat.PriorityForm == true ? "Y" : "N";
+                            siteChange.Tags = string.Empty;
+                            siteChange.Code = harvestingHabitat.HabitatCode;
+                            siteChange.Section = "Habitats";
+                            siteChange.VersionReferenceId = storedHabitat.VersionId;
+                            siteChange.FieldName = "PriorityForm";
+                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            changes.Add(siteChange);
+                        }
 
                         //Priority check is also present in HarvestedService/SitePriorityChecker
                         #region HabitatPriority
@@ -745,7 +766,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //For each habitat in backboneDB check if the habitat still exists in Versioning
                 foreach (HabitatToHarvest storedHabitat in referencedHabitats)
                 {
-                    HabitatToHarvest harvestingHabitat = habitatVersioning.Where(s => s.HabitatCode == storedHabitat.HabitatCode && s.PriorityForm == storedHabitat.PriorityForm).FirstOrDefault();
+                    HabitatToHarvest harvestingHabitat = habitatVersioning.Where(s => s.HabitatCode == storedHabitat.HabitatCode).FirstOrDefault();
                     if (harvestingHabitat == null)
                     {
                         SiteChangeDb siteChange = new SiteChangeDb();
