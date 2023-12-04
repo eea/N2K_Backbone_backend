@@ -14,8 +14,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v2
-
+      - uses: actions/checkout@v3            
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v1
         with:
@@ -24,7 +23,7 @@ jobs:
 
       - name: Build with dotnet
         run: dotnet build --configuration Release
-
+        
       - name: copy config
         run: |
           copy N2K_BackboneBackEnd/Configs/appsettings_dev.json N2K_BackboneBackEnd/appsettings.json  
@@ -48,7 +47,7 @@ jobs:
 
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: .net-app
 
@@ -57,6 +56,7 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'n2kbackboneback-dev'
+          node-version: 16
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_26817C37D09F4D04B5209B1D98373478 }}
           package: .
@@ -70,4 +70,5 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: .net-app
+          node-version: 16          
           
