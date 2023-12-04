@@ -483,10 +483,9 @@ namespace N2K_BackboneBackEnd.Services
                         SqlParameter paramDetection1 = new SqlParameter("@reported_envelop", envelope.VersionId);
                         SqlParameter paramDetection2 = new SqlParameter("@country", envelope.CountryCode);
                         SqlParameter paramDetection3 = new SqlParameter("@tol", 5);
-                        List<LineageDetection>? detectedLineageChanges = new List<LineageDetection>();
 
-                        //List<LineageDetection>? detectedLineageChanges = await ctx.Set<LineageDetection>().FromSqlRaw($"exec dbo.spGetSitesToDetectChangesWithLineage  @reported_envelop, @country, @tol",
-                        //                paramDetection1, paramDetection2, paramDetection3).ToListAsync();
+                        List<LineageDetection>? detectedLineageChanges = await ctx.Set<LineageDetection>().FromSqlRaw($"exec dbo.spGetSitesToDetectChangesWithLineage  @reported_envelop, @country, @tol",
+                                        paramDetection1, paramDetection2, paramDetection3).ToListAsync();
 
 
                         var lineageInsertion = new DataTable("LineageInsertion");
