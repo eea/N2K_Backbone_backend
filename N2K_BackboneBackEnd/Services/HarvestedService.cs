@@ -483,10 +483,9 @@ namespace N2K_BackboneBackEnd.Services
                         SqlParameter paramDetection1 = new SqlParameter("@reported_envelop", envelope.VersionId);
                         SqlParameter paramDetection2 = new SqlParameter("@country", envelope.CountryCode);
                         SqlParameter paramDetection3 = new SqlParameter("@tol", 5);
-                        List<LineageDetection>? detectedLineageChanges = new List<LineageDetection>();
 
-                        //List<LineageDetection>? detectedLineageChanges = await ctx.Set<LineageDetection>().FromSqlRaw($"exec dbo.spGetSitesToDetectChangesWithLineage  @reported_envelop, @country, @tol",
-                        //                paramDetection1, paramDetection2, paramDetection3).ToListAsync();
+                        List<LineageDetection>? detectedLineageChanges = await ctx.Set<LineageDetection>().FromSqlRaw($"exec dbo.spGetSitesToDetectChangesWithLineage  @reported_envelop, @country, @tol",
+                                        paramDetection1, paramDetection2, paramDetection3).ToListAsync();
 
 
                         var lineageInsertion = new DataTable("LineageInsertion");
@@ -589,7 +588,7 @@ namespace N2K_BackboneBackEnd.Services
                         //For each site in Versioning compare it with that site in backboneDB
                         //Parallel change detection (10 parallel threads)
                         //Create a ConcurrentBag to avoid sync errors with shared variables
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "", "Start parallel change detection", "", ctx.Database.GetConnectionString());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("START parallel change detection {}-{}", envelope.CountryCode, envelope.VersionId), "Sites tabular change detection", "", ctx.Database.GetConnectionString());
 
                         ConcurrentBag<List<SiteChangeDb>> concurrentSitesChanges = new ConcurrentBag<List<SiteChangeDb>>();
 
@@ -610,7 +609,7 @@ namespace N2K_BackboneBackEnd.Services
                         foreach (var item in concurrentSitesChanges) {
                             changes.AddRange(item.ToList<SiteChangeDb>());
                         }
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "", "End parallel change detection", "", ctx.Database.GetConnectionString());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("END parallel change detection {}-{}", envelope.CountryCode, envelope.VersionId), "Sites tabular change detection", "", ctx.Database.GetConnectionString());
 
                         /*
                         var ss_par = changes.Select(c=> c.SiteCode).DistinctBy(c => c).ToList();
