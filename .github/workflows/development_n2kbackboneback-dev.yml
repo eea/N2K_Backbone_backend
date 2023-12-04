@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3            
       - name: Set up .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v2
         with:
           dotnet-version: '6.0.x'
           include-prerelease: true
@@ -34,7 +34,7 @@ jobs:
         run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: .net-app
           path: ${{env.DOTNET_ROOT}}/myapp
@@ -56,7 +56,6 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'n2kbackboneback-dev'
-          node-version: 16
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_26817C37D09F4D04B5209B1D98373478 }}
           package: .
@@ -70,5 +69,4 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: .net-app
-          node-version: 16          
           
