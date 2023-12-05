@@ -34,6 +34,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
 
+        public string? Inspire_ID { get; set; } = "";
+
         private string dbConnection = "";
 
         public Sites() { }

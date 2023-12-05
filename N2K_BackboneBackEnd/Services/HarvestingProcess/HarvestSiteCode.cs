@@ -201,6 +201,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.DateSac = pVSite.DATE_SAC;
                 bbSite.Latitude = pVSite.LATITUDE;
                 bbSite.Longitude = pVSite.LONGITUDE;
+                bbSite.Inspire_ID = pVSite.INSPIRE;
                 return bbSite;
             }
             catch (Exception ex)
