@@ -215,7 +215,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     SpeciesToHarvest storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode && s.PopulationType == harvestingSpecies.PopulationType).FirstOrDefault();
                     if (storedSpecies != null)
                     {
-                        // TODO
                         if (storedSpecies.Population.ToUpper() != "D" && harvestingSpecies.Population.ToUpper() == "D")
                         {
                             SiteChangeDb siteChange = new SiteChangeDb();
