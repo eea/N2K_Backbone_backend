@@ -801,19 +801,15 @@ namespace N2K_BackboneBackEnd.Services
                                 };
                         }
 
-                        if (changeType == "Population Priority Change")
+                        if (changeType == "Population Priority Change"
+                            || changeType == "Population Increase"
+                            || changeType == "Population Decrease")
                         {
-                            String? reference = changeDetail.Fields.Where(f => f.Key == "Reference")?.First().Value;
-                            String? submission = changeDetail.Fields.Where(f => f.Key == "Submission")?.First().Value;
-                            if (!String.IsNullOrEmpty(reference) && !String.IsNullOrEmpty(submission))
-                            {
-                                if (submission[0] < reference[0])
-                                    changeDetail.Fields.Add("Priority", "*");
-                                else
-                                    changeDetail.Fields.Add("Priority", "-");
-                            }
+                            SpeciesPriority? sp = _dataContext.Set<SpeciesPriority>().Where(s => s.SpecieCode == changedItem.Code).FirstOrDefault();
+                            if(sp != null)
+                                changeDetail.Fields = new Dictionary<string, string> {{ "Priority", "*" }}.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
                             else
-                                changeDetail.Fields.Add("Priority", "");
+                                changeDetail.Fields = new Dictionary<string, string> {{ "Priority", "-" }}.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
                         }
 
                         catChange.ChangedCodesDetail.Add(changeDetail);
