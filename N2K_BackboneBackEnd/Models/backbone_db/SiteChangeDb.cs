@@ -34,6 +34,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public Level? Level { get; set; }
         public string? ChangeCategory { get; set; }
         public string? ChangeType { get; set; }
+        [NotMapped]
+        public LineageTypes? LineageChangeType { get; set; }
+        [NotMapped]
+        public String? AntecessorsSiteCodes { get; set; }
 
 
         [NotMapped]
