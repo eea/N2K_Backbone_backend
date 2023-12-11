@@ -755,8 +755,8 @@ namespace N2K_BackboneBackEnd.Services
                         fields.Add("Submission", nullCase);
                     }
                     if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed"
-                        || catChange.ChangeType == "Change of spatial area" || catChange.ChangeType == "Spatial Area Decreased" ||
-                        catChange.ChangeType == "Spatial Area Increased")
+                        || catChange.ChangeType == "Change of spatial area" || catChange.ChangeType == "Spatial Area Decreased"
+                        || catChange.ChangeType == "Spatial Area Increased" || catChange.ChangeType.StartsWith("Cover_ha"))
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
@@ -767,13 +767,16 @@ namespace N2K_BackboneBackEnd.Services
                             var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
                             var reference = decimal.Parse(referenceString, CultureInfo.InvariantCulture);
                             fields.Add("Difference", Math.Round((reported - reference), 4).ToString("F4", culture));
-                            if (reference != 0)
+                            if (!catChange.ChangeType.StartsWith("Cover_ha"))
                             {
-                                fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4).ToString("F4", culture));
-                            }
-                            else
-                            {
-                                fields.Add("Percentage", Math.Round((reported - reference), 4).ToString("F4", culture));
+                                if (reference != 0)
+                                {
+                                    fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4).ToString("F4", culture));
+                                }
+                                else
+                                {
+                                    fields.Add("Percentage", Math.Round((reported - reference), 4).ToString("F4", culture));
+                                }
                             }
                         }
                         else
@@ -782,35 +785,93 @@ namespace N2K_BackboneBackEnd.Services
                             fields.Add("Percentage", nullCase);
                         }
                     }
-
-                    if (changeCategory == "Habitats" || changeCategory == "Species")
+                    if (catChange.ChangeType == "Deletion of Spatial Area" ||
+                        catChange.ChangeType == "Additon of Spatial Area"
+                        )
                     {
-                        if (GetCodeName(changedItem) != String.Empty)
-                        {
-                            catChange.ChangedCodesDetail.Add(
-                                    new CodeChangeDetail
-                                    {
-                                        Code = changedItem.Code,
-                                        Name = GetCodeName(changedItem),
-                                        ChangeId = changedItem.ChangeId,
-                                        Fields = fields
-                                    }
+                        string? reportedString = nullCase;
+                        string? referenceString = nullCase;
+                        string? detail = changedItem.Detail;
+                        bool deleted = false;
 
-                                );
+                        switch (catChange.ChangeType)
+                        {
+                            case "Deletion of Spatial Area":
+                                fields.Add("Cumulative deleted spatial area (ha)", "");
+                                deleted = true;
+                                break;
+                            case "Additon of Spatial Area":
+                                fields.Add("Cumulative added spatial area (ha)", "");
+                                break;
+                        }
+
+
+                        if (fields.TryGetValue("Submission", out reportedString) 
+                            && reportedString != "" && !string.IsNullOrEmpty(detail))
+                        {
+
+                            var culture = new CultureInfo("en-US");
+                            var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
+                            var totalArea = decimal.Parse(detail, CultureInfo.InvariantCulture);
+
+                            if (totalArea != 0)
+                            {
+                                fields[deleted ? "Cumulative deleted spatial area (ha)" : "Cumulative added spatial area (ha)"] = string.Format("{0}", Math.Round(reported , 4).ToString("F4", culture));
+                                fields.Add("Percentage", string.Format("{0}{1}", deleted?"-":"", Math.Round(((reported * 100) / totalArea), 4).ToString("F4", culture)));
+                            }
+                            else
+                            {
+                                fields.Add("Percentage", "0.0");
+                            }
                         }
                         else
                         {
-                            catChange.ChangedCodesDetail.Add(
-                                    new CodeChangeDetail
-                                    {
-                                        Code = "-",
-                                        Name = changedItem.Code,
-                                        ChangeId = changedItem.ChangeId,
-                                        Fields = fields
-                                    }
-
-                                );
+                            fields.Add("Percentage", nullCase);
                         }
+                        fields.Remove("Reference");
+                        fields.Remove("Submission");
+                    }
+
+
+                    if (changeCategory == "Habitats" || changeCategory == "Species")
+                    {
+                        CodeChangeDetail changeDetail; 
+                        if (GetCodeName(changedItem) != String.Empty)
+                        {
+                            changeDetail =
+                                new CodeChangeDetail
+                                {
+                                    Code = changedItem.Code,
+                                    Name = GetCodeName(changedItem),
+                                    ChangeId = changedItem.ChangeId,
+                                    Fields = fields
+                                };
+
+                        }
+                        else
+                        {
+                            changeDetail =
+                                new CodeChangeDetail
+                                {
+                                    Code = "-",
+                                    Name = changedItem.Code,
+                                    ChangeId = changedItem.ChangeId,
+                                    Fields = fields
+                                };
+                        }
+
+                        if (changeType == "Population Change"
+                            || changeType == "Population Increase"
+                            || changeType == "Population Decrease")
+                        {
+                            SpeciesPriority? sp = _dataContext.Set<SpeciesPriority>().Where(s => s.SpecieCode == changedItem.Code).FirstOrDefault();
+                            if(sp != null)
+                                changeDetail.Fields = new Dictionary<string, string> {{ "Priority", "*" }}.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
+                            else
+                                changeDetail.Fields = new Dictionary<string, string> {{ "Priority", "-" }}.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
+                        }
+
+                        catChange.ChangedCodesDetail.Add(changeDetail);
                     }
                     else
                     {
@@ -822,6 +883,7 @@ namespace N2K_BackboneBackEnd.Services
                                 }
                             );
                     }
+
                 }
                 return catChange;
             }
