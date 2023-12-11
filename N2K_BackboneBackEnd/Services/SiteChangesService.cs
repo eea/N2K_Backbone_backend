@@ -835,32 +835,43 @@ namespace N2K_BackboneBackEnd.Services
 
                     if (changeCategory == "Habitats" || changeCategory == "Species")
                     {
+                        CodeChangeDetail changeDetail; 
                         if (GetCodeName(changedItem) != String.Empty)
                         {
-                            catChange.ChangedCodesDetail.Add(
-                                    new CodeChangeDetail
-                                    {
-                                        Code = changedItem.Code,
-                                        Name = GetCodeName(changedItem),
-                                        ChangeId = changedItem.ChangeId,
-                                        Fields = fields
-                                    }
+                            changeDetail =
+                                new CodeChangeDetail
+                                {
+                                    Code = changedItem.Code,
+                                    Name = GetCodeName(changedItem),
+                                    ChangeId = changedItem.ChangeId,
+                                    Fields = fields
+                                };
 
-                                );
                         }
                         else
                         {
-                            catChange.ChangedCodesDetail.Add(
-                                    new CodeChangeDetail
-                                    {
-                                        Code = "-",
-                                        Name = changedItem.Code,
-                                        ChangeId = changedItem.ChangeId,
-                                        Fields = fields
-                                    }
-
-                                );
+                            changeDetail =
+                                new CodeChangeDetail
+                                {
+                                    Code = "-",
+                                    Name = changedItem.Code,
+                                    ChangeId = changedItem.ChangeId,
+                                    Fields = fields
+                                };
                         }
+
+                        if (changeType == "Population Change"
+                            || changeType == "Population Increase"
+                            || changeType == "Population Decrease")
+                        {
+                            SpeciesPriority? sp = _dataContext.Set<SpeciesPriority>().Where(s => s.SpecieCode == changedItem.Code).FirstOrDefault();
+                            if(sp != null)
+                                changeDetail.Fields = new Dictionary<string, string> {{ "Priority", "*" }}.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
+                            else
+                                changeDetail.Fields = new Dictionary<string, string> {{ "Priority", "-" }}.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
+                        }
+
+                        catChange.ChangedCodesDetail.Add(changeDetail);
                     }
                     else
                     {
@@ -872,6 +883,7 @@ namespace N2K_BackboneBackEnd.Services
                                 }
                             );
                     }
+
                 }
                 return catChange;
             }
