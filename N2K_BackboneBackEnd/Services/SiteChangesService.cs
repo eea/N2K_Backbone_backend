@@ -16,6 +16,7 @@ using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Http;
 using System.Runtime.CompilerServices;
 using System.Globalization;
+using System.Linq;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -187,13 +188,12 @@ namespace N2K_BackboneBackEnd.Services
 
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
+
                             Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
                             siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
 
-                            if(lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
-                                siteChange.AntecessorsSiteCodes = String.Join(",", await _dataContext.Set<LineageAntecessors>().AsNoTracking()
-                                    .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync());
-
+                            if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
+                                siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
 
                             var changeView = new SiteChangeView
                             {
@@ -326,6 +326,29 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        private async Task<String>? GetAffectedSites(string pSiteCode, Lineage? lineageChange)
+        {
+            if (lineageChange == null)
+                return "";
+
+            // Get antecessors from LineageAntecessors table matching lineageID
+            List<String>? antecessorsSiteCodes = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync();
+            lineageChange.AntecessorsSiteCodes = String.Join(",", antecessorsSiteCodes);
+
+            // Get successor siteCodes by searching for successor lineage IDs
+            List<long> successorsIDs = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                .Where(l => l.SiteCode == pSiteCode).Select(l => l.LineageID).ToListAsync();
+            List<String>? successorSiteCodes = await _dataContext.Set<Lineage>().AsNoTracking()
+                .Where(l => successorsIDs.Contains(l.ID)).Select(l => l.SiteCode).ToListAsync();
+
+            return String.Join(",",
+                new List<String> { pSiteCode }
+                .Concat(antecessorsSiteCodes
+                .Concat(successorSiteCodes))
+            .ToHashSet());
+
+        }
 
         public async Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion)
         {
@@ -344,25 +367,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 // get affected sites list only in certain lineage change types
                 if (lineageCases.Contains((LineageTypes)changeDetailVM.LineageChangeType))
-                {
-                    // Get antecessors from LineageAntecessors table matching lineageID
-                    List<String>? antecessorsSiteCodes = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
-                        .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync();
-                    lineageChange.AntecessorsSiteCodes = String.Join(",", antecessorsSiteCodes);
-
-                    // Get successor siteCodes by searching for successor lineage IDs
-                    List<long> successorsIDs = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
-                        .Where(l => l.SiteCode == pSiteCode).Select(l => l.LineageID).ToListAsync();
-                    List<String>? successorSiteCodes = await _dataContext.Set<Lineage>().AsNoTracking()
-                        .Where(l => successorsIDs.Contains(l.ID)).Select(l => l.SiteCode).ToListAsync();
-
-                    // include current sitecode, antecessor sitecodes and successor sitecodes, comma separated
-                    changeDetailVM.AffectedSites = String.Join(",",
-                        new List<String> { pSiteCode }
-                        .Concat(antecessorsSiteCodes
-                        .Concat(successorSiteCodes))
-                    .ToHashSet());
-                }
+                    changeDetailVM.AffectedSites = GetAffectedSites(pSiteCode, lineageChange).Result;
 
                 var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
                 if (site != null)
@@ -504,7 +509,7 @@ namespace N2K_BackboneBackEnd.Services
                                 param1).ToListAsync();
                     List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
                                     param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
-                    
+
                     foreach (var change in (await changes.ToListAsync()))
                     {
                         SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
@@ -598,7 +603,6 @@ namespace N2K_BackboneBackEnd.Services
                     switch (_levelDetail.Section)
                     {
                         case "Site":
-                        case "BioRegions":
                             /*
                             if (_levelDetail.ChangeType.IndexOf("Added") > -1)
                             {
@@ -635,6 +639,10 @@ namespace N2K_BackboneBackEnd.Services
                             */
                             if (_levelDetail.ChangeType != "User edition")
                                 changesPerLevel.SiteInfo.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
+                            break;
+                        case "BioRegions":
+                            if (_levelDetail.ChangeType != "User edition")
+                                changesPerLevel.SiteInfo.ChangesByCategory.Add(GetBioregionChangeDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
                             break;
 
                         case "Species":
@@ -747,7 +755,8 @@ namespace N2K_BackboneBackEnd.Services
                         fields.Add("Submission", nullCase);
                     }
                     if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed"
-                        || catChange.ChangeType == "Change of spatial area")
+                        || catChange.ChangeType == "Change of spatial area" || catChange.ChangeType == "Spatial Area Decreased"
+                        || catChange.ChangeType == "Spatial Area Increased" || catChange.ChangeType.StartsWith("Cover_ha"))
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
@@ -758,13 +767,16 @@ namespace N2K_BackboneBackEnd.Services
                             var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
                             var reference = decimal.Parse(referenceString, CultureInfo.InvariantCulture);
                             fields.Add("Difference", Math.Round((reported - reference), 4).ToString("F4", culture));
-                            if (reference != 0)
+                            if (!catChange.ChangeType.StartsWith("Cover_ha"))
                             {
-                                fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4).ToString("F4", culture));
-                            }
-                            else
-                            {
-                                fields.Add("Percentage", Math.Round((reported - reference), 4).ToString("F4", culture));
+                                if (reference != 0)
+                                {
+                                    fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4).ToString("F4", culture));
+                                }
+                                else
+                                {
+                                    fields.Add("Percentage", Math.Round((reported - reference), 4).ToString("F4", culture));
+                                }
                             }
                         }
                         else
@@ -773,6 +785,53 @@ namespace N2K_BackboneBackEnd.Services
                             fields.Add("Percentage", nullCase);
                         }
                     }
+                    if (catChange.ChangeType == "Deletion of Spatial Area" ||
+                        catChange.ChangeType == "Additon of Spatial Area"
+                        )
+                    {
+                        string? reportedString = nullCase;
+                        string? referenceString = nullCase;
+                        string? detail = changedItem.Detail;
+                        bool deleted = false;
+
+                        switch (catChange.ChangeType)
+                        {
+                            case "Deletion of Spatial Area":
+                                fields.Add("Cumulative deleted spatial area (ha)", "");
+                                deleted = true;
+                                break;
+                            case "Additon of Spatial Area":
+                                fields.Add("Cumulative added spatial area (ha)", "");
+                                break;
+                        }
+
+
+                        if (fields.TryGetValue("Submission", out reportedString) 
+                            && reportedString != "" && !string.IsNullOrEmpty(detail))
+                        {
+
+                            var culture = new CultureInfo("en-US");
+                            var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
+                            var totalArea = decimal.Parse(detail, CultureInfo.InvariantCulture);
+
+                            if (totalArea != 0)
+                            {
+                                fields[deleted ? "Cumulative deleted spatial area (ha)" : "Cumulative added spatial area (ha)"] = string.Format("{0}", Math.Round(reported , 4).ToString("F4", culture));
+                                fields.Add("Percentage", string.Format("{0}{1}", deleted?"-":"", Math.Round(((reported * 100) / totalArea), 4).ToString("F4", culture)));
+                            }
+                            else
+                            {
+                                fields.Add("Percentage", "0.0");
+                            }
+                        }
+                        else
+                        {
+                            fields.Add("Percentage", nullCase);
+                        }
+                        fields.Remove("Reference");
+                        fields.Remove("Submission");
+                    }
+
 
                     if (changeCategory == "Habitats" || changeCategory == "Species")
                     {
@@ -826,6 +885,97 @@ namespace N2K_BackboneBackEnd.Services
                     }
 
                 }
+                return catChange;
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetChangeCategoryDetail", "");
+                throw ex;
+            }
+        }
+
+
+        private CategoryChangeDetail GetBioregionChangeDetail(string changeCategory, string changeType, List<SiteChangeDb> changeList)
+        {
+            try
+            {
+                var catChange = new CategoryChangeDetail();
+                catChange.ChangeType = changeType;
+                catChange.ChangeCategory = changeCategory;
+
+                List<BioRegions> referenceBioregions = _dataContext.Set<BioRegions>().Where(bgr => bgr.SiteCode == changeList.FirstOrDefault().SiteCode && bgr.Version == changeList.FirstOrDefault().VersionReferenceId).ToList();
+                List<BioRegions> submissionBioregions = _dataContext.Set<BioRegions>().Where(bgr => bgr.SiteCode == changeList.FirstOrDefault().SiteCode && bgr.Version == changeList.FirstOrDefault().Version).ToList();
+                List<BioRegionTypes> bioregionTypes = _dataContext.Set<BioRegionTypes>().ToList();
+
+                if (changeType == "Sites added due to a change of BGR")
+                {
+                    foreach (BioRegions changedItem in submissionBioregions)
+                    {
+                        var fields = new Dictionary<string, string>();
+                        string nullCase = "-";
+                        BioRegions reference = referenceBioregions.Where(r => r.BGRID == changedItem.BGRID).FirstOrDefault();
+                        if (reference != null)
+                        {
+                            fields.Add("Reference", bioregionTypes.Where(t => t.Code == reference.BGRID).FirstOrDefault().RefBioGeoName + " " + ((reference.Percentage != null) ? reference.Percentage : "-") + "%");
+                        }
+                        else
+                        {
+                            fields.Add("Reference", nullCase);
+                        }
+
+                        if (changedItem != null)
+                        {
+                            fields.Add("Submission", bioregionTypes.Where(t => t.Code == changedItem.BGRID).FirstOrDefault().RefBioGeoName + " " + ((changedItem.Percentage != null) ? changedItem.Percentage : "-") + "%");
+                        }
+                        else
+                        {
+                            fields.Add("Submission", nullCase);
+                        }
+
+                        catChange.ChangedCodesDetail.Add(
+                                    new CodeChangeDetail
+                                    {
+                                        ChangeId = changeList.FirstOrDefault().ChangeId,
+                                        Fields = fields
+                                    }
+                                );
+                    }
+                }
+                else if (changeType == "Sites deleted due to a change of BGR")
+                {
+                    foreach (BioRegions reference in referenceBioregions)
+                    {
+                        var fields = new Dictionary<string, string>();
+                        string nullCase = "-";
+                        BioRegions changedItem = submissionBioregions.Where(r => r.BGRID == reference.BGRID).FirstOrDefault();
+                        if (reference != null)
+                        {
+                            fields.Add("Reference", bioregionTypes.Where(t => t.Code == reference.BGRID).FirstOrDefault().RefBioGeoName + " " + ((reference.Percentage != null) ? reference.Percentage : "-") + "%");
+                        }
+                        else
+                        {
+                            fields.Add("Reference", nullCase);
+                        }
+
+                        if (changedItem != null)
+                        {
+                            fields.Add("Submission", bioregionTypes.Where(t => t.Code == changedItem.BGRID).FirstOrDefault().RefBioGeoName + " " + ((changedItem.Percentage != null) ? changedItem.Percentage : "-") + "%");
+                        }
+                        else
+                        {
+                            fields.Add("Submission", nullCase);
+                        }
+
+                        catChange.ChangedCodesDetail.Add(
+                                    new CodeChangeDetail
+                                    {
+                                        ChangeId = changeList.FirstOrDefault().ChangeId,
+                                        Fields = fields
+                                    }
+                                );
+                    }
+                }
+
                 return catChange;
             }
             catch (Exception ex)
