@@ -13,7 +13,7 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
 
     public class ReferenceMap : VersioningBase, IEntityModel
     {
-        protected string COUNTRYCODE { get; set; } = "";
+        public string COUNTRYCODE { get; set; } = "";
 
         [Column(TypeName = "decimal(18, 0)")]
         public decimal VERSIONID { get; set; }
@@ -22,7 +22,7 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         [Column(TypeName = "decimal(18, 0)")]
         public decimal COUNTRYVERSIONID { get; set; }
 
-        private int OBJECTID { get; set; }
+        private Int32 OBJECTID { get; set; }
 
         public string? SITECODE { get; set; } = "";
 
@@ -36,7 +36,7 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
 
         public string? INSPIRE { get; set; }
 
-        private int PDFPROVIDED { get; set; }
+        private Int16 PDFPROVIDED { get; set; }
 
         public NaturaSite NaturaSite { get; set; }
 
@@ -45,7 +45,7 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         {
             builder.Entity<ReferenceMap>()
             .ToTable("REFERENCEMAP")
-            .HasKey(k => new { k.SITECODE, k.COUNTRYVERSIONID, k.VERSIONID });
+            .HasKey(k => new { k.SITECODE, k.COUNTRYVERSIONID });
         }
     }
     public class NaturaSite : VersioningBase, IEntityModel
@@ -92,7 +92,9 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         {
             get
             {
-                return this.RefMap.INSPIRE;
+                if (this.RefMap!= null)
+                    return this.RefMap.INSPIRE;
+                return null;
             }
         }
 
@@ -101,11 +103,11 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
 
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<NaturaSite>().ToTable("NATURASITE").HasKey(k => new { k.SITECODE, k.COUNTRYVERSIONID, k.VERSIONID });
+            builder.Entity<NaturaSite>().ToTable("NATURASITE").HasKey(k => new { k.SITECODE, k.COUNTRYVERSIONID });
             builder.Entity<NaturaSite>()
                     .HasOne(a => a.RefMap)
                     .WithOne(b => b.NaturaSite)
-                    .HasForeignKey<ReferenceMap>(b => new { b.SITECODE, b.COUNTRYVERSIONID, b.VERSIONID });
+                    .HasForeignKey<ReferenceMap>(b => new { b.SITECODE, b.COUNTRYVERSIONID });
         }
     }
 
