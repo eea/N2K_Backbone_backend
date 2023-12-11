@@ -860,7 +860,7 @@ namespace N2K_BackboneBackEnd.Services
                                 };
                         }
 
-                        if (changeType == "Population Priority Change"
+                        if (changeType == "Population Change"
                             || changeType == "Population Increase"
                             || changeType == "Population Decrease")
                         {
