@@ -720,6 +720,19 @@ namespace N2K_BackboneBackEnd.Services
 
                     if (changeCategory == "Habitats" || changeCategory == "Species")
                     {
+                        string? priorityH = "-";
+                        HabitatPriority? _habpriority = _habitatPriority.FirstOrDefault(h => h.HabitatCode.ToLower() == changedItem.Code?.ToLower());
+                        var habDetails = _siteHabitats.Where(sh => sh.HabitatCode.ToLower() == changedItem.Code?.ToLower())
+                            .Select(hab => new
+                             {
+                                CoverHA = hab.CoverHA.ToString(),
+                                RelativeSurface = hab.RelativeSurface,
+                                PriorityForm = hab.PriorityForm
+                            }).FirstOrDefault();
+                        priorityH = (_habpriority == null) ? priorityH : ((_habpriority.Priority == 1 || (_habpriority.Priority == 2 && habDetails?.PriorityForm == true)) ? "*" : priorityH);
+
+                        fields = (Dictionary<string, string>) new Dictionary<string, string>() { { "Priority", priorityH } }.Concat(fields).ToDictionary(x=>x.Key,x=>x.Value);
+
                         if (GetCodeName(changedItem) != String.Empty)
                         {
                             catChange.ChangedCodesDetail.Add(
