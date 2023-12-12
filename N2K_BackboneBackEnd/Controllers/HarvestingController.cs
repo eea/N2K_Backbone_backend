@@ -464,7 +464,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = true;
                 response.Message = "";
                 response.Data = priority;
-                response.Count = (priority == null) ? 0 : priority;
+                response.Count = priority;
                 return Ok(response);
             }
             catch (Exception ex)
@@ -493,7 +493,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = true;
                 response.Message = "";
                 response.Data = priority;
-                response.Count = (priority == null) ? 0 : 1;
+                response.Count = 1;
                 return Ok(response);
             }
             catch (Exception ex)

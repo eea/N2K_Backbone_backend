@@ -31,7 +31,9 @@ namespace N2K_BackboneBackEnd.Enumerations
         [DataMember]
         TabularDataLoaded = 11,
         [DataMember]
-        SpatialDataLoaded = 12
+        SpatialDataLoaded = 12,
+        [DataMember]
+        Processing = 13
 
 
     }
