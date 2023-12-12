@@ -833,9 +833,23 @@ namespace N2K_BackboneBackEnd.Services
                     }
 
 
-                    if (changeCategory == "Habitats" || changeCategory == "Species")
+                    if (changeCategory == "Habitats")
                     {
-                        CodeChangeDetail changeDetail; 
+                        string? priorityH = "-";
+                        HabitatPriority? _habpriority = _habitatPriority.FirstOrDefault(h => h.HabitatCode.ToLower() == changedItem.Code?.ToLower());
+                        var habDetails = _siteHabitats.Where(sh => sh.HabitatCode.ToLower() == changedItem.Code?.ToLower())
+                            .Select(hab => new
+                            {
+                                CoverHA = hab.CoverHA.ToString(),
+                                RelativeSurface = hab.RelativeSurface,
+                                PriorityForm = hab.PriorityForm
+                            }).FirstOrDefault();
+                        priorityH = (_habpriority == null) ? priorityH : ((_habpriority.Priority == 1 || (_habpriority.Priority == 2 && habDetails?.PriorityForm == true)) ? "*" : priorityH);
+
+                        fields = (Dictionary<string, string>)new Dictionary<string, string>() { { "Priority", priorityH } }.Concat(fields).ToDictionary(x => x.Key, x => x.Value);
+
+                        CodeChangeDetail changeDetail;
+
                         if (GetCodeName(changedItem) != String.Empty)
                         {
                             changeDetail =
@@ -859,16 +873,25 @@ namespace N2K_BackboneBackEnd.Services
                                     Fields = fields
                                 };
                         }
-
+                        catChange.ChangedCodesDetail.Add(changeDetail);
+                    }
+                    else if (changeCategory == "Species")
+                    {
+                        CodeChangeDetail changeDetail =
+                            new CodeChangeDetail
+                            {
+                                Code = "-",
+                                Name = changedItem.Code,
+                                ChangeId = changedItem.ChangeId,
+                                Fields = fields
+                            };
                         if (changeType == "Population Change"
                             || changeType == "Population Increase"
                             || changeType == "Population Decrease")
                         {
                             SpeciesPriority? sp = _dataContext.Set<SpeciesPriority>().Where(s => s.SpecieCode == changedItem.Code).FirstOrDefault();
-                            if(sp != null)
-                                changeDetail.Fields = new Dictionary<string, string> {{ "Priority", "*" }}.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
-                            else
-                                changeDetail.Fields = new Dictionary<string, string> {{ "Priority", "-" }}.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
+                            string? priorityS = sp == null ? "-" : "*";
+                            changeDetail.Fields = new Dictionary<string, string> { { "Priority", priorityS } }.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
                         }
 
                         catChange.ChangedCodesDetail.Add(changeDetail);
