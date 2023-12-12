@@ -822,6 +822,7 @@ namespace N2K_BackboneBackEnd.Services
                         string? specName = null;
                         string? priorityS = "-";
                         string? population = null;
+                        string? popType = null;
                         string? specType = null;
 
                         if (code != null)
@@ -871,10 +872,12 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 population = specDetails.Population;
                                 specType = specDetails.SpecType;
+                                popType = _siteSpecies.FirstOrDefault(a => a.SiteCode == pSiteCode && a.SpecieCode == code && a.Version == pCountryVersion)?.PopulationType;
                             }
                         }
                         fields.Add("Priority", priorityS);
-                        fields.Add("Population", population);
+                        fields.Add("Pop. Size", population);
+                        fields.Add("Pop. Type", popType);
                         fields.Add("SpeciesType", specType);
 
                         if (specName != String.Empty && specName != null)
