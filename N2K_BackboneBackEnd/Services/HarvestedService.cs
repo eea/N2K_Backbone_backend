@@ -308,8 +308,6 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                await _hubContext.Clients.All.SendAsync("ToProcessing", data);
-
                 SqlParameter param1 = new SqlParameter("@status", (int)status);
 
                 List<HarvestingExpanded> result = await _dataContext.Set<HarvestingExpanded>().FromSqlRaw($"exec dbo.spGetEnvelopesByStatus  @status",
