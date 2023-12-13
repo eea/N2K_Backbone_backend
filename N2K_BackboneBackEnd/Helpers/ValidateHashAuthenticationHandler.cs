@@ -40,6 +40,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 token = Request.Headers["Authorization"].ToString();
                 token = token.Replace("Bearer ", "").Trim();
             }
+
             try
             {                
                 /*
