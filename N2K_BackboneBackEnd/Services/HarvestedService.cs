@@ -308,11 +308,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                CountryVersion data = new CountryVersion();
-                data.CountryCode = "AT";
-                data.VersionId = 8;
                 await _hubContext.Clients.All.SendAsync("ToProcessing", data);
-                await Task.Delay(5000);
 
                 SqlParameter param1 = new SqlParameter("@status", (int)status);
 
