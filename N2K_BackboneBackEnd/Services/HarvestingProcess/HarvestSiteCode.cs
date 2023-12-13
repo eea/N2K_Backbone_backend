@@ -201,6 +201,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.DateSac = pVSite.DATE_SAC;
                 bbSite.Latitude = pVSite.LATITUDE;
                 bbSite.Longitude = pVSite.LONGITUDE;
+                bbSite.DateUpdate = pVSite.DATE_UPDATE;
+                bbSite.SpaLegalReference = pVSite.SPA_LEGAL_REFERENCE;
+                bbSite.SacLegalReference = pVSite.SAC_LEGAL_REFERENCE;
+                bbSite.Explanations = pVSite.EXPLANATIONS;
+                bbSite.MarineArea = pVSite.MARINEAREA;
                 bbSite.Inspire_ID = pVSite.INSPIRE;
                 return bbSite;
             }
