@@ -36,6 +36,7 @@ namespace N2K_BackboneBackEnd.Helpers
             var accessToken = ""; 
             if (Request.Host.Host.IndexOf("localhost") == -1)
             {
+                /*
                 if (Request.Query.ContainsKey("access_token"))
                 {
                     accessToken = Request.Query["access_token"];
@@ -45,7 +46,9 @@ namespace N2K_BackboneBackEnd.Helpers
                         return Task.FromResult(AuthenticateResult.Fail("Header Not Found."));
                     
                 }
-                else if (Request.Headers.ContainsKey("Authorization"))
+                else 
+                */
+                if (Request.Headers.ContainsKey("Authorization"))
                 {
                     token = Request.Headers["Authorization"].ToString();
                     token = token.Replace("Bearer ", "").Trim();
