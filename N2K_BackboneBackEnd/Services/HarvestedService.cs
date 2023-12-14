@@ -1616,7 +1616,8 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.SaveChanges();
 
                         //Get the sites submitted in the envelope
-                        List<NaturaSite> vSites = _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToList();
+                        await _versioningContext.Set<ReferenceMap>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
+                        List<NaturaSite> vSites = await _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
 
                         //save in memory the fixed codes like priority species and habitat codes
                         DateTime start1 = DateTime.Now;

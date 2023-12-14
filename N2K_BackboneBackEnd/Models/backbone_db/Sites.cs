@@ -33,6 +33,12 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public DateTime? DateSac { get; set; }
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
+        public DateTime? DateUpdate { get; set; }
+        public string? SpaLegalReference { get; set; }
+        public string? SacLegalReference { get; set; }
+        public string? Explanations { get; set; }
+        public decimal? MarineArea { get; set; }
+        public string? Inspire_ID { get; set; } = "";
 
         private string dbConnection = "";
 
