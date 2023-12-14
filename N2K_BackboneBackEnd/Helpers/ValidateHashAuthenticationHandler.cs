@@ -39,9 +39,11 @@ namespace N2K_BackboneBackEnd.Helpers
                 if (Request.Query.ContainsKey("access_token"))
                 {
                     accessToken = Request.Query["access_token"];
-                    if (!string.IsNullOrEmpty(accessToken) &&
-                        (path.StartsWithSegments("/hubs/chat")))
+                    if (!string.IsNullOrEmpty(accessToken) &&  path.StartsWithSegments("/hubs/chat"))
                         token = accessToken;
+                    else                    
+                        return Task.FromResult(AuthenticateResult.Fail("Header Not Found."));
+                    
                 }
                 else if (Request.Headers.ContainsKey("Authorization"))
                 {
