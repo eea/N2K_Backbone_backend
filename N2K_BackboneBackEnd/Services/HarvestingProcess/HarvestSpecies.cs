@@ -212,7 +212,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //For each species in Versioning compare it with that species in backboneDB
                 foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
                 {
-                    SpeciesToHarvest storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode && s.PopulationType == harvestingSpecies.PopulationType).FirstOrDefault();
+                    SpeciesToHarvest storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                     if (storedSpecies != null)
                     {
                         if (storedSpecies.Population.ToUpper() != "D" && harvestingSpecies.Population.ToUpper() == "D")
@@ -221,7 +221,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Decrease";
+                            siteChange.ChangeType = "Population Decrease";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Warning;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -242,7 +242,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Increase";
+                            siteChange.ChangeType = "Population Increase";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -263,7 +263,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Change";
+                            siteChange.ChangeType = "Population Change";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -365,7 +365,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //For each species in backboneDB check if the species still exists in Versioning
                 foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
                 {
-                    SpeciesToHarvest harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode && s.PopulationType == storedSpecies.PopulationType).FirstOrDefault();
+                    SpeciesToHarvest harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode).FirstOrDefault();
                     if (harvestingSpecies == null)
                     {
                         SiteChangeDb siteChange = new SiteChangeDb();
@@ -400,7 +400,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Decrease (Other Species)";
+                            siteChange.ChangeType = "Population Decrease (Other Species)";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -421,7 +421,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Increase";
+                            siteChange.ChangeType = "Population Increase";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -442,7 +442,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Change";
+                            siteChange.ChangeType = "Population Change";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
