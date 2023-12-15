@@ -2,6 +2,8 @@
 
 namespace N2K_BackboneBackEnd.Models
 {
+
+    [Keyless]
     public class HabitatToHarvest : IEntityModel
     {
         public string HabitatCode { get; set; } = string.Empty;
@@ -16,5 +18,18 @@ namespace N2K_BackboneBackEnd.Models
             builder.Entity<HabitatToHarvest>()
                 .HasNoKey();
         }
+    }
+
+    [Keyless]
+    public class HabitatsToHarvestPerEnvelope : HabitatToHarvest, IEntityModel
+    {
+        public string? SiteCode { get; set; } = string.Empty;
+
+        public static void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<HabitatsToHarvestPerEnvelope>()
+                .HasNoKey();
+        }
+
     }
 }
