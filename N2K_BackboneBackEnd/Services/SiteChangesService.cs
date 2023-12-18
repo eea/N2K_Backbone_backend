@@ -659,20 +659,56 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         if (_Section.AddedCodes.Count == 0)
                         {
+                            if (_levelDetail.ChangeType == "Other Species Added"
+                                || _levelDetail.ChangeType == "Species Added")
+                            {
+                                _Section.AddedCodes.Add(new CategoryChangeDetail
+                                {
+                                    ChangeCategory = _levelDetail.Section,
+                                    ChangeType = _levelDetail.ChangeType,
+                                    ChangedCodesDetail = new List<CodeChangeDetail>()
+                                });
+                            }
+                            else
+                            {
+                                _Section.AddedCodes.Add(new CategoryChangeDetail
+                                {
+                                    ChangeCategory = _levelDetail.Section,
+                                    ChangeType = String.Format("List of {0} Added", _levelDetail.Section),
+                                    ChangedCodesDetail = new List<CodeChangeDetail>()
+                                });
+                            }
+                        }
+
+                        if (_levelDetail.ChangeList.Where(c => c.ChangeType == "Species Added").Count() > 0)
+                        {
+                            foreach (var changedItem in _levelDetail.ChangeList.Where(c => c.Code != "" || c.Code != null))
+                            {
+                                CategoryChangeDetail speciesDetail = _Section.AddedCodes.First(c => c.ChangeType == "Species Added");
+                                speciesDetail.ChangedCodesDetail.Add(
+                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
+                                );
+                            }
+                        }
+
+                        if (_levelDetail.ChangeList.Where(c => c.ChangeType == "Other Species Added").Count() > 0)
+                        {
                             _Section.AddedCodes.Add(new CategoryChangeDetail
                             {
                                 ChangeCategory = _levelDetail.Section,
-                                ChangeType = String.Format("List of {0} Added", _levelDetail.Section),
+                                ChangeType = _levelDetail.ChangeType,
                                 ChangedCodesDetail = new List<CodeChangeDetail>()
                             });
+                            foreach (var changedItem in _levelDetail.ChangeList)
+                            {
+                                CategoryChangeDetail otherSpeciesDetail = _Section.AddedCodes.First(c => c.ChangeType == "Other Species Added");
+                                otherSpeciesDetail.ChangedCodesDetail.Add(
+                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
+                                );
+                            }
                         }
 
-                        foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
-                        {
-                            _Section.AddedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                                CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
-                            );
-                        }
+
                     }
                 }
                 return changesPerLevel;
