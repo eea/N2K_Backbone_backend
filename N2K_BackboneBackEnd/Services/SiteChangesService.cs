@@ -623,7 +623,8 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (_Section.DeletedCodes.Count == 0)
                             {
-                                if (_levelDetail.ChangeType == "Other Species Deleted")
+                                if (_levelDetail.ChangeType == "Species Deleted"
+                                    || _levelDetail.ChangeType == "Other Species Deleted")
                                 {
                                     _Section.DeletedCodes.Add(new CategoryChangeDetail
                                     {
@@ -659,6 +660,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         if (_Section.AddedCodes.Count == 0)
                         {
+                            // TODO is this code in use??
                             if (_levelDetail.ChangeType == "Other Species Added"
                                 || _levelDetail.ChangeType == "Species Added")
                             {
