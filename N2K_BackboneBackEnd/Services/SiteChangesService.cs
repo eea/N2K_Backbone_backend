@@ -628,7 +628,7 @@ namespace N2K_BackboneBackEnd.Services
                                     _Section.DeletedCodes.Add(new CategoryChangeDetail
                                     {
                                         ChangeCategory = _levelDetail.Section,
-                                        ChangeType = String.Format("List of {0}", _levelDetail.ChangeType),
+                                        ChangeType = _levelDetail.ChangeType,
                                         ChangedCodesDetail = new List<CodeChangeDetail>()
                                     });
                                 }
