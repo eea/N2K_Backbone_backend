@@ -597,6 +597,7 @@ namespace N2K_BackboneBackEnd.Services
                                         ChangeList = g.Where(s => s.Section == g.Key.Section && s.ChangeType == g.Key.ChangeType && s.ChangeCategory == g.Key.ChangeCategory).ToList()
                                     }).ToList();
 
+                SystemLog.write(SystemLog.errorLevel.Panic, "AA", "SiteChangesService - FillLevelChangeDetailCategory", "");
                 foreach (var _levelDetail in levelDetails)
                 {
                     SectionChangeDetail _Section = null;
@@ -656,11 +657,13 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         continue;
                     }
+                    SystemLog.write(SystemLog.errorLevel.Info , "11", "SiteChangesService - FillLevelChangeDetailCategory", "");
 
                     if (_levelDetail.ChangeType.IndexOf("Added") <= -1)
                     {
                         if (_levelDetail.ChangeType.IndexOf("Deleted") > -1)
                         {
+                            SystemLog.write(SystemLog.errorLevel.Info, "22", "SiteChangesService - FillLevelChangeDetailCategory", "");
                             if (_Section.DeletedCodes.Count == 0)
                             {
                                 if (_levelDetail.ChangeType == "Other Species Deleted")
@@ -697,6 +700,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     else
                     {
+                        SystemLog.write(SystemLog.errorLevel.Info, "33", "SiteChangesService - FillLevelChangeDetailCategory", "");
                         if (_Section.AddedCodes.Count == 0)
                         {
                             _Section.AddedCodes.Add(new CategoryChangeDetail
@@ -707,6 +711,7 @@ namespace N2K_BackboneBackEnd.Services
                             });
                         }
 
+                        SystemLog.write(SystemLog.errorLevel.Info, "44", "SiteChangesService - FillLevelChangeDetailCategory", "");
                         foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
                         {
                             _Section.AddedCodes.ElementAt(0).ChangedCodesDetail.Add(
