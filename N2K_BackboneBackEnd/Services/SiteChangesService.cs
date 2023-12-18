@@ -597,11 +597,9 @@ namespace N2K_BackboneBackEnd.Services
                                         ChangeList = g.Where(s => s.Section == g.Key.Section && s.ChangeType == g.Key.ChangeType && s.ChangeCategory == g.Key.ChangeCategory).ToList()
                                     }).ToList();
 
-                SystemLog.write(SystemLog.errorLevel.Panic, "AA", "SiteChangesService - FillLevelChangeDetailCategory", "");
                 foreach (var _levelDetail in levelDetails)
                 {
                     SectionChangeDetail _Section = null;
-                    SystemLog.write(SystemLog.errorLevel.Info, string.Format("BB=>{0}", _levelDetail.Section), "SiteChangesService - FillLevelChangeDetailCategory", "");
                     switch (_levelDetail.Section)
                     {
                         case "Site":
@@ -639,19 +637,12 @@ namespace N2K_BackboneBackEnd.Services
                                 changesPerLevel.SiteInfo.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
                             }
                             */
-
                             if (_levelDetail.ChangeType != "User edition")
-                            {
-                                SystemLog.write(SystemLog.errorLevel.Info, "User edition=", "SiteChangesService - FillLevelChangeDetailCategory", "");
                                 changesPerLevel.SiteInfo.ChangesByCategory.Add(GetChangeCategoryDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
-                            }
                             break;
                         case "BioRegions":
                             if (_levelDetail.ChangeType != "User edition")
-                            {
-                                SystemLog.write(SystemLog.errorLevel.Info, "Bio region edition=", "SiteChangesService - FillLevelChangeDetailCategory", "");
                                 changesPerLevel.SiteInfo.ChangesByCategory.Add(GetBioregionChangeDetail(_levelDetail.ChangeCategory, _levelDetail.ChangeType, _levelDetail.ChangeList));
-                            }
                             break;
 
                         case "Species":
@@ -665,13 +656,11 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         continue;
                     }
-                    SystemLog.write(SystemLog.errorLevel.Info , "11", "SiteChangesService - FillLevelChangeDetailCategory", "");
 
                     if (_levelDetail.ChangeType.IndexOf("Added") <= -1)
                     {
                         if (_levelDetail.ChangeType.IndexOf("Deleted") > -1)
                         {
-                            SystemLog.write(SystemLog.errorLevel.Info, "22", "SiteChangesService - FillLevelChangeDetailCategory", "");
                             if (_Section.DeletedCodes.Count == 0)
                             {
                                 if (_levelDetail.ChangeType == "Other Species Deleted")
@@ -708,7 +697,6 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     else
                     {
-                        SystemLog.write(SystemLog.errorLevel.Info, "33", "SiteChangesService - FillLevelChangeDetailCategory", "");
                         if (_Section.AddedCodes.Count == 0)
                         {
                             _Section.AddedCodes.Add(new CategoryChangeDetail
@@ -719,7 +707,6 @@ namespace N2K_BackboneBackEnd.Services
                             });
                         }
 
-                        SystemLog.write(SystemLog.errorLevel.Info, "44", "SiteChangesService - FillLevelChangeDetailCategory", "");
                         foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
                         {
                             _Section.AddedCodes.ElementAt(0).ChangedCodesDetail.Add(
@@ -742,15 +729,12 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                SystemLog.write(SystemLog.errorLevel.Info,string.Format("{0}==={1}", changeType, changeCategory) , "SiteChangesService - FillLevelChangeDetailCategory", "");
                 var catChange = new CategoryChangeDetail();
                 catChange.ChangeType = changeType;
                 catChange.ChangeCategory = changeCategory;
 
-                SystemLog.write(SystemLog.errorLevel.Info, "**", "SiteChangesService - GetChangeCategoryDetail", "");
                 foreach (var changedItem in changeList.OrderBy(c => c.Code == null ? "" : c.Code))
                 {
-                    SystemLog.write(SystemLog.errorLevel.Info, "**=>1", "SiteChangesService - GetChangeCategoryDetail", "");
                     var fields = new Dictionary<string, string>();
                     string nullCase = "";
                     if (changedItem.OldValue != null && changedItem.OldValue.ToUpper() != "NULL")
@@ -770,7 +754,6 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         fields.Add("Submission", nullCase);
                     }
-                    SystemLog.write(SystemLog.errorLevel.Info, "**=>2", "SiteChangesService - GetChangeCategoryDetail", "");
                     if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed"
                         || catChange.ChangeType == "Change of spatial area" || catChange.ChangeType == "Spatial Area Decreased"
                         || catChange.ChangeType == "Spatial Area Increased" || catChange.ChangeType.StartsWith("Cover_ha"))
@@ -802,7 +785,6 @@ namespace N2K_BackboneBackEnd.Services
                             fields.Add("Percentage", nullCase);
                         }
                     }
-                    SystemLog.write(SystemLog.errorLevel.Info, "**=>3", "SiteChangesService - GetChangeCategoryDetail", "");
                     if (catChange.ChangeType == "Deletion of Spatial Area" ||
                         catChange.ChangeType == "Additon of Spatial Area"
                         )
@@ -850,7 +832,7 @@ namespace N2K_BackboneBackEnd.Services
                         fields.Remove("Submission");
                     }
 
-                    SystemLog.write(SystemLog.errorLevel.Info, "**=>44", "SiteChangesService - GetChangeCategoryDetail", "");
+
                     if (changeCategory == "Habitats" || changeCategory == "Species")
                     {
                         CodeChangeDetail changeDetail; 
@@ -903,7 +885,6 @@ namespace N2K_BackboneBackEnd.Services
                     }
 
                 }
-                SystemLog.write(SystemLog.errorLevel.Info, "**=>5", "SiteChangesService - GetChangeCategoryDetail", "");
                 return catChange;
             }
             catch (Exception ex)
