@@ -249,7 +249,7 @@ namespace N2K_BackboneBackEnd.Controllers
             ServiceResponse<List<Releases>> response = new ServiceResponse<List<Releases>>();
             try
             {
-                List<Releases> unionListHeader = await _releaseService.CreateRelease(release.Name, release.Final, release.Character, release.Comments);
+                List<Releases> unionListHeader = await _releaseService.CreateRelease(release.Name, release.Final, release.Character);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
