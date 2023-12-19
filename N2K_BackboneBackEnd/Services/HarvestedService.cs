@@ -928,8 +928,7 @@ namespace N2K_BackboneBackEnd.Services
                     if (siteRelation != null)
                     {
                         storedSite = referencedSites.Where(s => s.SiteCode == siteRelation.PreviousSiteCode && s.VersionId == siteRelation.PreviousVersion).FirstOrDefault();
-                        if (storedSite != null) 
-                            ld = detectedLineageChanges.FirstOrDefault(e => e.new_sitecode == storedSite.SiteCode && e.new_version == storedSite.VersionId);
+                        ld = detectedLineageChanges.FirstOrDefault(e => e.new_sitecode == storedSite.SiteCode && e.new_version == storedSite.VersionId);
                     }
                     if (siteRelation != null && storedSite != null)
                     {
