@@ -833,9 +833,27 @@ namespace N2K_BackboneBackEnd.Services
                     }
 
 
-                    if (changeCategory == "Habitats" || changeCategory == "Species")
+                    if (changeCategory == "Habitats")
                     {
-                        CodeChangeDetail changeDetail; 
+                        CodeChangeDetail changeDetail;
+
+                        if (changeType.Contains("Representativity")
+                            || changeType.Contains("Cover_ha"))
+                        {
+                            string? priorityH = "-";
+                            HabitatPriority? _habpriority = _habitatPriority.FirstOrDefault(h => h.HabitatCode.ToLower() == changedItem.Code?.ToLower());
+                            var habDetails = _siteHabitats.Where(sh => sh.HabitatCode.ToLower() == changedItem.Code?.ToLower())
+                                .Select(hab => new
+                                {
+                                    CoverHA = hab.CoverHA.ToString(),
+                                    RelativeSurface = hab.RelativeSurface,
+                                    PriorityForm = hab.PriorityForm
+                                }).FirstOrDefault();
+                            priorityH = (_habpriority == null) ? priorityH : ((_habpriority.Priority == 1 || (_habpriority.Priority == 2 && habDetails?.PriorityForm == true)) ? "*" : priorityH);
+
+                            fields = (Dictionary<string, string>)new Dictionary<string, string>() { { "Priority", priorityH } }.Concat(fields).ToDictionary(x => x.Key, x => x.Value);
+                        }
+
                         if (GetCodeName(changedItem) != String.Empty)
                         {
                             changeDetail =
@@ -859,16 +877,25 @@ namespace N2K_BackboneBackEnd.Services
                                     Fields = fields
                                 };
                         }
-
+                        catChange.ChangedCodesDetail.Add(changeDetail);
+                    }
+                    else if (changeCategory == "Species")
+                    {
+                        CodeChangeDetail changeDetail =
+                            new CodeChangeDetail
+                            {
+                                Code = "-",
+                                Name = changedItem.Code,
+                                ChangeId = changedItem.ChangeId,
+                                Fields = fields
+                            };
                         if (changeType == "Population Change"
                             || changeType == "Population Increase"
                             || changeType == "Population Decrease")
                         {
                             SpeciesPriority? sp = _dataContext.Set<SpeciesPriority>().Where(s => s.SpecieCode == changedItem.Code).FirstOrDefault();
-                            if(sp != null)
-                                changeDetail.Fields = new Dictionary<string, string> {{ "Priority", "*" }}.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
-                            else
-                                changeDetail.Fields = new Dictionary<string, string> {{ "Priority", "-" }}.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
+                            string? priorityS = sp == null ? "-" : "*";
+                            changeDetail.Fields = new Dictionary<string, string> { { "Priority", priorityS } }.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
                         }
 
                         catChange.ChangedCodesDetail.Add(changeDetail);
@@ -1041,6 +1068,7 @@ namespace N2K_BackboneBackEnd.Services
                         string? annexII = "-";
                         string? priorityS = "-";
                         string? population = null;
+                        string? popType = null;
                         string? specType = null;
 
                         if (code != null)
@@ -1091,11 +1119,13 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 population = specDetails.Population;
                                 specType = specDetails.SpecType;
+                                popType = _siteSpecies.FirstOrDefault(a => a.SiteCode == pSiteCode && a.SpecieCode == code && a.Version == pCountryVersion)?.PopulationType;
                             }
                         }
                         fields.Add("AnnexII", annexII);
                         fields.Add("Priority", priorityS);
-                        fields.Add("Population", population);
+                        fields.Add("Pop. Size", population);
+                        fields.Add("Pop. Type", popType);
                         fields.Add("SpeciesType", specType);
 
                         if (specName != String.Empty && specName != null)
