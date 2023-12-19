@@ -647,7 +647,7 @@ namespace N2K_BackboneBackEnd.Services
                             foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
                             {
                                 _Section.DeletedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.VersionReferenceId, changedItem.VersionReferenceId)
+                                    CodeAddedRemovedDetail(_levelDetail.Section, _levelDetail.ChangeType, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.VersionReferenceId, changedItem.VersionReferenceId)
                                 );
                             }
                         }
@@ -688,7 +688,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 CategoryChangeDetail speciesDetail = _Section.AddedCodes.First(c => c.ChangeType == "Species Added");
                                 speciesDetail.ChangedCodesDetail.Add(
-                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
+                                    CodeAddedRemovedDetail(_levelDetail.Section, _levelDetail.ChangeType, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
                                 );
                             }
                         }
@@ -705,7 +705,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 CategoryChangeDetail otherSpeciesDetail = _Section.AddedCodes.First(c => c.ChangeType == "Other Species Added");
                                 otherSpeciesDetail.ChangedCodesDetail.Add(
-                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
+                                    CodeAddedRemovedDetail(_levelDetail.Section, _levelDetail.ChangeType, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
                                 );
                             }
                         }
@@ -964,7 +964,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        private CodeChangeDetail? CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion, int versionReferenceId)
+        private CodeChangeDetail? CodeAddedRemovedDetail(string section, string changeType, string? code, long changeId, string pSiteCode, int pCountryVersion, int versionReferenceId)
         {
             try
             {
@@ -1028,8 +1028,13 @@ namespace N2K_BackboneBackEnd.Services
                                 specType = specDetails.SpecType;
                             }
                         }
-                        fields.Add("AnnexII", annexII);
-                        fields.Add("Priority", priorityS);
+
+                        // don't add annexII and priority fields if change affects Other species
+                        if(!changeType.Contains("Other"))
+                        {
+                            fields.Add("AnnexII", annexII);
+                            fields.Add("Priority", priorityS);
+                        }
                         fields.Add("Population", population);
                         fields.Add("SpeciesType", specType);
 
