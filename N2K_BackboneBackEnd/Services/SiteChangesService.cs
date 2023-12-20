@@ -663,8 +663,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (_Section.DeletedCodes.Count == 0)
                             {
-                                if (_levelDetail.ChangeType == "Species Deleted"
-                                    || _levelDetail.ChangeType == "Other Species Deleted")
+                                if (_levelDetail.ChangeType.Contains("Species"))
                                 {
                                     _Section.DeletedCodes.Add(new CategoryChangeDetail
                                     {
@@ -700,9 +699,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         if (_Section.AddedCodes.Count == 0)
                         {
-                            // TODO is this code in use??
-                            if (_levelDetail.ChangeType == "Other Species Added"
-                                || _levelDetail.ChangeType == "Species Added")
+                            if (_levelDetail.ChangeType.Contains("Species"))
                             {
                                 _Section.AddedCodes.Add(new CategoryChangeDetail
                                 {
@@ -722,18 +719,17 @@ namespace N2K_BackboneBackEnd.Services
                             }
                         }
 
-                        if (_levelDetail.ChangeList.Where(c => c.ChangeType == "Species Added").Count() > 0)
+                        if (_levelDetail.ChangeList.Where(c => !c.ChangeType.Contains("Other Species")).Count() > 0)
                         {
                             foreach (var changedItem in _levelDetail.ChangeList.Where(c => c.Code != "" || c.Code != null))
                             {
-                                CategoryChangeDetail speciesDetail = _Section.AddedCodes.First(c => c.ChangeType == "Species Added");
-                                speciesDetail.ChangedCodesDetail.Add(
+                                _Section.AddedCodes.ElementAt(0).ChangedCodesDetail.Add(
                                     CodeAddedRemovedDetail(_levelDetail.Section, _levelDetail.ChangeType, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
                                 );
                             }
                         }
 
-                        if (_levelDetail.ChangeList.Where(c => c.ChangeType == "Other Species Added").Count() > 0)
+                        if (_levelDetail.ChangeList.Where(c => c.ChangeType.Contains("Other Species Added")).Count() > 0)
                         {
                             _Section.AddedCodes.Add(new CategoryChangeDetail
                             {
