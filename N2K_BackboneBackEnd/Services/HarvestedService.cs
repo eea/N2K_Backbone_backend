@@ -1616,8 +1616,17 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.SaveChanges();
 
                         //Get the sites submitted in the envelope
-                        await _versioningContext.Set<ReferenceMap>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
-                        List<NaturaSite> vSites = await _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
+                        List<ReferenceMap> vRefMap  =  await _versioningContext.Set<ReferenceMap>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Refmapo length {0}", vRefMap.Count ), "HarvestedService - _Harvest - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
+
+                        var tt= vRefMap.Where(a=>a.SITECODE== "CY2000001" && a.COUNTRYVERSIONID== envelope.VersionId).FirstOrDefault();
+                        if (tt!=null)
+                        {
+                            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("INSPIRE CY2000001=**{0}**", string.IsNullOrEmpty(tt.INSPIRE)?"NULL": tt.INSPIRE), "HarvestedService - _Harvest - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
+                        }
+
+
+                        List <NaturaSite> vSites = await _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
 
                         //save in memory the fixed codes like priority species and habitat codes
                         DateTime start1 = DateTime.Now;
