@@ -169,10 +169,12 @@ namespace N2K_BackboneBackEnd.Services
 
                 foreach (LineageExtended change in changes)
                 {
+                    var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == change.SiteCode && site.Version == change.Version).FirstOrDefaultAsync();
                     LineageChanges temp = new LineageChanges();
                     temp.ChangeId = change.ID;
                     temp.SiteCode = change.SiteCode;
                     temp.SiteName = change.Name;
+                    temp.SiteType = await _dataContext.Set<SiteTypes>().AsNoTracking().Where(t => t.Code == site.SiteType).Select(t => t.Classification).FirstOrDefaultAsync();
                     temp.Type = change.Type;
                     if (change.AntecessorsSiteCodes != null)
                     {
@@ -184,11 +186,11 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     if (change.Type == LineageTypes.Deletion)
                     {
-                        temp.Reported = "-";
+                        temp.Submission = "-";
                     }
                     else
                     {
-                        temp.Reported = change.SiteCode;
+                        temp.Submission = change.SiteCode;
                     }
                     result.Add(temp);
                 }
@@ -366,7 +368,10 @@ namespace N2K_BackboneBackEnd.Services
                         AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area) : null,
                         Length = d.LengthKm != null ? Convert.ToDouble(d.LengthKm) : null,
                         Status = LineageStatus.Consolidated.ToString(),
-                        ReleaseDate = antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release != null ? unionListHeader.Where(b => b.idULHeader == antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release).FirstOrDefault().Date : null
+                        ReleaseDate = antecessorsLineage.Count() == 0 ? null
+                            : antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release != null
+                                ? unionListHeader.Where(b => b.idULHeader == antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release).FirstOrDefault().Date 
+                                : null
                     });
                 });
                 result = result.DistinctBy(c => c.SiteCode).ToList();
@@ -386,32 +391,29 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 Lineage change = await _dataContext.Set<Lineage>().AsNoTracking().Where(c => c.ID == ChangeId).FirstOrDefaultAsync();
-                if (change.Type != LineageTypes.Deletion)
+                Sites site = await _dataContext.Set<Sites>().AsNoTracking().Where(c => c.SiteCode == change.SiteCode && c.Version == change.Version).FirstOrDefaultAsync();
+
+                var sitecodesfilter = new DataTable("sitecodesfilter");
+                sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter.Columns.Add("Version", typeof(int));
+                sitecodesfilter.Rows.Add(new Object[] { change.SiteCode, change.Version });
+                SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
+                paramTable.Value = sitecodesfilter;
+                paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+                List<SiteBioRegionsAndArea> bioregions = await _dataContext.Set<SiteBioRegionsAndArea>().FromSqlRaw($"exec dbo.spGetBioRegionsAndAreaBySitecodeAndVersion  @siteCodes",
+                    paramTable).ToListAsync();
+
+                result = new LineageEditionInfo
                 {
-                    Sites site = await _dataContext.Set<Sites>().AsNoTracking().Where(c => c.SiteCode == change.SiteCode && c.Version == change.Version).FirstOrDefaultAsync();
-
-                    var sitecodesfilter = new DataTable("sitecodesfilter");
-                    sitecodesfilter.Columns.Add("SiteCode", typeof(string));
-                    sitecodesfilter.Columns.Add("Version", typeof(int));
-                    sitecodesfilter.Rows.Add(new Object[] { change.SiteCode, change.Version });
-                    SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-                    paramTable.Value = sitecodesfilter;
-                    paramTable.TypeName = "[dbo].[SiteCodeFilter]";
-                    List<SiteBioRegionsAndArea> bioregions = await _dataContext.Set<SiteBioRegionsAndArea>().FromSqlRaw($"exec dbo.spGetBioRegionsAndAreaBySitecodeAndVersion  @siteCodes",
-                                    paramTable).ToListAsync();
-
-                    result = new LineageEditionInfo
-                    {
-                        SiteCode = site.SiteCode,
-                        SiteName = site.Name,
-                        SiteType = site.SiteType,
-                        BioRegion = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().BioRegions != null ? (bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().BioRegions) : "",
-                        AreaSDF = site.Area != null ? Convert.ToDouble(site.Area) : null,
-                        AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().area) : null,
-                        Length = site.Length != null ? Convert.ToDouble(site.Length) : null,
-                        Status = change.Status.ToString()
-                    };
-                }
+                    SiteCode = site.SiteCode,
+                    SiteName = site.Name,
+                    SiteType = site.SiteType,
+                    BioRegion = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().BioRegions != null ? (bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().BioRegions) : "",
+                    AreaSDF = site.Area != null ? Convert.ToDouble(site.Area) : null,
+                    AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().area) : null,
+                    Length = site.Length != null ? Convert.ToDouble(site.Length) : null,
+                    Status = change.Status.ToString()
+                };
             }
             catch (Exception ex)
             {

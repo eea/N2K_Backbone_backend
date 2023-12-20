@@ -19,6 +19,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? ManagConservMeasures { get; set; }
         public string? ManagPlanUrl { get; set; }
         public string? ManagStatus { get; set; }
+        public long ID { get; set; }
 
         private string dbConnection = "";
 
@@ -58,7 +59,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             builder.Entity<SiteLargeDescriptions>()
                 .ToTable("SiteLargeDescriptions")
-                .HasKey(c => new { c.SiteCode, c.Version });
+                .HasKey(c => c.ID );
         }
     }
 }

@@ -35,6 +35,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [Keyless]
     public class CodeChangeDetailAddedRemovedSpecies : CodeChangeDetail
     {
+        public string? AnnexII { get; set; } = "";
+        public string? Priority { get; set; } = "";
         public string? Population { get; set; } = "";
         public string? SpeciesType { get; set; } = "";
 
@@ -47,6 +49,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [Keyless]
     public class CodeChangeDetailAddedRemovedHabitats : CodeChangeDetail
     {
+        public string? Priority { get; set; } = "";
         public string? CoverHa { get; set; } = "";
         public string? RelSurface { get; set; } = "";
 

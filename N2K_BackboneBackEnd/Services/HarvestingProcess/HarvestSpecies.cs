@@ -97,44 +97,47 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 {
                     SpecieBase item = new SpecieBase();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
-                    item.Version = 0;
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
-                    }
-                    item.SpecieCode = TypeConverters.CheckNull<string>(reader["SpecieCode"]);
-                    item.PopulationMin = TypeConverters.CheckNull<int?>(reader["PopulationMin"]);
-                    item.PopulationMax = TypeConverters.CheckNull<int?>(reader["PopulationMax"]);
-                    //item.Group = element.GROUP; // PENDING
-                    item.SensitiveInfo = TypeConverters.CheckNull<bool?>(reader["SensitiveInfo"]);
-                    item.Resident = TypeConverters.CheckNull<string>(reader["Resident"]);
-                    item.Breeding = TypeConverters.CheckNull<string>(reader["Breeding"]);
-                    item.Winter = TypeConverters.CheckNull<string>(reader["Winter"]);
-                    item.Staging = TypeConverters.CheckNull<string>(reader["Staging"]);
-                    //item.Path = element.PATH; // ??? PENDING
-                    item.AbundaceCategory = TypeConverters.CheckNull<string>(reader["AbundaceCategory"]);
-                    item.Motivation = TypeConverters.CheckNull<string>(reader["Motivation"]);
-                    item.PopulationType = TypeConverters.CheckNull<string>(reader["PopulationType"]);
-                    item.CountingUnit = TypeConverters.CheckNull<string>(reader["CountingUnit"]);
-                    item.Population = TypeConverters.CheckNull<string>(reader["Population"]);
-                    item.Insolation = TypeConverters.CheckNull<string>(reader["Insolation"]);
-                    item.Conservation = TypeConverters.CheckNull<string>(reader["Conservation"]);
-                    item.Global = TypeConverters.CheckNull<string>(reader["Global"]);
-                    item.NonPersistence = TypeConverters.CheckNull<bool>(reader["NonPersistence"]);
-                    item.DataQuality = TypeConverters.CheckNull<string>(reader["DataQuality"]);
-                    item.SpecieType = TypeConverters.CheckNull<string>(reader["SpecieType"]);
+                        item.SpecieCode = TypeConverters.CheckNull<string>(reader["SpecieCode"]);
+                        item.PopulationMin = TypeConverters.CheckNull<int?>(reader["PopulationMin"]);
+                        item.PopulationMax = TypeConverters.CheckNull<int?>(reader["PopulationMax"]);
+                        //item.Group = element.GROUP; // PENDING
+                        item.SensitiveInfo = TypeConverters.CheckNull<bool?>(reader["SensitiveInfo"]);
+                        item.Resident = TypeConverters.CheckNull<string>(reader["Resident"]);
+                        item.Breeding = TypeConverters.CheckNull<string>(reader["Breeding"]);
+                        item.Winter = TypeConverters.CheckNull<string>(reader["Winter"]);
+                        item.Staging = TypeConverters.CheckNull<string>(reader["Staging"]);
+                        //item.Path = element.PATH; // ??? PENDING
+                        item.AbundaceCategory = TypeConverters.CheckNull<string>(reader["AbundaceCategory"]);
+                        item.Motivation = TypeConverters.CheckNull<string>(reader["Motivation"]);
+                        item.PopulationType = TypeConverters.CheckNull<string>(reader["PopulationType"]);
+                        item.CountingUnit = TypeConverters.CheckNull<string>(reader["CountingUnit"]);
+                        item.Population = TypeConverters.CheckNull<string>(reader["Population"]);
+                        item.Insolation = TypeConverters.CheckNull<string>(reader["Insolation"]);
+                        item.Conservation = TypeConverters.CheckNull<string>(reader["Conservation"]);
+                        item.Global = TypeConverters.CheckNull<string>(reader["Global"]);
+                        item.NonPersistence = TypeConverters.CheckNull<bool>(reader["NonPersistence"]);
+                        item.DataQuality = TypeConverters.CheckNull<string>(reader["DataQuality"]);
+                        item.SpecieType = TypeConverters.CheckNull<string>(reader["SpecieType"]);
 
-                    if (item.SpecieCode is null || item.SpecieCode == "" ||
-                        _speciesTypes.Where(a => a.Code == item.SpecieCode && a.Active == true).Count() < 1)
-                    {
-                        //Replace the code (which is Null or empty or no stored in the system)
-                        //item.SiteCode = element.SITECODE;
-                        item.SpecieCode = (reader["SPECIESNAMECLEAN"] != null) ? reader["SPECIESNAMECLEAN"].ToString() : reader["SPECIESNAME"].ToString();
-                        itemsSpeciesOthers.Add(item.getSpeciesOther());
+                        if (item.SpecieCode is null || item.SpecieCode == "" ||
+                            _speciesTypes.Where(a => a.Code == item.SpecieCode && a.Active == true).Count() < 1)
+                        {
+                            //Replace the code (which is Null or empty or no stored in the system)
+                            //item.SiteCode = element.SITECODE;
+                            item.SpecieCode = (reader["SPECIESNAMECLEAN"] != null) ? reader["SPECIESNAMECLEAN"].ToString() : reader["SPECIESNAME"].ToString();
+                            itemsSpeciesOthers.Add(item.getSpeciesOther());
+                        }
+                        else
+                        {
+                            itemsSpecies.Add(item.getSpecies());
+                        }
                     }
                     else
                     {
-                        itemsSpecies.Add(item.getSpecies());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSpecies - Species", "", backboneDb);
                     }
                 }
 
@@ -147,7 +150,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - SpeciesOther.SaveBulkRecord", "", backboneDb);
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSpecies - SpeciesOther.SaveBulkRecord", "", backboneDb);
                 }
 
                 try
@@ -156,7 +159,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 }
                 catch (Exception ex)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - Species.SaveBulkRecord", "", backboneDb);
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSpecies - Species.SaveBulkRecord", "", backboneDb);
                 }
 
                 //Console.WriteLine(String.Format("End save to list species -> {0}", (DateTime.Now - start).TotalSeconds));
@@ -196,7 +199,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             return 1;
         }
 
-        public async Task<List<SiteChangeDb>> ChangeDetectionSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciePriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext ctx)
+        public async Task<List<SiteChangeDb>> ChangeDetectionSpecies(List<SpeciesToHarvest> speciesVersioning, List<SpeciesToHarvest> referencedSpecies, List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, SqlParameter param3, SqlParameter param4, SqlParameter param5, List<SpeciesPriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext ctx)
         {
             try
             {
@@ -209,7 +212,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //For each species in Versioning compare it with that species in backboneDB
                 foreach (SpeciesToHarvest harvestingSpecies in speciesVersioning)
                 {
-                    SpeciesToHarvest storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode && s.PopulationType == harvestingSpecies.PopulationType).FirstOrDefault();
+                    SpeciesToHarvest storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                     if (storedSpecies != null)
                     {
                         if (storedSpecies.Population.ToUpper() != "D" && harvestingSpecies.Population.ToUpper() == "D")
@@ -218,7 +221,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Decrease";
+                            siteChange.ChangeType = "Population Decrease";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Warning;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -239,7 +242,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Increase";
+                            siteChange.ChangeType = "Population Increase";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -260,7 +263,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Change";
+                            siteChange.ChangeType = "Population Change";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -276,16 +279,17 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             changes.Add(siteChange);
                         }
 
+                        //Priority check is also present in HarvestedService/SitePriorityChecker
                         #region SpeciesPriority
-                        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+                        SpeciesPriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                         if (priorityCount != null)
                         {
                             //These booleans declare whether or not each species is a priority
                             Boolean isStoredPriority = false;
                             Boolean isHarvestingPriority = false;
-                            if (storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null)
+                            if ((storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null) && (storedSpecies.Motivation == null || storedSpecies.Motivation == ""))
                                 isStoredPriority = true;
-                            if (harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null)
+                            if ((harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null) && (harvestingSpecies.Motivation == null || harvestingSpecies.Motivation == ""))
                                 isHarvestingPriority = true;
 
                             if (isStoredPriority && !isHarvestingPriority)
@@ -361,7 +365,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //For each species in backboneDB check if the species still exists in Versioning
                 foreach (SpeciesToHarvest storedSpecies in referencedSpecies)
                 {
-                    SpeciesToHarvest harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode && s.PopulationType == storedSpecies.PopulationType).FirstOrDefault();
+                    SpeciesToHarvest harvestingSpecies = speciesVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode).FirstOrDefault();
                     if (harvestingSpecies == null)
                     {
                         SiteChangeDb siteChange = new SiteChangeDb();
@@ -396,7 +400,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Decrease (Other Species)";
+                            siteChange.ChangeType = "Population Decrease (Other Species)";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -417,7 +421,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Increase";
+                            siteChange.ChangeType = "Population Increase";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -438,7 +442,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             siteChange.SiteCode = harvestingSite.SiteCode;
                             siteChange.Version = harvestingSite.VersionId;
                             siteChange.ChangeCategory = "Species";
-                            siteChange.ChangeType = "Population Priority Change";
+                            siteChange.ChangeType = "Population Change";
                             siteChange.Country = envelope.CountryCode;
                             siteChange.Level = Enumerations.Level.Info;
                             siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
@@ -455,15 +459,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
 
                         #region SpeciesPriority
-                        SpeciePriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
+                        SpeciesPriority priorityCount = speciesPriority.Where(s => s.SpecieCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                         if (priorityCount != null)
                         {
                             //These booleans declare whether or not each species is a priority
                             Boolean isStoredPriority = false;
                             Boolean isHarvestingPriority = false;
-                            if (storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null)
+                            if ((storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null) && (storedSpecies.Motivation == null || storedSpecies.Motivation == ""))
                                 isStoredPriority = true;
-                            if (harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null)
+                            if ((harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null) && (harvestingSpecies.Motivation == null || harvestingSpecies.Motivation == ""))
                                 isHarvestingPriority = true;
 
                             if (isStoredPriority && !isHarvestingPriority)
