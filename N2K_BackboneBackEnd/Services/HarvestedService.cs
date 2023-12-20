@@ -1619,6 +1619,7 @@ namespace N2K_BackboneBackEnd.Services
                         List<ReferenceMap> vRefMap  =  await _versioningContext.Set<ReferenceMap>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
                         List <NaturaSite> vSites = await _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
 
+
                         //save in memory the fixed codes like priority species and habitat codes
                         DateTime start1 = DateTime.Now;
                         List<Sites> bbSites = new List<Sites>();
@@ -2224,8 +2225,7 @@ namespace N2K_BackboneBackEnd.Services
                                 await ctx.Database.ExecuteSqlRawAsync("exec dbo.setStatusToEnvelopeProcessing  @countryVersion;", param1);
 
                                 //send message to front-end to make browser aware that envelope is processing
-                                await _hubContext.Clients.All.SendAsync("ToProcessing", data);
-
+                                await _hubContext.Clients.All.SendAsync("ToProcessing", string.Format("{{\"CountryCode\":\"{0}\",\"VersionId\": {1}}}", data.CountryCode, data.VersionId));
 
                                 if (envelope.Status == HarvestingStatus.DataLoaded)
                                 {
