@@ -124,9 +124,8 @@ namespace N2K_BackboneBackEnd.Services
                 releaseHeader.Author = unionListHeader.CreatedBy;
                 releaseHeader.CreateDate = unionListHeader.Date;
                 releaseHeader.ModifyDate = unionListHeader.UpdatedDate;
-                releaseHeader.IsOfficial = unionListHeader.Final;
+                releaseHeader.Final = unionListHeader.Final;
                 releaseHeader.Character = "";
-                releaseHeader.Comments = "";
                 releaseHeader.ModifyUser = unionListHeader.UpdatedBy;
 
                 return releaseHeader;
@@ -532,7 +531,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<Releases>> CreateRelease(string title, Boolean? isOfficial, string? character, string? comments)
+        public async Task<List<Releases>> CreateRelease(string title, Boolean? Final, string? character)
         {
             try
             {
@@ -540,14 +539,13 @@ namespace N2K_BackboneBackEnd.Services
                 SqlParameter param2 = new SqlParameter("@Author", GlobalData.Username);
                 SqlParameter param3 = new SqlParameter("@CreateDate", DateTime.Now);
                 SqlParameter param4 = new SqlParameter("@ModifyDate", DateTime.Now);
-                SqlParameter param5 = new SqlParameter("@IsOfficial", isOfficial);
+                SqlParameter param5 = new SqlParameter("@Final", Final);
                 SqlParameter param6 = new SqlParameter("@Character", string.IsNullOrEmpty(character) ? string.Empty : character);
-                SqlParameter param7 = new SqlParameter("@Comments", string.IsNullOrEmpty(comments) ? string.Empty : comments);
-                List<Releases> releaseID = await _releaseContext.Set<Releases>().FromSqlRaw("exec dbo.createNewRelease  @Title, @Author, @CreateDate, @ModifyDate, @IsOfficial, @Character, @Comments", param1, param2, param3, param4, param5, param6, param7).AsNoTracking().ToListAsync();
+                List<Releases> releaseID = await _releaseContext.Set<Releases>().FromSqlRaw("exec dbo.createNewRelease  @Title, @Author, @CreateDate, @ModifyDate, @Final, @Character", param1, param2, param3, param4, param5, param6).AsNoTracking().ToListAsync();
 
                 //call the FME service that creates the SHP, MDB and GPKG
                 
-                if (isOfficial.HasValue && isOfficial.Value)
+                if (Final.HasValue && Final.Value)
                 {
                     if (releaseID.Count > 0)
                     {
@@ -605,7 +603,7 @@ namespace N2K_BackboneBackEnd.Services
                 //Create UnionList entry
                 SqlParameter param8 = new SqlParameter("@name", title);
                 SqlParameter param9 = new SqlParameter("@creator", GlobalData.Username);
-                SqlParameter param10 = new SqlParameter("@final", isOfficial);
+                SqlParameter param10 = new SqlParameter("@final", Final);
                 SqlParameter param11 = new SqlParameter("@release", releaseID.First().ID);
                 await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewReleaseUnionList  @name, @creator, @final, @release ", param8, param9, param10, param11);
 
@@ -643,7 +641,7 @@ namespace N2K_BackboneBackEnd.Services
                     if (name != "string")
                         release.Title = name;
 
-                    release.IsOfficial = final;
+                    release.Final = final;
                     release.ModifyUser = GlobalData.Username;
                     release.ModifyDate = DateTime.Now;
 

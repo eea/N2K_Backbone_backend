@@ -1,12 +1,53 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Drawing;
+using System.Reflection.Emit;
+using DocumentFormat.OpenXml.Office.CoverPageProps;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace N2K_BackboneBackEnd.Models.versioning_db
 {
-    [Keyless]
+
+    public class ReferenceMap : VersioningBase, IEntityModel
+    {
+        public string COUNTRYCODE { get; set; } = "";
+
+        [Column(TypeName = "decimal(18, 0)")]
+        public decimal VERSIONID { get; set; }
+
+
+        [Column(TypeName = "decimal(18, 0)")]
+        public decimal COUNTRYVERSIONID { get; set; }
+
+        private Int32 OBJECTID { get; set; }
+
+        public string? SITECODE { get; set; } = "";
+
+        private string? NATIONALMAPNUMBER { get; set; }
+
+        private string? SCALE { get; set; }
+
+        private string? PROJECTION { get; set; }
+
+        private string? DETAILS { get; set; }
+
+        public string? INSPIRE { get; set; }
+
+        private Int16 PDFPROVIDED { get; set; }
+
+        public NaturaSite NaturaSite { get; set; }
+
+
+        public static void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<ReferenceMap>()
+            .ToTable("REFERENCEMAP")
+            .HasKey(k => new { k.SITECODE, k.COUNTRYVERSIONID });
+        }
+    }
     public class NaturaSite : VersioningBase, IEntityModel
     {
         public Int32 OBJECTID { get; set; }
@@ -46,12 +87,29 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         [Column(TypeName = "decimal(38, 4)")]
         public decimal? MARINEAREA { get; set; }
 
-        public static void OnModelCreating(ModelBuilder builder)
+        [NotMapped]
+        public string? INSPIRE
         {
-            builder.Entity<NaturaSite>()
-                .ToTable("NATURASITE")
-                .HasNoKey();
+            get
+            {
+                if (this.RefMap!= null)
+                    return this.RefMap.INSPIRE;
+                return null;
+            }
         }
 
+        private ReferenceMap RefMap { get; set; }
+
+
+        public static void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<NaturaSite>().ToTable("NATURASITE").HasKey(k => new { k.SITECODE, k.COUNTRYVERSIONID });
+            builder.Entity<NaturaSite>()
+                    .HasOne(a => a.RefMap)
+                    .WithOne(b => b.NaturaSite)
+                    .HasForeignKey<ReferenceMap>(b => new { b.SITECODE, b.COUNTRYVERSIONID });
+        }
     }
+
+
 }
