@@ -63,7 +63,7 @@ namespace N2K_BackboneBackEnd.Services
                     result.SiteInfo.SiteCode = SiteCode;
                     result.SiteInfo.Area = site.Area;
                     result.SiteInfo.Est = site.CompilationDate; //UNSURE
-                    result.SiteInfo.MarineArea = site.Area; //UNSURE
+                    result.SiteInfo.MarineArea = site.MarineArea;
                 }
                 if (habitats != null && habitats.Count > 0)
                     result.SiteInfo.Habitats = habitats.Count;
@@ -78,20 +78,20 @@ namespace N2K_BackboneBackEnd.Services
                     result.SiteIdentification.SiteCode = SiteCode;
                     result.SiteIdentification.SiteName = site.Name;
                     result.SiteIdentification.FirstCompletionDate = site.CompilationDate;
-                    result.SiteIdentification.UpdateDate = site.CompilationDate; //UNSURE
+                    result.SiteIdentification.UpdateDate = site.DateUpdate;
                     SiteDesignation siteDesignation = new SiteDesignation(); //UNSURE HOW COULD THERE BE MORE THAN ONE
                     siteDesignation.ClassifiedSPA = site.DateSpa;
-                    siteDesignation.ReferenceSPA = ""; //UNSURE
+                    siteDesignation.ReferenceSPA = site.SpaLegalReference;
                     siteDesignation.ProposedSCI = site.DatePropSCI;
                     siteDesignation.ConfirmedSCI = site.DateConfSCI;
                     siteDesignation.DesignatedSAC = site.DateSac;
-                    siteDesignation.ReferenceSAC = ""; //UNSURE
+                    siteDesignation.ReferenceSAC = site.SacLegalReference;
                     result.SiteIdentification.SiteDesignation.Add(siteDesignation);
                 }
                 if (respondents != null && respondents.Count > 0) //UNSURE
                 {
                     result.SiteIdentification.Respondent.Name = respondents.FirstOrDefault().name;
-                    result.SiteIdentification.Respondent.Address = respondents.FirstOrDefault().addressUnstructured;
+                    result.SiteIdentification.Respondent.Address = respondents.FirstOrDefault().addressArea;
                     result.SiteIdentification.Respondent.Email = respondents.FirstOrDefault().Email;
                 }
                 #endregion
@@ -102,7 +102,7 @@ namespace N2K_BackboneBackEnd.Services
                     result.SiteLocation.Longitude = site.Longitude;
                     result.SiteLocation.Latitude = site.Latitude;
                     result.SiteLocation.Area = site.Area;
-                    result.SiteLocation.MarineArea = site.Area; //UNSURE
+                    result.SiteLocation.MarineArea = site.MarineArea;
                     result.SiteLocation.SiteLength = site.Length;
                 }
                 if (nutsBySite != null && nutsBySite.Count > 0)
@@ -236,7 +236,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteOwnerType.ForEach(h =>
                     {
                         Ownership temp = new Ownership();
-                        temp.Type = ownerShipTypes.Where(t => t.Id == h.Type).FirstOrDefault().Description;
+                        temp.Type = h.Type;
                         temp.Percent = h.Percent;
                         result.SiteDescription.Ownership.Add(temp);
                     });
@@ -292,7 +292,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         BodyResponsible temp = new BodyResponsible();
                         temp.Organisation = h.name;
-                        temp.Address = h.addressUnstructured;
+                        temp.Address = h.addressArea;
                         temp.Email = h.Email;
                         result.SiteManagement.BodyResponsible.Add(temp);
                     });
@@ -311,7 +311,7 @@ namespace N2K_BackboneBackEnd.Services
                 #endregion
 
                 #region MapOfTheSite
-                result.MapOfTheSite.INSPIRE = "";
+                result.MapOfTheSite.INSPIRE = site.Inspire_ID;
                 result.MapOfTheSite.MapDelivered = "No";
                 #endregion
 
