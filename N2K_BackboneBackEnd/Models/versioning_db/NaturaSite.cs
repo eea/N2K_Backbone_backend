@@ -36,7 +36,7 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
 
         public string? INSPIRE { get; set; }
 
-        private Int16 PDFPROVIDED { get; set; }
+        public Int16? PDFPROVIDED { get; set; }
 
         public NaturaSite NaturaSite { get; set; }
 
@@ -92,8 +92,19 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         {
             get
             {
-                if (this.RefMap!= null)
+                if (this.RefMap != null)
                     return this.RefMap.INSPIRE;
+                return null;
+            }
+        }
+
+        [NotMapped]
+        public Int16? PDFPROVIDED
+        {
+            get
+            {
+                if (this.RefMap != null)
+                    return this.RefMap.PDFPROVIDED;
                 return null;
             }
         }
