@@ -24,6 +24,8 @@ using DocumentFormat.OpenXml.Vml.Office;
 using DocumentFormat.OpenXml.Math;
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using Microsoft.AspNetCore.SignalR;
+using N2K_BackboneBackEnd.Hubs;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -41,6 +43,8 @@ namespace N2K_BackboneBackEnd.Services
         private IList<Models.backbone_db.OwnerShipTypes> _ownerShipTypes = new List<Models.backbone_db.OwnerShipTypes>();
         private IList<Models.backbone_db.SpecieBase> _countrySpecies = new List<Models.backbone_db.SpecieBase>();
 
+        private readonly IHubContext<ChatHub> _hubContext;
+
         //private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
         //private static readonly SemaphoreSlim _semaphoreFME = new SemaphoreSlim(initialCount: 1);
         private IDictionary<Type, object> _siteItems = new Dictionary<Type, object>(); private struct SiteVersion
@@ -56,7 +60,7 @@ namespace N2K_BackboneBackEnd.Services
         /// <param name="versioningContext">Context for the Versioning database</param>
         /// <param name="app">Configuration options</param>
         /// <param name="harvestJobs">Queue of FME harvest spatial processes </param>
-        public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app, IBackgroundSpatialHarvestJobs harvestJobs)
+        public HarvestedService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IHubContext<ChatHub> hubContext,  IOptions<ConfigSettings> app, IBackgroundSpatialHarvestJobs harvestJobs)
 
         {
             _dataContext = dataContext;
@@ -64,6 +68,7 @@ namespace N2K_BackboneBackEnd.Services
             _appSettings = app;
             InitialiseBulkItems();
             _fmeHarvestJobs = harvestJobs;
+            _hubContext = hubContext;
         }
 
         /// <summary>
@@ -1170,7 +1175,8 @@ namespace N2K_BackboneBackEnd.Services
                     if (siteRelation != null)
                     {
                         storedSite = referencedSites.Where(s => s.SiteCode == siteRelation.PreviousSiteCode && s.VersionId == siteRelation.PreviousVersion).FirstOrDefault();
-                        ld = detectedLineageChanges.FirstOrDefault(e => e.new_sitecode == storedSite.SiteCode && e.new_version == storedSite.VersionId);
+                        if (storedSite!=null)
+                            ld = detectedLineageChanges.FirstOrDefault(e => e.new_sitecode == storedSite.SiteCode && e.new_version == storedSite.VersionId);
                     }
                     if (siteRelation != null && storedSite != null)
                     {
@@ -1610,7 +1616,7 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.SaveChanges();
 
                         //Get the sites submitted in the envelope
-                        await _versioningContext.Set<ReferenceMap>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
+                        List<ReferenceMap> vRefMap = await _versioningContext.Set<ReferenceMap>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
                         List<NaturaSite> vSites = await _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
 
                         //save in memory the fixed codes like priority species and habitat codes
@@ -2216,6 +2222,9 @@ namespace N2K_BackboneBackEnd.Services
                                 param1.TypeName = "[dbo].[CountryVersion]";
 
                                 await ctx.Database.ExecuteSqlRawAsync("exec dbo.setStatusToEnvelopeProcessing  @countryVersion;", param1);
+
+                                //send message to front-end to make browser aware that envelope is processing
+                                await _hubContext.Clients.All.SendAsync("ToProcessing", string.Format("{{\"CountryCode\":\"{0}\",\"VersionId\": {1}}}", data.CountryCode, data.VersionId));
 
                                 if (envelope.Status == HarvestingStatus.DataLoaded)
                                 {
