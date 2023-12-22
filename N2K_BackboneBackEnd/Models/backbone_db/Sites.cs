@@ -39,6 +39,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? Explanations { get; set; }
         public decimal? MarineArea { get; set; }
         public string? Inspire_ID { get; set; } = "";
+        public Int16? PDFProvided { get; set; }
 
         private string dbConnection = "";
 

@@ -312,7 +312,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 #region MapOfTheSite
                 result.MapOfTheSite.INSPIRE = site.Inspire_ID;
-                result.MapOfTheSite.MapDelivered = "No";
+                result.MapOfTheSite.MapDelivered = (site.PDFProvided != null && site.PDFProvided == 1) ? booleanTrue : booleanFalse;
                 #endregion
 
                 return result;

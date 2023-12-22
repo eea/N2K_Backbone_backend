@@ -207,6 +207,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.Explanations = pVSite.EXPLANATIONS;
                 bbSite.MarineArea = pVSite.MARINEAREA;
                 bbSite.Inspire_ID = pVSite.INSPIRE;
+                bbSite.PDFProvided = pVSite.PDFPROVIDED;
                 return bbSite;
             }
             catch (Exception ex)
