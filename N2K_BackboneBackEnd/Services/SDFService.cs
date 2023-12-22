@@ -166,7 +166,7 @@ namespace N2K_BackboneBackEnd.Services
                         temp.Max = h.PopulationMax;
                         temp.Unit = h.CountingUnit;
                         temp.Category = h.AbundaceCategory;
-                        temp.DataQuality = dataQualityTypes.Where(c => c.SpeciesCode == h.DataQuality).FirstOrDefault().Name;
+                        temp.DataQuality = h.DataQuality;
                         temp.Population = h.Population;
                         temp.Conservation = h.Conservation;
                         temp.Isolation = h.Insolation;
@@ -191,7 +191,7 @@ namespace N2K_BackboneBackEnd.Services
                         temp.Max = h.PopulationMax;
                         temp.Unit = h.CountingUnit;
                         temp.Category = h.AbundaceCategory;
-                        temp.DataQuality = dataQualityTypes.Where(c => c.SpeciesCode == h.DataQuality).FirstOrDefault().Name;
+                        temp.DataQuality = h.DataQuality;
                         temp.Population = h.Population;
                         temp.Conservation = h.Conservation;
                         temp.Isolation = h.Insolation;
