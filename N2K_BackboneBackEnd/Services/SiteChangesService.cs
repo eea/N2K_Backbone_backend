@@ -838,7 +838,9 @@ namespace N2K_BackboneBackEnd.Services
                         CodeChangeDetail changeDetail;
 
                         if (changeType.Contains("Representativity")
-                            || changeType.Contains("Cover_ha"))
+                            || changeType.Contains("Cover_ha")
+                            || changeType.Contains("Relative surface")
+                            || changeType.Contains("PriorityForm"))
                         {
                             string? priorityH = "-";
                             HabitatPriority? _habpriority = _habitatPriority.FirstOrDefault(h => h.HabitatCode.ToLower() == changedItem.Code?.ToLower());
