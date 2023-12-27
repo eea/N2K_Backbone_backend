@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
@@ -16,6 +17,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public LineageTypes Type { get; set; }
         public LineageStatus Status { get; set; }
         public long? Release { get; set; }
+        [NotMapped]
+        public String? AntecessorsSiteCodes { get; set; }
 
 
         private string dbConnection = "";

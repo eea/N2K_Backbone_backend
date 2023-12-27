@@ -14,6 +14,9 @@ namespace N2K_BackboneBackEnd.Models
         public string? SiteType { get; set; }
         public string? CountryCode { get; set; }
         public int? N2KVersioningVersion { get; set; }
+
+        public Boolean HasGeometry { get; set; }
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SiteToHarvest>()
