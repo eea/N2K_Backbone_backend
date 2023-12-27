@@ -452,6 +452,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         HabitatToHarvest storedHabitat = referencedHabitats.Where(s => s.HabitatCode == harvestingHabitat.HabitatCode).FirstOrDefault();
                         if (storedHabitat != null)
                         {
+                            harvestingHabitat.RelSurface =
+                                String.IsNullOrEmpty(harvestingHabitat.RelSurface) ? "-"
+                                : harvestingHabitat.RelSurface;
+
+                            storedHabitat.RelSurface =
+                                String.IsNullOrEmpty(storedHabitat.RelSurface) ? "-"
+                                : storedHabitat.RelSurface;
+
                             if (((storedHabitat.RelSurface.ToUpper() == "A" || storedHabitat.RelSurface.ToUpper() == "B") && harvestingHabitat.RelSurface.ToUpper() == "C")
                                 || (storedHabitat.RelSurface.ToUpper() == "A" && harvestingHabitat.RelSurface.ToUpper() == "B"))
                             {
