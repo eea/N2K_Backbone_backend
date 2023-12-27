@@ -86,6 +86,7 @@ namespace N2K_BackboneBackEnd.Services
                     siteDesignation.ConfirmedSCI = site.DateConfSCI;
                     siteDesignation.DesignatedSAC = site.DateSac;
                     siteDesignation.ReferenceSAC = site.SacLegalReference;
+                    siteDesignation.Explanations = site.Explanations;
                     result.SiteIdentification.SiteDesignation.Add(siteDesignation);
                 }
                 if (respondents != null && respondents.Count > 0) //UNSURE
@@ -139,7 +140,7 @@ namespace N2K_BackboneBackEnd.Services
                             temp.PF = (h.PriorityForm == true) ? booleanChecked : booleanUnchecked;
                         if (h.NonPresenciInSite != null)
                             temp.NP = (h.NonPresenciInSite == 1) ? booleanChecked : booleanUnchecked;
-                        temp.CoverHA = h.CoverHA;
+                        temp.Cover = h.CoverHA;
                         temp.Cave = h.Caves;
                         temp.DataQuality = dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().Name;
                         temp.Representativity = h.Representativity;
@@ -218,7 +219,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         Threats temp = new Threats();
                         temp.Rank = h.Intensity;
-                        temp.ThreatsAndPressures = h.ActivityCode;
+                        temp.ActivitiesManagement = h.ActivityCode;
                         temp.Pollution = h.PollutionCode;
                         temp.Origin = h.InOut;
                         if (h.ImpactType == "N")

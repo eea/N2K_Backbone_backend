@@ -64,6 +64,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public DateTime? ConfirmedSCI { get; set; }
         public DateTime? DesignatedSAC { get; set; }
         public string? ReferenceSAC { get; set; }
+        public string? Explanations { get; set; }
     }
 
     [NotMapped]
@@ -107,7 +108,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Code { get; set; }
         public string? PF { get; set; }
         public string? NP { get; set; }
-        public decimal? CoverHA { get; set; }
+        public decimal? Cover { get; set; }
         public string? Cave { get; set; }
         public string? DataQuality { get; set; }
         public string? Representativity { get; set; }
@@ -159,7 +160,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class Threats
     {
         public string? Rank { get; set; }
-        public string? ThreatsAndPressures { get; set; }
+        public string? ActivitiesManagement { get; set; }
         public string? Pollution { get; set; }
         public string? Origin { get; set; }
     }
