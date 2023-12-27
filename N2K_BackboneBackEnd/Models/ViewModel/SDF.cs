@@ -160,7 +160,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class Threats
     {
         public string? Rank { get; set; }
-        public string? ActivitiesManagement { get; set; }
+        public string? Impacts { get; set; }
         public string? Pollution { get; set; }
         public string? Origin { get; set; }
     }

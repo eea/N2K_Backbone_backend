@@ -219,7 +219,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         Threats temp = new Threats();
                         temp.Rank = h.Intensity;
-                        temp.ActivitiesManagement = h.ActivityCode;
+                        temp.Impacts = h.ActivityCode;
                         temp.Pollution = h.PollutionCode;
                         temp.Origin = h.InOut;
                         if (h.ImpactType == "N")
