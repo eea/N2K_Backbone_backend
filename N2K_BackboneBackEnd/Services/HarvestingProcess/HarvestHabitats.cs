@@ -453,12 +453,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         if (storedHabitat != null)
                         {
                             harvestingHabitat.RelSurface =
-                                harvestingHabitat.RelSurface == "-" || String.IsNullOrEmpty(harvestingHabitat.RelSurface) ? ""
+                                String.IsNullOrEmpty(harvestingHabitat.RelSurface) ? "-"
                                 : harvestingHabitat.RelSurface;
 
                             storedHabitat.RelSurface =
-                                storedHabitat.RelSurface == "-" || String.IsNullOrEmpty(storedHabitat.RelSurface) ? ""
+                                String.IsNullOrEmpty(storedHabitat.RelSurface) ? "-"
                                 : storedHabitat.RelSurface;
+
                             if (((storedHabitat.RelSurface.ToUpper() == "A" || storedHabitat.RelSurface.ToUpper() == "B") && harvestingHabitat.RelSurface.ToUpper() == "C")
                                 || (storedHabitat.RelSurface.ToUpper() == "A" && harvestingHabitat.RelSurface.ToUpper() == "B"))
                             {
