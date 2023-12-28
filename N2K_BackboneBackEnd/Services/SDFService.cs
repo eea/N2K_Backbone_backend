@@ -145,7 +145,7 @@ namespace N2K_BackboneBackEnd.Services
                         temp.DataQuality = dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().Name;
                         temp.Representativity = h.Representativity;
                         temp.RelativeSurface = h.RelativeSurface;
-                        temp.Conservation = h.Conservation;
+                        temp.Conservation = h.ConsStatus;
                         temp.Global = h.GlobalAssesments;
                         result.EcologicalInformation.HabitatTypes.Add(temp);
                     });
