@@ -16,6 +16,9 @@ using System.Text;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.SignalR;
+using N2K_BackboneBackEnd.Hubs;
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.ConfigureLogging(logging =>
@@ -27,6 +30,8 @@ builder.Host.ConfigureLogging(logging =>
 // Add services to the container.
 builder.Services.AddCors();
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
+
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -41,6 +46,7 @@ builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 builder.Services.AddScoped<IUnionListService, UnionListService>();
 builder.Services.AddScoped<IReleaseService, ReleaseService>();
 builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
+builder.Services.AddScoped<ISDFService, SDFService>();
 
 builder.Services.AddTransient<IFireForgetRepositoryHandler, FireForgetRepositoryHandler>();
 //builder.Services.AddHostedService<FMELongRunningService>();
@@ -55,7 +61,7 @@ builder.Services.Configure<GzipCompressionProviderOptions>
    (opt =>
    {
        opt.Level = CompressionLevel.SmallestSize;
-    }
+   }
 );
 
 
@@ -93,7 +99,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 
 builder.Services.AddSwaggerGen(c => {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "N2KBacboneAPI", Version = "v1" });    
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "N2KBacboneAPI", Version = "v1" });
     c.AddSecurityDefinition(name: "Bearer", securityScheme: new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -114,7 +120,7 @@ builder.Services.AddSwaggerGen(c => {
                         Id = "Bearer",
                         Type = ReferenceType.SecurityScheme
                     }
-                },                          
+                },
                 new List<string>()
             }
     });
@@ -134,12 +140,12 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
-    builder.Services.AddRouting(options =>
-    {
-        options.ConstraintMap.Add("string", typeof(RouteAlphaNumericConstraint));
-        options.ConstraintMap.Add("Status", typeof(RouteStatusConstraint));
-        options.ConstraintMap.Add("level",  typeof(RouteLevelConstraint));
-    });
+builder.Services.AddRouting(options =>
+{
+    options.ConstraintMap.Add("string", typeof(RouteAlphaNumericConstraint));
+    options.ConstraintMap.Add("Status", typeof(RouteStatusConstraint));
+    options.ConstraintMap.Add("level", typeof(RouteLevelConstraint));
+});
 
 var app = builder.Build();
 // <snippet_UseWebSockets>
@@ -173,5 +179,6 @@ app.UseStaticFiles(new StaticFileOptions()
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
