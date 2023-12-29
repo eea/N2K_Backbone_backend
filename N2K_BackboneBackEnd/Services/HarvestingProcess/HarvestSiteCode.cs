@@ -849,7 +849,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
-                    Ownership item = new Ownership();
+                    Models.backbone_db.Ownership item = new Models.backbone_db.Ownership();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
