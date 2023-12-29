@@ -144,7 +144,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Quality { get; set; }
         public List<Threats> NegativeThreats { get; set; } = new List<Threats>();
         public List<Threats> PositiveThreats { get; set; } = new List<Threats>();
-        public List<Ownership> Ownership { get; set; } = new List<Ownership>();
+        public List<N2K_BackboneBackEnd.Models.ViewModel.Ownership> Ownership { get; set; } = new List<Ownership>();
         public string? Documents { get; set; }
         public List<string> Links { get; set; } = new List<string>();
     }
