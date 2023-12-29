@@ -236,7 +236,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     siteOwnerType.ForEach(h =>
                     {
-                        Ownership temp = new Ownership();
+                        N2K_BackboneBackEnd.Models.ViewModel.Ownership temp = new N2K_BackboneBackEnd.Models.ViewModel.Ownership();
                         temp.Type = h.Type;
                         temp.Percent = h.Percent;
                         result.SiteDescription.Ownership.Add(temp);
