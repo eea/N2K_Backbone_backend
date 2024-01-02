@@ -157,7 +157,7 @@ namespace N2K_BackboneBackEnd.Services
                         SpeciesSDF temp = new SpeciesSDF();
                         temp.SpeciesName = speciesTypes.Where(t => t.Code == h.SpecieCode).FirstOrDefault().Name;
                         temp.Code = h.SpecieCode;
-                        temp.Group = h.Group;
+                        temp.Group = h.SpecieType;
                         if (h.SensitiveInfo != null)
                             temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanFalse;
                         if (h.NonPersistence != null)
@@ -182,21 +182,25 @@ namespace N2K_BackboneBackEnd.Services
                         SpeciesSDF temp = new SpeciesSDF();
                         temp.SpeciesName = h.SpecieCode;
                         temp.Code = "-";
-                        temp.Group = h.Group;
+                        temp.Group = h.SpecieType;
                         if (h.SensitiveInfo != null)
                             temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanFalse;
                         if (h.NonPersistence != null)
                             temp.NP = (h.NonPersistence == true) ? booleanChecked : booleanUnchecked;
-                        temp.Type = h.SpecieType;
                         temp.Min = h.PopulationMin;
                         temp.Max = h.PopulationMax;
                         temp.Unit = h.CountingUnit;
                         temp.Category = h.AbundaceCategory;
-                        temp.DataQuality = h.DataQuality;
-                        temp.Population = h.Population;
-                        temp.Conservation = h.Conservation;
-                        temp.Isolation = h.Insolation;
-                        temp.Global = h.Global;
+                        if (h.Motivation != null)
+                        {
+                            temp.AnnexIV = h.Motivation.Contains("IV") ? booleanChecked : booleanUnchecked;
+                            string annex = h.Motivation.Replace("IV", "");
+                            temp.AnnexV = annex.Contains("V") ? booleanChecked : booleanUnchecked;
+                            temp.OtherCategoriesA = h.Motivation.Contains("A") ? booleanChecked : booleanUnchecked;
+                            temp.OtherCategoriesB = h.Motivation.Contains("B") ? booleanChecked : booleanUnchecked;
+                            temp.OtherCategoriesC = h.Motivation.Contains("C") ? booleanChecked : booleanUnchecked;
+                            temp.OtherCategoriesD = h.Motivation.Contains("D") ? booleanChecked : booleanUnchecked;
+                        }
                         result.EcologicalInformation.OtherSpecies.Add(temp);
                     });
                 }

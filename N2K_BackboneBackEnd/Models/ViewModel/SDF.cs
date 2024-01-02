@@ -135,6 +135,12 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Conservation { get; set; }
         public string? Isolation { get; set; }
         public string? Global { get; set; }
+        public string? AnnexIV { get; set; }
+        public string? AnnexV { get; set; }
+        public string? OtherCategoriesA { get; set; }
+        public string? OtherCategoriesB { get; set; }
+        public string? OtherCategoriesC { get; set; }
+        public string? OtherCategoriesD { get; set; }
     }
 
     [NotMapped]
