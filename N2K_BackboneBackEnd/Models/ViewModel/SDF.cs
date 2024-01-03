@@ -135,6 +135,12 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Conservation { get; set; }
         public string? Isolation { get; set; }
         public string? Global { get; set; }
+        public string? AnnexIV { get; set; }
+        public string? AnnexV { get; set; }
+        public string? OtherCategoriesA { get; set; }
+        public string? OtherCategoriesB { get; set; }
+        public string? OtherCategoriesC { get; set; }
+        public string? OtherCategoriesD { get; set; }
     }
 
     [NotMapped]
@@ -144,7 +150,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Quality { get; set; }
         public List<Threats> NegativeThreats { get; set; } = new List<Threats>();
         public List<Threats> PositiveThreats { get; set; } = new List<Threats>();
-        public List<Ownership> Ownership { get; set; } = new List<Ownership>();
+        public List<N2K_BackboneBackEnd.Models.ViewModel.Ownership> Ownership { get; set; } = new List<Ownership>();
         public string? Documents { get; set; }
         public List<string> Links { get; set; } = new List<string>();
     }
