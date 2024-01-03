@@ -24,6 +24,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? Email { get; set; }
         public string? AdminUnit { get; set; }
         public string? LocatorDesignator { get; set; }
+        public int? ObjectID { get; set; }
 
 
         private string dbConnection = "";

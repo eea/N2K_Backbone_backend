@@ -1302,7 +1302,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
-                String queryString = @"select SITECODE as SiteCode,LOCATOR_NAME as locatorName,ADDRESS_AREA as addressArea,POST_NAME as postName,POSTCODE as postCode,THOROUGHFARE as thoroughfare,UNSTRUCTURED_ADD as addressUnstructured,CONTACT_NAME as name, EMAIL as Email, ADMIN_UNIT as AdminUnit,LOCATOR_DESIGNATOR as LocatorDesignator
+                String queryString = @"select SITECODE as SiteCode,LOCATOR_NAME as locatorName,ADDRESS_AREA as addressArea,POST_NAME as postName,POSTCODE as postCode,THOROUGHFARE as thoroughfare,UNSTRUCTURED_ADD as addressUnstructured,CONTACT_NAME as name, EMAIL as Email, ADMIN_UNIT as AdminUnit,LOCATOR_DESIGNATOR as LocatorDesignator,OBJECTID as ObjectID
                                        from CONTACT
                                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
@@ -1333,6 +1333,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         respondent.Email = TypeConverters.CheckNull<string>(reader["Email"]);
                         respondent.AdminUnit = TypeConverters.CheckNull<string>(reader["AdminUnit"]);
                         respondent.LocatorDesignator = TypeConverters.CheckNull<string>(reader["LocatorDesignator"]);
+                        respondent.ObjectID = TypeConverters.CheckNull<int>(reader["ObjectID"]);
                         items.Add(respondent);
                     }
                     else
