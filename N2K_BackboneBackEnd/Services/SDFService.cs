@@ -162,7 +162,7 @@ namespace N2K_BackboneBackEnd.Services
                             temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanFalse;
                         if (h.NonPersistence != null)
                             temp.NP = (h.NonPersistence == true) ? booleanChecked : booleanUnchecked;
-                        temp.Type = h.SpecieType;
+                        temp.Type = h.PopulationType;
                         temp.Min = h.PopulationMin;
                         temp.Max = h.PopulationMax;
                         temp.Unit = h.CountingUnit;
