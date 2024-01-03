@@ -134,6 +134,7 @@ namespace N2K_BackboneBackEnd.Services
             _siteItems.Add(typeof(List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>), new List<N2K_BackboneBackEnd.Models.backbone_db.DetailedProtectionStatus>());
             _siteItems.Add(typeof(List<SiteLargeDescriptions>), new List<SiteLargeDescriptions>());
             _siteItems.Add(typeof(List<SiteOwnerType>), new List<SiteOwnerType>());
+            _siteItems.Add(typeof(List<N2K_BackboneBackEnd.Models.backbone_db.Ownership>), new List<N2K_BackboneBackEnd.Models.backbone_db.Ownership>());
             _siteItems.Add(typeof(List<Habitats>), new List<Habitats>());
             _siteItems.Add(typeof(List<DescribeSites>), new List<DescribeSites>());
             _siteItems.Add(typeof(List<SpeciesOther>), new List<SpeciesOther>());
@@ -216,6 +217,15 @@ namespace N2K_BackboneBackEnd.Services
                 catch (Exception ex)
                 {
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - DetailedProtectionStatus.SaveBulkRecord", "", db);
+                }
+                try
+                {
+                    List<N2K_BackboneBackEnd.Models.backbone_db.Ownership> _listed = (List<N2K_BackboneBackEnd.Models.backbone_db.Ownership>)_siteItems[typeof(List<N2K_BackboneBackEnd.Models.backbone_db.Ownership>)];
+                    await N2K_BackboneBackEnd.Models.backbone_db.Ownership.SaveBulkRecord(db, _listed);
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - Ownership.SaveBulkRecord", "", db);
                 }
                 try
                 {
@@ -1616,9 +1626,8 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.SaveChanges();
 
                         //Get the sites submitted in the envelope
-                        List<ReferenceMap> vRefMap  =  await _versioningContext.Set<ReferenceMap>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
-                        List <NaturaSite> vSites = await _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
-
+                        List<ReferenceMap> vRefMap = await _versioningContext.Set<ReferenceMap>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
+                        List<NaturaSite> vSites = await _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
 
                         //save in memory the fixed codes like priority species and habitat codes
                         DateTime start1 = DateTime.Now;

@@ -83,6 +83,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 await harvestDetailedProtectionStatus(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
                 await harvestSiteLargeDescriptions(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
                 await harvestSiteOwnerType(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, ownerShipTypes, bbSites);
+                await harvestOwnership(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
 
                 //BioRegions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await BioRegionsTask);
                 //Respondents.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await RespondentsTask);
@@ -207,6 +208,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.Explanations = pVSite.EXPLANATIONS;
                 bbSite.MarineArea = pVSite.MARINEAREA;
                 bbSite.Inspire_ID = pVSite.INSPIRE;
+                bbSite.PDFProvided = pVSite.PDFPROVIDED;
                 return bbSite;
             }
             catch (Exception ex)
@@ -804,6 +806,86 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             finally
             {
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Retrives the information of the Ownership elements for a Site and stores them in BackBone
+        /// </summary>
+        /// <param name="pVSite">The object Versioning Site</param>
+        /// <param name="pVersion">The version in BackBone</param>
+        /// <returns>List of Ownerships stored</returns>
+        private async Task<int>? harvestOwnership(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
+        {
+            List<Models.backbone_db.Ownership> items = new List<Models.backbone_db.Ownership>();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            var start = DateTime.Now;
+            try
+            {
+                versioningConn = new SqlConnection(versioningDB);
+                String queryString = @"SELECT 
+                        SITECODE as SiteCode,Type,Content,ObjectID
+                        from OWNERSHIP 
+                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+
+                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+                    Models.backbone_db.Ownership item = new Models.backbone_db.Ownership();
+                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                        item.Type = TypeConverters.CheckNull<string>(reader["Type"]);
+                        item.Content = TypeConverters.CheckNull<string>(reader["Content"]);
+                        item.ContactId = TypeConverters.CheckNull<int>(reader["ObjectID"]);
+
+                        items.Add(item);
+                    }
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSiteCode - Ownership", "", backboneDb);
+                    }
+                }
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                try
+                {
+                    await Models.backbone_db.Ownership.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - Ownership.SaveBulkRecord", "", backboneDb);
+                }
+                //Console.WriteLine(String.Format("End save to list Site Large Description -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestOwnership", "", backboneDb);
+                return 0;
+            }
+            finally
+            {
+                items.Clear();
                 if (versioningConn != null)
                 {
                     versioningConn.Close();
