@@ -13,7 +13,7 @@ namespace N2K_BackboneBackEnd.Services
 
         Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion);
 
-        Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country);
+        Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited);
 
         Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false);
 
