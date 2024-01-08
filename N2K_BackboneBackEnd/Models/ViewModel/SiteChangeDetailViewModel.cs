@@ -20,6 +20,10 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public int Version { get; set; }
 
+        public LineageTypes? LineageChangeType { get; set; }
+
+        public String? AffectedSites { get; set; }
+
         public bool? JustificationRequired { get; set; }
 
         public bool? JustificationProvided { get; set; }
