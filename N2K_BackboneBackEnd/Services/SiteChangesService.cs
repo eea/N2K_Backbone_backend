@@ -789,8 +789,8 @@ namespace N2K_BackboneBackEnd.Services
                         fields.Add("Submission", nullCase);
                     }
                     if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed"
-                        || catChange.ChangeType == "Change of spatial area" || catChange.ChangeType == "Spatial Area Decreased"
-                        || catChange.ChangeType == "Spatial Area Increased" || catChange.ChangeType.StartsWith("Cover_ha"))
+                        || catChange.ChangeType == "Change of spatial area" || catChange.ChangeType == "Spatial Area Decrease"
+                        || catChange.ChangeType == "Spatial Area Increase" || catChange.ChangeType.StartsWith("Cover_ha"))
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
