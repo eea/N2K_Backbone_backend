@@ -427,7 +427,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country)
+        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited)
         {
             try
             {
@@ -463,11 +463,13 @@ namespace N2K_BackboneBackEnd.Services
                         Name = change.Name,
                         EditedBy = activity is null ? null : activity.Author,
                         EditedDate = activity is null ? null : activity.Date,
-                        LineageChangeType = changeLineage
+                        LineageChangeType = changeLineage,
+                        Type = change.Type
                     };
                     result.Add(temp);
                 }
-
+                if (onlyedited)
+                    result = result.Where(x => x.EditedDate != null).ToList();
                 return result;
             }
             catch (Exception ex)
@@ -533,7 +535,8 @@ namespace N2K_BackboneBackEnd.Services
                             Name = change.Name,
                             EditedBy = activity is null ? null : activity.Author,
                             EditedDate = activity is null ? null : activity.Date,
-                            LineageChangeType = changeLineage
+                            LineageChangeType = changeLineage,
+                            Type = change.Type
                         };
                         result.Add(temp);
                     }
