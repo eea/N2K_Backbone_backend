@@ -79,7 +79,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     DataQuality ,
                     SPTYPE as SpecieType,
                     SPECIESNAMECLEAN,
-                    SPECIESNAME
+                    SPECIESNAME,
+                    OTHERSPECIES
 
                     FROM ContainsSpecies
                     WHERE COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
@@ -122,8 +123,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         item.DataQuality = TypeConverters.CheckNull<string>(reader["DataQuality"]);
                         item.SpecieType = TypeConverters.CheckNull<string>(reader["SpecieType"]);
 
+                        int OtherSpecies = TypeConverters.CheckNull<int>(reader["OTHERSPECIES"]);
+
                         if (item.SpecieCode is null || item.SpecieCode == "" ||
-                            _speciesTypes.Where(a => a.Code == item.SpecieCode && a.Active == true).Count() < 1)
+                            _speciesTypes.Where(a => a.Code == item.SpecieCode && a.Active == true).Count() < 1
+                            || OtherSpecies == 1)
                         {
                             //Replace the code (which is Null or empty or no stored in the system)
                             //item.SiteCode = element.SITECODE;
