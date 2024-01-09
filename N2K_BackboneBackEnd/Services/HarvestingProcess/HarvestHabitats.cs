@@ -328,8 +328,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
-                        item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]); ;
-                        item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]); ;
+                        item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]);
+                        item.Percentage = null;
+                        if (reader["PercentageCover"] != null)
+                            if (reader["PercentageCover"].ToString() != "")
+                                item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]);
                         items.Add(item);
                     }
                     else
@@ -399,8 +402,11 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     DescribeSites item = new DescribeSites();
                     item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]); ;
                     item.Version = pVersion;
-                    item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]); ;
-                    item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]); ;
+                    item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]);
+                    item.Percentage = null;
+                    if (reader["PercentageCover"] != null)
+                        if (reader["PercentageCover"].ToString() != "")
+                            item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]);
                     items.Add(item);
                 }
 
