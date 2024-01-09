@@ -123,7 +123,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         item.DataQuality = TypeConverters.CheckNull<string>(reader["DataQuality"]);
                         item.SpecieType = TypeConverters.CheckNull<string>(reader["SpecieType"]);
 
-                        int OtherSpecies = TypeConverters.CheckNull<int>(reader["OTHERSPECIES"]);
+                        int OtherSpecies = Convert.ToInt32(reader["OTHERSPECIES"].ToString());
 
                         if (item.SpecieCode is null || item.SpecieCode == "" ||
                             _speciesTypes.Where(a => a.Code == item.SpecieCode && a.Active == true).Count() < 1
