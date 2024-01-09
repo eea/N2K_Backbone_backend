@@ -450,8 +450,15 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                if (ctx == null) ctx = this._dataContext;
-
+                //check if ChangeDetection has been called from the specific end point 
+                //this will determine the "DELETE FROM dbo.Changes" sentences in the end of the execution
+                bool from_end_point = false;
+                if (ctx == null)
+                {
+                    from_end_point = true;
+                    ctx = this._dataContext;
+                }
+                
                 List<HarvestedEnvelope> result = new List<HarvestedEnvelope>();
                 List<SiteChangeDb> changes = new List<SiteChangeDb>();
                 //var latestVersions = await ctx.Set<ProcessedEnvelopes>().ToListAsync();
@@ -724,7 +731,6 @@ namespace N2K_BackboneBackEnd.Services
                             throw ex;
                         }
 
-                        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE ChangeId NOT IN (SELECT MAX(ChangeId) AS MaxRecordID FROM dbo.Changes GROUP BY SiteCode, Version, ChangeType, Code)");
                     }
                     catch (Exception ex)
                     {
@@ -734,6 +740,9 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", ctx.Database.GetConnectionString());
                 }
+
+                //execute "DELETE FROM dbo.Changes ..." if it has been called directly from the endpoint
+                if (from_end_point) await DeleteUnrelatedChanges(ctx);
 
                 return result;
             }
@@ -1874,6 +1883,7 @@ namespace N2K_BackboneBackEnd.Services
                                         GetCountryVersionToStatusFromSingleEnvelope(env.Envelope.CountryCode, env.Envelope.VersionId, HarvestingStatus.PreHarvested)
                                         , cache)
                                 );
+                                //await DeleteUnrelatedChanges(ctx);
                             }
                         }
 
@@ -2041,8 +2051,10 @@ namespace N2K_BackboneBackEnd.Services
                         }
                         else
                             await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Tabular Harvest completed {0} - {1}", bbEnvelope.CountryCode, bbEnvelope.VersionId), "HarvestedService - FullHarvest", "", _dataContext.Database.GetConnectionString());
-
                     }
+                    await DeleteUnrelatedChanges(_dataContext);
+
+
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Tabular Harvest completed ", "HarvestedService - FullHarvest", "", _dataContext.Database.GetConnectionString());
 
                     return bbEnvelopes;
@@ -2060,6 +2072,21 @@ namespace N2K_BackboneBackEnd.Services
             finally
             {
 
+            }
+
+        }
+
+
+        private async Task DeleteUnrelatedChanges(N2KBackboneContext _dataContext)
+        {
+         
+            try
+            {
+                await _dataContext.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Changes WHERE ChangeId NOT IN (SELECT MAX(ChangeId) AS MaxRecordID FROM dbo.Changes GROUP BY SiteCode, Version, ChangeType, Code)");
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "DeleteUnrelatedChanges", "", _dataContext.Database.GetConnectionString());
             }
 
         }
@@ -2193,7 +2220,7 @@ namespace N2K_BackboneBackEnd.Services
         /// <param name="version"></param>
         /// <param name="toStatus"></param>
         /// <returns></returns>
-        public async Task<List<ProcessedEnvelopes>> ChangeStatus(CountryVersionToStatus changeEnvelopes, IMemoryCache cache)
+        public async Task<List<ProcessedEnvelopes>> ChangeStatus(CountryVersionToStatus changeEnvelopes, IMemoryCache cache, bool recursive=false)
         {
             string sqlToExecute = "exec dbo.";
             string country = "";
@@ -2300,7 +2327,7 @@ namespace N2K_BackboneBackEnd.Services
                                         //change the status of the whole process to PreHarvested
                                         await ChangeStatus(
                                                 GetCountryVersionToStatusFromSingleEnvelope(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested)
-                                                , cache);
+                                                , cache,true);
                                     }
                                 }
 
@@ -2370,9 +2397,10 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 throw new Exception("The package doesn't exist on source database (" + country + " - " + version + ")");
                             }
-                        }
+                        }                        
                     }
-                }
+                    if (!recursive)  await DeleteUnrelatedChanges(ctx);
+                }                
                 return envelopeList;
             }
             catch (Exception ex)
