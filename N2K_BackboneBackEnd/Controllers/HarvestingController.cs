@@ -409,7 +409,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [AllowAnonymous]
-        [Route("/ws")]
+        [Route("/ws_fme")]
         [HttpGet]
         public async Task Get()
         {
