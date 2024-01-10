@@ -140,7 +140,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         item.Representativity = TypeConverters.CheckNull<string>(reader["Representativity"]);
                         item.DataQty = null;
                         if (reader["DataQuality"] != null)
-                            item.DataQty = dataQualityTypes.Where(d => d.HabitatCode == reader["DataQuality"].ToString()).Select(d => d.Id).FirstOrDefault();
+                            if (reader["DataQuality"].ToString() != "")
+                                item.DataQty = dataQualityTypes.Where(d => d.HabitatCode == reader["DataQuality"].ToString()).Select(d => d.Id).FirstOrDefault();
                         item.GlobalAssesments = TypeConverters.CheckNull<string>(reader["GlobalAssesment"]);
                         item.RelativeSurface = TypeConverters.CheckNull<string>(reader["RelSurface"]);
                         item.Percentage = null;
@@ -151,7 +152,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         item.ConsStatus = TypeConverters.CheckNull<string>(reader["ConsStatus"]);
 
                         if (reader["Caves"] != null)
-                            item.Caves = TypeConverters.CheckNull<decimal>(reader["Caves"]).ToString(); // ???
+                            if (reader["Caves"].ToString() != "")
+                                item.Caves = TypeConverters.CheckNull<decimal>(reader["Caves"]).ToString(); // ???
                         item.PF = TypeConverters.CheckNull<bool>(reader["PF"]).ToString(); // ??? PENDING The same as PriorityForm
 
                         if (reader["NonPresenceSite"] != null)
