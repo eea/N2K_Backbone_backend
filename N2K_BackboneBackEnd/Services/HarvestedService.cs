@@ -1795,7 +1795,7 @@ namespace N2K_BackboneBackEnd.Services
                     //if the file exists means that the event was handled and we ignore it
                     if (!File.Exists(fileName))
                     {
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler file {0}", fileName), "EventHandler", "", _dataContext.Database.GetConnectionString())
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler file {0}", fileName), "EventHandler", "", _dataContext.Database.GetConnectionString());
                         //if it doesn´t exist create a file
                         //await _semaphoreFME.WaitAsync();
                         StreamWriter sw = new StreamWriter(fileName, true, Encoding.ASCII);
