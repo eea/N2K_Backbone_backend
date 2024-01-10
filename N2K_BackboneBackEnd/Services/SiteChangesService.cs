@@ -49,6 +49,7 @@ namespace N2K_BackboneBackEnd.Services
         private readonly IEnumerable<SpeciesPriority> _speciesPriority;
         private readonly IEnumerable<HabitatPriority> _habitatPriority;
         private readonly IEnumerable<Countries> _countries;
+        private readonly IEnumerable<Lineage> _lineage;
         private IEnumerable<Habitats>? _siteHabitats;
         private IEnumerable<Species>? _siteSpecies;
         private IEnumerable<SpeciesOther>? _siteSpeciesOther;
@@ -70,6 +71,7 @@ namespace N2K_BackboneBackEnd.Services
             _speciesPriority = _dataContext.Set<SpeciesPriority>().AsNoTracking().ToList();
             _habitatPriority = _dataContext.Set<HabitatPriority>().AsNoTracking().ToList();
             _countries = _dataContext.Set<Countries>().AsNoTracking().ToList();
+            _lineage= _dataContext.Set<Lineage>().AsNoTracking().ToList();
         }
 
 
@@ -1324,6 +1326,9 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.Name = reader["SiteName"].ToString();
                         mySiteView.CountryCode = mySiteView.SiteCode.Substring(0, 2);
 
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
+
                         Level level;
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
                         //Alter cached listd. They come from pendign and goes to accepted
@@ -1448,6 +1453,9 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.Version = int.Parse(reader["Version"].ToString());
                         mySiteView.Name = reader["SiteName"].ToString();
                         mySiteView.CountryCode = mySiteView.SiteCode.Substring(0, 2);
+
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
 
                         Level level;
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
@@ -1943,6 +1951,9 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.Version = modifiedSiteCode.VersionId;
                         mySiteView.Name = changes.First().SiteName;
                         mySiteView.CountryCode = modifiedSiteCode.SiteCode.Substring(0, 2);
+
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
 
                         Sites siteToDelete = null;
                         int previousCurrent = -1;//The 0 value can be a version
