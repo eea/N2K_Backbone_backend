@@ -28,6 +28,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public bool? JustificationProvided { get; set; }
 
+        public string? ReferenceSiteCode { get; set; }
+
 
         public SiteChangeStatus? Status { get; set; }
 
