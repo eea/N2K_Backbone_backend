@@ -1791,10 +1791,12 @@ namespace N2K_BackboneBackEnd.Services
                     var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
                                 string.Format("FMECompleted-{0}-{1}.txt", env.Envelope.CountryCode, env.Envelope.VersionId));
 
-
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _dataContext.Database.GetConnectionString());
                     //if the file exists means that the event was handled and we ignore it
                     if (!File.Exists(fileName))
                     {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler file {0}", fileName), "EventHandler", "", _dataContext.Database.GetConnectionString());
+
                         //if it doesn´t exist create a file
                         //await _semaphoreFME.WaitAsync();
                         StreamWriter sw = new StreamWriter(fileName, true, Encoding.ASCII);
@@ -1804,6 +1806,7 @@ namespace N2K_BackboneBackEnd.Services
                         //_semaphoreFME.Release();
                         await Task.Run(() => FMEJobCompleted(sender, env, cache));
                     }
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler END with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _dataContext.Database.GetConnectionString());
                 };
 
             }
