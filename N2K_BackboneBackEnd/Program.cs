@@ -179,6 +179,6 @@ app.UseStaticFiles(new StaticFileOptions()
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapHub<ChatHub>("/hubs/chat");
+app.MapHub<ChatHub>("/ws");
 
 app.Run();
