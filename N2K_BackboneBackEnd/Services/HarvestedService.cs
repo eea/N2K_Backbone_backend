@@ -921,7 +921,6 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.Code = harvestingSite.SiteCode;
                     siteChange.Section = "Site";
                     siteChange.VersionReferenceId = harvestingSite.VersionId;
-                    siteChange.ReferenceSiteCode = harvestingSite.SiteCode;
                     siteChange.N2KVersioningVersion = envelope.VersionId;
                     changes.Add(siteChange);
                 }
