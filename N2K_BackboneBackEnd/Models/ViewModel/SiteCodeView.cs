@@ -1,5 +1,4 @@
-﻿
-using N2K_BackboneBackEnd.Enumerations;
+﻿using N2K_BackboneBackEnd.Enumerations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
@@ -19,6 +18,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public DateTime? EditedDate { get; set; }
 
         public LineageTypes? LineageChangeType { get; set; }
+
+        public string? Type { get; set; }
 
     }
 }
