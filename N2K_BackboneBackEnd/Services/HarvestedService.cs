@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
@@ -1151,7 +1151,6 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
                         siteChange.VersionReferenceId = harvestingSite.VersionId;
-                        siteChange.ReferenceSiteCode = harvestingSite.SiteCode;
                         siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
@@ -1394,7 +1393,6 @@ namespace N2K_BackboneBackEnd.Services
                         siteChange.Code = harvestingSite.SiteCode;
                         siteChange.Section = "Site";
                         siteChange.VersionReferenceId = harvestingSite.VersionId;
-                        siteChange.ReferenceSiteCode = harvestingSite.SiteCode;
                         siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
@@ -1540,7 +1538,6 @@ namespace N2K_BackboneBackEnd.Services
                     siteChange.Code = harvestingSite.SiteCode;
                     siteChange.Section = "Site";
                     siteChange.VersionReferenceId = harvestingSite.VersionId;
-                    siteChange.ReferenceSiteCode = harvestingSite.SiteCode;
                     siteChange.N2KVersioningVersion = envelope.VersionId;
                     changes.Add(siteChange);
                 }
