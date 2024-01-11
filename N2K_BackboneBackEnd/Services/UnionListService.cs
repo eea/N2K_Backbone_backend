@@ -464,7 +464,11 @@ namespace N2K_BackboneBackEnd.Services
                 //Get the current UnionList
                 UnionListHeader? currentUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name == _appSettings.Value.current_ul_name) && (ulh.CreatedBy == _appSettings.Value.current_ul_createdby)).FirstOrDefaultAsync();
 
-                List<UnionListDetail?> currentUnionListSites = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(ulh => ulh.idUnionListHeader == currentUnionList.idULHeader).ToListAsync();
+                List<UnionListDetail?> currentUnionListSites = await _dataContext.Set<UnionListDetail>()
+                                .AsNoTracking()
+                                .Where(ulh => ulh.idUnionListHeader == currentUnionList.idULHeader)
+                                .Cast<UnionListDetail?>()
+                                .ToListAsync();
 
                 foreach (UnionListDetail currentUnionListSite in currentUnionListSites)
                 {

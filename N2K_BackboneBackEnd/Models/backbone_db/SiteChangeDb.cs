@@ -34,6 +34,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public Level? Level { get; set; }
         public string? ChangeCategory { get; set; }
         public string? ChangeType { get; set; }
+        [NotMapped]
+        public LineageTypes? LineageChangeType { get; set; }
+        [NotMapped]
+        public String? AffectedSites { get; set; }
 
 
         [NotMapped]
@@ -140,12 +144,30 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             {
                 if (listData.Count > 0)
                 {
-                    using (var copy = new SqlBulkCopy(db))
-                    {
-                        copy.DestinationTableName = "Changes";
-                        copy.BulkCopyTimeout = 3000;
-                        DataTable data = PrepareDataForBulkCopy(listData, copy);
-                        await copy.WriteToServerAsync(data);
+                    int num_tries = 0;
+                    int max_tries = 10;
+                    bool success = false;
+                    //try the bulk save up to 10 times (in case it fires deadlock errors) 
+                    while (!success && num_tries < max_tries) {
+                        //try the bul
+                        try
+                        {
+                            using (var copy = new SqlBulkCopy(db))
+                            {
+                                copy.DestinationTableName = "Changes";
+                                copy.BulkCopyTimeout = 3000;
+                                DataTable data = PrepareDataForBulkCopy(listData, copy);
+                                await copy.WriteToServerAsync(data);
+                                success = true;
+                            }
+                        }
+                        catch
+                        {
+                            //wait 2 seconds before attempting the next save bulk
+                            await Task.Delay(2000);
+                            num_tries++;
+                        }
+                            
                     }
                 }
                 return 1;

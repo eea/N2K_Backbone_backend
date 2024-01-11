@@ -10,6 +10,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string SiteCode { get; set; } = "";
         public int Version { get; set; }
         public string Name { get; set; } = "";
+        public string? Type { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
