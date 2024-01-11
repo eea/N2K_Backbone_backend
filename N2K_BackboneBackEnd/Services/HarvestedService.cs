@@ -1784,28 +1784,42 @@ namespace N2K_BackboneBackEnd.Services
                 _fmeHarvestJobs.FMEJobCompleted += async (sender, env) =>
                 {
 
+                    string _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext()
+                                .Database.GetConnectionString();
 
-                    //avoid handling the same event more than once by the means of memory cache
-                    //check if the event has been handled previously to avoid duplicated handlers
-                    //for that purpose we will use plain-text files
-                    var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
-                                string.Format("FMECompleted-{0}-{1}.txt", env.Envelope.CountryCode, env.Envelope.VersionId));
 
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _dataContext.Database.GetConnectionString());
-                    //if the file exists means that the event was handled and we ignore it
-                    if (!File.Exists(fileName))
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Enter Event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
+
+                    try
                     {
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler file {0}", fileName), "EventHandler", "", _dataContext.Database.GetConnectionString());
-                        //if it doesn´t exist create a file
-                        //await _semaphoreFME.WaitAsync();
-                        StreamWriter sw = new StreamWriter(fileName, true, Encoding.ASCII);
-                        await sw.WriteAsync(env.Envelope.JobId.ToString());
-                        //close the file
-                        sw.Close();
-                        //_semaphoreFME.Release();
-                        await Task.Run(() => FMEJobCompleted(sender, env, cache));
+                        //avoid handling the same event more than once by the means of memory cache
+                        //check if the event has been handled previously to avoid duplicated handlers
+                        //for that purpose we will use plain-text files
+                        var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
+                                    string.Format("FMECompleted-{0}-{1}.txt", env.Envelope.CountryCode, env.Envelope.VersionId));
+
+
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
+                        //if the file exists means that the event was handled and we ignore it
+                        if (!File.Exists(fileName))
+                        {
+                            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler file {0}", fileName), "EventHandler", "", _connectionString);
+                            //if it doesn´t exist create a file
+                            //await _semaphoreFME.WaitAsync();
+                            StreamWriter sw = new StreamWriter(fileName, true, Encoding.ASCII);
+                            await sw.WriteAsync(env.Envelope.JobId.ToString());
+                            //close the file
+                            sw.Close();
+                            //_semaphoreFME.Release();
+                            await Task.Run(() => FMEJobCompleted(sender, env, cache));
+                        }
+
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler END with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
                     }
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler END with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _dataContext.Database.GetConnectionString());
+                    catch (Exception ex)
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, string.Format("Error Event handler {0}",ex.Message), "EventHandler", "", _connectionString);
+                    }
                 };
 
             }
