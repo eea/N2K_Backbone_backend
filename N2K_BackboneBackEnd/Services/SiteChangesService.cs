@@ -71,7 +71,7 @@ namespace N2K_BackboneBackEnd.Services
             _speciesPriority = _dataContext.Set<SpeciesPriority>().AsNoTracking().ToList();
             _habitatPriority = _dataContext.Set<HabitatPriority>().AsNoTracking().ToList();
             _countries = _dataContext.Set<Countries>().AsNoTracking().ToList();
-            _lineage= _dataContext.Set<Lineage>().AsNoTracking().ToList();
+            _lineage = _dataContext.Set<Lineage>().AsNoTracking().ToList();
         }
 
 
@@ -175,7 +175,8 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Level = null;
                             siteChange.Status = null;
                             siteChange.Tags = "";
-                            siteChange.ReferenceSiteCode = change.ReferenceSiteCode;
+                            if (change.ReferenceSiteCode != null && change.ReferenceSiteCode != "")
+                                siteChange.ReferenceSiteCode = change.ReferenceSiteCode;
                             siteChange.Version = change.Version;
                             SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                             if (activity == null)
@@ -847,7 +848,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
 
 
-                        if (fields.TryGetValue("Submission", out reportedString) 
+                        if (fields.TryGetValue("Submission", out reportedString)
                             && reportedString != "" && !string.IsNullOrEmpty(detail))
                         {
 
@@ -857,8 +858,8 @@ namespace N2K_BackboneBackEnd.Services
 
                             if (totalArea != 0)
                             {
-                                fields[deleted ? "Cumulative deleted spatial area (ha)" : "Cumulative added spatial area (ha)"] = string.Format("{0}", Math.Round(reported , 4).ToString("F4", culture));
-                                fields.Add("Percentage", string.Format("{0}{1}", deleted?"-":"", Math.Round(((reported * 100) / totalArea), 4).ToString("F4", culture)));
+                                fields[deleted ? "Cumulative deleted spatial area (ha)" : "Cumulative added spatial area (ha)"] = string.Format("{0}", Math.Round(reported, 4).ToString("F4", culture));
+                                fields.Add("Percentage", string.Format("{0}{1}", deleted ? "-" : "", Math.Round(((reported * 100) / totalArea), 4).ToString("F4", culture)));
                             }
                             else
                             {
@@ -1167,7 +1168,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
 
                         // don't add annexII and priority fields if change affects Other species
-                        if(!changeType.Contains("Other"))
+                        if (!changeType.Contains("Other"))
                         {
                             fields.Add("AnnexII", annexII);
                             fields.Add("Priority", priorityS);
