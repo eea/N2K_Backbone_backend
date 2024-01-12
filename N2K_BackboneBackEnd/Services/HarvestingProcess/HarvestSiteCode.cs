@@ -579,7 +579,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 versioningConn = new SqlConnection(versioningDB);
                 String queryString = @"SELECT 
-                        N2K_SITECODE as SiteCode,DesignationCode,OverlapCode,OVERLAPPERC as OverlapPercentage,Convention
+                        N2K_SITECODE as SiteCode,DesignationCode,PROTECTEDSITENAME AS Name,OverlapCode,OVERLAPPERC as OverlapPercentage,Convention
                             from DetailedProtectionStatus 
                             where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
@@ -600,6 +600,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
                         item.DesignationCode = TypeConverters.CheckNull<string>(reader["DesignationCode"]);
+                        item.Name = TypeConverters.CheckNull<string>(reader["Name"]);
                         item.OverlapCode = TypeConverters.CheckNull<string>(reader["OverlapCode"]);
                         item.OverlapPercentage = TypeConverters.CheckNull<decimal>(reader["OverlapPercentage"]);
                         item.Convention = TypeConverters.CheckNull<string>(reader["Convention"]);
