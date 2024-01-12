@@ -557,7 +557,7 @@ namespace N2K_BackboneBackEnd.Services
                             if (siteRelation != null && harvestingSite == null)
                             {
                                 //if the is the site has been recoded do not add it to the changed sites
-                                LineageDetection temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
+                                LineageDetection? temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
                                 if (temp == null) //the site has not been RECODED
                                 {
                                     SiteChangeDb siteChange = new SiteChangeDb();
@@ -892,6 +892,60 @@ namespace N2K_BackboneBackEnd.Services
 
                     await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isStoredSitePriority + "' WHERE [SiteCode] = '" + storedSite.SiteCode + "' AND [Version] = '" + storedSite.VersionId + "'");
                     await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isHarvestingSitePriority + "' WHERE [SiteCode] = '" + harvestingSite.SiteCode + "' AND [Version] = '" + harvestingSite.VersionId + "'");
+
+                    Lineage? lineage = _dataContext.Set<Lineage>().FirstOrDefault(l => l.SiteCode == harvestingSite.SiteCode && l.Version == maxVersionSite);
+                    if (lineage?.Type == LineageTypes.Merge)
+                    {
+                        string antecessors = string.Join(',',
+                            _dataContext.Set<LineageAntecessors>().Where(a => a.LineageID == lineage.ID)
+                            .Select(a => a.SiteCode).ToArray());
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Network general structure";
+                        siteChange.ChangeType = "Site Merged";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Critical;
+                        siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx);
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = harvestingSite.SiteCode;
+                        siteChange.OldValue = antecessors;
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        changes.Add(siteChange);
+                    }
+                    else if (lineage?.Type == LineageTypes.Split)
+                    {
+                        // get sibling sites (sites that resulted from the split)
+                        List<long> siblingIDs = _dataContext.Set<LineageAntecessors>()
+                            .Where(a => a.SiteCode == storedSite.SiteCode && a.N2KVersioningVersion == storedSite.N2KVersioningVersion)
+                            .Select(a => a.LineageID).ToList();
+                        string siblingSites = string.Join(',',
+                            _dataContext.Set<Lineage>()
+                            .Where(l => siblingIDs.Contains(l.ID))
+                            .Select(l => l.SiteCode).ToArray());
+
+                        SiteChangeDb siteChange = new SiteChangeDb();
+                        siteChange.SiteCode = harvestingSite.SiteCode;
+                        siteChange.Version = harvestingSite.VersionId;
+                        siteChange.ChangeCategory = "Network general structure";
+                        siteChange.ChangeType = "Site Split";
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Critical;
+                        siteChange.Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx);
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = siblingSites;
+                        siteChange.OldValue = storedSite.SiteCode;
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = storedSite.VersionId;
+                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        changes.Add(siteChange);
+                    }
 
                     //Add justification files and comments from the current to the new version
                     Sites current = ctx.Set<Sites>().Where(x => x.SiteCode == harvestingSite.SiteCode && x.Current == true).FirstOrDefault();
