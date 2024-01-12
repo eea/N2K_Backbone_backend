@@ -15,6 +15,8 @@ using System.Collections.Generic;
 using N2K_BackboneBackEnd.Models.BackboneDB;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.SignalR;
+using N2K_BackboneBackEnd.Hubs;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -26,14 +28,15 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2K_VersioningContext _versioningContext;
         private readonly IOptions<ConfigSettings> _appSettings;
         private IBackgroundSpatialHarvestJobs _fmeHarvestJobs;
+        private readonly IHubContext<ChatHub> _hubContext;
 
-
-        public SiteLineageService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IOptions<ConfigSettings> app, IBackgroundSpatialHarvestJobs harvestJobs)
+        public SiteLineageService(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext, IHubContext<ChatHub> hubContext, IOptions<ConfigSettings> app, IBackgroundSpatialHarvestJobs harvestJobs)
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
             _appSettings = app;
             _fmeHarvestJobs = harvestJobs;
+            _hubContext = hubContext;
         }
 
 
@@ -319,7 +322,7 @@ namespace N2K_BackboneBackEnd.Services
                 });
                 await _dataContext.SaveChangesAsync();
 
-                HarvestedService harvest = new HarvestedService(_dataContext, _versioningContext, _appSettings, _fmeHarvestJobs);
+                HarvestedService harvest = new HarvestedService(_dataContext, _versioningContext, _hubContext, _appSettings, _fmeHarvestJobs);
                 await harvest.ChangeDetectionSingleSite(lineage.SiteCode, lineage.Version, _dataContext.Database.GetConnectionString());
             }
             catch (Exception ex)
