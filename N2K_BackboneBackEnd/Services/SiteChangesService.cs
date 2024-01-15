@@ -49,12 +49,18 @@ namespace N2K_BackboneBackEnd.Services
         private readonly IEnumerable<SpeciesPriority> _speciesPriority;
         private readonly IEnumerable<HabitatPriority> _habitatPriority;
         private readonly IEnumerable<Countries> _countries;
+        private readonly IEnumerable<Lineage> _lineage;
         private IEnumerable<Habitats>? _siteHabitats;
         private IEnumerable<Species>? _siteSpecies;
         private IEnumerable<SpeciesOther>? _siteSpeciesOther;
         private IEnumerable<Habitats>? _siteHabitatsReference;
         private IEnumerable<Species>? _siteSpeciesReference;
         private IEnumerable<SpeciesOther>? _siteSpeciesOtherReference;
+
+
+        // this list is used to check if the affected sites field should return null or not
+        private List<LineageTypes> lineageCases =
+            new List<LineageTypes> { LineageTypes.Recode, LineageTypes.Split, LineageTypes.Merge };
 
 
         public SiteChangesService(N2KBackboneContext dataContext)
@@ -65,6 +71,7 @@ namespace N2K_BackboneBackEnd.Services
             _speciesPriority = _dataContext.Set<SpeciesPriority>().AsNoTracking().ToList();
             _habitatPriority = _dataContext.Set<HabitatPriority>().AsNoTracking().ToList();
             _countries = _dataContext.Set<Countries>().AsNoTracking().ToList();
+            _lineage = _dataContext.Set<Lineage>().AsNoTracking().ToList();
         }
 
 
@@ -168,6 +175,8 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Level = null;
                             siteChange.Status = null;
                             siteChange.Tags = "";
+                            if (change.ReferenceSiteCode != null && change.ReferenceSiteCode != "")
+                                siteChange.ReferenceSiteCode = change.ReferenceSiteCode;
                             siteChange.Version = change.Version;
                             SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                             if (activity == null)
@@ -180,12 +189,16 @@ namespace N2K_BackboneBackEnd.Services
                                     activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Action == "User edition after rejection of version " + change.Version).FirstOrDefault();
                                 }
                             }
-                            SiteChangeDb recoded = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "Site Recoded").FirstOrDefaultAsync();
+
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
-                            siteChange.Recoded = recoded is null ? false : true;
-                            Lineage lineageChangeType = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
-                            siteChange.LineageChangeType = lineageChangeType is null ? LineageTypes.NoChanges : lineageChangeType.Type;
+
+                            Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
+                            siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
+
+                            if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
+                                siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
+
                             var changeView = new SiteChangeView
                             {
                                 ChangeId = change.ChangeId,
@@ -317,6 +330,29 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        private async Task<String>? GetAffectedSites(string pSiteCode, Lineage? lineageChange)
+        {
+            if (lineageChange == null)
+                return "";
+
+            // Get antecessors from LineageAntecessors table matching lineageID
+            List<String>? antecessorsSiteCodes = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                .Where(l => l.LineageID == lineageChange.ID).Select(x => x.SiteCode).ToListAsync();
+            lineageChange.AntecessorsSiteCodes = String.Join(",", antecessorsSiteCodes);
+
+            // Get successor siteCodes by searching for successor lineage IDs
+            List<long> successorsIDs = await _dataContext.Set<LineageAntecessors>().AsNoTracking()
+                .Where(l => l.SiteCode == pSiteCode).Select(l => l.LineageID).ToListAsync();
+            List<String>? successorSiteCodes = await _dataContext.Set<Lineage>().AsNoTracking()
+                .Where(l => successorsIDs.Contains(l.ID)).Select(l => l.SiteCode).ToListAsync();
+
+            return String.Join(",",
+                new List<String> { pSiteCode }
+                .Concat(antecessorsSiteCodes
+                .Concat(successorSiteCodes))
+            .ToHashSet());
+
+        }
 
         public async Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion)
         {
@@ -329,6 +365,13 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetailVM.Info = new SiteChangesLevelDetail();
                 changeDetailVM.Critical = new SiteChangesLevelDetail();
 
+                // Get lineage change type from Lineage table
+                Lineage? lineageChange = await _dataContext.Set<Lineage>().AsNoTracking().FirstOrDefaultAsync(l => l.SiteCode == pSiteCode && l.Version == pCountryVersion);
+                changeDetailVM.LineageChangeType = lineageChange?.Type;
+
+                // get affected sites list only in certain lineage change types
+                if (lineageCases.Contains((LineageTypes)changeDetailVM.LineageChangeType))
+                    changeDetailVM.AffectedSites = GetAffectedSites(pSiteCode, lineageChange).Result;
 
                 var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == pSiteCode && site.Version == pCountryVersion).FirstOrDefaultAsync();
                 if (site != null)
@@ -357,9 +400,10 @@ namespace N2K_BackboneBackEnd.Services
                 changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
                 if (changesDb != null)
                 {
-                    if (changesDb.FirstOrDefault().ChangeType == "Site Deleted")
+                    changeDetailVM.ReferenceSiteCode = changesDb.FirstOrDefault()?.ReferenceSiteCode;
+                    if (changesDb.FirstOrDefault()?.ChangeType == "Site Deleted")
                     {
-                        changeDetailVM.Status = changesDb.FirstOrDefault().Status;
+                        changeDetailVM.Status = changesDb.FirstOrDefault()?.Status;
                     }
                 }
 
@@ -388,7 +432,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country)
+        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited)
         {
             try
             {
@@ -424,11 +468,13 @@ namespace N2K_BackboneBackEnd.Services
                         Name = change.Name,
                         EditedBy = activity is null ? null : activity.Author,
                         EditedDate = activity is null ? null : activity.Date,
-                        LineageChangeType = changeLineage
+                        LineageChangeType = changeLineage,
+                        Type = change.Type
                     };
                     result.Add(temp);
                 }
-
+                if (onlyedited)
+                    result = result.Where(x => x.EditedDate != null).ToList();
                 return result;
             }
             catch (Exception ex)
@@ -467,9 +513,10 @@ namespace N2K_BackboneBackEnd.Services
                     List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                                 param1).ToListAsync();
                     List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
-                                    param1).ToListAsync();
+                                param1).ToListAsync();
                     List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
                                     param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
+
                     foreach (var change in (await changes.ToListAsync()))
                     {
                         SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
@@ -493,7 +540,8 @@ namespace N2K_BackboneBackEnd.Services
                             Name = change.Name,
                             EditedBy = activity is null ? null : activity.Author,
                             EditedDate = activity is null ? null : activity.Date,
-                            LineageChangeType = changeLineage
+                            LineageChangeType = changeLineage,
+                            Type = change.Type
                         };
                         result.Add(temp);
                     }
@@ -623,12 +671,12 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             if (_Section.DeletedCodes.Count == 0)
                             {
-                                if (_levelDetail.ChangeType == "Other Species Deleted")
+                                if (_levelDetail.ChangeType.Contains("Species"))
                                 {
                                     _Section.DeletedCodes.Add(new CategoryChangeDetail
                                     {
                                         ChangeCategory = _levelDetail.Section,
-                                        ChangeType = String.Format("List of {0}", _levelDetail.ChangeType),
+                                        ChangeType = _levelDetail.ChangeType,
                                         ChangedCodesDetail = new List<CodeChangeDetail>()
                                     });
                                 }
@@ -646,7 +694,7 @@ namespace N2K_BackboneBackEnd.Services
                             foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
                             {
                                 _Section.DeletedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                                    CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.VersionReferenceId, changedItem.VersionReferenceId)
+                                    CodeAddedRemovedDetail(_levelDetail.Section, _levelDetail.ChangeType, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.VersionReferenceId, changedItem.VersionReferenceId)
                                 );
                             }
                         }
@@ -659,20 +707,54 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         if (_Section.AddedCodes.Count == 0)
                         {
+                            if (_levelDetail.ChangeType.Contains("Species"))
+                            {
+                                _Section.AddedCodes.Add(new CategoryChangeDetail
+                                {
+                                    ChangeCategory = _levelDetail.Section,
+                                    ChangeType = _levelDetail.ChangeType,
+                                    ChangedCodesDetail = new List<CodeChangeDetail>()
+                                });
+                            }
+                            else
+                            {
+                                _Section.AddedCodes.Add(new CategoryChangeDetail
+                                {
+                                    ChangeCategory = _levelDetail.Section,
+                                    ChangeType = String.Format("List of {0} Added", _levelDetail.Section),
+                                    ChangedCodesDetail = new List<CodeChangeDetail>()
+                                });
+                            }
+                        }
+
+                        if (_levelDetail.ChangeList.Where(c => !c.ChangeType.Contains("Other Species")).Count() > 0)
+                        {
+                            foreach (var changedItem in _levelDetail.ChangeList.Where(c => c.Code != "" || c.Code != null))
+                            {
+                                _Section.AddedCodes.ElementAt(0).ChangedCodesDetail.Add(
+                                    CodeAddedRemovedDetail(_levelDetail.Section, _levelDetail.ChangeType, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
+                                );
+                            }
+                        }
+
+                        if (_levelDetail.ChangeList.Where(c => c.ChangeType.Contains("Other Species Added")).Count() > 0)
+                        {
                             _Section.AddedCodes.Add(new CategoryChangeDetail
                             {
                                 ChangeCategory = _levelDetail.Section,
-                                ChangeType = String.Format("List of {0} Added", _levelDetail.Section),
+                                ChangeType = _levelDetail.ChangeType,
                                 ChangedCodesDetail = new List<CodeChangeDetail>()
                             });
+                            foreach (var changedItem in _levelDetail.ChangeList)
+                            {
+                                CategoryChangeDetail otherSpeciesDetail = _Section.AddedCodes.First(c => c.ChangeType == "Other Species Added");
+                                otherSpeciesDetail.ChangedCodesDetail.Add(
+                                    CodeAddedRemovedDetail(_levelDetail.Section, _levelDetail.ChangeType, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
+                                );
+                            }
                         }
 
-                        foreach (var changedItem in _levelDetail.ChangeList.OrderBy(c => c.Code == null ? "" : c.Code))
-                        {
-                            _Section.AddedCodes.ElementAt(0).ChangedCodesDetail.Add(
-                                CodeAddedRemovedDetail(_levelDetail.Section, changedItem.Code, changedItem.ChangeId, changedItem.SiteCode, changedItem.Version, changedItem.VersionReferenceId)
-                            );
-                        }
+
                     }
                 }
                 return changesPerLevel;
@@ -715,7 +797,8 @@ namespace N2K_BackboneBackEnd.Services
                         fields.Add("Submission", nullCase);
                     }
                     if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed"
-                        || catChange.ChangeType == "Change of spatial area")
+                        || catChange.ChangeType == "Change of spatial area" || catChange.ChangeType == "Spatial Area Decrease"
+                        || catChange.ChangeType == "Spatial Area Increase" || catChange.ChangeType.StartsWith("Cover_ha"))
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
@@ -726,13 +809,16 @@ namespace N2K_BackboneBackEnd.Services
                             var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
                             var reference = decimal.Parse(referenceString, CultureInfo.InvariantCulture);
                             fields.Add("Difference", Math.Round((reported - reference), 4).ToString("F4", culture));
-                            if (reference != 0)
+                            if (!catChange.ChangeType.StartsWith("Cover_ha"))
                             {
-                                fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4).ToString("F4", culture));
-                            }
-                            else
-                            {
-                                fields.Add("Percentage", Math.Round((reported - reference), 4).ToString("F4", culture));
+                                if (reference != 0)
+                                {
+                                    fields.Add("Percentage", Math.Round((((reported - reference) / reference) * 100), 4).ToString("F4", culture));
+                                }
+                                else
+                                {
+                                    fields.Add("Percentage", Math.Round((reported - reference), 4).ToString("F4", culture));
+                                }
                             }
                         }
                         else
@@ -741,35 +827,122 @@ namespace N2K_BackboneBackEnd.Services
                             fields.Add("Percentage", nullCase);
                         }
                     }
-
-                    if (changeCategory == "Habitats" || changeCategory == "Species")
+                    if (catChange.ChangeType == "Deletion of Spatial Area" ||
+                        catChange.ChangeType == "Additon of Spatial Area"
+                        )
                     {
-                        if (GetCodeName(changedItem) != String.Empty)
-                        {
-                            catChange.ChangedCodesDetail.Add(
-                                    new CodeChangeDetail
-                                    {
-                                        Code = changedItem.Code,
-                                        Name = GetCodeName(changedItem),
-                                        ChangeId = changedItem.ChangeId,
-                                        Fields = fields
-                                    }
+                        string? reportedString = nullCase;
+                        string? referenceString = nullCase;
+                        string? detail = changedItem.Detail;
+                        bool deleted = false;
 
-                                );
+                        switch (catChange.ChangeType)
+                        {
+                            case "Deletion of Spatial Area":
+                                fields.Add("Cumulative deleted spatial area (ha)", "");
+                                deleted = true;
+                                break;
+                            case "Additon of Spatial Area":
+                                fields.Add("Cumulative added spatial area (ha)", "");
+                                break;
+                        }
+
+
+                        if (fields.TryGetValue("Submission", out reportedString)
+                            && reportedString != "" && !string.IsNullOrEmpty(detail))
+                        {
+
+                            var culture = new CultureInfo("en-US");
+                            var reported = decimal.Parse(reportedString, CultureInfo.InvariantCulture);
+                            var totalArea = decimal.Parse(detail, CultureInfo.InvariantCulture);
+
+                            if (totalArea != 0)
+                            {
+                                fields[deleted ? "Cumulative deleted spatial area (ha)" : "Cumulative added spatial area (ha)"] = string.Format("{0}", Math.Round(reported, 4).ToString("F4", culture));
+                                fields.Add("Percentage", string.Format("{0}{1}", deleted ? "-" : "", Math.Round(((reported * 100) / totalArea), 4).ToString("F4", culture)));
+                            }
+                            else
+                            {
+                                fields.Add("Percentage", "0.0");
+                            }
                         }
                         else
                         {
-                            catChange.ChangedCodesDetail.Add(
-                                    new CodeChangeDetail
-                                    {
-                                        Code = "-",
-                                        Name = changedItem.Code,
-                                        ChangeId = changedItem.ChangeId,
-                                        Fields = fields
-                                    }
-
-                                );
+                            fields.Add("Percentage", nullCase);
                         }
+                        fields.Remove("Reference");
+                        fields.Remove("Submission");
+                    }
+
+
+                    if (changeCategory == "Habitats")
+                    {
+                        CodeChangeDetail changeDetail;
+
+                        if (changeType.Contains("Representativity")
+                            || changeType.Contains("Cover_ha")
+                            || changeType.Contains("Relative surface")
+                            || changeType.Contains("PriorityForm"))
+                        {
+                            string? priorityH = "-";
+                            HabitatPriority? _habpriority = _habitatPriority.FirstOrDefault(h => h.HabitatCode.ToLower() == changedItem.Code?.ToLower());
+                            var habDetails = _siteHabitats.Where(sh => sh.HabitatCode.ToLower() == changedItem.Code?.ToLower())
+                                .Select(hab => new
+                                {
+                                    CoverHA = hab.CoverHA.ToString(),
+                                    RelativeSurface = hab.RelativeSurface,
+                                    PriorityForm = hab.PriorityForm
+                                }).FirstOrDefault();
+                            priorityH = (_habpriority == null) ? priorityH : ((_habpriority.Priority == 1 || (_habpriority.Priority == 2 && habDetails?.PriorityForm == true)) ? "*" : priorityH);
+
+                            fields = (Dictionary<string, string>)new Dictionary<string, string>() { { "Priority", priorityH } }.Concat(fields).ToDictionary(x => x.Key, x => x.Value);
+                        }
+
+                        if (GetCodeName(changedItem) != String.Empty)
+                        {
+                            changeDetail =
+                                new CodeChangeDetail
+                                {
+                                    Code = changedItem.Code,
+                                    Name = GetCodeName(changedItem),
+                                    ChangeId = changedItem.ChangeId,
+                                    Fields = fields
+                                };
+
+                        }
+                        else
+                        {
+                            changeDetail =
+                                new CodeChangeDetail
+                                {
+                                    Code = "-",
+                                    Name = changedItem.Code,
+                                    ChangeId = changedItem.ChangeId,
+                                    Fields = fields
+                                };
+                        }
+                        catChange.ChangedCodesDetail.Add(changeDetail);
+                    }
+                    else if (changeCategory == "Species")
+                    {
+                        CodeChangeDetail changeDetail =
+                            new CodeChangeDetail
+                            {
+                                Code = "-",
+                                Name = changedItem.Code,
+                                ChangeId = changedItem.ChangeId,
+                                Fields = fields
+                            };
+                        if (changeType == "Population Change"
+                            || changeType == "Population Increase"
+                            || changeType == "Population Decrease")
+                        {
+                            SpeciesPriority? sp = _dataContext.Set<SpeciesPriority>().Where(s => s.SpecieCode == changedItem.Code).FirstOrDefault();
+                            string? priorityS = sp == null ? "-" : "*";
+                            changeDetail.Fields = new Dictionary<string, string> { { "Priority", priorityS } }.Concat(changeDetail.Fields).ToDictionary(k => k.Key, v => v.Value);
+                        }
+
+                        catChange.ChangedCodesDetail.Add(changeDetail);
                     }
                     else
                     {
@@ -781,6 +954,7 @@ namespace N2K_BackboneBackEnd.Services
                                 }
                             );
                     }
+
                 }
                 return catChange;
             }
@@ -926,7 +1100,7 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        private CodeChangeDetail? CodeAddedRemovedDetail(string section, string? code, long changeId, string pSiteCode, int pCountryVersion, int versionReferenceId)
+        private CodeChangeDetail? CodeAddedRemovedDetail(string section, string changeType, string? code, long changeId, string pSiteCode, int pCountryVersion, int versionReferenceId)
         {
             try
             {
@@ -938,6 +1112,7 @@ namespace N2K_BackboneBackEnd.Services
                         string? annexII = "-";
                         string? priorityS = "-";
                         string? population = null;
+                        string? popType = null;
                         string? specType = null;
 
                         if (code != null)
@@ -988,11 +1163,18 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 population = specDetails.Population;
                                 specType = specDetails.SpecType;
+                                popType = _siteSpecies.FirstOrDefault(a => a.SiteCode == pSiteCode && a.SpecieCode == code && a.Version == pCountryVersion)?.PopulationType;
                             }
                         }
-                        fields.Add("AnnexII", annexII);
-                        fields.Add("Priority", priorityS);
-                        fields.Add("Population", population);
+
+                        // don't add annexII and priority fields if change affects Other species
+                        if (!changeType.Contains("Other"))
+                        {
+                            fields.Add("AnnexII", annexII);
+                            fields.Add("Priority", priorityS);
+                        }
+                        fields.Add("Pop. Size", population);
+                        fields.Add("Pop. Type", popType);
                         fields.Add("SpeciesType", specType);
 
                         if (specName != String.Empty && specName != null)
@@ -1147,6 +1329,9 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.Name = reader["SiteName"].ToString();
                         mySiteView.CountryCode = mySiteView.SiteCode.Substring(0, 2);
 
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
+
                         Level level;
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
                         //Alter cached listd. They come from pendign and goes to accepted
@@ -1271,6 +1456,9 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.Version = int.Parse(reader["Version"].ToString());
                         mySiteView.Name = reader["SiteName"].ToString();
                         mySiteView.CountryCode = mySiteView.SiteCode.Substring(0, 2);
+
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
 
                         Level level;
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
@@ -1766,6 +1954,9 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.Version = modifiedSiteCode.VersionId;
                         mySiteView.Name = changes.First().SiteName;
                         mySiteView.CountryCode = modifiedSiteCode.SiteCode.Substring(0, 2);
+
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
 
                         Sites siteToDelete = null;
                         int previousCurrent = -1;//The 0 value can be a version

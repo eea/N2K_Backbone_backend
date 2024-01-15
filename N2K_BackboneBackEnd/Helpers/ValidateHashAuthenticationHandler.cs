@@ -15,7 +15,7 @@ namespace N2K_BackboneBackEnd.Helpers
 
     }
 
-    public class ChangeDetectionHashAuthenticationHandler: AuthenticationHandler<ChangeDetectionHashAuthenticationSchemeOptions>
+    public class ChangeDetectionHashAuthenticationHandler : AuthenticationHandler<ChangeDetectionHashAuthenticationSchemeOptions>
     {
         public ChangeDetectionHashAuthenticationHandler(
             IOptionsMonitor<ChangeDetectionHashAuthenticationSchemeOptions> options,
@@ -26,7 +26,7 @@ namespace N2K_BackboneBackEnd.Helpers
         {
         }
 
-     
+
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             // ChangeDetection comes in here
@@ -40,10 +40,10 @@ namespace N2K_BackboneBackEnd.Helpers
                 token = Request.Headers["Authorization"].ToString();
                 token = token.Replace("Bearer ", "").Trim();
             }
-            
+
             try
             {
-                
+
                 /*
                 //Check if the token is active
                 var appSettings = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
@@ -78,7 +78,7 @@ namespace N2K_BackboneBackEnd.Helpers
 
 
                 //Check if the token is valid
-                var tokenHandler = new JwtSecurityTokenHandler();                                
+                var tokenHandler = new JwtSecurityTokenHandler();
                 var jwtSecurityToken = tokenHandler.ReadJwtToken(token);
 
                 var claimsIdentity = new ClaimsIdentity(jwtSecurityToken.Claims,
