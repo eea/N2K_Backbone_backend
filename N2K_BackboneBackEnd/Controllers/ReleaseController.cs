@@ -7,8 +7,6 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
 
-using DocumentFormat.OpenXml.ExtendedProperties;
-
 namespace N2K_BackboneBackEnd.Controllers
 {
     [Authorize(AuthenticationSchemes = "EULoginSchema")]
@@ -149,14 +147,13 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         [HttpGet("GetCompareSummary/idSource={idSource:int}&idTarget={idTarget:int}")]
         public async Task<ActionResult<ServiceResponse<UnionListComparerSummaryViewModel>>> GetCompareSummary(long? idSource, long? idTarget)
         {
             var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
             try
             {
-                var unionListCompareSummary= await _unionListService.GetCompareSummary(idSource, idTarget, null, _cache);
+                var unionListCompareSummary = await _unionListService.GetCompareSummary(idSource, idTarget, null, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListCompareSummary;
@@ -168,18 +165,18 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new UnionListComparerSummaryViewModel() ;
+                response.Data = new UnionListComparerSummaryViewModel();
                 return Ok(response);
             }
         }
 
         [HttpGet("GetCompareSummary/idSource={idSource:int}&idTarget={idTarget:int}&bioRegions={bioRegions:string}")]
-        public async Task<ActionResult<ServiceResponse<UnionListComparerSummaryViewModel>>> GetCompareSummaryByBioRegion(long? idSource, long? idTarget, string? bioRegions )
+        public async Task<ActionResult<ServiceResponse<UnionListComparerSummaryViewModel>>> GetCompareSummaryByBioRegion(long? idSource, long? idTarget, string? bioRegions)
         {
             var response = new ServiceResponse<UnionListComparerSummaryViewModel>();
             try
             {
-                var unionListCompareSummary = await _unionListService.GetCompareSummary(idSource, idTarget, bioRegions,_cache);
+                var unionListCompareSummary = await _unionListService.GetCompareSummary(idSource, idTarget, bioRegions, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListCompareSummary;
@@ -246,7 +243,7 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpPost]
         public async Task<ActionResult<List<Releases>>> CreateRelease([FromBody] ReleasesInputParam release)
         {
-            ServiceResponse<List<Releases>> response = new ServiceResponse<List<Releases>>();
+            ServiceResponse<List<Releases>> response = new();
             try
             {
                 List<Releases> unionListHeader = await _releaseService.CreateRelease(release.Name, release.Final, release.Character);
@@ -270,10 +267,10 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpPut]
         public async Task<ActionResult<List<Releases>>> UpdateRelease([FromBody] UnionListHeaderInputParam unionList)
         {
-            ServiceResponse<List<Releases>> response = new ServiceResponse<List<Releases>>();
+            ServiceResponse<List<Releases>> response = new();
             try
             {
-                List<Releases> unionListHeader = await _releaseService.UpdateRelease(unionList.Id, unionList.Name, unionList.Final.HasValue ? unionList.Final.Value : false);
+                List<Releases> unionListHeader = await _releaseService.UpdateRelease(unionList.Id, unionList.Name, unionList.Final ?? false);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
@@ -294,7 +291,7 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpDelete]
         public async Task<ActionResult<int>> DeleteRelease([FromBody] long id)
         {
-            ServiceResponse<int> response = new ServiceResponse<int>();
+            ServiceResponse<int> response = new();
             try
             {
                 int unionListHeader = await _releaseService.DeleteRelease(id);

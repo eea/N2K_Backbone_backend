@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
-
     [Authorize(AuthenticationSchemes = "EULoginSchema")]
     [Route("api/[controller]")]
     [ApiController]
@@ -16,13 +15,11 @@ namespace N2K_BackboneBackEnd.Controllers
         private readonly IMasterDataService _masterDataService;
         private readonly IMapper _mapper;
 
-
         public MasterDataController(IMasterDataService masterDataService, IMapper mapper)
         {
             _masterDataService = masterDataService;
             _mapper = mapper;
         }
-
 
         [Route("MasterData/GetBioRegionTypes")]
         [HttpGet]
@@ -47,7 +44,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
 
         [Route("MasterData/GetSiteTypes")]
         [HttpGet]

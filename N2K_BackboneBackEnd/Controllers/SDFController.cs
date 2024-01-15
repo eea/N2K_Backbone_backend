@@ -25,7 +25,7 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpGet]
         public async Task<ActionResult<SDF>> GetData(string SiteCode)
         {
-            ServiceResponse<SDF> response = new ServiceResponse<SDF>();
+            ServiceResponse<SDF> response = new();
             try
             {
                 SDF result = await _SDFService.GetData(SiteCode);

@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
@@ -29,10 +28,10 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpGet]
         public async Task<ActionResult<string>> UnionListDownload(string? bioregs)
         {
-            ServiceResponse<string> response = new ServiceResponse<string>();
+            ServiceResponse<string> response = new();
             try
             {
-                string unionListHeader = await _unionListService.UnionListDownload((bioregs == null) ? "" : bioregs);
+                string unionListHeader = await _unionListService.UnionListDownload(bioregs ?? "");
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
@@ -71,7 +70,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
 
         [HttpGet("GetUnionListComparer")]
         public async Task<ActionResult<ServiceResponse<List<UnionListComparerDetailedViewModel>>>> GetUnionListComparer(string? bioregions, int page, int limit)
