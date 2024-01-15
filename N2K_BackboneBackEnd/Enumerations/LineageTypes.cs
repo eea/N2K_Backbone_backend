@@ -21,6 +21,5 @@ namespace N2K_BackboneBackEnd.Enumerations
         NewGeometryReported = 6,
         [DataMember]
         NoGeometryReported = 7
-
     }
 }

@@ -1,19 +1,18 @@
 ﻿using System.Runtime.Serialization;
 
-
 namespace N2K_BackboneBackEnd.Enumerations
 {
     [DataContract]
     public enum HarvestingStatus
     {
         [DataMember]
-        Pending=0,
+        Pending = 0,
         [DataMember]
-        Accepted=1,
+        Accepted = 1,
         [DataMember]
         Rejected = 2,
         [DataMember]
-        Harvested=3,
+        Harvested = 3,
         [DataMember]
         Harvesting = 4,
         [DataMember]
@@ -34,8 +33,5 @@ namespace N2K_BackboneBackEnd.Enumerations
         SpatialDataLoaded = 12,
         [DataMember]
         Processing = 13
-
-
     }
-
 }
