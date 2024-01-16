@@ -365,11 +365,14 @@ namespace N2K_BackboneBackEnd.Services
                 changeDetailVM.Info = new SiteChangesLevelDetail();
                 changeDetailVM.Critical = new SiteChangesLevelDetail();
 
+                // Get the harvested envelope
+                ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == pSiteCode.Substring(0,2) && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
+
                 // Get lineage change type from Lineage table
-                Lineage? lineageChange = await _dataContext.Set<Lineage>().AsNoTracking().FirstOrDefaultAsync(l => l.SiteCode == pSiteCode && l.Version == pCountryVersion);
+                Lineage? lineageChange = await _dataContext.Set<Lineage>().AsNoTracking().FirstOrDefaultAsync(l => l.SiteCode == pSiteCode && l.Version == pCountryVersion && l.N2KVersioningVersion == harvestedEnvelope.Version);
                 changeDetailVM.LineageChangeType = lineageChange?.Type;
 
-                // get affected sites list only in certain lineage change types
+                // Get affected sites list only in certain lineage change types
                 if (lineageCases.Contains((LineageTypes)changeDetailVM.LineageChangeType))
                     changeDetailVM.AffectedSites = GetAffectedSites(pSiteCode, lineageChange).Result;
 
@@ -395,7 +398,6 @@ namespace N2K_BackboneBackEnd.Services
                     changeDetailVM.JustificationRequired = site.JustificationRequired.HasValue ? site.JustificationRequired.Value : false;
 #pragma warning restore CS8601 // Posible asignación de referencia nula
                 }
-                ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == site.CountryCode && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
                 var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(changes => changes.SiteCode == pSiteCode && changes.N2KVersioningVersion == harvestedEnvelope.Version).ToListAsync();
                 changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
                 if (changesDb != null)
