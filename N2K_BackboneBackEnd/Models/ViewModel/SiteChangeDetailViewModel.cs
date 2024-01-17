@@ -5,32 +5,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
-
     [Keyless]
-    public class SiteChangeDetailViewModel :  IEntityModel
+    public class SiteChangeDetailViewModel : IEntityModel
     {
-
         public string SiteCode { get; set; } = "";
-
         public string Name { get; set; } = "";
-
         public string Type { get; set; } = "";
-
         public bool? HasGeometry { get; set; } = false;
-
         public int Version { get; set; }
-
         public LineageTypes? LineageChangeType { get; set; }
-
         public String? AffectedSites { get; set; }
-
         public bool? JustificationRequired { get; set; }
-
         public bool? JustificationProvided { get; set; }
-
-
         public SiteChangeStatus? Status { get; set; }
-
         [NotMapped]
         public SiteChangesLevelDetail Critical { get; set; } = new SiteChangesLevelDetail();
         [NotMapped]
@@ -38,14 +25,12 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         [NotMapped]
         public SiteChangesLevelDetail Info { get; set; } = new SiteChangesLevelDetail();
 
-
         public SiteChangeDetailViewModel()
         {
             this.Critical = new SiteChangesLevelDetail();
             this.Warning = new SiteChangesLevelDetail();
-            this.Info= new SiteChangesLevelDetail();
+            this.Info = new SiteChangesLevelDetail();
         }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {
@@ -53,6 +38,5 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
                 .Property(e => e.Status)
                 .HasConversion(new EnumToStringConverter<Enumerations.SiteChangeStatus>());
         }
-
     }
 }

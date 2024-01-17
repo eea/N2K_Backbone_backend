@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
@@ -9,7 +8,6 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Code { get; set; }
         public string? Name { get; set; }
         public long ChangeId { get; set; }
-
         public Dictionary<string, string> Fields { get; set; } = new Dictionary<string, string>();
 
         public static void OnModelCreating(ModelBuilder builder)
@@ -17,12 +15,11 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
             builder.Entity<CodeChangeDetail>();
         }
     }
-    
+
 
     [Keyless]
     public class CodeChangeDetailModify : CodeChangeDetail
     {
-
         public string? Reported { get; set; } = "";
         public string? Reference { get; set; } = "";
 
@@ -58,5 +55,4 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
             builder.Entity<CodeChangeDetailAddedRemovedHabitats>();
         }
     }
-
 }
