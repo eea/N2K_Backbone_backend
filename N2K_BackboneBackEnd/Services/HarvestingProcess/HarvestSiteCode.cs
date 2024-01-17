@@ -15,7 +15,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
     /// </summary>
     public class HarvestSiteCode : BaseHarvestingProcess, IHarvestingTables
     {
-
         /// <summary>
         /// Constructor 
         /// </summary>
@@ -25,8 +24,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
         }
 
-        public List<HabitatPriority> habitatPriority = new List<HabitatPriority>();
-        public List<SpeciesPriority> speciesPriority = new List<SpeciesPriority>();
+        public List<HabitatPriority> habitatPriority = new();
+        public List<SpeciesPriority> speciesPriority = new();
 
         /// <summary>
         /// This mehtod calls for teh process to harvest the complete data for all sites 
@@ -42,7 +41,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             await Task.Delay(5000);
             Console.WriteLine("=>End Site Code harvest...");
             return 1;
-
         }
 
         /// <summary>
@@ -74,7 +72,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 //Get the data for all related tables
-
                 await harvestRespondents(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
                 await harvestBioregions(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
                 await harvestNutsBySite(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
@@ -102,9 +99,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - HarvestSite", "", backboneDb);
                 return 0;
             }
-
         }
-
 
         /// <summary>
         ///  This method retrives the complete information for a Site in Versioning and stores it in BackBone.
@@ -117,7 +112,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         {
             //Tomamos el valor más alto que tiene en el campo Version para ese SiteCode. Por defecto es -1 para cuando no existe 
             //por que le vamos a sumar un 1 lo cual dejaría en 0
-            Sites bbSite = new Sites();
+            Sites bbSite = new();
 
             #region SitePriority
             //SqlParameter param3 = new SqlParameter("@site", pVSite.SITECODE);
@@ -231,7 +226,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         //private async Task<List<BioRegions>> harvestBioregions(NaturaSite pVSite, int pVersion, string backboneDb)
         private async Task<int> harvestBioregions(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<BioRegions> items = new List<BioRegions>();
+            List<BioRegions> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -241,9 +236,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 versioningConn = new SqlConnection(versioningDB);
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
-
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 String queryString = @"select SITECODE as SiteCode,BIOREGID as BGRID, max(PERCENTAGE) as Percentage
                                      from BelongsToBioRegion
@@ -257,11 +251,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 command.Parameters.Add(param2);
                 reader = await command.ExecuteReaderAsync();
 
-
                 while (reader.Read())
                 {
-                    BioRegions item = new BioRegions();
-                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    BioRegions item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
@@ -286,7 +281,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - BioRegions.SaveBulkRecord", "", backboneDb);
                 }
                 //Console.WriteLine(String.Format("End save to list bioregions -> {0}", (DateTime.Now - start).TotalSeconds));
-
                 return 1;
             }
             catch (Exception ex)
@@ -316,7 +310,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         //private async Task<List<NutsBySite>>? harvestNutsBySite(NaturaSite pVSite, int pVersion)
         private async Task<int> harvestNutsBySite(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<NutsBySite> items = new List<NutsBySite>();
+            List<NutsBySite> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -325,8 +319,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 versioningConn = new SqlConnection(versioningDB);
 
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 String queryString = @"select SITECODE as SiteCode, NUTSCODE as NutId,
                             SUM(COVER) as CoverPercentage 
@@ -342,8 +336,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
-                    NutsBySite item = new NutsBySite();
-                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    NutsBySite item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
@@ -398,7 +394,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <returns>List of IsImpactedBy stored</returns>
         private async Task<int> harvestIsImpactedBy(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<Models.backbone_db.IsImpactedBy> items = new List<Models.backbone_db.IsImpactedBy>();
+            List<Models.backbone_db.IsImpactedBy> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -407,7 +403,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
             try
             {
-
                 versioningConn = new SqlConnection(versioningDB);
                 String queryString = @"SELECT 
                         SITECODE as SiteCode,ACTIVITYCODE as ActivityCode,IN_OUT  as InOut,INTENSITY as Intensity,
@@ -415,8 +410,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             from IsImpactedBy 
                             where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
@@ -429,9 +424,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 while (reader.Read())
                 {
-                    Models.backbone_db.IsImpactedBy item = new Models.backbone_db.IsImpactedBy();
-
-                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    Models.backbone_db.IsImpactedBy item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
@@ -485,7 +481,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (reader != null) await reader.DisposeAsync();
                 }
             }
-
         }
 
         /// <summary>
@@ -496,7 +491,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <returns>List of HasNationalProtection stored</returns>
         private async Task<int> harvestHasNationalProtection(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<Models.backbone_db.HasNationalProtection> items = new List<Models.backbone_db.HasNationalProtection>();
+            List<Models.backbone_db.HasNationalProtection> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -509,8 +504,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             from HasNationalProtection 
                             where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
@@ -520,8 +515,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
-                    Models.backbone_db.HasNationalProtection item = new Models.backbone_db.HasNationalProtection();
-                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    Models.backbone_db.HasNationalProtection item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
@@ -564,8 +561,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (reader != null) await reader.DisposeAsync();
                 }
             }
-
-
         }
 
         /// <summary>
@@ -576,7 +571,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <returns>List of DetailedProtectionStatus stored</returns>
         private async Task<int> harvestDetailedProtectionStatus(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<Models.backbone_db.DetailedProtectionStatus> items = new List<Models.backbone_db.DetailedProtectionStatus>();
+            List<Models.backbone_db.DetailedProtectionStatus> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -591,8 +586,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             from DetailedProtectionStatus 
                             where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
@@ -602,8 +597,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
-                    Models.backbone_db.DetailedProtectionStatus item = new Models.backbone_db.DetailedProtectionStatus();
-                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    Models.backbone_db.DetailedProtectionStatus item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
@@ -649,8 +646,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (reader != null) await reader.DisposeAsync();
                 }
             }
-
-
         }
 
         /// <summary>
@@ -661,7 +656,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <returns>List of SiteLargeDescriptions stored</returns>
         private async Task<int>? harvestSiteLargeDescriptions(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<Models.backbone_db.SiteLargeDescriptions> items = new List<Models.backbone_db.SiteLargeDescriptions>();
+            List<Models.backbone_db.SiteLargeDescriptions> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -675,8 +670,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         from Description 
                         where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
@@ -686,9 +681,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
-
-                    SiteLargeDescriptions item = new SiteLargeDescriptions();
-                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    SiteLargeDescriptions item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
@@ -701,7 +697,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         item.ManagConservMeasures = TypeConverters.CheckNull<string>(reader["ManagConservMeasures"]);
                         item.ManagPlanUrl = TypeConverters.CheckNull<string>(reader["ManagPlanUrl"]);
                         item.ManagStatus = TypeConverters.CheckNull<string>(reader["ManagStatus"]);
-
                         items.Add(item);
                     }
                     else
@@ -738,7 +733,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (reader != null) await reader.DisposeAsync();
                 }
             }
-
         }
 
         /// <summary>
@@ -749,7 +743,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <returns>List of SiteOwnerType stored</returns>
         private async Task<int> harvestSiteOwnerType(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, IList<Models.backbone_db.OwnerShipTypes> _ownerShipTypes, List<Sites> sites)
         {
-            List<Models.backbone_db.SiteOwnerType> items = new List<Models.backbone_db.SiteOwnerType>();
+            List<Models.backbone_db.SiteOwnerType> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -763,8 +757,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID
                         group by SITECODE, VERSIONID, Type";
 
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
@@ -774,8 +768,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
-                    SiteOwnerType item = new SiteOwnerType();
-                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    SiteOwnerType item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
@@ -815,7 +811,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (reader != null) await reader.DisposeAsync();
                 }
             }
-
         }
 
         /// <summary>
@@ -826,7 +821,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         /// <returns>List of Ownerships stored</returns>
         private async Task<int>? harvestOwnership(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<Models.backbone_db.Ownership> items = new List<Models.backbone_db.Ownership>();
+            List<Models.backbone_db.Ownership> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -839,8 +834,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         from OWNERSHIP 
                         where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
@@ -850,15 +845,16 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
-                    Models.backbone_db.Ownership item = new Models.backbone_db.Ownership();
-                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    Models.backbone_db.Ownership item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
                         item.Type = TypeConverters.CheckNull<string>(reader["Type"]);
                         item.Content = TypeConverters.CheckNull<string>(reader["Content"]);
                         item.ContactId = TypeConverters.CheckNull<int>(reader["ObjectID"]);
-
                         items.Add(item);
                     }
                     else
@@ -895,7 +891,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (reader != null) await reader.DisposeAsync();
                 }
             }
-
         }
 
         public async Task<List<SiteChangeDb>> ChangeDetectionSiteAttributes(List<SiteChangeDb> changes, EnvelopesToProcess envelope, SiteToHarvest harvestingSite, SiteToHarvest storedSite, double siteAreaHaTolerance, double siteLengthKmTolerance, ProcessedEnvelopes? processedEnvelope, N2KBackboneContext? _ctx = null)
@@ -908,26 +903,27 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         opt => opt.EnableRetryOnFailure()).Options;
                 using (var ctx = new N2KBackboneContext(options))
                 {
-
                     if (harvestingSite.SiteCode != storedSite.SiteCode)
                     {
-                        SiteChangeDb siteChange = new SiteChangeDb();
-                        siteChange.SiteCode = harvestingSite.SiteCode;
-                        siteChange.Version = harvestingSite.VersionId;
-                        siteChange.ChangeCategory = "Lineage";
-                        siteChange.ChangeType = "Site Recoded";
-                        siteChange.Country = envelope.CountryCode;
-                        siteChange.Level = Enumerations.Level.Critical;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                        siteChange.Tags = string.Empty;
-                        siteChange.NewValue = harvestingSite.SiteCode;
-                        siteChange.OldValue = storedSite.SiteCode;
-                        siteChange.Code = harvestingSite.SiteCode;
-                        siteChange.Section = "Site";
-                        siteChange.VersionReferenceId = storedSite.VersionId;
-                        siteChange.FieldName = "SiteCode";
-                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        SiteChangeDb siteChange = new()
+                        {
+                            SiteCode = harvestingSite.SiteCode,
+                            Version = harvestingSite.VersionId,
+                            ChangeCategory = "Lineage",
+                            ChangeType = "Site Recoded",
+                            Country = envelope.CountryCode,
+                            Level = Enumerations.Level.Critical,
+                            Status = (SiteChangeStatus?)processedEnvelope.Status,
+                            Tags = string.Empty,
+                            NewValue = harvestingSite.SiteCode,
+                            OldValue = storedSite.SiteCode,
+                            Code = harvestingSite.SiteCode,
+                            Section = "Site",
+                            VersionReferenceId = storedSite.VersionId,
+                            FieldName = "SiteCode",
+                            ReferenceSiteCode = storedSite.SiteCode,
+                            N2KVersioningVersion = envelope.VersionId
+                        };
                         changes.Add(siteChange);
                     }
 
@@ -950,23 +946,25 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         //if (storedGeometry != null && storedGeometry.data == true && (harvestingGeometry == null || harvestingGeometry.data == false))
                         if (storedSite.HasGeometry && !harvestingSite.HasGeometry)
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Lineage";
-                            siteChange.ChangeType = "No geometry reported";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = "";
-                            siteChange.OldValue = storedSite.SiteCode;
-                            siteChange.Code = harvestingSite.SiteCode;
-                            siteChange.Section = "Site";
-                            siteChange.VersionReferenceId = storedSite.VersionId;
-                            siteChange.FieldName = "SiteCode";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Lineage",
+                                ChangeType = "No geometry reported",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                Tags = string.Empty,
+                                NewValue = "",
+                                OldValue = storedSite.SiteCode,
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = storedSite.VersionId,
+                                FieldName = "SiteCode",
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                             lineage.Version = harvestingSite.VersionId;
                             lineage.Type = LineageTypes.NoGeometryReported;
@@ -975,30 +973,34 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         //else if ((storedGeometry == null || storedGeometry.data == false) && harvestingGeometry != null && harvestingGeometry.data == true)
                         else if ((!storedSite.HasGeometry) && harvestingSite.HasGeometry)
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Lineage";
-                            siteChange.ChangeType = "New geometry reported";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = harvestingSite.SiteCode;
-                            siteChange.OldValue = "";
-                            siteChange.Code = harvestingSite.SiteCode;
-                            siteChange.Section = "Site";
-                            siteChange.VersionReferenceId = storedSite.VersionId;
-                            siteChange.FieldName = "SiteCode";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Lineage",
+                                ChangeType = "New geometry reported",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                Tags = string.Empty,
+                                NewValue = harvestingSite.SiteCode,
+                                OldValue = "",
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = storedSite.VersionId,
+                                FieldName = "SiteCode",
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                             lineage.Type = LineageTypes.NewGeometryReported;
-                            LineageAntecessors antecessor = new LineageAntecessors();
-                            antecessor.SiteCode = storedSite.SiteCode;
-                            antecessor.Version = storedSite.VersionId;
-                            antecessor.LineageID = lineage.ID;
-                            antecessor.N2KVersioningVersion = storedSite.N2KVersioningVersion;
+                            LineageAntecessors antecessor = new()
+                            {
+                                SiteCode = storedSite.SiteCode,
+                                Version = storedSite.VersionId,
+                                LineageID = lineage.ID,
+                                N2KVersioningVersion = storedSite.N2KVersioningVersion
+                            };
                             _dataContext.Set<LineageAntecessors>().Add(antecessor);
                         }
                         _dataContext.Set<Lineage>().Update(lineage);
@@ -1006,109 +1008,119 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     }
                     if (harvestingSite.SiteName != storedSite.SiteName)
                     {
-                        SiteChangeDb siteChange = new SiteChangeDb();
-                        siteChange.SiteCode = harvestingSite.SiteCode;
-                        siteChange.Version = harvestingSite.VersionId;
-                        siteChange.ChangeCategory = "Site General Info";
-                        siteChange.ChangeType = "SiteName Changed";
-                        siteChange.Country = envelope.CountryCode;
-                        siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                        siteChange.Tags = string.Empty;
-                        siteChange.NewValue = harvestingSite.SiteName;
-                        siteChange.OldValue = storedSite.SiteName;
-                        siteChange.Code = harvestingSite.SiteCode;
-                        siteChange.Section = "Site";
-                        siteChange.VersionReferenceId = storedSite.VersionId;
-                        siteChange.FieldName = "SiteName";
-                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        SiteChangeDb siteChange = new()
+                        {
+                            SiteCode = harvestingSite.SiteCode,
+                            Version = harvestingSite.VersionId,
+                            ChangeCategory = "Site General Info",
+                            ChangeType = "SiteName Changed",
+                            Country = envelope.CountryCode,
+                            Level = Enumerations.Level.Info,
+                            Status = (SiteChangeStatus?)processedEnvelope.Status,
+                            Tags = string.Empty,
+                            NewValue = harvestingSite.SiteName,
+                            OldValue = storedSite.SiteName,
+                            Code = harvestingSite.SiteCode,
+                            Section = "Site",
+                            VersionReferenceId = storedSite.VersionId,
+                            FieldName = "SiteName",
+                            ReferenceSiteCode = storedSite.SiteCode,
+                            N2KVersioningVersion = envelope.VersionId
+                        };
                         changes.Add(siteChange);
                     }
                     if (harvestingSite.SiteType != storedSite.SiteType)
                     {
-                        SiteChangeDb siteChange = new SiteChangeDb();
-                        siteChange.SiteCode = harvestingSite.SiteCode;
-                        siteChange.Version = harvestingSite.VersionId;
-                        siteChange.ChangeCategory = "Site General Info";
-                        siteChange.ChangeType = "SiteType Changed";
-                        siteChange.Country = envelope.CountryCode;
-                        siteChange.Level = Enumerations.Level.Critical;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                        siteChange.Tags = string.Empty;
-                        siteChange.NewValue = harvestingSite.SiteType;
-                        siteChange.OldValue = storedSite.SiteType;
-                        siteChange.Code = harvestingSite.SiteCode;
-                        siteChange.Section = "Site";
-                        siteChange.VersionReferenceId = storedSite.VersionId;
-                        siteChange.FieldName = "SiteType";
-                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        SiteChangeDb siteChange = new()
+                        {
+                            SiteCode = harvestingSite.SiteCode,
+                            Version = harvestingSite.VersionId,
+                            ChangeCategory = "Site General Info",
+                            ChangeType = "SiteType Changed",
+                            Country = envelope.CountryCode,
+                            Level = Enumerations.Level.Critical,
+                            Status = (SiteChangeStatus?)processedEnvelope.Status,
+                            Tags = string.Empty,
+                            NewValue = harvestingSite.SiteType,
+                            OldValue = storedSite.SiteType,
+                            Code = harvestingSite.SiteCode,
+                            Section = "Site",
+                            VersionReferenceId = storedSite.VersionId,
+                            FieldName = "SiteType",
+                            ReferenceSiteCode = storedSite.SiteCode,
+                            N2KVersioningVersion = envelope.VersionId
+                        };
                         changes.Add(siteChange);
                     }
                     if (!Convert.ToString(harvestingSite.DateConfSCI).Equals(Convert.ToString(storedSite.DateConfSCI)))
                     {
                         if (Convert.ToString(harvestingSite.DateConfSCI).Equals("01/01/1900 0:00:00") && !Convert.ToString(storedSite.DateConfSCI).Equals("01/01/1900 0:00:00"))
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Site General Info";
-                            siteChange.ChangeType = "Reported DateConfSCI is empty";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = null;
-                            siteChange.OldValue = storedSite.DateConfSCI.Value.ToShortDateString();
-                            siteChange.Code = harvestingSite.SiteCode;
-                            siteChange.Section = "Site";
-                            siteChange.VersionReferenceId = storedSite.VersionId;
-                            siteChange.FieldName = "DateConfSCI";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Site General Info",
+                                ChangeType = "Reported DateConfSCI is empty",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Info,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                Tags = string.Empty,
+                                NewValue = null,
+                                OldValue = storedSite.DateConfSCI.Value.ToShortDateString(),
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = storedSite.VersionId,
+                                FieldName = "DateConfSCI",
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                         }
                         else if (!Convert.ToString(harvestingSite.DateConfSCI).Equals("01/01/1900 0:00:00") && Convert.ToString(storedSite.DateConfSCI).Equals("01/01/1900 0:00:00"))
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Site General Info";
-                            siteChange.ChangeType = "Reference DateConfSCI is empty and reported value is not";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = harvestingSite.DateConfSCI.Value.ToShortDateString();
-                            siteChange.OldValue = null;
-                            siteChange.Code = harvestingSite.SiteCode;
-                            siteChange.Section = "Site";
-                            siteChange.VersionReferenceId = storedSite.VersionId;
-                            siteChange.FieldName = "DateConfSCI";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Site General Info",
+                                ChangeType = "Reference DateConfSCI is empty and reported value is not",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                Tags = string.Empty,
+                                NewValue = harvestingSite.DateConfSCI.Value.ToShortDateString(),
+                                OldValue = null,
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = storedSite.VersionId,
+                                FieldName = "DateConfSCI",
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                         }
                         else
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Site General Info";
-                            siteChange.ChangeType = "Reported DateConfSCI is different";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Warning;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = harvestingSite.DateConfSCI.Value.ToShortDateString();
-                            siteChange.OldValue = storedSite.DateConfSCI.Value.ToShortDateString();
-                            siteChange.Code = harvestingSite.SiteCode;
-                            siteChange.Section = "Site";
-                            siteChange.VersionReferenceId = storedSite.VersionId;
-                            siteChange.FieldName = "DateConfSCI";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Site General Info",
+                                ChangeType = "Reported DateConfSCI is different",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Warning,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                Tags = string.Empty,
+                                NewValue = harvestingSite.DateConfSCI.Value.ToShortDateString(),
+                                OldValue = storedSite.DateConfSCI.Value.ToShortDateString(),
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = storedSite.VersionId,
+                                FieldName = "DateConfSCI",
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                         }
                     }
@@ -1116,23 +1128,25 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     {
                         if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Change of area";
-                            siteChange.ChangeType = "SDF Area Increase";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
-                            siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
-                            siteChange.Tags = string.Empty;
-                            siteChange.Code = harvestingSite.SiteCode;
-                            siteChange.Section = "Site";
-                            siteChange.VersionReferenceId = storedSite.VersionId;
-                            siteChange.FieldName = "AreaHa";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Change of area",
+                                ChangeType = "SDF Area Increase",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Info,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null,
+                                OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null,
+                                Tags = string.Empty,
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = storedSite.VersionId,
+                                FieldName = "AreaHa",
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                         }
                     }
@@ -1140,68 +1154,74 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     {
                         if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Change of area";
-                            siteChange.ChangeType = "SDF Area Decrease";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Warning;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
-                            siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
-                            siteChange.Tags = string.Empty;
-                            siteChange.Code = harvestingSite.SiteCode;
-                            siteChange.Section = "Site";
-                            siteChange.VersionReferenceId = storedSite.VersionId;
-                            siteChange.FieldName = "AreaHa";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Change of area",
+                                ChangeType = "SDF Area Decrease",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Warning,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null,
+                                OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null,
+                                Tags = string.Empty,
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = storedSite.VersionId,
+                                FieldName = "AreaHa",
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                         }
                     }
                     else if (harvestingSite.AreaHa != storedSite.AreaHa)
                     {
-                        SiteChangeDb siteChange = new SiteChangeDb();
-                        siteChange.SiteCode = harvestingSite.SiteCode;
-                        siteChange.Version = harvestingSite.VersionId;
-                        siteChange.ChangeCategory = "Change of area";
-                        siteChange.ChangeType = "SDF Area Change";
-                        siteChange.Country = envelope.CountryCode;
-                        siteChange.Level = Enumerations.Level.Info;
-                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                        siteChange.NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null;
-                        siteChange.OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null;
-                        siteChange.Tags = string.Empty;
-                        siteChange.Code = harvestingSite.SiteCode;
-                        siteChange.Section = "Site";
-                        siteChange.VersionReferenceId = storedSite.VersionId;
-                        siteChange.FieldName = "AreaHa";
-                        siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                        siteChange.N2KVersioningVersion = envelope.VersionId;
+                        SiteChangeDb siteChange = new()
+                        {
+                            SiteCode = harvestingSite.SiteCode,
+                            Version = harvestingSite.VersionId,
+                            ChangeCategory = "Change of area",
+                            ChangeType = "SDF Area Change",
+                            Country = envelope.CountryCode,
+                            Level = Enumerations.Level.Info,
+                            Status = (SiteChangeStatus?)processedEnvelope.Status,
+                            NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null,
+                            OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null,
+                            Tags = string.Empty,
+                            Code = harvestingSite.SiteCode,
+                            Section = "Site",
+                            VersionReferenceId = storedSite.VersionId,
+                            FieldName = "AreaHa",
+                            ReferenceSiteCode = storedSite.SiteCode,
+                            N2KVersioningVersion = envelope.VersionId
+                        };
                         changes.Add(siteChange);
                     }
                     if (harvestingSite.LengthKm != storedSite.LengthKm)
                     {
                         if (Math.Abs((double)(harvestingSite.LengthKm - storedSite.LengthKm)) > siteLengthKmTolerance)
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Site General Info";
-                            siteChange.ChangeType = "Length Changed";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.NewValue = harvestingSite.LengthKm != -1 ? harvestingSite.LengthKm.ToString() : null;
-                            siteChange.OldValue = storedSite.LengthKm != -1 ? storedSite.LengthKm.ToString() : null;
-                            siteChange.Tags = string.Empty;
-                            siteChange.Code = harvestingSite.SiteCode;
-                            siteChange.Section = "Site";
-                            siteChange.VersionReferenceId = storedSite.VersionId;
-                            siteChange.FieldName = "LengthKm";
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Site General Info",
+                                ChangeType = "Length Changed",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Info,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                NewValue = harvestingSite.LengthKm != -1 ? harvestingSite.LengthKm.ToString() : null,
+                                OldValue = storedSite.LengthKm != -1 ? storedSite.LengthKm.ToString() : null,
+                                Tags = string.Empty,
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = storedSite.VersionId,
+                                FieldName = "LengthKm",
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                         }
                     }
@@ -1221,7 +1241,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 if (_ctx == null) _ctx = _dataContext;
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
                         opt => opt.EnableRetryOnFailure()).Options;
-                using (var ctx = new N2KBackboneContext(options)) { 
+                using (var ctx = new N2KBackboneContext(options))
+                {
                     //Get the lists of bioregion types
                     List<BioRegionTypes> bioRegionTypes = await ctx.Set<BioRegionTypes>().AsNoTracking().ToListAsync();
 
@@ -1232,22 +1253,24 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         BioRegionTypes bioRegionType = bioRegionTypes.Where(s => s.Code == harvestingBioRegions.BGRID).FirstOrDefault();
                         if (storedBioRegions == null)
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Network general structure";
-                            siteChange.ChangeType = "Sites added due to a change of BGR";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = bioRegionType.RefBioGeoName;
-                            siteChange.OldValue = null;
-                            siteChange.Code = harvestingSite.SiteCode;
-                            siteChange.Section = "BioRegions";
-                            siteChange.VersionReferenceId = storedSite.VersionId;
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Network general structure",
+                                ChangeType = "Sites added due to a change of BGR",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                Tags = string.Empty,
+                                NewValue = bioRegionType.RefBioGeoName,
+                                OldValue = null,
+                                Code = harvestingSite.SiteCode,
+                                Section = "BioRegions",
+                                VersionReferenceId = storedSite.VersionId,
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                         }
                     }
@@ -1259,22 +1282,24 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         BioRegionTypes bioRegionType = bioRegionTypes.Where(s => s.Code == storedBioRegions.BGRID).FirstOrDefault();
                         if (harvestingBioRegions == null)
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = storedSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Network general structure";
-                            siteChange.ChangeType = "Sites deleted due to a change of BGR";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = null;
-                            siteChange.OldValue = bioRegionType.RefBioGeoName;
-                            siteChange.Code = harvestingSite.SiteCode;
-                            siteChange.Section = "BioRegions";
-                            siteChange.VersionReferenceId = storedBioRegions.Version;
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = storedSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Network general structure",
+                                ChangeType = "Sites deleted due to a change of BGR",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                Tags = string.Empty,
+                                NewValue = null,
+                                OldValue = bioRegionType.RefBioGeoName,
+                                Code = harvestingSite.SiteCode,
+                                Section = "BioRegions",
+                                VersionReferenceId = storedBioRegions.Version,
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                         }
                     }
@@ -1290,7 +1315,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         private async Task<int> harvestRespondents(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<Respondents> items = new List<Respondents>();
+            List<Respondents> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -1300,8 +1325,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 items = new List<Respondents>();
                 versioningConn = new SqlConnection(versioningDB);
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 String queryString = @"select SITECODE as SiteCode,LOCATOR_NAME as locatorName,ADDRESS_AREA as addressArea,POST_NAME as postName,POSTCODE as postCode,THOROUGHFARE as thoroughfare,UNSTRUCTURED_ADD as addressUnstructured,CONTACT_NAME as name, EMAIL as Email, ADMIN_UNIT as AdminUnit,LOCATOR_DESIGNATOR as LocatorDesignator,OBJECTID as ObjectID
                                        from CONTACT
@@ -1319,8 +1344,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 while (reader.Read())
                 {
-                    Respondents respondent = new Respondents();
-                    respondent.SiteCode = reader["SiteCode"].ToString();
+                    Respondents respondent = new()
+                    {
+                        SiteCode = reader["SiteCode"].ToString()
+                    };
                     if (sites.Any(s => s.SiteCode == respondent.SiteCode))
                     {
                         respondent.Version = sites.FirstOrDefault(s => s.SiteCode == respondent.SiteCode).Version;
@@ -1374,4 +1401,3 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
         }
     }
 }
-
