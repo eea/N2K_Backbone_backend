@@ -2,9 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using N2K_BackboneBackEnd.Helpers;
-using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 
@@ -15,7 +12,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
         public string? Type { get; set; }
-
         [Column(TypeName = "decimal(18, 2)")]
         public decimal? Percent { get; set; }
 
@@ -28,8 +24,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             dbConnection = db;
         }
 
-
-        public async  static Task<int> SaveBulkRecord(string db, List<SiteOwnerType> listData)
+        public async static Task<int> SaveBulkRecord(string db, List<SiteOwnerType> listData)
         {
             try
             {
@@ -51,7 +46,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 return 0;
             }
         }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {

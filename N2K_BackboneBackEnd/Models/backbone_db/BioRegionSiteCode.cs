@@ -1,9 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Primitives;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-
     [Keyless]
     public class BioRegionSiteCode : IEntityModel, IEntityModelBackboneDB
     {
@@ -13,8 +11,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<BioRegionSiteCode>();
-
         }
-
     }
 }

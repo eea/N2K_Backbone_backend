@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
@@ -21,17 +20,17 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
         public string? Tags { get; set; }
         public Level? Level { get; set; }
         public string? ChangeCategory { get; set; }
-        public string? ChangeType { get; set; }        
+        public string? ChangeType { get; set; }
         public string? NewValue { get; set; }
         public string? OldValue { get; set; }
         public string? Detail { get; set; }
-        
         public List<SiteChangeView> Subrows { get; set; } = new List<SiteChangeView>();
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<Changes>()
                 .ToTable("Changes4Sites")
-                .HasKey(c => c.Id );
+                .HasKey(c => c.Id);
             builder.Entity<Changes>()
                 .ToTable("Changes4Sites")
                 .Property(e => e.Status)

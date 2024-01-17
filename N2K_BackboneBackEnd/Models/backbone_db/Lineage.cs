@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 
@@ -20,7 +19,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         [NotMapped]
         public String? AntecessorsSiteCodes { get; set; }
 
-
         private string dbConnection = "";
 
         public Lineage() { }
@@ -29,7 +27,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             dbConnection = db;
         }
-
 
         public async static Task<int> SaveBulkRecord(string db, List<Lineage> listData)
         {
@@ -52,9 +49,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "Lineage - SaveBulkRecord", "", db);
                 return 0;
             }
-
         }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {

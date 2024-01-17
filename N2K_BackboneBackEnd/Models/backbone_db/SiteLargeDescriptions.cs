@@ -1,7 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Helpers;
-using System.ComponentModel.DataAnnotations;
 using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
@@ -30,7 +29,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             dbConnection = db;
         }
 
-
         public async static Task<int> SaveBulkRecord(string db, List<SiteLargeDescriptions> listData)
         {
             try
@@ -54,12 +52,11 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
         }
 
-
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SiteLargeDescriptions>()
                 .ToTable("SiteLargeDescriptions")
-                .HasKey(c => c.ID );
+                .HasKey(c => c.ID);
         }
     }
 }

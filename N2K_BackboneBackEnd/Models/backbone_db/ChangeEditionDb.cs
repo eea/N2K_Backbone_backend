@@ -1,10 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
     [Keyless]
-    public class ChangeEditionDb :  IEntityModel, IEntityModelBackboneDB
+    public class ChangeEditionDb : IEntityModel, IEntityModelBackboneDB
     {
         public string SiteCode { get; set; } = "";
         public int Version { get; set; }
@@ -16,17 +15,13 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public decimal? Length { get; set; }
         public decimal? CentreX { get; set; }
         public decimal? CentreY { get; set; }
-
         public string? BioRegion { get; set; }
-
         public bool? JustificationRequired { get; set; } = false;
-
         public bool? JustificationProvided { get; set; } = false;
 
-        public static  void OnModelCreating(ModelBuilder builder)
+        public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<ChangeEditionDb>();
         }
-
     }
 }

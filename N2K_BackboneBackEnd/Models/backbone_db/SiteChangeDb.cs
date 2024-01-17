@@ -4,33 +4,23 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
-using N2K_BackboneBackEnd.Helpers;
-using N2K_BackboneBackEnd.Models.BackboneDB;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using System.Data;
-using System.Data.Common;
 using System.ComponentModel;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-
     public class SiteChangeDb : IEntityModel, IEntityModelBackboneDB
     {
-
         [Key]
         public long ChangeId { get; set; }
-
         public string SiteCode { get; set; } = String.Empty;
         [NotMapped]
         public string SiteName { get; set; } = String.Empty;
         public int Version { get; set; }
         public string? Country { get; set; }
-
         public SiteChangeStatus? Status { get; set; }
-
         public string? Tags { get; set; }
-
         public Level? Level { get; set; }
         public string? ChangeCategory { get; set; }
         public string? ChangeType { get; set; }
@@ -38,33 +28,23 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public LineageTypes? LineageChangeType { get; set; }
         [NotMapped]
         public String? AffectedSites { get; set; }
-
-
         [NotMapped]
         public int NumChanges { get; set; }
-
         public string? NewValue { get; set; }
         public string? OldValue { get; set; }
-
         public string? Detail { get; set; }
-
         public string? Code { get; set; }
         public string? Section { get; set; }
         public int VersionReferenceId { get; set; }
         public string? FieldName { get; set; }
-        public string ReferenceSiteCode { get; set; } 
-
+        public string ReferenceSiteCode { get; set; }
         public int? N2KVersioningVersion { get; set; }
-
         [NotMapped]
         public bool? JustificationRequired { get; set; }
         [NotMapped]
         public bool? JustificationProvided { get; set; }
-
         [NotMapped]
         public bool? HasGeometry { get; set; }
-
-
         [NotMapped]
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
@@ -74,7 +54,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             IList<string> notMappedFields = new List<string>();
             PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(typeof(SiteChangeDb));
-            System.Data.DataTable table = new System.Data.DataTable();
+            System.Data.DataTable table = new();
             //check if the field has a NotMapped attribute.
             //if so, do not include it in the output datatable
             foreach (PropertyDescriptor prop in properties)
@@ -128,7 +108,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
             return table;
         }
-    
 
         public SiteChangeDb() { }
 
@@ -136,7 +115,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             dbConnection = db;
         }
-
 
         public async static Task<int> SaveBulkRecord(string db, List<SiteChangeDb> listData)
         {
@@ -148,7 +126,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                     int max_tries = 10;
                     bool success = false;
                     //try the bulk save up to 10 times (in case it fires deadlock errors) 
-                    while (!success && num_tries < max_tries) {
+                    while (!success && num_tries < max_tries)
+                    {
                         //try the bul
                         try
                         {
@@ -167,7 +146,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                             await Task.Delay(2000);
                             num_tries++;
                         }
-                            
                     }
                 }
                 return 1;
@@ -190,51 +168,34 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 .ToTable("Changes")
                 .Property(e => e.Level)
                 .HasConversion(new EnumToStringConverter<Enumerations.Level>());
-
-
         }
     }
 
-
-    public class SiteChangeDbNumsperLevel :  IEntityModel, IEntityModelBackboneDB
+    public class SiteChangeDbNumsperLevel : IEntityModel, IEntityModelBackboneDB
     {
-
         public long ChangeId { get; set; }
-
         public string SiteCode { get; set; } = String.Empty;
         public string SiteName { get; set; } = String.Empty;
         public int Version { get; set; }
         public string? Country { get; set; }
-
         public SiteChangeStatus? Status { get; set; }
-
         public string? Tags { get; set; }
-
         public Level? Level { get; set; }
         public string? ChangeCategory { get; set; }
         public string? ChangeType { get; set; }
-
         [NotMapped]
         public int NumChanges { get; set; }
-
         public string? NewValue { get; set; }
         public string? OldValue { get; set; }
-
         public string? Detail { get; set; }
-
         public string? Code { get; set; }
         public string? Section { get; set; }
         public int VersionReferenceId { get; set; }
         public string? FieldName { get; set; }
         public string ReferenceSiteCode { get; set; } = String.Empty;
-
         public bool? HasGeometry { get; set; }
-
-
         public bool? JustificationRequired { get; set; }
         public bool? JustificationProvided { get; set; }
-
-
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
         public static void OnModelCreating(ModelBuilder builder)
@@ -248,10 +209,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 .HasNoKey()
                 .Property(e => e.Level)
                 .HasConversion(new EnumToStringConverter<Enumerations.Level>());
-
         }
-
-
     }
-
 }

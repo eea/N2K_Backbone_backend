@@ -1,10 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Helpers;
-using System.ComponentModel.DataAnnotations;
-using System.Data.Common;
 using System.Data;
-
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
@@ -36,13 +33,13 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? SpecieType { get; set; }
 
         private string dbConnection = "";
+
         public SpeciesOther() { }
 
         public SpeciesOther(string db)
         {
             dbConnection = db;
         }
-
 
         public async static Task<int> SaveBulkRecord(string db, List<SpeciesOther> listData)
         {

@@ -1,7 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Helpers;
-using System.ComponentModel.DataAnnotations;
 using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
@@ -14,7 +13,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public double? Percentage { get; set; }
         public Boolean? isMarine { get; set; }
 
-
         private string dbConnection = "";
 
         public BioRegions() { }
@@ -24,12 +22,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             dbConnection = db;
         }
 
-
-        
-
         public async static Task<int> SaveBulkRecord(string db, List<BioRegions> listData)
         {
-
             try
             {
                 if (listData.Count > 0)
@@ -49,9 +43,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "BioRegions - SaveBulkRecord", "", db);
                 return 0;
             }
-            
         }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {

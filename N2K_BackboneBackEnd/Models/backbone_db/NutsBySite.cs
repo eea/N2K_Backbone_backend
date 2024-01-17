@@ -1,9 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Helpers;
-using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models;
-using System.ComponentModel.DataAnnotations;
 using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
@@ -23,7 +20,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             dbConnection = db;
         }
-
 
         public async static Task<int> SaveBulkRecord(string db, List<NutsBySite> listData)
         {
@@ -47,7 +43,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 return 0;
             }
         }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {

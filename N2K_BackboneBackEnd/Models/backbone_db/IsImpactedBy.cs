@@ -31,7 +31,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             dbConnection = db;
         }
 
-
         public async static Task<int> SaveBulkRecord(string db, List<IsImpactedBy> listData)
         {
             try
@@ -54,7 +53,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 return 0;
             }
         }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {
