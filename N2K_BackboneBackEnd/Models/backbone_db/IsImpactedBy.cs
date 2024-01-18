@@ -22,7 +22,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? ImpactType { get; set; }
         public long Id { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public IsImpactedBy() { }
 

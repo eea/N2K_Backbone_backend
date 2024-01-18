@@ -16,7 +16,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         [Column(TypeName = "decimal(18, 2)")]
         public decimal? Percentage { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public HasNationalProtection() { }
 

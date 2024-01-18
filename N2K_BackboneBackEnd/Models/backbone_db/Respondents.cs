@@ -24,7 +24,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? LocatorDesignator { get; set; }
         public int? ObjectID { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public Respondents() { }
 

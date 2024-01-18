@@ -8,9 +8,9 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [Keyless]
     public class SiteChangeDetailViewModel : IEntityModel
     {
-        public string SiteCode { get; set; } = "";
-        public string Name { get; set; } = "";
-        public string Type { get; set; } = "";
+        public string SiteCode { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
         public bool? HasGeometry { get; set; } = false;
         public int Version { get; set; }
         public LineageTypes? LineageChangeType { get; set; }

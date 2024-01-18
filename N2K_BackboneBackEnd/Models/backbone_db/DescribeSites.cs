@@ -12,7 +12,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string HabitatCode { get; set; } = string.Empty;
         public decimal? Percentage { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public DescribeSites() { }
 

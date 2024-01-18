@@ -12,7 +12,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? Owner { get; set; }
         public string? Justification { get; set; }
         public string? Comments { get; set; }
-        public override string? Tags { get; set; } = "";
+        public override string? Tags { get; set; } = string.Empty;
         public int? Edited { get; set; }
         public DateTime? EditedDate { get; set; }
         public string? Editedby { get; set; }

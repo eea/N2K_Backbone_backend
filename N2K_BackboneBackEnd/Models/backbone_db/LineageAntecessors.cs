@@ -13,7 +13,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public int? N2KVersioningVersion { get; set; }
         public long LineageID { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public LineageAntecessors() { }
 

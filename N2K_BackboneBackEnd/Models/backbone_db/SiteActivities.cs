@@ -17,7 +17,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string Action { get; set; } = string.Empty;
         public Boolean? Deleted { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public SiteActivities() { }
 

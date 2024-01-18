@@ -7,8 +7,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     {
         [Key]
         public long Id { get; set; }
-        public string ProcessName { get; set; } = "";
-        public string ActionPerformed { get; set; } = "";
+        public string ProcessName { get; set; } = string.Empty;
+        public string ActionPerformed { get; set; } = string.Empty;
         public DateTime StampTime { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)

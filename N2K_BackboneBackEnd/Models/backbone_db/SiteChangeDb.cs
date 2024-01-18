@@ -48,7 +48,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         [NotMapped]
         public List<SiteChangeView> subRows { get; set; } = new List<SiteChangeView>();
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         private static System.Data.DataTable PrepareDataForBulkCopy(IList<SiteChangeDb> data, SqlBulkCopy copy)
         {

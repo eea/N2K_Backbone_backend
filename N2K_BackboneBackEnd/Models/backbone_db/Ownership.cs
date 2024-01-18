@@ -14,7 +14,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? Content { get; set; }
         public long? ContactId { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public Ownership() { }
 

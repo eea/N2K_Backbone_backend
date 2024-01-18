@@ -6,7 +6,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     public class HabitatTypes : IEntityModel, IEntityModelBackboneDB
     {
         [Key]
-        public string Code { get; set; } = "";
+        public string Code { get; set; } = string.Empty;
         public string? HDName { get; set; }
         public string? Name { get; set; }
         public string? Realm { get; set; }

@@ -13,7 +13,7 @@ namespace N2K_BackboneBackEnd.Models.BackboneDB
     {
         [Key]
         public long Id { get; set; }
-        public string SiteCode { get; set; } = "";
+        public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
         public string? Country { get; set; }
         public SiteChangeStatus? Status { get; set; }

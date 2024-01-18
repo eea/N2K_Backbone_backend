@@ -20,8 +20,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [Keyless]
     public class CodeChangeDetailModify : CodeChangeDetail
     {
-        public string? Reported { get; set; } = "";
-        public string? Reference { get; set; } = "";
+        public string? Reported { get; set; } = string.Empty;
+        public string? Reference { get; set; } = string.Empty;
 
         new public static void OnModelCreating(ModelBuilder builder)
         {
@@ -32,10 +32,10 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [Keyless]
     public class CodeChangeDetailAddedRemovedSpecies : CodeChangeDetail
     {
-        public string? AnnexII { get; set; } = "";
-        public string? Priority { get; set; } = "";
-        public string? Population { get; set; } = "";
-        public string? SpeciesType { get; set; } = "";
+        public string? AnnexII { get; set; } = string.Empty;
+        public string? Priority { get; set; } = string.Empty;
+        public string? Population { get; set; } = string.Empty;
+        public string? SpeciesType { get; set; } = string.Empty;
 
         new public static void OnModelCreating(ModelBuilder builder)
         {
@@ -46,9 +46,9 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [Keyless]
     public class CodeChangeDetailAddedRemovedHabitats : CodeChangeDetail
     {
-        public string? Priority { get; set; } = "";
-        public string? CoverHa { get; set; } = "";
-        public string? RelSurface { get; set; } = "";
+        public string? Priority { get; set; } = string.Empty;
+        public string? CoverHa { get; set; } = string.Empty;
+        public string? RelSurface { get; set; } = string.Empty;
 
         new public static void OnModelCreating(ModelBuilder builder)
         {

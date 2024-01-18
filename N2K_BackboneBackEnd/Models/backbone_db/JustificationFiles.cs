@@ -13,7 +13,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public DateTime? ImportDate { get; set; }
         public string? Username { get; set; }
         [NotMapped]
-        public override string? Tags { get; set; } = "";
+        public override string? Tags { get; set; } = string.Empty;
         //[NotMapped]
         //public bool Temporal { get; set; } = false;
 

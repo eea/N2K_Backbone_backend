@@ -8,7 +8,7 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
     public class FinalReleaseContent : VersioningBase, IEntityModel
     {
         public float IDFinalRelease { get; set; }
-        public string CountryCode { get; set; } = "";
+        public string CountryCode { get; set; } = string.Empty;
         [Column(TypeName = "decimal(18, 0)")]
         public decimal CountryVersionID { get; set; }
 

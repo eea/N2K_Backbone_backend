@@ -7,12 +7,12 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
     [Keyless]
     public class BelongsToBioRegion : VersioningBase, IEntityModel
     {
-        public string COUNTRYCODE { get; set; } = "";
+        public string COUNTRYCODE { get; set; } = string.Empty;
         [Column(TypeName = "decimal(18, 0)")]
         public decimal VERSIONID { get; set; }
         [Column(TypeName = "decimal(18, 0)")]
         public decimal COUNTRYVERSIONID { get; set; }
-        public string SITECODE { get; set; } = "";
+        public string SITECODE { get; set; } = string.Empty;
         public int BIOREGID { get; set; }
         public DateTime? PUBL_DATE { get; set; }
         [Column(TypeName = "decimal(5, 2)")]

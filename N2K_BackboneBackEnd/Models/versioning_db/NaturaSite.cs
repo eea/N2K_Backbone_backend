@@ -7,13 +7,13 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
 {
     public class ReferenceMap : VersioningBase, IEntityModel
     {
-        public string COUNTRYCODE { get; set; } = "";
+        public string COUNTRYCODE { get; set; } = string.Empty;
         [Column(TypeName = "decimal(18, 0)")]
         public decimal VERSIONID { get; set; }
         [Column(TypeName = "decimal(18, 0)")]
         public decimal COUNTRYVERSIONID { get; set; }
         private Int32 OBJECTID { get; set; }
-        public string? SITECODE { get; set; } = "";
+        public string? SITECODE { get; set; } = string.Empty;
         private string? NATIONALMAPNUMBER { get; set; }
         private string? SCALE { get; set; }
         private string? PROJECTION { get; set; }
@@ -33,12 +33,12 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
     public class NaturaSite : VersioningBase, IEntityModel
     {
         public Int32 OBJECTID { get; set; }
-        public string COUNTRYCODE { get; set; } = "";
+        public string COUNTRYCODE { get; set; } = string.Empty;
         [Column(TypeName = "decimal(18, 0)")]
         public decimal VERSIONID { get; set; }
         [Column(TypeName = "decimal(18, 0)")]
         public decimal COUNTRYVERSIONID { get; set; }
-        public string SITECODE { get; set; } = "";
+        public string SITECODE { get; set; } = string.Empty;
         public string? SITENAME { get; set; }
         public string? COUNTRY_CODE { get; set; }
         public DateTime? DATE_LOADED { get; set; }

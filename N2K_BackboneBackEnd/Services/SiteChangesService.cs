@@ -25,8 +25,8 @@ namespace N2K_BackboneBackEnd.Services
 
         private class OrderedChanges
         {
-            public string SiteCode { get; set; } = "";
-            public string SiteName { get; set; } = "";
+            public string SiteCode { get; set; } = string.Empty;
+            public string SiteName { get; set; } = string.Empty;
             public Level? Level { get; set; }
             public List<SiteChangeDbNumsperLevel> ChangeList { get; set; } = new List<SiteChangeDbNumsperLevel>();
 

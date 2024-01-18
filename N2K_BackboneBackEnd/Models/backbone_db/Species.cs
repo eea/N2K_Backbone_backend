@@ -10,7 +10,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     {
         [Key]
         public long Id { get; set; }
-        public string SiteCode { get; set; } = "";
+        public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
         public string SpecieCode { get; set; }
         public int? PopulationMin { get; set; }
@@ -34,7 +34,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? DataQuality { get; set; }
         public string? SpecieType { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public Species() { }
 

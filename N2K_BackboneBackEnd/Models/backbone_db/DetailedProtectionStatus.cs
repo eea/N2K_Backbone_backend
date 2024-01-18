@@ -16,7 +16,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public decimal? OverlapPercentage { get; set; }
         public string? Convention { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public DetailedProtectionStatus() { }
 

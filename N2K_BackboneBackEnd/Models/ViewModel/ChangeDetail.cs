@@ -8,12 +8,12 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class ChangeDetail : IEntityModel
     {
         public long ChangeId { get; set; }
-        public string FieldName { get; set; } = "";
-        public string Description { get; set; } = "";
-        public string ChangeType { get; set; } = "";
-        public string ChangeCategory { get; set; } = "";
-        public string ReportedValue { get; set; } = "";
-        public string OlValue { get; set; } = "";
+        public string FieldName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string ChangeType { get; set; } = string.Empty;
+        public string ChangeCategory { get; set; } = string.Empty;
+        public string ReportedValue { get; set; } = string.Empty;
+        public string OlValue { get; set; } = string.Empty;
         public Level? Level { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)

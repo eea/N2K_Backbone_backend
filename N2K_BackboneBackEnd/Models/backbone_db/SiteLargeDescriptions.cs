@@ -20,7 +20,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? ManagStatus { get; set; }
         public long ID { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public SiteLargeDescriptions() { }
 

@@ -6,7 +6,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     public class SpeciesTypes : IEntityModel, IEntityModelBackboneDB
     {
         [Key]
-        public string Code { get; set; } = "";
+        public string Code { get; set; } = string.Empty;
         public string? Name { get; set; }
         public string? NameLat { get; set; }
         public bool? IsBird { get; set; }

@@ -6,7 +6,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     public class Countries : IEntityModel, IEntityModelBackboneDB
     {
         [Key]
-        public string Code { get; set; } = "";
+        public string Code { get; set; } = string.Empty;
         public string? Country { get; set; }
         public bool? isEUCountry { get; set; }
 

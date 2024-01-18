@@ -19,7 +19,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         [NotMapped]
         public String? AntecessorsSiteCodes { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public Lineage() { }
 
