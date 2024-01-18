@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
-    public class EditionCountriesCountViewModel : EditionCountriesCount
+    [Keyless]
+    public class EditionCountriesCountViewModel : EditionCountriesCount, IEntityModel
     {
         public bool IsEditable { get; set; }
 
