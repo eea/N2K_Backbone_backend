@@ -197,5 +197,30 @@ namespace N2K_BackboneBackEnd.Services
                 throw ex;
             }
         }
+
+        public async Task<List<EditionCountriesCountViewModel>> GetEditionCountries()
+        {
+            try
+            {
+                var closedCountries = await GetClosedAndDiscardedCountriesAsync();
+                var countries = await _dataContext
+                    .Set<EditionCountriesCount>()
+                    .FromSqlRaw($"exec dbo.spGetCountriesSiteCount")
+                    .AsNoTracking()
+                    .ToListAsync();
+                return countries.Select(c => new EditionCountriesCountViewModel
+                {
+                    Code = c.Code,
+                    Country = c.Country ?? "",
+                    SiteCount = c.SiteCount,
+                    IsEditable = closedCountries.FirstOrDefault(closed => closed.Code == c.Code) != null
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "CountryService - GetClosedAndDiscardedCountriesAsync", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
     }
 }

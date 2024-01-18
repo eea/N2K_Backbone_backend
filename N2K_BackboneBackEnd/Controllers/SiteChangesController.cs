@@ -443,14 +443,14 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("GetNonPendingSiteCodes/country={country:string}/")]
+        [Route("GetNonPendingSiteCodes/country={country:string}&onlyedited={onlyedited:bool}/")]
         [HttpGet()]
-        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetNonPendingSiteCodes(string country)
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetNonPendingSiteCodes(string country, Boolean onlyedited)
         {
             var response = new ServiceResponse<List<SiteCodeView>>();
             try
             {
-                var siteCodes = await _siteChangesService.GetNonPendingSiteCodes(country);
+                var siteCodes = await _siteChangesService.GetNonPendingSiteCodes(country, onlyedited);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteCodes;

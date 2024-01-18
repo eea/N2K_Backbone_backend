@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
@@ -664,7 +664,8 @@ namespace N2K_BackboneBackEnd.Services
                                 harvestingSite = newsites.Where(s => s.SiteCode == siteRelation.NewSiteCode && s.VersionId == siteRelation.NewVersion).FirstOrDefault();
                             if (siteRelation != null && harvestingSite == null)
                             {
-                                LineageDetection temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
+                                //if the is the site has been recoded do not add it to the changed sites
+                                LineageDetection? temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
                                 if (temp == null) //the site has not been RECODED
                                 {
                                     SiteChangeDb siteChange = new()
@@ -1095,6 +1096,64 @@ namespace N2K_BackboneBackEnd.Services
                         await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isStoredSitePriority + "' WHERE [SiteCode] = '" + storedSite.SiteCode + "' AND [Version] = '" + storedSite.VersionId + "'");
                         await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isHarvestingSitePriority + "' WHERE [SiteCode] = '" + harvestingSite.SiteCode + "' AND [Version] = '" + harvestingSite.VersionId + "'");
 
+                        Lineage? lineage = _dataContext.Set<Lineage>().FirstOrDefault(l => l.SiteCode == harvestingSite.SiteCode && l.Version == harvestingSite.VersionId);
+                        if (lineage?.Type == LineageTypes.Merge)
+                        {
+                            string antecessors = string.Join(',',
+                                _dataContext.Set<LineageAntecessors>().Where(a => a.LineageID == lineage.ID)
+                                .Select(a => a.SiteCode).ToArray());
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Network general structure",
+                                ChangeType = "Site Merged",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx),
+                                Tags = string.Empty,
+                                NewValue = harvestingSite.SiteCode,
+                                OldValue = antecessors,
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = storedSite.VersionId,
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
+                            changes.Add(siteChange);
+                        }
+                        else if (lineage?.Type == LineageTypes.Split)
+                        {
+                            // get sibling sites (sites that resulted from the split)
+                            List<long> siblingIDs = _dataContext.Set<LineageAntecessors>()
+                                .Where(a => a.SiteCode == storedSite.SiteCode && a.N2KVersioningVersion == storedSite.N2KVersioningVersion)
+                                .Select(a => a.LineageID).ToList();
+                            string siblingSites = string.Join(',',
+                                _dataContext.Set<Lineage>()
+                                .Where(l => siblingIDs.Contains(l.ID))
+                                .Select(l => l.SiteCode).ToArray());
+
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Network general structure",
+                                ChangeType = "Site Split",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx),
+                                Tags = string.Empty,
+                                NewValue = siblingSites,
+                                OldValue = storedSite.SiteCode,
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = storedSite.VersionId,
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
+                            changes.Add(siteChange);
+                        }
+
                         //Add justification files and comments from the current to the new version
                         Sites current = ctx.Set<Sites>().Where(x => x.SiteCode == harvestingSite.SiteCode && x.Current == true).FirstOrDefault();
                         if (current != null)
@@ -1108,32 +1167,85 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     else
                     {
-                        SiteChangeDb siteChange = new()
+                        Lineage? lineage = _dataContext.Set<Lineage>().FirstOrDefault(l => l.SiteCode == harvestingSite.SiteCode && l.Version == harvestingSite.VersionId);
+                        if (lineage?.Type == LineageTypes.Merge)
                         {
-                            SiteCode = harvestingSite.SiteCode,
-                            Version = harvestingSite.VersionId,
-                            ChangeCategory = "Network general structure",
-                            ChangeType = "Site Added",
-                            LineageChangeType = LineageTypes.Creation,
-                            Country = envelope.CountryCode,
-                            Level = Enumerations.Level.Critical,
-                            Status = (SiteChangeStatus?)processedEnvelope.Status,
-                            Tags = string.Empty,
-                            NewValue = harvestingSite.SiteCode,
-                            OldValue = null,
-                            Code = harvestingSite.SiteCode,
-                            Section = "Site",
-                            VersionReferenceId = harvestingSite.VersionId,
-                            ReferenceSiteCode = harvestingSite.SiteCode,
-                            N2KVersioningVersion = envelope.VersionId
-                        };
-                        if (ld != null)
-                        {
-                            siteChange.ChangeType = "Site ";
-                            siteChange.ChangeType += ld.op.ToLower() == "split" ? "Split" : "";
-                            siteChange.ChangeType += ld.op.ToLower() == "merge" ? "Merge" : "";
+                            string antecessors = string.Join(',',
+                                _dataContext.Set<LineageAntecessors>().Where(a => a.LineageID == lineage.ID)
+                                .Select(a => a.SiteCode).ToArray());
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Network general structure",
+                                ChangeType = "Site Merged",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx),
+                                Tags = string.Empty,
+                                NewValue = harvestingSite.SiteCode,
+                                OldValue = antecessors,
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = harvestingSite.VersionId,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
+                            changes.Add(siteChange);
                         }
-                        changes.Add(siteChange);
+                        else if (lineage?.Type == LineageTypes.Split)
+                        {
+                            // get sibling sites (sites that resulted from the split)
+                            LineageAntecessors antecessor = _dataContext.Set<LineageAntecessors>()
+                                .FirstOrDefault(a => a.LineageID == lineage.ID);
+                            List<long> siblingIDs = _dataContext.Set<LineageAntecessors>()
+                                .Where(a => a.SiteCode == antecessor.SiteCode)
+                                .Select(a => a.LineageID).ToList();
+                            string siblings = string.Join(',',
+                                _dataContext.Set<Lineage>()
+                                .Where(l => siblingIDs.Contains(l.ID))
+                                .Select(l => l.SiteCode).ToArray());
+
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Network general structure",
+                                ChangeType = "Site Split",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx),
+                                Tags = string.Empty,
+                                NewValue = siblings,
+                                OldValue = antecessor.SiteCode,
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = antecessor.Version,
+                                ReferenceSiteCode = antecessor.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
+                            changes.Add(siteChange);
+                        }
+                        else
+                        {
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Network general structure",
+                                ChangeType = "Site Added",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                Tags = string.Empty,
+                                NewValue = harvestingSite.SiteCode,
+                                OldValue = null,
+                                Code = harvestingSite.SiteCode,
+                                Section = "Site",
+                                VersionReferenceId = harvestingSite.VersionId,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
+                            changes.Add(siteChange);
+                        }
                     }
                 }
             }
@@ -1376,6 +1488,16 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.ChangeType += ld.op.ToLower() == "split" ? "Split" : "";
                             siteChange.ChangeType += ld.op.ToLower() == "merge" ? "Merge" : "";
                         }
+                        siteChange.Country = envelope.CountryCode;
+                        siteChange.Level = Enumerations.Level.Critical;
+                        siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
+                        siteChange.Tags = string.Empty;
+                        siteChange.NewValue = harvestingSite.SiteCode;
+                        siteChange.OldValue = null;
+                        siteChange.Code = harvestingSite.SiteCode;
+                        siteChange.Section = "Site";
+                        siteChange.VersionReferenceId = harvestingSite.VersionId;
+                        siteChange.N2KVersioningVersion = envelope.VersionId;
                         changes.Add(siteChange);
                     }
                 }
@@ -1520,7 +1642,6 @@ namespace N2K_BackboneBackEnd.Services
                         Code = harvestingSite.SiteCode,
                         Section = "Site",
                         VersionReferenceId = harvestingSite.VersionId,
-                        ReferenceSiteCode = harvestingSite.SiteCode,
                         N2KVersioningVersion = envelope.VersionId
                     };
                     changes.Add(siteChange);

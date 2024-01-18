@@ -17,6 +17,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public String? AffectedSites { get; set; }
         public bool? JustificationRequired { get; set; }
         public bool? JustificationProvided { get; set; }
+        public string? ReferenceSiteCode { get; set; }
         public SiteChangeStatus? Status { get; set; }
         [NotMapped]
         public SiteChangesLevelDetail Critical { get; set; } = new SiteChangesLevelDetail();

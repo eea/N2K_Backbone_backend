@@ -38,6 +38,7 @@ namespace N2K_BackboneBackEnd.Services
         private readonly IEnumerable<SpeciesPriority> _speciesPriority;
         private readonly IEnumerable<HabitatPriority> _habitatPriority;
         private readonly IEnumerable<Countries> _countries;
+        private readonly IEnumerable<Lineage> _lineage;
         private IEnumerable<Habitats>? _siteHabitats;
         private IEnumerable<Species>? _siteSpecies;
         private IEnumerable<SpeciesOther>? _siteSpeciesOther;
@@ -56,6 +57,7 @@ namespace N2K_BackboneBackEnd.Services
             _speciesPriority = _dataContext.Set<SpeciesPriority>().AsNoTracking().ToList();
             _habitatPriority = _dataContext.Set<HabitatPriority>().AsNoTracking().ToList();
             _countries = _dataContext.Set<Countries>().AsNoTracking().ToList();
+            _lineage = _dataContext.Set<Lineage>().AsNoTracking().ToList();
         }
 
         public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false)
@@ -156,6 +158,8 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Level = null;
                             siteChange.Status = null;
                             siteChange.Tags = "";
+                            if (change.ReferenceSiteCode != null && change.ReferenceSiteCode != "")
+                                siteChange.ReferenceSiteCode = change.ReferenceSiteCode;
                             siteChange.Version = change.Version;
                             SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                             if (activity == null)
@@ -343,11 +347,14 @@ namespace N2K_BackboneBackEnd.Services
                     Critical = new SiteChangesLevelDetail()
                 };
 
+                // Get the harvested envelope
+                ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == pSiteCode.Substring(0,2) && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
+
                 // Get lineage change type from Lineage table
-                Lineage? lineageChange = await _dataContext.Set<Lineage>().AsNoTracking().FirstOrDefaultAsync(l => l.SiteCode == pSiteCode && l.Version == pCountryVersion);
+                Lineage? lineageChange = await _dataContext.Set<Lineage>().AsNoTracking().FirstOrDefaultAsync(l => l.SiteCode == pSiteCode && l.Version == pCountryVersion && l.N2KVersioningVersion == harvestedEnvelope.Version);
                 changeDetailVM.LineageChangeType = lineageChange?.Type;
 
-                // get affected sites list only in certain lineage change types
+                // Get affected sites list only in certain lineage change types
                 if (lineageCases.Contains((LineageTypes)changeDetailVM.LineageChangeType))
                     changeDetailVM.AffectedSites = GetAffectedSites(pSiteCode, lineageChange).Result;
 
@@ -372,11 +379,11 @@ namespace N2K_BackboneBackEnd.Services
                     changeDetailVM.JustificationRequired = site.JustificationRequired.HasValue ? site.JustificationRequired.Value : false;
 #pragma warning restore CS8601 // Posible asignación de referencia nula
                 }
-                ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == site.CountryCode && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
                 var changesDb = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(changes => changes.SiteCode == pSiteCode && changes.N2KVersioningVersion == harvestedEnvelope.Version).ToListAsync();
                 changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
                 if (changesDb != null)
                 {
+                    changeDetailVM.ReferenceSiteCode = changesDb.FirstOrDefault()?.ReferenceSiteCode;
                     if (changesDb.FirstOrDefault()?.ChangeType == "Site Deleted")
                     {
                         changeDetailVM.Status = changesDb.FirstOrDefault()?.Status;
@@ -407,7 +414,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country)
+        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited)
         {
             try
             {
@@ -443,11 +450,13 @@ namespace N2K_BackboneBackEnd.Services
                         Name = change.Name,
                         EditedBy = activity is null ? null : activity.Author,
                         EditedDate = activity is null ? null : activity.Date,
-                        LineageChangeType = changeLineage
+                        LineageChangeType = changeLineage,
+                        Type = change.Type
                     };
                     result.Add(temp);
                 }
-
+                if (onlyedited)
+                    result = result.Where(x => x.EditedDate != null).ToList();
                 return result;
             }
             catch (Exception ex)
@@ -513,7 +522,8 @@ namespace N2K_BackboneBackEnd.Services
                             Name = change.Name,
                             EditedBy = activity is null ? null : activity.Author,
                             EditedDate = activity is null ? null : activity.Date,
-                            LineageChangeType = changeLineage
+                            LineageChangeType = changeLineage,
+                            Type = change.Type
                         };
                         result.Add(temp);
                     }
@@ -767,8 +777,8 @@ namespace N2K_BackboneBackEnd.Services
                         fields.Add("Submission", nullCase);
                     }
                     if (catChange.ChangeCategory == "Change of area" || catChange.ChangeType == "Length Changed"
-                        || catChange.ChangeType == "Change of spatial area" || catChange.ChangeType == "Spatial Area Decreased"
-                        || catChange.ChangeType == "Spatial Area Increased" || catChange.ChangeType.StartsWith("Cover_ha"))
+                        || catChange.ChangeType == "Change of spatial area" || catChange.ChangeType == "Spatial Area Decrease"
+                        || catChange.ChangeType == "Spatial Area Increase" || catChange.ChangeType.StartsWith("Cover_ha"))
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
@@ -1291,6 +1301,9 @@ namespace N2K_BackboneBackEnd.Services
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
 
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
+
                         Level level;
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
                         //Alter cached listd. They come from pendign and goes to accepted
@@ -1419,6 +1432,9 @@ namespace N2K_BackboneBackEnd.Services
                             Name = reader["SiteName"].ToString()
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
+
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
 
                         Level level;
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
@@ -1921,6 +1937,9 @@ namespace N2K_BackboneBackEnd.Services
                             Name = changes.First().SiteName,
                             CountryCode = modifiedSiteCode.SiteCode[..2]
                         };
+
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
 
                         Sites siteToDelete = null;
                         int previousCurrent = -1;//The 0 value can be a version
