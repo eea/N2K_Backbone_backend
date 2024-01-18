@@ -1,12 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Helpers;
-using System.ComponentModel.DataAnnotations;
-using System.Data.Common;
-using System.Reflection.Emit;
-using System.Reflection.Metadata;
 using System.Data;
-
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
@@ -15,10 +10,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
         public string HabitatCode { get; set; } = string.Empty;
-        
         public decimal? Percentage { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
+
         public DescribeSites() { }
 
         public DescribeSites(string db)
@@ -26,8 +21,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             dbConnection = db;
         }
 
-
-        
         public async static Task<int> SaveBulkRecord(string db, List<DescribeSites> listData)
         {
             try

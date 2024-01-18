@@ -1,8 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
-using System.ComponentModel.DataAnnotations;
 using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
@@ -15,8 +13,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public int? N2KVersioningVersion { get; set; }
         public long LineageID { get; set; }
 
-
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public LineageAntecessors() { }
 
@@ -24,7 +21,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             dbConnection = db;
         }
-
 
         public async static Task<int> SaveBulkRecord(string db, List<LineageAntecessors> listData)
         {
@@ -47,9 +43,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "LineageAntecessors - SaveBulkRecord", "", db);
                 return 0;
             }
-
         }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {

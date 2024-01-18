@@ -1,7 +1,5 @@
 ﻿using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
-using Microsoft.AspNetCore.Mvc;
-using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Enumerations;
 
 namespace N2K_BackboneBackEnd.Services
@@ -16,5 +14,6 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<CountriesSiteCountView>> GetSiteCountAsync();
         Task<List<CountriesChangesView>> GetConsolidatedCountries();
         Task<List<ClosedCountriesView>> GetClosedAndDiscardedCountriesAsync();
+        Task<List<EditionCountriesCountViewModel>> GetEditionCountries();
     }
 }

@@ -7,11 +7,9 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
     [Keyless]
     public class DetailedProtectionStatus : VersioningBase, IEntityModel
     {
-        public string COUNTRYCODE { get; set; } = "";
-
+        public string COUNTRYCODE { get; set; } = string.Empty;
         [Column(TypeName = "decimal(18, 0)")]
         public decimal VERSIONID { get; set; }
-
         [Column(TypeName = "decimal(18, 0)")]
         public decimal COUNTRYVERSIONID { get; set; }
         public string? N2K_SITECODE { get; set; } 
@@ -19,7 +17,6 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         public string? DESIGNATIONCODE { get; set; }
         public string? PROTECTEDSITENAME { get; set; }
         public string? OVERLAPCODE { get; set; }
-
         [Column(TypeName = "decimal(38, 2)")]
         public decimal? OVERLAPPERC { get; set; }
         public string? CONVENTION { get; set; }
@@ -30,6 +27,5 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
                 .ToTable("DETAILEDPROTECTIONSTATUS")
                 .HasNoKey();
         }
-
     }
 }

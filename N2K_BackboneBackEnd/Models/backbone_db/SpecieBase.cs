@@ -3,7 +3,7 @@
     public class SpecieBase
     {
         public long id { get; set; }
-        public string SiteCode { get; set; } = "";
+        public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
         public string? SpecieCode { get; set; }
         public int? PopulationMin { get; set; }
@@ -26,68 +26,70 @@
         public Boolean? NonPersistence { get; set; }
         public string? DataQuality { get; set; }
         public string? SpecieType { get; set; }
+        public bool? Other { get; set; }
         public string? OtherSpecieCode { get; set; }
 
-        public bool? Other { get; set; }
-
-        public Species getSpecies() { 
-            Species specie = new Species();
-            specie.SiteCode = this.SiteCode;
-            specie.Version = this.Version;
-            specie.SpecieCode = this.SpecieCode;
-            specie.PopulationMin = this.PopulationMin;
-            specie.PopulationMax = this.PopulationMax;
-            //item.Group = element.GROUP; // PENDING
-            specie.SensitiveInfo = this.SensitiveInfo;
-            specie.Resident = this.Resident;
-            specie.Breeding = this.Breeding;
-            specie.Winter = this.Winter;
-            specie.Staging = this.Staging;
-            //item.Path = element.PATH; // ??? PENDING
-            specie.AbundaceCategory = this.AbundaceCategory;
-            specie.Motivation = this.Motivation;
-            specie.PopulationType = this.PopulationType;
-            specie.CountingUnit = this.CountingUnit;
-            specie.Population = this.Population;
-            specie.Insolation = this.Insolation;
-            specie.Conservation = this.Conservation;
-            specie.Global = this.Global;
-            specie.NonPersistence = this.NonPersistence;
-            specie.DataQuality = this.DataQuality;
-            specie.SpecieType = this.SpecieType;
-
+        public Species getSpecies()
+        {
+            Species specie = new()
+            {
+                SiteCode = this.SiteCode,
+                Version = this.Version,
+                SpecieCode = this.SpecieCode,
+                PopulationMin = this.PopulationMin,
+                PopulationMax = this.PopulationMax,
+                //item.Group = element.GROUP; // PENDING
+                SensitiveInfo = this.SensitiveInfo,
+                Resident = this.Resident,
+                Breeding = this.Breeding,
+                Winter = this.Winter,
+                Staging = this.Staging,
+                //item.Path = element.PATH; // ??? PENDING
+                AbundaceCategory = this.AbundaceCategory,
+                Motivation = this.Motivation,
+                PopulationType = this.PopulationType,
+                CountingUnit = this.CountingUnit,
+                Population = this.Population,
+                Insolation = this.Insolation,
+                Conservation = this.Conservation,
+                Global = this.Global,
+                NonPersistence = this.NonPersistence,
+                DataQuality = this.DataQuality,
+                SpecieType = this.SpecieType
+            };
             return specie;
         }
+
         public SpeciesOther getSpeciesOther()
         {
-            SpeciesOther specie = new SpeciesOther();
-            specie.SiteCode = this.SiteCode;
-            specie.Version = this.Version;
-            specie.SpecieCode = this.SpecieCode;
-            specie.PopulationMin = this.PopulationMin;
-            specie.PopulationMax = this.PopulationMax;
-            //item.Group = element.GROUP; // PENDING
-            specie.SensitiveInfo = this.SensitiveInfo;
-            specie.Resident = this.Resident;
-            specie.Breeding = this.Breeding;
-            specie.Winter = this.Winter;
-            specie.Staging = this.Staging;
-            //item.Path = element.PATH; // ??? PENDING
-            specie.AbundaceCategory = this.AbundaceCategory;
-            specie.Motivation = this.Motivation;
-            specie.PopulationType = this.PopulationType;
-            specie.CountingUnit = this.CountingUnit;
-            specie.Population = this.Population;
-            specie.Insolation = this.Insolation;
-            specie.Conservation = this.Conservation;
-            specie.Global = this.Global;
-            specie.NonPersistence = this.NonPersistence;
-            specie.DataQuality = this.DataQuality;
-            specie.SpecieType = this.SpecieType;
-            specie.OtherSpecieCode = this.OtherSpecieCode;
-
+            SpeciesOther specie = new()
+            {
+                SiteCode = this.SiteCode,
+                Version = this.Version,
+                SpecieCode = this.SpecieCode,
+                PopulationMin = this.PopulationMin,
+                PopulationMax = this.PopulationMax,
+                //item.Group = element.GROUP; // PENDING
+                SensitiveInfo = this.SensitiveInfo,
+                Resident = this.Resident,
+                Breeding = this.Breeding,
+                Winter = this.Winter,
+                Staging = this.Staging,
+                //item.Path = element.PATH; // ??? PENDING
+                AbundaceCategory = this.AbundaceCategory,
+                Motivation = this.Motivation,
+                PopulationType = this.PopulationType,
+                CountingUnit = this.CountingUnit,
+                Population = this.Population,
+                Insolation = this.Insolation,
+                Conservation = this.Conservation,
+                Global = this.Global,
+                NonPersistence = this.NonPersistence,
+                DataQuality = this.DataQuality,
+                SpecieType = this.SpecieType,
+                OtherSpecieCode = this.OtherSpecieCode
+            };
             return specie;
         }
-
     }
 }

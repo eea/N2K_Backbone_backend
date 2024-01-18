@@ -3,13 +3,13 @@
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
     [Keyless]
-    public class SiteGeometry : IEntityModel
+    public class EditionCountriesCountViewModel : EditionCountriesCount, IEntityModel
     {
-        public string? GeoJson { get; set; } = string.Empty;
+        public bool IsEditable { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<SiteGeometry>();
+            builder.Entity<EditionCountriesCountViewModel>();
         }
     }
 }
