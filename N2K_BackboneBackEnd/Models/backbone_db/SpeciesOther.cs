@@ -34,6 +34,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public Boolean? NonPersistence { get; set; }
         public string? DataQuality { get; set; }
         public string? SpecieType { get; set; }
+        public string? OtherSpecieCode { get; set; }
 
         private string dbConnection = "";
         public SpeciesOther() { }

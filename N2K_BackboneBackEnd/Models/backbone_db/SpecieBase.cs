@@ -26,6 +26,7 @@
         public Boolean? NonPersistence { get; set; }
         public string? DataQuality { get; set; }
         public string? SpecieType { get; set; }
+        public string? OtherSpecieCode { get; set; }
 
         public bool? Other { get; set; }
 
@@ -83,6 +84,7 @@
             specie.NonPersistence = this.NonPersistence;
             specie.DataQuality = this.DataQuality;
             specie.SpecieType = this.SpecieType;
+            specie.OtherSpecieCode = this.OtherSpecieCode;
 
             return specie;
         }
