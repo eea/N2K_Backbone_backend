@@ -186,5 +186,28 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+        [HttpGet("GetEditionCountries")]
+        public async Task<ActionResult<ServiceResponse<List<EditionCountriesView>>>> GetEditionCountries()
+        {
+            var response = new ServiceResponse<List<EditionCountriesView>>();
+            try
+            {
+                var countriesEdition = await _countryService.GetEditionCountries();
+                response.Success = true;
+                response.Message = "";
+                response.Data = countriesEdition;
+                response.Count = (countriesEdition == null) ? 0 : countriesEdition.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<EditionCountriesView>();
+                return Ok(response);
+            }
+        }
     }
 }

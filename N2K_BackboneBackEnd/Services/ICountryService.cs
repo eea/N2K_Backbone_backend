@@ -16,5 +16,6 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<CountriesSiteCountView>> GetSiteCountAsync();
         Task<List<CountriesChangesView>> GetConsolidatedCountries();
         Task<List<ClosedCountriesView>> GetClosedAndDiscardedCountriesAsync();
+        Task<List<EditionCountriesView>> GetEditionCountries();
     }
 }
