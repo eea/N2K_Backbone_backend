@@ -43,7 +43,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? SiteName { get; set; }
         public DateTime? FirstCompletionDate { get; set; }
         public DateTime? UpdateDate { get; set; }
-        public Respondent Respondent { get; set; } = new Respondent(); 
+        public Respondent Respondent { get; set; } = new Respondent();
         public List<SiteDesignation> SiteDesignation { get; set; } = new List<SiteDesignation>();
     }
 

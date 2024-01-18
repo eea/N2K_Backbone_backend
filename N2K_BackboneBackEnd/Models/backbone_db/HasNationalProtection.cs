@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using N2K_BackboneBackEnd.Helpers;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 
@@ -17,7 +16,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         [Column(TypeName = "decimal(18, 2)")]
         public decimal? Percentage { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public HasNationalProtection() { }
 
@@ -25,7 +24,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             dbConnection = db;
         }
-
 
         public async static Task<int> SaveBulkRecord(string db, List<HasNationalProtection> listData)
         {
@@ -49,7 +47,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 return 0;
             }
         }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {

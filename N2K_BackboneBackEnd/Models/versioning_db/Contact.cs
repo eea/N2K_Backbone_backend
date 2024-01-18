@@ -1,8 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace N2K_BackboneBackEnd.Models.versioning_db
 {
@@ -42,6 +40,5 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
                 .ToTable("CONTACT")
                 .HasNoKey();
         }
-
     }
 }

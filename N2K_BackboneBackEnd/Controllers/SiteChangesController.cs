@@ -20,14 +20,12 @@ namespace N2K_BackboneBackEnd.Controllers
         private readonly IMapper _mapper;
         private IMemoryCache _cache;
 
-
         public SiteChangesController(ISiteChangesService siteChangesService, IMapper mapper, IMemoryCache cache)
         {
             _siteChangesService = siteChangesService;
             _mapper = mapper;
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
-
 
         [HttpGet("Get")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDbEdition>>>> Get()
@@ -51,6 +49,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
         [HttpGet("Get/page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDbEdition>>>> GetPaginated(int page, int limit)
         {
@@ -96,7 +95,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
 
         [HttpGet("Get/country={country:string}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDbEdition>>>> GetByCountryPaginated(string country, int page, int limit)
@@ -191,7 +189,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         [HttpGet("Get/country={country:string}&level={level:Level}&page={page:int}&limit={limit:int}")]
         //[HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDbEdition>>>> GetByLevelAndCountryPaginated(string country, Level level, int page, int limit)
@@ -216,7 +213,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         [HttpGet("Get/status={status:Status}/")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDbEdition>>>> GetByStatus(SiteChangeStatus? status)
         {
@@ -239,7 +235,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
 
         [HttpGet("Get/status={status:Status}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDbEdition>>>> GetByStatusPaginated(SiteChangeStatus status, int page, int limit)
@@ -310,7 +305,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         [HttpGet("Get/status={status}&level={level:Level}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDbEdition>>>> GetByStatusAndLevel(SiteChangeStatus status, Level level)
         {
@@ -333,7 +327,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
 
         [HttpGet("Get/status={status}&level={level:Level}&page={page:int}&limit={limit:int}")]
         public async Task<ActionResult<ServiceResponse<List<SiteChangeDbEdition>>>> GetByStatusAndLevelPaginated(SiteChangeStatus status, Level level, int page, int limit)
@@ -473,7 +466,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         [HttpGet("GetSiteChangesDetail/siteCode={pSiteCode}&version={pCountryVersion}")]
         /// <summary>
         /// Remove the version we use in development
@@ -501,7 +493,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         // POST api/<SiteChangesController>
         [Route("AcceptChanges/")]
         [HttpPost]
@@ -526,8 +517,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
-
 
         // POST api/<SiteChangesController>
         [Route("MoveToPending/")]
@@ -554,8 +543,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
-
         [Route("RejectChanges/")]
         [HttpPost]
         public async Task<ActionResult<List<ModifiedSiteCode>>> RejectChanges([FromBody] ModifiedSiteCode[] rejectedChanges)
@@ -578,7 +565,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = new List<ModifiedSiteCode>();
                 return Ok(response);
             }
-
         }
 
         [Route("MarkAsJustificationRequired/")]
@@ -604,7 +590,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
 
         [Route("ProvideJustification/")]
         [HttpPost]

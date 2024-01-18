@@ -1,7 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using N2K_BackboneBackEnd.Data;
-using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
@@ -26,8 +24,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? LocatorDesignator { get; set; }
         public int? ObjectID { get; set; }
 
-
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public Respondents() { }
 
@@ -35,7 +32,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             dbConnection = db;
         }
-
 
         public async static Task<int> SaveBulkRecord(string db, List<Respondents> listData)
         {
@@ -58,7 +54,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "Respondents - SaveBulkRecord", "", db);
                 return 0;
             }
-
         }
 
         public static void OnModelCreating(ModelBuilder builder)
@@ -66,8 +61,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             builder.Entity<Respondents>()
                 .ToTable("Respondents")
                 .HasKey("ID");
-
         }
-
     }
 }

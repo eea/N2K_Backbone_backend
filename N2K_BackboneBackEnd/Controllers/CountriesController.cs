@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.ServiceResponse;
 using AutoMapper;
 using N2K_BackboneBackEnd.Services;
@@ -17,7 +16,6 @@ namespace N2K_BackboneBackEnd.Controllers
     {
         private readonly ICountryService _countryService;
         private readonly IMapper _mapper;
-
 
         public CountriesController(ICountryService controllerSiteChanges, IMapper mapper)
         {
@@ -139,7 +137,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
 
         [HttpGet("GetSiteCount")]
         public async Task<ActionResult<ServiceResponse<List<CountriesSiteCountView>>>> GetSiteCount()

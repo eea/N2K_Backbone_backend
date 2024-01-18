@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using N2K_BackboneBackEnd.Models.backbone_db;
 using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
@@ -7,9 +6,10 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class EditionCountriesCount : IEntityModel
     {
         [Key]
-        public string Code { get; set; } = "";
-        public string Country { get; set; } = "";
+        public string Code { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
         public int SiteCount { get; set; }
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<EditionCountriesCount>();

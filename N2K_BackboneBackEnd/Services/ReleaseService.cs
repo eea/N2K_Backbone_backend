@@ -1,24 +1,13 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
-using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
-using System.Diagnostics.Metrics;
-using System.Linq;
-using System.Resources;
-using Microsoft.Build.Execution;
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml;
-using System.IO.Compression;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
 using System.Data;
-using DocumentFormat.OpenXml.ExtendedProperties;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text;
@@ -57,9 +46,9 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 //List<Releases> releaseHeaders = new List<Releases>();
-                List<UnionListHeader> releaseHeaders = new List<UnionListHeader>();
+                List<UnionListHeader> releaseHeaders = new();
 
-                SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
+                SqlParameter param1 = new("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
 
                 //releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeadersByBioRegion  @bioregion", param1).AsNoTracking().ToListAsync();
                 releaseHeaders = await _dataContext.Set<UnionListHeader>().FromSqlRaw($"exec dbo.spGetUnionListHeadersByBioRegion  @bioregion", param1).AsNoTracking().ToListAsync();
@@ -67,7 +56,7 @@ namespace N2K_BackboneBackEnd.Services
                 /*
                 if (bioRegionShortCode != null)
                 {
-                    SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
+                    SqlParameter param1 = new("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
 
                     //releaseHeaders = await _releaseContext.Set<Releases>().FromSqlRaw($"exec dbo.spGetReleaseHeadersByBioRegion  @bioregion", param1).AsNoTracking().ToListAsync();
                     releaseHeaders = await _dataContext.Set<UnionListHeader>().FromSqlRaw($"exec dbo.spGetUnionListHeadersByBioRegion  @bioregion", param1).AsNoTracking().ToListAsync();
@@ -97,7 +86,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<Releases> releaseHeaders = new List<Releases>();
+                List<Releases> releaseHeaders = new();
                 foreach (UnionListHeader unionListHeader in unionListHeaders)
                 {
                     Releases releaseHeader = await ConvertUnionListHeaderToReleases(unionListHeader);
@@ -117,17 +106,17 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 await Task.Delay(1);
-                Releases releaseHeader = new Releases();
-
-                releaseHeader.ID = unionListHeader.idULHeader;
-                releaseHeader.Title = unionListHeader.Name;
-                releaseHeader.Author = unionListHeader.CreatedBy;
-                releaseHeader.CreateDate = unionListHeader.Date;
-                releaseHeader.ModifyDate = unionListHeader.UpdatedDate;
-                releaseHeader.Final = unionListHeader.Final;
-                releaseHeader.Character = "";
-                releaseHeader.ModifyUser = unionListHeader.UpdatedBy;
-
+                Releases releaseHeader = new()
+                {
+                    ID = unionListHeader.idULHeader,
+                    Title = unionListHeader.Name,
+                    Author = unionListHeader.CreatedBy,
+                    CreateDate = unionListHeader.Date,
+                    ModifyDate = unionListHeader.UpdatedDate,
+                    Final = unionListHeader.Final,
+                    Character = "",
+                    ModifyUser = unionListHeader.UpdatedBy
+                };
                 return releaseHeader;
             }
             catch (Exception ex)
@@ -141,7 +130,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                SqlParameter param1 = new SqlParameter("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
+                SqlParameter param1 = new("@bioregion", string.IsNullOrEmpty(bioRegionShortCode) ? string.Empty : bioRegionShortCode);
 
                 List<ReleaseDetail> releaseDetails = await _dataContext.Set<ReleaseDetail>().FromSqlRaw($"exec dbo.spGetCurrentSitesReleaseDetailByBioRegion  @bioregion",
                                 param1).AsNoTracking().ToListAsync();
@@ -175,7 +164,7 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 string listName = string.Format("{0}_{1}_{2}_{3}", GlobalData.Username, ulBioRegSites, idSource, idTarget);
-                List<BioRegionSiteCode> resultCodes = new List<BioRegionSiteCode>();
+                List<BioRegionSiteCode> resultCodes = new();
                 if (cache.TryGetValue(listName, out List<BioRegionSiteCode> cachedList))
                 {
                     resultCodes = cachedList;
@@ -189,14 +178,14 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else
                 {
-                    SqlParameter param1 = new SqlParameter("@idReleaseSource", idSource);
-                    SqlParameter param2 = new SqlParameter("@idReleaseTarget", idTarget);
-                    SqlParameter param3 = new SqlParameter("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
+                    SqlParameter param1 = new("@idReleaseSource", idSource);
+                    SqlParameter param2 = new("@idReleaseTarget", idTarget);
+                    SqlParameter param3 = new("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
 
                     resultCodes = await _releaseContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInReleaseComparer  @idReleaseSource, @idReleaseTarget, @bioRegions",
                                     param1, param2, param3).ToListAsync();
 
-                    var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    MemoryCacheEntryOptions cacheEntryOptions = new MemoryCacheEntryOptions()
                             .SetSlidingExpiration(TimeSpan.FromSeconds(60))
                             .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
                             .SetPriority(CacheItemPriority.Normal)
@@ -216,20 +205,20 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                UnionListComparerSummaryViewModel res = new UnionListComparerSummaryViewModel();
+                UnionListComparerSummaryViewModel res = new();
                 List<BioRegionSiteCode> resultCodes = await GetBioregionSiteCodesInReleaseComparer(idSource, idTarget, bioRegions, cache);
                 res.BioRegSiteCodes = resultCodes.ToList();
 
                 //Get the number of site codes per bio region
                 List<BioRegionTypes> ulBioRegions = await GetUnionBioRegionTypes();
 
-                var codesGrouped = resultCodes.GroupBy(n => n.BioRegion)
+                List<UnionListComparerBioReg> codesGrouped = resultCodes.GroupBy(n => n.BioRegion)
                              .Select(n => new UnionListComparerBioReg
                              {
                                  BioRegion = n.Key,
                                  Count = n.Count()
                              }).ToList();
-                var _bioRegionSummary =
+                List<UnionListComparerBioReg> _bioRegionSummary =
                     (
                     from p in ulBioRegions
                     join co in codesGrouped on p.BioRegionShortCode equals co.BioRegion into PersonasColegio
@@ -250,13 +239,12 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-
         public async Task<List<UnionListComparerDetailedViewModel>> CompareReleases(long? idSource, long? idTarget, string? bioRegions, string? country, IMemoryCache cache, int page = 1, int pageLimit = 0)
         {
             try
             {
                 List<BioRegionSiteCode> ulSites = await GetBioregionSiteCodesInReleaseComparer(idSource, idTarget, bioRegions, cache);
-                var startRow = (page - 1) * pageLimit;
+                int startRow = (page - 1) * pageLimit;
                 if (pageLimit > 0)
                 {
                     ulSites = ulSites
@@ -266,8 +254,8 @@ namespace N2K_BackboneBackEnd.Services
                 }
 
                 //get the bioReg-SiteCodes of the source UL
-                SqlParameter param1 = new SqlParameter("@idRelease", idSource);
-                var _ulDetails = await _releaseContext.Set<ReleaseDetail>().FromSqlRaw($"exec dbo.spGetReleaseDetailsById  @idRelease", param1).ToListAsync();
+                SqlParameter param1 = new("@idRelease", idSource);
+                List<ReleaseDetail> _ulDetails = await _releaseContext.Set<ReleaseDetail>().FromSqlRaw($"exec dbo.spGetReleaseDetailsById  @idRelease", param1).ToListAsync();
                 List<ReleaseDetail> ulDetailsSource = (from src1 in ulSites
                                                        from trgt1 in _ulDetails.Where(trg1 => (src1.SiteCode == trg1.SCI_code) && (src1.BioRegion == trg1.BioRegion))
                                                        select trgt1
@@ -275,7 +263,7 @@ namespace N2K_BackboneBackEnd.Services
                 _ulDetails.Clear();
 
                 //get the bioReg-SiteCodes of the target UL
-                SqlParameter param2 = new SqlParameter("@idRelease", idTarget);
+                SqlParameter param2 = new("@idRelease", idTarget);
                 _ulDetails = await _releaseContext.Set<ReleaseDetail>().FromSqlRaw($"exec dbo.spGetReleaseDetailsById  @idRelease", param2).ToListAsync();
                 List<ReleaseDetail> ulDetailsTarget = (from src1 in ulSites
                                                        from trgt2 in _ulDetails.Where(trg2 => (src1.SiteCode == trg2.SCI_code) && (src1.BioRegion == trg2.BioRegion))
@@ -288,11 +276,11 @@ namespace N2K_BackboneBackEnd.Services
 
                 if (country != null)
                 {
-                    ulDetailsSource = ulDetailsSource.Where(uld => (uld.SCI_code.Substring(0, 2) == country)).ToList();
-                    ulDetailsTarget = ulDetailsTarget.Where(uld => (uld.SCI_code.Substring(0, 2) == country)).ToList();
+                    ulDetailsSource = ulDetailsSource.Where(uld => uld.SCI_code[..2] == country).ToList();
+                    ulDetailsTarget = ulDetailsTarget.Where(uld => uld.SCI_code[..2] == country).ToList();
                 }
 
-                List<UnionListComparerDetailedViewModel> result = new List<UnionListComparerDetailedViewModel>();
+                List<UnionListComparerDetailedViewModel> result = new();
                 //Changed
                 var changedSites = (from source1 in ulDetailsSource
                                     join target1 in ulDetailsTarget
@@ -305,53 +293,51 @@ namespace N2K_BackboneBackEnd.Services
 
                 foreach (var item in changedSites)
                 {
-                    UnionListComparerDetailedViewModel changedItem = new UnionListComparerDetailedViewModel();
-                    changedItem.BioRegion = item.source1.BioRegion;
-                    changedItem.Sitecode = item.source1.SCI_code;
-
-                    changedItem.SiteName = new UnionListValues<string>
+                    UnionListComparerDetailedViewModel changedItem = new()
                     {
-                        Source = item.source1.SCI_Name,
-                        Target = item.target1.SCI_Name
+                        BioRegion = item.source1.BioRegion,
+                        Sitecode = item.source1.SCI_code,
+
+                        SiteName = new UnionListValues<string>
+                        {
+                            Source = item.source1.SCI_Name,
+                            Target = item.target1.SCI_Name
+                        },
+
+                        Priority = new UnionListValues<bool>
+                        {
+                            Source = item.source1.Priority,
+                            Target = item.target1.Priority
+                        },
+
+                        Area = new UnionListValues<double>
+                        {
+                            Source = item.source1.Area,
+                            Target = item.target1.Area
+                        },
+
+                        Length = new UnionListValues<double>
+                        {
+                            Source = item.source1.Length,
+                            Target = item.target1.Length
+                        },
+
+                        Longitude = new UnionListValues<double>
+                        {
+                            Source = item.source1.Long,
+                            Target = item.target1.Long
+                        },
+
+                        Latitude = new UnionListValues<double>
+                        {
+                            Source = item.source1.Lat,
+                            Target = item.target1.Lat
+                        }
                     };
-
-
-                    changedItem.Priority = new UnionListValues<bool>
-                    {
-                        Source = item.source1.Priority,
-                        Target = item.target1.Priority
-                    };
-
-
-                    changedItem.Area = new UnionListValues<double>
-                    {
-                        Source = item.source1.Area,
-                        Target = item.target1.Area
-                    };
-
-                    changedItem.Length = new UnionListValues<double>
-                    {
-                        Source = item.source1.Length,
-                        Target = item.target1.Length
-                    };
-
-                    changedItem.Longitude = new UnionListValues<double>
-                    {
-                        Source = item.source1.Long,
-                        Target = item.target1.Long
-                    };
-
-                    changedItem.Latitude = new UnionListValues<double>
-                    {
-                        Source = item.source1.Lat,
-                        Target = item.target1.Lat
-                    };
-
 
                     //COMPARE THE VALUES FIELD BY FIELD
                     if ((string?)changedItem.SiteName.Source != (string?)changedItem.SiteName.Target)
                         changedItem.SiteName.Change = "SITENAME Changed";
-
 
                     if ((bool?)changedItem.Priority.Source != (bool?)changedItem.Priority.Target)
                     {
@@ -365,14 +351,12 @@ namespace N2K_BackboneBackEnd.Services
                         else if (!prioSource && prioTarget)
                         {
                             changedItem.Priority.Change = "PRIORITY_GAIN";
-
                         }
                         else
                         {
                             changedItem.Priority.Change = "PRIORITY_CHANGED";
                         }
                     }
-
 
                     if ((double?)changedItem.Area.Source != (double?)changedItem.Area.Target)
                     {
@@ -426,7 +410,6 @@ namespace N2K_BackboneBackEnd.Services
                     result.Add(changedItem);
                 }
 
-
                 //Deleted in target
                 var sourceOnlySites = (from source2 in ulDetailsSource
                                        join target2 in ulDetailsTarget on new { source2.SCI_code, source2.BioRegion } equals new { target2.SCI_code, target2.BioRegion } into t
@@ -435,46 +418,45 @@ namespace N2K_BackboneBackEnd.Services
                                        select source2).ToList();
                 foreach (var item in sourceOnlySites)
                 {
-                    UnionListComparerDetailedViewModel changedItem = new UnionListComparerDetailedViewModel();
-                    changedItem.BioRegion = item.BioRegion;
-                    changedItem.Sitecode = item.SCI_code;
-
-                    changedItem.SiteName = new UnionListValues<string>
+                    UnionListComparerDetailedViewModel changedItem = new()
                     {
-                        Source = item.SCI_Name,
-                        Target = null
+                        BioRegion = item.BioRegion,
+                        Sitecode = item.SCI_code,
+
+                        SiteName = new UnionListValues<string>
+                        {
+                            Source = item.SCI_Name,
+                            Target = null
+                        },
+
+                        Area = new UnionListValues<double>
+                        {
+                            Source = item.Area,
+                            Target = null
+                        },
+
+                        Length = new UnionListValues<double>
+                        {
+                            Source = item.Length,
+                            Target = null
+                        },
+
+                        Latitude = new UnionListValues<double>
+                        {
+                            Source = item.Lat,
+                            Target = null
+                        },
+
+                        Longitude = new UnionListValues<double>
+                        {
+                            Source = item.Long,
+                            Target = null
+                        },
+
+                        Changes = "DELETED"
                     };
-
-
-                    changedItem.Area = new UnionListValues<double>
-                    {
-                        Source = item.Area,
-                        Target = null
-                    };
-
-                    changedItem.Length = new UnionListValues<double>
-                    {
-                        Source = item.Length,
-                        Target = null
-                    };
-
-                    changedItem.Latitude = new UnionListValues<double>
-                    {
-                        Source = item.Lat,
-                        Target = null
-                    };
-
-
-                    changedItem.Longitude = new UnionListValues<double>
-                    {
-                        Source = item.Long,
-                        Target = null
-                    };
-
-                    changedItem.Changes = "DELETED";
                     result.Add(changedItem);
                 }
-
 
                 //Added in target            
                 var targetOnlySites = (from target3 in ulDetailsTarget
@@ -484,42 +466,42 @@ namespace N2K_BackboneBackEnd.Services
                                        select target3).ToList();
                 foreach (var item in targetOnlySites)
                 {
-                    UnionListComparerDetailedViewModel changedItem = new UnionListComparerDetailedViewModel();
-                    changedItem.BioRegion = item.BioRegion;
-                    changedItem.Sitecode = item.SCI_code;
-
-                    changedItem.SiteName = new UnionListValues<string>
+                    UnionListComparerDetailedViewModel changedItem = new()
                     {
-                        Target = item.SCI_Name,
-                        Source = null
+                        BioRegion = item.BioRegion,
+                        Sitecode = item.SCI_code,
+
+                        SiteName = new UnionListValues<string>
+                        {
+                            Target = item.SCI_Name,
+                            Source = null
+                        },
+
+                        Area = new UnionListValues<double>
+                        {
+                            Target = item.Area,
+                            Source = null
+                        },
+
+                        Length = new UnionListValues<double>
+                        {
+                            Target = item.Length,
+                            Source = null
+                        },
+
+                        Latitude = new UnionListValues<double>
+                        {
+                            Target = item.Lat,
+                            Source = null
+                        },
+
+                        Longitude = new UnionListValues<double>
+                        {
+                            Target = item.Long,
+                            Source = null
+                        },
+                        Changes = "ADDED"
                     };
-
-
-                    changedItem.Area = new UnionListValues<double>
-                    {
-                        Target = item.Area,
-                        Source = null
-                    };
-
-                    changedItem.Length = new UnionListValues<double>
-                    {
-                        Target = item.Length,
-                        Source = null
-                    };
-
-                    changedItem.Latitude = new UnionListValues<double>
-                    {
-                        Target = item.Lat,
-                        Source = null
-                    };
-
-
-                    changedItem.Longitude = new UnionListValues<double>
-                    {
-                        Target = item.Long,
-                        Source = null
-                    };
-                    changedItem.Changes = "ADDED";
                     result.Add(changedItem);
                 }
                 return result.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
@@ -535,16 +517,16 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                SqlParameter param1 = new SqlParameter("@Title", title);
-                SqlParameter param2 = new SqlParameter("@Author", GlobalData.Username);
-                SqlParameter param3 = new SqlParameter("@CreateDate", DateTime.Now);
-                SqlParameter param4 = new SqlParameter("@ModifyDate", DateTime.Now);
-                SqlParameter param5 = new SqlParameter("@Final", Final);
-                SqlParameter param6 = new SqlParameter("@Character", string.IsNullOrEmpty(character) ? string.Empty : character);
+                SqlParameter param1 = new("@Title", title);
+                SqlParameter param2 = new("@Author", GlobalData.Username);
+                SqlParameter param3 = new("@CreateDate", DateTime.Now);
+                SqlParameter param4 = new("@ModifyDate", DateTime.Now);
+                SqlParameter param5 = new("@Final", Final);
+                SqlParameter param6 = new("@Character", string.IsNullOrEmpty(character) ? string.Empty : character);
                 List<Releases> releaseID = await _releaseContext.Set<Releases>().FromSqlRaw("exec dbo.createNewRelease  @Title, @Author, @CreateDate, @ModifyDate, @Final, @Character", param1, param2, param3, param4, param5, param6).AsNoTracking().ToListAsync();
 
                 //call the FME service that creates the SHP, MDB and GPKG
-                
+
                 if (Final.HasValue && Final.Value)
                 {
                     if (releaseID.Count > 0)
@@ -553,7 +535,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         //call the FME in Async mode and do not wait for it.
                         //FME will send an email to the user when it´s finished
-                        HttpClient client = new HttpClient();
+                        HttpClient client = new();
                         try
                         {
                             await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Launch FME release creation", "CreateRelease", "", _dataContext.Database.GetConnectionString());
@@ -575,10 +557,10 @@ namespace N2K_BackboneBackEnd.Services
                             client.DefaultRequestHeaders.Accept
                                 .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));//ACCEPT header
 
-                            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
-                            request.Content = new StringContent(body,
-                                                                Encoding.UTF8,
-                                                                "application/json");//CONTENT-TYPE header
+                            HttpRequestMessage request = new(HttpMethod.Post, url)
+                            {
+                                Content = new StringContent(body, Encoding.UTF8, "application/json")//CONTENT-TYPE header
+                            };
 
                             //call the FME script in async 
                             var res = await client.SendAsync(request);
@@ -599,14 +581,12 @@ namespace N2K_BackboneBackEnd.Services
                     }
                 }
 
-
                 //Create UnionList entry
-                SqlParameter param8 = new SqlParameter("@name", title);
-                SqlParameter param9 = new SqlParameter("@creator", GlobalData.Username);
-                SqlParameter param10 = new SqlParameter("@final", Final);
-                SqlParameter param11 = new SqlParameter("@release", releaseID.First().ID);
+                SqlParameter param8 = new("@name", title);
+                SqlParameter param9 = new("@creator", GlobalData.Username);
+                SqlParameter param10 = new("@final", Final);
+                SqlParameter param11 = new("@release", releaseID.First().ID);
                 await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewReleaseUnionList  @name, @creator, @final, @release ", param8, param9, param10, param11);
-
 
                 return await GetReleaseHeadersByBioRegion(null);
             }
@@ -691,6 +671,5 @@ namespace N2K_BackboneBackEnd.Services
                 throw ex;
             }
         }
-
     }
 }

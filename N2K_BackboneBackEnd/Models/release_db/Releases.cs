@@ -2,11 +2,9 @@
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-
-
     public class ReleasesInputParam : IEntityModel, IEntityModelReleasesDB
     {
-        public string Name { get; set; } = "";
+        public string Name { get; set; } = string.Empty;
         public Boolean? Final { get; set; }
         public string? Character { get; set; }
 

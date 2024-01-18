@@ -4,10 +4,6 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models.BackboneDB;
-using System.Drawing;
-using DocumentFormat.OpenXml.Vml;
-using System.Collections.Generic;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -53,7 +49,7 @@ namespace N2K_BackboneBackEnd.Services
                 List<HasNationalProtection> hasNationalProtection = await _dataContext.Set<HasNationalProtection>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<DetailedProtectionStatus> detailedProtectionStatus = await _dataContext.Set<DetailedProtectionStatus>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
 
-                SDF result = new SDF();
+                SDF result = new();
                 #region SiteInfo
                 if (site != null)
                 {
@@ -79,14 +75,16 @@ namespace N2K_BackboneBackEnd.Services
                     result.SiteIdentification.SiteName = site.Name;
                     result.SiteIdentification.FirstCompletionDate = site.CompilationDate;
                     result.SiteIdentification.UpdateDate = site.DateUpdate;
-                    SiteDesignation siteDesignation = new SiteDesignation(); //UNSURE HOW COULD THERE BE MORE THAN ONE
-                    siteDesignation.ClassifiedSPA = site.DateSpa;
-                    siteDesignation.ReferenceSPA = site.SpaLegalReference;
-                    siteDesignation.ProposedSCI = site.DatePropSCI;
-                    siteDesignation.ConfirmedSCI = site.DateConfSCI;
-                    siteDesignation.DesignatedSAC = site.DateSac;
-                    siteDesignation.ReferenceSAC = site.SacLegalReference;
-                    siteDesignation.Explanations = site.Explanations;
+                    SiteDesignation siteDesignation = new()
+                    {
+                        ClassifiedSPA = site.DateSpa,
+                        ReferenceSPA = site.SpaLegalReference,
+                        ProposedSCI = site.DatePropSCI,
+                        ConfirmedSCI = site.DateConfSCI,
+                        DesignatedSAC = site.DateSac,
+                        ReferenceSAC = site.SacLegalReference,
+                        Explanations = site.Explanations
+                    }; //UNSURE HOW COULD THERE BE MORE THAN ONE
                     result.SiteIdentification.SiteDesignation.Add(siteDesignation);
                 }
                 if (respondents != null && respondents.Count > 0) //UNSURE
@@ -110,9 +108,11 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     nutsBySite.ForEach(nbs =>
                     {
-                        Models.ViewModel.Region temp = new Models.ViewModel.Region();
-                        temp.NUTSLevel2Code = nbs.NutId;
-                        temp.RegionName = nuts.Where(t => t.Code == nbs.NutId).FirstOrDefault().Region;
+                        Models.ViewModel.Region temp = new()
+                        {
+                            NUTSLevel2Code = nbs.NutId,
+                            RegionName = nuts.Where(t => t.Code == nbs.NutId).FirstOrDefault().Region
+                        };
                         result.SiteLocation.Region.Add(temp);
                     });
                 }
@@ -120,9 +120,11 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     bioRegions.ForEach(br =>
                     {
-                        BiogeographicalRegions temp = new BiogeographicalRegions();
-                        temp.Name = bioRegionTypes.Where(t => t.Code == br.BGRID).FirstOrDefault().RefBioGeoName;
-                        temp.Value = br.Percentage;
+                        BiogeographicalRegions temp = new()
+                        {
+                            Name = bioRegionTypes.Where(t => t.Code == br.BGRID).FirstOrDefault().RefBioGeoName,
+                            Value = br.Percentage
+                        };
                         result.SiteLocation.BiogeographicalRegions.Add(temp);
                     });
                 }
@@ -133,20 +135,22 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     habitats.ForEach(h =>
                     {
-                        HabitatSDF temp = new HabitatSDF();
-                        temp.HabitatName = habitatTypes.Where(t => t.Code == h.HabitatCode).FirstOrDefault().Name;
-                        temp.Code = h.HabitatCode;
+                        HabitatSDF temp = new()
+                        {
+                            HabitatName = habitatTypes.Where(t => t.Code == h.HabitatCode).FirstOrDefault().Name,
+                            Code = h.HabitatCode,
+                            Cover = h.CoverHA,
+                            Cave = h.Caves,
+                            DataQuality = dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().Name,
+                            Representativity = h.Representativity,
+                            RelativeSurface = h.RelativeSurface,
+                            Conservation = h.ConsStatus,
+                            Global = h.GlobalAssesments
+                        };
                         if (h.PriorityForm != null)
                             temp.PF = (h.PriorityForm == true) ? booleanChecked : booleanUnchecked;
                         if (h.NonPresenciInSite != null)
                             temp.NP = (h.NonPresenciInSite == 1) ? booleanChecked : booleanUnchecked;
-                        temp.Cover = h.CoverHA;
-                        temp.Cave = h.Caves;
-                        temp.DataQuality = dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().Name;
-                        temp.Representativity = h.Representativity;
-                        temp.RelativeSurface = h.RelativeSurface;
-                        temp.Conservation = h.ConsStatus;
-                        temp.Global = h.GlobalAssesments;
                         result.EcologicalInformation.HabitatTypes.Add(temp);
                     });
                 }
@@ -154,24 +158,26 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     species.ForEach(h =>
                     {
-                        SpeciesSDF temp = new SpeciesSDF();
-                        temp.SpeciesName = speciesTypes.Where(t => t.Code == h.SpecieCode).FirstOrDefault().Name;
-                        temp.Code = h.SpecieCode;
-                        temp.Group = h.SpecieType;
+                        SpeciesSDF temp = new()
+                        {
+                            SpeciesName = speciesTypes.Where(t => t.Code == h.SpecieCode).FirstOrDefault().Name,
+                            Code = h.SpecieCode,
+                            Group = h.SpecieType,
+                            Type = h.PopulationType,
+                            Min = h.PopulationMin,
+                            Max = h.PopulationMax,
+                            Unit = h.CountingUnit,
+                            Category = h.AbundaceCategory,
+                            DataQuality = h.DataQuality,
+                            Population = h.Population,
+                            Conservation = h.Conservation,
+                            Isolation = h.Insolation,
+                            Global = h.Global
+                        };
                         if (h.SensitiveInfo != null)
                             temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanFalse;
                         if (h.NonPersistence != null)
                             temp.NP = (h.NonPersistence == true) ? booleanChecked : booleanUnchecked;
-                        temp.Type = h.PopulationType;
-                        temp.Min = h.PopulationMin;
-                        temp.Max = h.PopulationMax;
-                        temp.Unit = h.CountingUnit;
-                        temp.Category = h.AbundaceCategory;
-                        temp.DataQuality = h.DataQuality;
-                        temp.Population = h.Population;
-                        temp.Conservation = h.Conservation;
-                        temp.Isolation = h.Insolation;
-                        temp.Global = h.Global;
                         result.EcologicalInformation.Species.Add(temp);
                     });
                 }
@@ -179,18 +185,20 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     speciesOther.ForEach(h =>
                     {
-                        SpeciesSDF temp = new SpeciesSDF();
-                        temp.SpeciesName = h.SpecieCode;
-                        temp.Code = "-";
-                        temp.Group = h.SpecieType;
+                        SpeciesSDF temp = new()
+                        {
+                            SpeciesName = h.SpecieCode,
+                            Code = "-",
+                            Group = h.SpecieType,
+                            Min = h.PopulationMin,
+                            Max = h.PopulationMax,
+                            Unit = h.CountingUnit,
+                            Category = h.AbundaceCategory
+                        };
                         if (h.SensitiveInfo != null)
                             temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanFalse;
                         if (h.NonPersistence != null)
                             temp.NP = (h.NonPersistence == true) ? booleanChecked : booleanUnchecked;
-                        temp.Min = h.PopulationMin;
-                        temp.Max = h.PopulationMax;
-                        temp.Unit = h.CountingUnit;
-                        temp.Category = h.AbundaceCategory;
                         if (h.Motivation != null)
                         {
                             temp.AnnexIV = h.Motivation.Contains("IV") ? booleanChecked : booleanUnchecked;
@@ -211,9 +219,11 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     describeSites.ForEach(h =>
                     {
-                        CodeCover temp = new CodeCover();
-                        temp.Code = h.HabitatCode;
-                        temp.Cover = h.Percentage;
+                        CodeCover temp = new()
+                        {
+                            Code = h.HabitatCode,
+                            Cover = h.Percentage
+                        };
                         result.SiteDescription.GeneralCharacter.Add(temp);
                     });
                 }
@@ -221,11 +231,13 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     isImpactedBy.ForEach(h =>
                     {
-                        Threats temp = new Threats();
-                        temp.Rank = h.Intensity;
-                        temp.Impacts = h.ActivityCode;
-                        temp.Pollution = h.PollutionCode;
-                        temp.Origin = h.InOut;
+                        Threats temp = new()
+                        {
+                            Rank = h.Intensity,
+                            Impacts = h.ActivityCode,
+                            Pollution = h.PollutionCode,
+                            Origin = h.InOut
+                        };
                         if (h.ImpactType == "N")
                         {
                             result.SiteDescription.NegativeThreats.Add(temp);
@@ -240,9 +252,11 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     siteOwnerType.ForEach(h =>
                     {
-                        N2K_BackboneBackEnd.Models.ViewModel.Ownership temp = new N2K_BackboneBackEnd.Models.ViewModel.Ownership();
-                        temp.Type = h.Type;
-                        temp.Percent = h.Percent;
+                        N2K_BackboneBackEnd.Models.ViewModel.Ownership temp = new()
+                        {
+                            Type = h.Type,
+                            Percent = h.Percent
+                        };
                         result.SiteDescription.Ownership.Add(temp);
                     });
                 }
@@ -265,9 +279,11 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     hasNationalProtection.ForEach(h =>
                     {
-                        CodeCover temp = new CodeCover();
-                        temp.Code = h.DesignatedCode;
-                        temp.Cover = h.Percentage;
+                        CodeCover temp = new()
+                        {
+                            Code = h.DesignatedCode,
+                            Cover = h.Percentage
+                        };
                         result.SiteProtectionStatus.DesignationTypes.Add(temp);
                     });
                 }
@@ -275,12 +291,14 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     detailedProtectionStatus.ForEach(h =>
                     {
-                        RelationSites temp = new RelationSites();
-                        temp.DesignationLevel = (h.DesignationCode != null && h.DesignationCode != "") ? "National or regional" : "International";
-                        temp.TypeCode = h.DesignationCode;
-                        temp.SiteName = h.Name;
-                        temp.Type = h.OverlapCode;
-                        temp.Percent = h.OverlapPercentage;
+                        RelationSites temp = new()
+                        {
+                            DesignationLevel = (h.DesignationCode != null && h.DesignationCode != "") ? "National or regional" : "International",
+                            TypeCode = h.DesignationCode,
+                            SiteName = h.Name,
+                            Type = h.OverlapCode,
+                            Percent = h.OverlapPercentage
+                        };
                         result.SiteProtectionStatus.RelationSites.Add(temp);
                     });
                 }
@@ -295,10 +313,12 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     respondents.ForEach(h =>
                     {
-                        BodyResponsible temp = new BodyResponsible();
-                        temp.Organisation = h.name;
-                        temp.Address = h.addressArea;
-                        temp.Email = h.Email;
+                        BodyResponsible temp = new()
+                        {
+                            Organisation = h.name,
+                            Address = h.addressArea,
+                            Email = h.Email
+                        };
                         result.SiteManagement.BodyResponsible.Add(temp);
                     });
                 }
@@ -306,9 +326,11 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     siteLargeDescriptions.ForEach(h =>
                     {
-                        ManagementPlan temp = new ManagementPlan();
-                        temp.Name = h.ManagPlan;
-                        temp.Link = h.ManagPlanUrl;
+                        ManagementPlan temp = new()
+                        {
+                            Name = h.ManagPlan,
+                            Link = h.ManagPlanUrl
+                        };
                         result.SiteManagement.ManagementPlan.Add(temp);
                     });
                     result.SiteManagement.ConservationMeasures = siteLargeDescriptions.FirstOrDefault().ManagConservMeasures;
@@ -328,6 +350,5 @@ namespace N2K_BackboneBackEnd.Services
                 throw ex;
             }
         }
-
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using N2K_BackboneBackEnd.Models.backbone_db;
 using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
@@ -7,7 +6,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class CountriesChangesView : IEntityModel
     {
         [Key]
-        public string Code { get; set; } = "";
+        public string Code { get; set; } = string.Empty;
         public string? Country { get; set; }
         public int NumInfo { get; set; }
         public int NumWarning { get; set; }
@@ -17,6 +16,5 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         {
             builder.Entity<CountriesChangesView>();
         }
-
     }
 }

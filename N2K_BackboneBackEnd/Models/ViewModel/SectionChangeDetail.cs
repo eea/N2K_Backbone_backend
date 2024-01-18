@@ -1,14 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using N2K_BackboneBackEnd.Enumerations;
-using N2K_BackboneBackEnd.Models;
-using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models.versioning_db;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
-
     [Keyless]
     public class SectionChangeDetail : IEntityModel
     {
@@ -18,7 +12,6 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public List<CategoryChangeDetail> AddedCodes { get; set; } = new List<CategoryChangeDetail>();
         [NotMapped]
         public List<CategoryChangeDetail> DeletedCodes { get; set; } = new List<CategoryChangeDetail>();
-
 
         public SectionChangeDetail()
         {
@@ -31,6 +24,5 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         {
             builder.Entity<SectionChangeDetail>();
         }
-
     }
 }

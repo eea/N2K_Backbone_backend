@@ -1,12 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
-using N2K_BackboneBackEnd.ServiceResponse;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -14,13 +12,14 @@ namespace N2K_BackboneBackEnd.Services
     {
         private class OrderedChanges
         {
-            public string Code { get; set; } = "";
-            public string Country { get; set; } = "";
+            public string Code { get; set; } = string.Empty;
+            public string Country { get; set; } = string.Empty;
 
         }
+
         private class CountryVersion
         {
-            public string Country { get; set; } = "";
+            public string Country { get; set; } = string.Empty;
             public int Version { get; set; }
 
         }
@@ -65,7 +64,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<Countries> result = new List<Countries>();
+                List<Countries> result = new();
 
                 return await _dataContext.Set<Countries>()
                     .AsNoTracking()
@@ -88,8 +87,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                var param2 = new SqlParameter("@status", status.HasValue ? status.ToString() : string.Empty);
-                var param3 = new SqlParameter("@level", level.HasValue ? level.ToString() : string.Empty);
+                SqlParameter param2 = new("@status", status.HasValue ? status.ToString() : string.Empty);
+                SqlParameter param3 = new("@level", level.HasValue ? level.ToString() : string.Empty);
 
                 List<CountriesWithDataView> countries = await _dataContext
                     .Set<CountriesWithDataView>()
@@ -110,8 +109,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                var param1 = new SqlParameter("@status", "Pending");
-                var countries = await _dataContext
+                SqlParameter param1 = new("@status", "Pending");
+                List<CountriesChangesView> countries = await _dataContext
                     .Set<CountriesChangesView>()
                     .FromSqlRaw($"exec dbo.spGetCountriesCountLevelByStatus @status", param1)
                     .AsNoTracking()
@@ -129,7 +128,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                var countries = await _dataContext
+                List<CountriesChangesView> countries = await _dataContext
                 .Set<CountriesChangesView>()
                 .FromSqlRaw($"exec dbo.spGetCountriesWithOnlyConsolidatedSumbmisions")
                 .AsNoTracking()
@@ -147,7 +146,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                var countries = await _dataContext
+                List<ClosedCountriesView> countries = await _dataContext
                 .Set<ClosedCountriesView>()
                 .FromSqlRaw($"exec dbo.spGetCountriesWithClosedOrDiscardedSubmissions")
                 .AsNoTracking()
@@ -165,8 +164,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                var param1 = new SqlParameter("@status", status.HasValue ? status.ToString() : string.Empty);
-                var countries = await _dataContext
+                SqlParameter param1 = new("@status", status.HasValue ? status.ToString() : string.Empty);
+                List<SitesWithChangesView> countries = await _dataContext
                     .Set<SitesWithChangesView>()
                     .FromSqlRaw($"exec dbo.spGetSiteCountLevelByStatus @status", param1)
                     .AsNoTracking()
@@ -184,8 +183,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                var param1 = new SqlParameter("@country", DBNull.Value);
-                var countries = await _dataContext
+                SqlParameter param1 = new("@country", DBNull.Value);
+                List<CountriesSiteCountView> countries = await _dataContext
                     .Set<CountriesSiteCountView>()
                     .FromSqlRaw($"exec dbo.spGetSiteStatusCountByCountry @country", param1)
                     .AsNoTracking()
@@ -223,6 +222,5 @@ namespace N2K_BackboneBackEnd.Services
                 throw ex;
             }
         }
-
     }
 }

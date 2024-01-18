@@ -1,14 +1,11 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.versioning_db;
-using System.Collections.Generic;
-using System.Xml.Linq;
 
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 {
@@ -83,7 +80,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         public async Task<int> HarvestHabitatsByCountry(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, IList<DataQualityTypes> dataQualityTypes, List<Sites> sites)
         {
-            List<Habitats> items = new List<Habitats>();
+            List<Habitats> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -91,8 +88,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 versioningConn = new SqlConnection(versioningDB);
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 String queryString = @"select COUNTRYCODE as CountryCode,
                                         VERSIONID as Version,
@@ -115,7 +112,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                        from CONTAINSHABITAT
                                        where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
 
-
                 //Console.WriteLine(String.Format("Start habitats Query -> {0}", (DateTime.Now - start).TotalSeconds));
                 versioningConn.Open();
 
@@ -127,8 +123,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //Console.WriteLine(String.Format("End Query -> {0}", (DateTime.Now - start).TotalSeconds));
                 while (reader.Read())
                 {
-                    Habitats item = new Habitats();
-                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]);
+                    Habitats item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
@@ -181,7 +179,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 //Console.WriteLine(String.Format("End save to list habitats -> {0}", (DateTime.Now - start).TotalSeconds));
 
                 return 1;
-
             }
             catch (Exception ex)
             {
@@ -198,22 +195,21 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (command != null) command.Dispose();
                     if (reader != null) await reader.DisposeAsync();
                 }
-
             }
         }
 
         public async Task<int> HarvestHabitatsBySite(NaturaSite pVSite, int pVersion, string backboneDb, string versioningDB, IList<DataQualityTypes> dataQualityTypes, IDictionary<Type, object> _siteItems)
         {
-            List<Habitats> items = new List<Habitats>();
+            List<Habitats> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
             try
             {
                 versioningConn = new SqlConnection(versioningDB);
-                SqlParameter param1 = new SqlParameter("@SITECODE", pVSite.SITECODE);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
-                SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
+                SqlParameter param1 = new("@SITECODE", pVSite.SITECODE);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
+                SqlParameter param3 = new("@NEWVERSION", pVersion);
 
                 String queryString = @"select COUNTRYCODE as CountryCode,VERSIONID as Version,COUNTRYVERSIONID as CountryVersionId ,
                                        SITECODE as SiteCode,HABITATCODE as HabitatCode,PERCENTAGECOVER as PercentageCover,
@@ -232,11 +228,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 while (reader.Read())
                 {
-                    Habitats item = new Habitats();
-                    item.SiteCode = reader["SiteCode"].ToString();
-                    item.Version = pVersion;
-                    item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]);
-                    item.CoverHA = null;
+                    Habitats item = new()
+                    {
+                        SiteCode = reader["SiteCode"].ToString(),
+                        Version = pVersion,
+                        HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]),
+                        CoverHA = null
+                    };
                     if (reader["Cover_HA"] != null)
                         if (reader["Cover_HA"].ToString() != "")
                             item.CoverHA = Convert.ToDecimal(TypeConverters.CheckNull<double>(reader["Cover_HA"]));
@@ -270,8 +268,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 _listed.AddRange(items);
                 _siteItems[typeof(List<Habitats>)] = _listed;
                 return 1;
-
-
             }
             catch (Exception ex)
             {
@@ -287,14 +283,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (command != null) command.Dispose();
                     if (reader != null) await reader.DisposeAsync();
                 }
-
             }
-
         }
 
         public async Task<int> HarvestDescribeSitesByCountry(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
         {
-            List<DescribeSites> items = new List<DescribeSites>();
+            List<DescribeSites> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -304,8 +298,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             try
             {
                 versioningConn = new SqlConnection(versioningDB);
-                SqlParameter param1 = new SqlParameter("@COUNTRYCODE", countryCode);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
                 String queryString = @"select DISTINCT SITECODE as SiteCode,
                                        HABITATCODE as HabitatCode,
@@ -326,8 +320,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                 while (reader.Read())
                 {
-                    DescribeSites item = new DescribeSites();
-                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]); ;
+                    DescribeSites item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
                     if (sites.Any(s => s.SiteCode == item.SiteCode))
                     {
                         item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
@@ -376,7 +372,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
         public async Task<int> HarvestDescribeSitesBySite(NaturaSite pVSite, int pVersion, string backboneDb, string versioningDB, IDictionary<Type, object> _siteItems)
         {
-            List<DescribeSites> items = new List<DescribeSites>();
+            List<DescribeSites> items = new();
             SqlConnection versioningConn = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -384,14 +380,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             {
                 versioningConn = new SqlConnection(versioningDB);
 
-                SqlParameter param1 = new SqlParameter("@SITECODE", pVSite.SITECODE);
-                SqlParameter param2 = new SqlParameter("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
-                SqlParameter param3 = new SqlParameter("@NEWVERSION", pVersion);
+                SqlParameter param1 = new("@SITECODE", pVSite.SITECODE);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
+                SqlParameter param3 = new("@NEWVERSION", pVersion);
 
                 String queryString = @"select COUNTRYCODE as CountryCode, VERSIONID as  Version, COUNTRYVERSIONID as CountryVersionID, SITECODE as SiteCode, HABITATCODE as HabitatCode, PERCENTAGECOVER as PercentageCover, RID 
                             from DESCRIBESSITES 
                             where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
-
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
@@ -402,11 +397,13 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
-                    DescribeSites item = new DescribeSites();
-                    item.SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]); ;
-                    item.Version = pVersion;
-                    item.HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]);
-                    item.Percentage = null;
+                    DescribeSites item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"]),
+                        Version = pVersion,
+                        HabitatCode = TypeConverters.CheckNull<string>(reader["HabitatCode"]),
+                        Percentage = null
+                    };
                     if (reader["PercentageCover"] != null)
                         if (reader["PercentageCover"].ToString() != "")
                             item.Percentage = TypeConverters.CheckNull<decimal>(reader["PercentageCover"]);
@@ -471,152 +468,166 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             if (((storedHabitat.RelSurface.ToUpper() == "A" || storedHabitat.RelSurface.ToUpper() == "B") && harvestingHabitat.RelSurface.ToUpper() == "C")
                                 || (storedHabitat.RelSurface.ToUpper() == "A" && harvestingHabitat.RelSurface.ToUpper() == "B"))
                             {
-                                SiteChangeDb siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = harvestingSite.SiteCode;
-                                siteChange.Version = harvestingSite.VersionId;
-                                siteChange.ChangeCategory = "Habitats";
-                                siteChange.ChangeType = "Relative surface Decrease";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Warning;
-                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                siteChange.Tags = string.Empty;
-                                siteChange.NewValue = harvestingHabitat.RelSurface;
-                                siteChange.OldValue = storedHabitat.RelSurface;
-                                siteChange.Code = harvestingHabitat.HabitatCode;
-                                siteChange.Section = "Habitats";
-                                siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                siteChange.FieldName = "RelSurface";
-                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                siteChange.N2KVersioningVersion = envelope.VersionId;
+                                SiteChangeDb siteChange = new()
+                                {
+                                    SiteCode = harvestingSite.SiteCode,
+                                    Version = harvestingSite.VersionId,
+                                    ChangeCategory = "Habitats",
+                                    ChangeType = "Relative surface Decrease",
+                                    Country = envelope.CountryCode,
+                                    Level = Enumerations.Level.Warning,
+                                    Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                    Tags = string.Empty,
+                                    NewValue = harvestingHabitat.RelSurface,
+                                    OldValue = storedHabitat.RelSurface,
+                                    Code = harvestingHabitat.HabitatCode,
+                                    Section = "Habitats",
+                                    VersionReferenceId = storedHabitat.VersionId,
+                                    FieldName = "RelSurface",
+                                    ReferenceSiteCode = storedSite.SiteCode,
+                                    N2KVersioningVersion = envelope.VersionId
+                                };
                                 changes.Add(siteChange);
                             }
                             else if (((storedHabitat.RelSurface.ToUpper() == "B" || storedHabitat.RelSurface.ToUpper() == "C") && harvestingHabitat.RelSurface.ToUpper() == "A")
                                 || (storedHabitat.RelSurface.ToUpper() == "C" && harvestingHabitat.RelSurface.ToUpper() == "B"))
                             {
-                                SiteChangeDb siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = harvestingSite.SiteCode;
-                                siteChange.Version = harvestingSite.VersionId;
-                                siteChange.ChangeCategory = "Habitats";
-                                siteChange.ChangeType = "Relative surface Increase";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                siteChange.Tags = string.Empty;
-                                siteChange.NewValue = harvestingHabitat.RelSurface;
-                                siteChange.OldValue = storedHabitat.RelSurface;
-                                siteChange.Code = harvestingHabitat.HabitatCode;
-                                siteChange.Section = "Habitats";
-                                siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                siteChange.FieldName = "RelSurface";
-                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                siteChange.N2KVersioningVersion = envelope.VersionId;
+                                SiteChangeDb siteChange = new()
+                                {
+                                    SiteCode = harvestingSite.SiteCode,
+                                    Version = harvestingSite.VersionId,
+                                    ChangeCategory = "Habitats",
+                                    ChangeType = "Relative surface Increase",
+                                    Country = envelope.CountryCode,
+                                    Level = Enumerations.Level.Info,
+                                    Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                    Tags = string.Empty,
+                                    NewValue = harvestingHabitat.RelSurface,
+                                    OldValue = storedHabitat.RelSurface,
+                                    Code = harvestingHabitat.HabitatCode,
+                                    Section = "Habitats",
+                                    VersionReferenceId = storedHabitat.VersionId,
+                                    FieldName = "RelSurface",
+                                    ReferenceSiteCode = storedSite.SiteCode,
+                                    N2KVersioningVersion = envelope.VersionId
+                                };
                                 changes.Add(siteChange);
                             }
                             else if (storedHabitat.RelSurface.ToUpper() != harvestingHabitat.RelSurface.ToUpper())
                             {
-                                SiteChangeDb siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = harvestingSite.SiteCode;
-                                siteChange.Version = harvestingSite.VersionId;
-                                siteChange.ChangeCategory = "Habitats";
-                                siteChange.ChangeType = "Relative surface Change";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                siteChange.Tags = string.Empty;
-                                siteChange.NewValue = harvestingHabitat.RelSurface;
-                                siteChange.OldValue = storedHabitat.RelSurface;
-                                siteChange.Code = harvestingHabitat.HabitatCode;
-                                siteChange.Section = "Habitats";
-                                siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                siteChange.FieldName = "RelSurface";
-                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                siteChange.N2KVersioningVersion = envelope.VersionId;
+                                SiteChangeDb siteChange = new()
+                                {
+                                    SiteCode = harvestingSite.SiteCode,
+                                    Version = harvestingSite.VersionId,
+                                    ChangeCategory = "Habitats",
+                                    ChangeType = "Relative surface Change",
+                                    Country = envelope.CountryCode,
+                                    Level = Enumerations.Level.Info,
+                                    Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                    Tags = string.Empty,
+                                    NewValue = harvestingHabitat.RelSurface,
+                                    OldValue = storedHabitat.RelSurface,
+                                    Code = harvestingHabitat.HabitatCode,
+                                    Section = "Habitats",
+                                    VersionReferenceId = storedHabitat.VersionId,
+                                    FieldName = "RelSurface",
+                                    ReferenceSiteCode = storedSite.SiteCode,
+                                    N2KVersioningVersion = envelope.VersionId
+                                };
                                 changes.Add(siteChange);
                             }
                             if (storedHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.Representativity.ToUpper() == "D")
                             {
-                                SiteChangeDb siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = harvestingSite.SiteCode;
-                                siteChange.Version = harvestingSite.VersionId;
-                                siteChange.ChangeCategory = "Habitats";
-                                siteChange.ChangeType = "Representativity Decrease";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Warning;
-                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                siteChange.Tags = string.Empty;
-                                siteChange.NewValue = harvestingHabitat.Representativity;
-                                siteChange.OldValue = storedHabitat.Representativity;
-                                siteChange.Code = harvestingHabitat.HabitatCode;
-                                siteChange.Section = "Habitats";
-                                siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                siteChange.FieldName = "Representativity";
-                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                siteChange.N2KVersioningVersion = envelope.VersionId;
+                                SiteChangeDb siteChange = new()
+                                {
+                                    SiteCode = harvestingSite.SiteCode,
+                                    Version = harvestingSite.VersionId,
+                                    ChangeCategory = "Habitats",
+                                    ChangeType = "Representativity Decrease",
+                                    Country = envelope.CountryCode,
+                                    Level = Enumerations.Level.Warning,
+                                    Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                    Tags = string.Empty,
+                                    NewValue = harvestingHabitat.Representativity,
+                                    OldValue = storedHabitat.Representativity,
+                                    Code = harvestingHabitat.HabitatCode,
+                                    Section = "Habitats",
+                                    VersionReferenceId = storedHabitat.VersionId,
+                                    FieldName = "Representativity",
+                                    ReferenceSiteCode = storedSite.SiteCode,
+                                    N2KVersioningVersion = envelope.VersionId
+                                };
                                 changes.Add(siteChange);
                             }
                             else if (storedHabitat.Representativity.ToUpper() == "D" && harvestingHabitat.Representativity.ToUpper() != "D")
                             {
-                                SiteChangeDb siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = harvestingSite.SiteCode;
-                                siteChange.Version = harvestingSite.VersionId;
-                                siteChange.ChangeCategory = "Habitats";
-                                siteChange.ChangeType = "Representativity Increase";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                siteChange.Tags = string.Empty;
-                                siteChange.NewValue = harvestingHabitat.Representativity;
-                                siteChange.OldValue = storedHabitat.Representativity;
-                                siteChange.Code = harvestingHabitat.HabitatCode;
-                                siteChange.Section = "Habitats";
-                                siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                siteChange.FieldName = "Representativity";
-                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                siteChange.N2KVersioningVersion = envelope.VersionId;
+                                SiteChangeDb siteChange = new()
+                                {
+                                    SiteCode = harvestingSite.SiteCode,
+                                    Version = harvestingSite.VersionId,
+                                    ChangeCategory = "Habitats",
+                                    ChangeType = "Representativity Increase",
+                                    Country = envelope.CountryCode,
+                                    Level = Enumerations.Level.Info,
+                                    Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                    Tags = string.Empty,
+                                    NewValue = harvestingHabitat.Representativity,
+                                    OldValue = storedHabitat.Representativity,
+                                    Code = harvestingHabitat.HabitatCode,
+                                    Section = "Habitats",
+                                    VersionReferenceId = storedHabitat.VersionId,
+                                    FieldName = "Representativity",
+                                    ReferenceSiteCode = storedSite.SiteCode,
+                                    N2KVersioningVersion = envelope.VersionId
+                                };
                                 changes.Add(siteChange);
                             }
                             else if (storedHabitat.Representativity.ToUpper() != harvestingHabitat.Representativity.ToUpper())
                             {
-                                SiteChangeDb siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = harvestingSite.SiteCode;
-                                siteChange.Version = harvestingSite.VersionId;
-                                siteChange.ChangeCategory = "Habitats";
-                                siteChange.ChangeType = "Representativity Change";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                siteChange.Tags = string.Empty;
-                                siteChange.NewValue = harvestingHabitat.Representativity;
-                                siteChange.OldValue = storedHabitat.Representativity;
-                                siteChange.Code = harvestingHabitat.HabitatCode;
-                                siteChange.Section = "Habitats";
-                                siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                siteChange.FieldName = "Representativity";
-                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                siteChange.N2KVersioningVersion = envelope.VersionId;
+                                SiteChangeDb siteChange = new()
+                                {
+                                    SiteCode = harvestingSite.SiteCode,
+                                    Version = harvestingSite.VersionId,
+                                    ChangeCategory = "Habitats",
+                                    ChangeType = "Representativity Change",
+                                    Country = envelope.CountryCode,
+                                    Level = Enumerations.Level.Info,
+                                    Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                    Tags = string.Empty,
+                                    NewValue = harvestingHabitat.Representativity,
+                                    OldValue = storedHabitat.Representativity,
+                                    Code = harvestingHabitat.HabitatCode,
+                                    Section = "Habitats",
+                                    VersionReferenceId = storedHabitat.VersionId,
+                                    FieldName = "Representativity",
+                                    ReferenceSiteCode = storedSite.SiteCode,
+                                    N2KVersioningVersion = envelope.VersionId
+                                };
                                 changes.Add(siteChange);
                             }
                             if (storedHabitat.Cover_ha > harvestingHabitat.Cover_ha)
                             {
                                 if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
                                 {
-                                    SiteChangeDb siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.Version = harvestingSite.VersionId;
-                                    siteChange.ChangeCategory = "Habitats";
-                                    siteChange.ChangeType = "Cover_ha Decrease";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Warning;
-                                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                    siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
-                                    siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.Code = harvestingHabitat.HabitatCode;
-                                    siteChange.Section = "Habitats";
-                                    siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                    siteChange.FieldName = "Cover_ha";
-                                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                    siteChange.N2KVersioningVersion = envelope.VersionId;
+                                    SiteChangeDb siteChange = new()
+                                    {
+                                        SiteCode = harvestingSite.SiteCode,
+                                        Version = harvestingSite.VersionId,
+                                        ChangeCategory = "Habitats",
+                                        ChangeType = "Cover_ha Decrease",
+                                        Country = envelope.CountryCode,
+                                        Level = Enumerations.Level.Warning,
+                                        Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                        NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null,
+                                        OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null,
+                                        Tags = string.Empty,
+                                        Code = harvestingHabitat.HabitatCode,
+                                        Section = "Habitats",
+                                        VersionReferenceId = storedHabitat.VersionId,
+                                        FieldName = "Cover_ha",
+                                        ReferenceSiteCode = storedSite.SiteCode,
+                                        N2KVersioningVersion = envelope.VersionId
+                                    };
                                     changes.Add(siteChange);
                                 }
                             }
@@ -624,66 +635,72 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             {
                                 if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
                                 {
-                                    SiteChangeDb siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.Version = harvestingSite.VersionId;
-                                    siteChange.ChangeCategory = "Habitats";
-                                    siteChange.ChangeType = "Cover_ha Increase";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Info;
-                                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                    siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
-                                    siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.Code = harvestingHabitat.HabitatCode;
-                                    siteChange.Section = "Habitats";
-                                    siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                    siteChange.FieldName = "Cover_ha";
-                                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                    siteChange.N2KVersioningVersion = envelope.VersionId;
+                                    SiteChangeDb siteChange = new()
+                                    {
+                                        SiteCode = harvestingSite.SiteCode,
+                                        Version = harvestingSite.VersionId,
+                                        ChangeCategory = "Habitats",
+                                        ChangeType = "Cover_ha Increase",
+                                        Country = envelope.CountryCode,
+                                        Level = Enumerations.Level.Info,
+                                        Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                        NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null,
+                                        OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null,
+                                        Tags = string.Empty,
+                                        Code = harvestingHabitat.HabitatCode,
+                                        Section = "Habitats",
+                                        VersionReferenceId = storedHabitat.VersionId,
+                                        FieldName = "Cover_ha",
+                                        ReferenceSiteCode = storedSite.SiteCode,
+                                        N2KVersioningVersion = envelope.VersionId
+                                    };
                                     changes.Add(siteChange);
                                 }
                             }
                             else if (storedHabitat.Cover_ha != harvestingHabitat.Cover_ha)
                             {
-                                SiteChangeDb siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = harvestingSite.SiteCode;
-                                siteChange.Version = harvestingSite.VersionId;
-                                siteChange.ChangeCategory = "Habitats";
-                                siteChange.ChangeType = "Cover_ha Change";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Info;
-                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                siteChange.NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null;
-                                siteChange.OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null;
-                                siteChange.Tags = string.Empty;
-                                siteChange.Code = harvestingHabitat.HabitatCode;
-                                siteChange.Section = "Habitats";
-                                siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                siteChange.FieldName = "Cover_ha";
-                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                siteChange.N2KVersioningVersion = envelope.VersionId;
+                                SiteChangeDb siteChange = new()
+                                {
+                                    SiteCode = harvestingSite.SiteCode,
+                                    Version = harvestingSite.VersionId,
+                                    ChangeCategory = "Habitats",
+                                    ChangeType = "Cover_ha Change",
+                                    Country = envelope.CountryCode,
+                                    Level = Enumerations.Level.Info,
+                                    Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                    NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null,
+                                    OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null,
+                                    Tags = string.Empty,
+                                    Code = harvestingHabitat.HabitatCode,
+                                    Section = "Habitats",
+                                    VersionReferenceId = storedHabitat.VersionId,
+                                    FieldName = "Cover_ha",
+                                    ReferenceSiteCode = storedSite.SiteCode,
+                                    N2KVersioningVersion = envelope.VersionId
+                                };
                                 changes.Add(siteChange);
                             }
                             if (storedHabitat.PriorityForm != harvestingHabitat.PriorityForm)
                             {
-                                SiteChangeDb siteChange = new SiteChangeDb();
-                                siteChange.SiteCode = harvestingSite.SiteCode;
-                                siteChange.Version = harvestingSite.VersionId;
-                                siteChange.ChangeCategory = "Habitats";
-                                siteChange.ChangeType = "PriorityForm Change";
-                                siteChange.Country = envelope.CountryCode;
-                                siteChange.Level = Enumerations.Level.Critical;
-                                siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                siteChange.NewValue = harvestingHabitat.PriorityForm == true ? "Y" : "N";
-                                siteChange.OldValue = storedHabitat.PriorityForm == true ? "Y" : "N";
-                                siteChange.Tags = string.Empty;
-                                siteChange.Code = harvestingHabitat.HabitatCode;
-                                siteChange.Section = "Habitats";
-                                siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                siteChange.FieldName = "PriorityForm";
-                                siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                siteChange.N2KVersioningVersion = envelope.VersionId;
+                                SiteChangeDb siteChange = new()
+                                {
+                                    SiteCode = harvestingSite.SiteCode,
+                                    Version = harvestingSite.VersionId,
+                                    ChangeCategory = "Habitats",
+                                    ChangeType = "PriorityForm Change",
+                                    Country = envelope.CountryCode,
+                                    Level = Enumerations.Level.Critical,
+                                    Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                    NewValue = harvestingHabitat.PriorityForm == true ? "Y" : "N",
+                                    OldValue = storedHabitat.PriorityForm == true ? "Y" : "N",
+                                    Tags = string.Empty,
+                                    Code = harvestingHabitat.HabitatCode,
+                                    Section = "Habitats",
+                                    VersionReferenceId = storedHabitat.VersionId,
+                                    FieldName = "PriorityForm",
+                                    ReferenceSiteCode = storedSite.SiteCode,
+                                    N2KVersioningVersion = envelope.VersionId
+                                };
                                 changes.Add(siteChange);
                             }
 
@@ -719,44 +736,48 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                                 if (isStoredPriority && !isHarvestingPriority)
                                 {
-                                    SiteChangeDb siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.Version = harvestingSite.VersionId;
-                                    siteChange.ChangeCategory = "Habitats";
-                                    siteChange.ChangeType = "Habitat Losing Priority";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Critical;
-                                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.NewValue = Convert.ToString(isHarvestingPriority);
-                                    siteChange.OldValue = Convert.ToString(isStoredPriority);
-                                    siteChange.Code = harvestingHabitat.HabitatCode;
-                                    siteChange.Section = "Habitats";
-                                    siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                    siteChange.FieldName = "Priority";
-                                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                    siteChange.N2KVersioningVersion = envelope.VersionId;
+                                    SiteChangeDb siteChange = new()
+                                    {
+                                        SiteCode = harvestingSite.SiteCode,
+                                        Version = harvestingSite.VersionId,
+                                        ChangeCategory = "Habitats",
+                                        ChangeType = "Habitat Losing Priority",
+                                        Country = envelope.CountryCode,
+                                        Level = Enumerations.Level.Critical,
+                                        Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                        Tags = string.Empty,
+                                        NewValue = Convert.ToString(isHarvestingPriority),
+                                        OldValue = Convert.ToString(isStoredPriority),
+                                        Code = harvestingHabitat.HabitatCode,
+                                        Section = "Habitats",
+                                        VersionReferenceId = storedHabitat.VersionId,
+                                        FieldName = "Priority",
+                                        ReferenceSiteCode = storedSite.SiteCode,
+                                        N2KVersioningVersion = envelope.VersionId
+                                    };
                                     changes.Add(siteChange);
                                 }
                                 else if (!isStoredPriority && isHarvestingPriority)
                                 {
-                                    SiteChangeDb siteChange = new SiteChangeDb();
-                                    siteChange.SiteCode = harvestingSite.SiteCode;
-                                    siteChange.Version = harvestingSite.VersionId;
-                                    siteChange.ChangeCategory = "Habitats";
-                                    siteChange.ChangeType = "Habitat Getting Priority";
-                                    siteChange.Country = envelope.CountryCode;
-                                    siteChange.Level = Enumerations.Level.Info;
-                                    siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                                    siteChange.Tags = string.Empty;
-                                    siteChange.NewValue = Convert.ToString(isHarvestingPriority);
-                                    siteChange.OldValue = Convert.ToString(isStoredPriority);
-                                    siteChange.Code = harvestingHabitat.HabitatCode;
-                                    siteChange.Section = "Habitats";
-                                    siteChange.VersionReferenceId = storedHabitat.VersionId;
-                                    siteChange.FieldName = "Priority";
-                                    siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                                    siteChange.N2KVersioningVersion = envelope.VersionId;
+                                    SiteChangeDb siteChange = new()
+                                    {
+                                        SiteCode = harvestingSite.SiteCode,
+                                        Version = harvestingSite.VersionId,
+                                        ChangeCategory = "Habitats",
+                                        ChangeType = "Habitat Getting Priority",
+                                        Country = envelope.CountryCode,
+                                        Level = Enumerations.Level.Info,
+                                        Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                        Tags = string.Empty,
+                                        NewValue = Convert.ToString(isHarvestingPriority),
+                                        OldValue = Convert.ToString(isStoredPriority),
+                                        Code = harvestingHabitat.HabitatCode,
+                                        Section = "Habitats",
+                                        VersionReferenceId = storedHabitat.VersionId,
+                                        FieldName = "Priority",
+                                        ReferenceSiteCode = storedSite.SiteCode,
+                                        N2KVersioningVersion = envelope.VersionId
+                                    };
                                     changes.Add(siteChange);
                                 }
                             }
@@ -764,22 +785,24 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         }
                         else
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = harvestingSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Habitats";
-                            siteChange.ChangeType = "Habitat Added";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Info;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = harvestingHabitat.HabitatCode;
-                            siteChange.OldValue = null;
-                            siteChange.Code = harvestingHabitat.HabitatCode;
-                            siteChange.Section = "Habitats";
-                            siteChange.VersionReferenceId = harvestingSite.VersionId;
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = harvestingSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Habitats",
+                                ChangeType = "Habitat Added",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Info,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                Tags = string.Empty,
+                                NewValue = harvestingHabitat.HabitatCode,
+                                OldValue = null,
+                                Code = harvestingHabitat.HabitatCode,
+                                Section = "Habitats",
+                                VersionReferenceId = harvestingSite.VersionId,
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                         }
                     }
@@ -790,22 +813,24 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         HabitatToHarvest harvestingHabitat = habitatVersioning.Where(s => s.HabitatCode == storedHabitat.HabitatCode).FirstOrDefault();
                         if (harvestingHabitat == null)
                         {
-                            SiteChangeDb siteChange = new SiteChangeDb();
-                            siteChange.SiteCode = storedSite.SiteCode;
-                            siteChange.Version = harvestingSite.VersionId;
-                            siteChange.ChangeCategory = "Habitats";
-                            siteChange.ChangeType = "Habitat Deleted";
-                            siteChange.Country = envelope.CountryCode;
-                            siteChange.Level = Enumerations.Level.Critical;
-                            siteChange.Status = (SiteChangeStatus?)processedEnvelope.Status;
-                            siteChange.Tags = string.Empty;
-                            siteChange.NewValue = null;
-                            siteChange.OldValue = storedHabitat.HabitatCode;
-                            siteChange.Code = storedHabitat.HabitatCode;
-                            siteChange.Section = "Habitats";
-                            siteChange.VersionReferenceId = storedHabitat.VersionId;
-                            siteChange.ReferenceSiteCode = storedSite.SiteCode;
-                            siteChange.N2KVersioningVersion = envelope.VersionId;
+                            SiteChangeDb siteChange = new()
+                            {
+                                SiteCode = storedSite.SiteCode,
+                                Version = harvestingSite.VersionId,
+                                ChangeCategory = "Habitats",
+                                ChangeType = "Habitat Deleted",
+                                Country = envelope.CountryCode,
+                                Level = Enumerations.Level.Critical,
+                                Status = (SiteChangeStatus?)processedEnvelope.Status,
+                                Tags = string.Empty,
+                                NewValue = null,
+                                OldValue = storedHabitat.HabitatCode,
+                                Code = storedHabitat.HabitatCode,
+                                Section = "Habitats",
+                                VersionReferenceId = storedHabitat.VersionId,
+                                ReferenceSiteCode = storedSite.SiteCode,
+                                N2KVersioningVersion = envelope.VersionId
+                            };
                             changes.Add(siteChange);
                         }
                     }
