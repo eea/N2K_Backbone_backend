@@ -350,6 +350,9 @@ namespace N2K_BackboneBackEnd.Services
                 // Get the harvested envelope
                 ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == pSiteCode.Substring(0,2) && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
 
+                // Get the harvested envelope
+                ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == pSiteCode.Substring(0,2) && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
+
                 // Get lineage change type from Lineage table
                 Lineage? lineageChange = await _dataContext.Set<Lineage>().AsNoTracking().FirstOrDefaultAsync(l => l.SiteCode == pSiteCode && l.Version == pCountryVersion && l.N2KVersioningVersion == harvestedEnvelope.Version);
                 changeDetailVM.LineageChangeType = lineageChange?.Type;
@@ -1304,6 +1307,9 @@ namespace N2K_BackboneBackEnd.Services
                         mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
                             ?? LineageTypes.NoChanges;
 
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
+
                         Level level;
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
                         //Alter cached listd. They come from pendign and goes to accepted
@@ -1432,6 +1438,9 @@ namespace N2K_BackboneBackEnd.Services
                             Name = reader["SiteName"].ToString()
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
+
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
 
                         mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
                             ?? LineageTypes.NoChanges;
@@ -1937,6 +1946,9 @@ namespace N2K_BackboneBackEnd.Services
                             Name = changes.First().SiteName,
                             CountryCode = modifiedSiteCode.SiteCode[..2]
                         };
+
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                            ?? LineageTypes.NoChanges;
 
                         mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
                             ?? LineageTypes.NoChanges;
