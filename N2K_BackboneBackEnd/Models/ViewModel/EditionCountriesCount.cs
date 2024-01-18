@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
-    public class EditionCountriesCountView : IEntityModel
+    public class EditionCountriesCount : IEntityModel
     {
         [Key]
         public string Code { get; set; } = "";
@@ -12,7 +12,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public int SiteCount { get; set; }
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<EditionCountriesCountView>();
+            builder.Entity<EditionCountriesCount>();
         }
     }
 }

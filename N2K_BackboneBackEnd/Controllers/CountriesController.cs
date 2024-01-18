@@ -188,9 +188,9 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [HttpGet("GetEditionCountries")]
-        public async Task<ActionResult<ServiceResponse<List<EditionCountriesView>>>> GetEditionCountries()
+        public async Task<ActionResult<ServiceResponse<List<EditionCountriesCountViewModel>>>> GetEditionCountries()
         {
-            var response = new ServiceResponse<List<EditionCountriesView>>();
+            var response = new ServiceResponse<List<EditionCountriesCountViewModel>>();
             try
             {
                 var countriesEdition = await _countryService.GetEditionCountries();
@@ -205,7 +205,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<EditionCountriesView>();
+                response.Data = new List<EditionCountriesCountViewModel>();
                 return Ok(response);
             }
         }
