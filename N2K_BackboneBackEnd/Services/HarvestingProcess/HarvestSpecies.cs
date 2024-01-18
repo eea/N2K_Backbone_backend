@@ -129,6 +129,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         {
                             //Replace the code (which is Null or empty or no stored in the system)
                             //item.SiteCode = element.SITECODE;
+                            item.OtherSpecieCode = item.SpecieCode;
                             item.SpecieCode = (reader["SPECIESNAMECLEAN"] != null) ? reader["SPECIESNAMECLEAN"].ToString() : reader["SPECIESNAME"].ToString();
                             itemsSpeciesOthers.Add(item.getSpeciesOther());
                         }

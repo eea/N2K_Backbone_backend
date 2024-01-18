@@ -27,6 +27,7 @@
         public string? DataQuality { get; set; }
         public string? SpecieType { get; set; }
         public bool? Other { get; set; }
+        public string? OtherSpecieCode { get; set; }
 
         public Species getSpecies()
         {
@@ -56,7 +57,6 @@
                 DataQuality = this.DataQuality,
                 SpecieType = this.SpecieType
             };
-
             return specie;
         }
 
@@ -86,9 +86,9 @@
                 Global = this.Global,
                 NonPersistence = this.NonPersistence,
                 DataQuality = this.DataQuality,
-                SpecieType = this.SpecieType
+                SpecieType = this.SpecieType,
+                OtherSpecieCode = this.OtherSpecieCode
             };
-
             return specie;
         }
     }
