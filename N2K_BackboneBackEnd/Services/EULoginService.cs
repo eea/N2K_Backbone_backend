@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -11,10 +10,8 @@ using Newtonsoft.Json.Linq;
 
 namespace N2K_BackboneBackEnd.Services
 {
-
     public class EULoginService : IEULoginService
     {
-
         private readonly IOptions<ConfigSettings> _appSettings;
 
         private static string ComputeSha256Hash(string rawData)
@@ -26,7 +23,7 @@ namespace N2K_BackboneBackEnd.Services
                 byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
 
                 // Convert byte array to a string   
-                StringBuilder builder = new StringBuilder();
+                StringBuilder builder = new();
                 for (int i = 0; i < bytes.Length; i++)
                 {
                     builder.Append(bytes[i].ToString("x2"));
@@ -41,8 +38,7 @@ namespace N2K_BackboneBackEnd.Services
             return System.Convert.ToBase64String(plainTextBytes);
         }
 
-
-        private static Random random = new Random();
+        private static Random random = new();
 
         private static string generateRandomString(int length)
         {
@@ -56,7 +52,6 @@ namespace N2K_BackboneBackEnd.Services
             return Base64Encode(ComputeSha256Hash(code_verifier));
         }
 
-
         public EULoginService(IOptions<ConfigSettings> app)
         {
             _appSettings = app;
@@ -67,10 +62,8 @@ namespace N2K_BackboneBackEnd.Services
             return await GetLoginUrl(redirectionUrl, generateRandomString(128));
         }
 
-
-        public async Task<string> GetLoginUrl(string redirectionUrl,string code_challenge)
+        public async Task<string> GetLoginUrl(string redirectionUrl, string code_challenge)
         {
-
             /*** GENERATE THE JWT token object */
             string key = _appSettings.Value.client_secret;
             // Create Security key  using private key above:
@@ -84,10 +77,8 @@ namespace N2K_BackboneBackEnd.Services
             var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials
                                   (securityKey, SecurityAlgorithms.HmacSha256);
 
-
             //  Finally create a Token
             var header = new JwtHeader(credentials);
-
 
             //build the JSON data payload for the JWT token
             TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
@@ -111,7 +102,7 @@ namespace N2K_BackboneBackEnd.Services
             // Token to String so you can use it in your client
             var tokenString = handler.WriteToken(secToken);
 
-            using (var client = new HttpClient())
+            using (HttpClient client = new())
             {
                 //build the POST request so that we can obtain the request_uri
                 var acc = Base64Encode(String.Format("{0}:{1}", _appSettings.Value.client_id, _appSettings.Value.client_secret));
@@ -140,7 +131,6 @@ namespace N2K_BackboneBackEnd.Services
                     {
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
                         requestUri = jResponse.GetValue("request_uri").ToString();
-#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
                     }
                     else
                     {
@@ -161,11 +151,9 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-
         public async Task<string> GetToken(string redirectionUri, string code, string code_verifier)
         {
-
-            using (var client = new HttpClient())
+            using (HttpClient client = new())
             {
                 //build the POST request so that we can obtain the request_uri
                 var acc = Base64Encode(String.Format("{0}:{1}", _appSettings.Value.client_id, _appSettings.Value.client_secret));
@@ -196,7 +184,6 @@ namespace N2K_BackboneBackEnd.Services
                     {
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
                         requestUri = jResponse.GetValue("id_token").ToString();
-#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
                     }
                     else
                     {
@@ -205,7 +192,7 @@ namespace N2K_BackboneBackEnd.Services
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
                     }
                     res.Dispose();
-                    return String.Format(@"{0}",requestUri);
+                    return String.Format(@"{0}", requestUri);
                 }
                 catch (Exception ex)
                 {
@@ -214,15 +201,13 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-
         public async Task<string> GetUsername(string token)
         {
             var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken  = handler.ReadJwtToken(token); 
+            var jwtSecurityToken = handler.ReadJwtToken(token);
             var email = jwtSecurityToken.Claims.First(claim => claim.Type == "email").Value;
 
             return await Task.FromResult(email);
         }
-   }
+    }
 }
-
