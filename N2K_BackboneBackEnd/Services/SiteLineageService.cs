@@ -116,6 +116,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
+                result = result.GroupBy(o => new { o.SiteCode, o.Release }).Select(o => o.FirstOrDefault()).ToList();
                 return result;
             }
             catch (Exception ex)
