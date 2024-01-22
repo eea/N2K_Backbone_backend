@@ -121,7 +121,17 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         item.DataQuality = TypeConverters.CheckNull<string>(reader["DataQuality"]);
                         item.SpecieType = TypeConverters.CheckNull<string>(reader["SpecieType"]);
 
+                        string SpecieName = (reader["SPECIESNAMECLEAN"] != null) ? reader["SPECIESNAMECLEAN"].ToString() : reader["SPECIESNAME"].ToString();
                         int OtherSpecies = Convert.ToInt32(reader["OTHERSPECIES"].ToString());
+
+                        if (item.SpecieCode is null || item.SpecieCode == "")
+                        {
+                            SpeciesTypes temp = _speciesTypes.Where(a => a.Name == SpecieName || a.NameLat == SpecieName).FirstOrDefault();
+                            if (temp != null)
+                            {
+                                item.SpecieCode = temp.Code;
+                            }
+                        }
 
                         if (item.SpecieCode is null || item.SpecieCode == "" ||
                             !_speciesTypes.Where(a => a.Code == item.SpecieCode && a.Active == true).Any()
@@ -130,7 +140,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             //Replace the code (which is Null or empty or no stored in the system)
                             //item.SiteCode = element.SITECODE;
                             item.OtherSpecieCode = item.SpecieCode;
-                            item.SpecieCode = (reader["SPECIESNAMECLEAN"] != null) ? reader["SPECIESNAMECLEAN"].ToString() : reader["SPECIESNAME"].ToString();
+                            item.SpecieCode = SpecieName;
                             itemsSpeciesOthers.Add(item.getSpeciesOther());
                         }
                         else
