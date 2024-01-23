@@ -126,7 +126,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                         if (item.SpecieCode is null || item.SpecieCode == "")
                         {
-                            SpeciesTypes temp = _speciesTypes.Where(a => a.Name == SpecieName || a.NameLat == SpecieName).FirstOrDefault();
+                            SpeciesTypes temp = _speciesTypes.Where(a => a.Name.ToLower() == SpecieName.ToLower() || a.NameLat.ToLower() == SpecieName.ToLower()).FirstOrDefault();
                             if (temp != null)
                             {
                                 item.SpecieCode = temp.Code;
