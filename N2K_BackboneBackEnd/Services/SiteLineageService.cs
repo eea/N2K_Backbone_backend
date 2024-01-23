@@ -41,7 +41,8 @@ namespace N2K_BackboneBackEnd.Services
                 paramSitecode).ToListAsync();
 
                 var changeIDs = list.Select(r => r.ID);
-                List<LineageAntecessors> predecessors = await _dataContext.Set<LineageAntecessors>().Where(a => changeIDs.Contains(a.LineageID)).AsNoTracking().ToListAsync();
+                List<LineageAntecessors> predecessors = await _dataContext.Set<LineageAntecessors>().Where(a => changeIDs.Contains(a.LineageID) || a.SiteCode == siteCode).AsNoTracking().ToListAsync();
+                predecessors = predecessors.GroupBy(o => new { o.SiteCode, o.Version, o.N2KVersioningVersion, o.LineageID }).Select(o => o.FirstOrDefault()).ToList();
 
                 DataTable sitecodesfilter = new("sitecodesfilter");
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
@@ -56,6 +57,11 @@ namespace N2K_BackboneBackEnd.Services
                     TypeName = "[dbo].[SiteCodeFilter]"
                 };
                 list.AddRange(await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetSiteLineageBySitecodeAndVersion  @siteCodes", paramTable).AsNoTracking().ToListAsync());
+                
+                var predecessorIDs = predecessors.Select(r => r.LineageID);
+                list.AddRange(await _dataContext.Set<Lineage>().Where(a => predecessorIDs.Contains(a.ID) && a.Release != null).AsNoTracking().ToListAsync());
+                
+                list = list.GroupBy(o => o.ID).Select(o => o.FirstOrDefault()).ToList();
 
                 List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().ToListAsync();
                 headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
