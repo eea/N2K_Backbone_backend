@@ -1,16 +1,14 @@
 ﻿using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models.backbone_db;
 
-
 namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 {
-    public class BaseHarvestingProcess 
+    public class BaseHarvestingProcess
     {
         protected readonly N2KBackboneContext _dataContext;
         protected readonly N2K_VersioningContext _versioningContext;
-       
 
-        public BaseHarvestingProcess (N2KBackboneContext dataContext, N2K_VersioningContext versioningContext)
+        public BaseHarvestingProcess(N2KBackboneContext dataContext, N2K_VersioningContext versioningContext)
         {
             _dataContext = dataContext;
             _versioningContext = versioningContext;
@@ -21,6 +19,5 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             _dataContext.Set<SiteChangeDb>().AddRange(changes);
             _dataContext.SaveChanges();
         }
-
     }
 }

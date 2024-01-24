@@ -3,14 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models.versioning_db;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text;
-using Newtonsoft.Json;
-
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -21,7 +18,6 @@ namespace N2K_BackboneBackEnd.Controllers
     [ApiController]
     public class HarvestingController : ControllerBase
     {
-
         private readonly IHarvestedService _harvestedService;
         private readonly IMapper _mapper;
         private IMemoryCache _cache;
@@ -36,8 +32,6 @@ namespace N2K_BackboneBackEnd.Controllers
             _fireForgetRepositoryHandler = fireForgetRepositoryHandler;
             //_backgroundWorkerQueue = backgroundWorkerQueue;
         }
-
-
 
         /*
         // GET: api/<HarvestingController>
@@ -67,13 +61,11 @@ namespace N2K_BackboneBackEnd.Controllers
         */
 
         /*
-
         //Id=>envelopeID
         [HttpGet("Get/{id}")]
         public async Task<ActionResult<ServiceResponse<Harvesting>>> Get(int id)
         {
             var response = new ServiceResponse<Harvesting>();
-
             try
             {
                 var harvesting = await _harvestedService.GetHarvestedAsyncById(id);
@@ -159,7 +151,6 @@ namespace N2K_BackboneBackEnd.Controllers
         */
 
         /*
-
         [HttpGet("Harvested/{fromDate}")]
         public IEnumerable<string> Harvested(DateTime? fromDate)
         {
@@ -167,6 +158,7 @@ namespace N2K_BackboneBackEnd.Controllers
             return new string[] { "value1", "value2" };
         }
         */
+
         /*
         [HttpGet("Harvested/{fromDate}/{toDate}")]
         public IEnumerable<string> Harvested(DateTime fromDate, DateTime? toDate)
@@ -307,7 +299,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         /// <summary>
         /// Executes the process of the harvesting for a selected envelop (Country and Version)
         /// </summary>
@@ -344,8 +335,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
-
         /// <summary>
         /// Changes te status of a envelope
         /// </summary>
@@ -369,13 +358,10 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<ProcessedEnvelopes>() { new ProcessedEnvelopes() };
-                return  Ok(response);
+                response.Data = new List<ProcessedEnvelopes>() { new() };
+                return Ok(response);
             }
         }
-
-
-
 
         /// <summary>
         /// Executes the process of the ChangeDetection for a selected envelop (Country and Version).
@@ -386,12 +372,12 @@ namespace N2K_BackboneBackEnd.Controllers
         // POST api/<HarvestingController>
         [Route("Harvest/ChangeDetection")]
         [HttpPost]
-        public async  Task<ActionResult<List<HarvestedEnvelope>>> ChangeDetection([FromBody] EnvelopesToProcess[] envelopes)
+        public async Task<ActionResult<List<HarvestedEnvelope>>> ChangeDetection([FromBody] EnvelopesToProcess[] envelopes)
         {
             var response = new ServiceResponse<List<HarvestedEnvelope>>();
             try
             {
-                var processedEnvelope = await _harvestedService.ChangeDetection(envelopes,null);
+                var processedEnvelope = await _harvestedService.ChangeDetection(envelopes, null);
                 response.Success = true;
                 response.Message = "";
                 response.Data = processedEnvelope;
@@ -424,7 +410,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        private  async Task Echo(System.Net.WebSockets.WebSocket webSocket)
+        private async Task Echo(System.Net.WebSockets.WebSocket webSocket)
         {
             var buffer = new byte[1024 * 4];
             var receiveResult = await webSocket.ReceiveAsync(
@@ -436,7 +422,8 @@ namespace N2K_BackboneBackEnd.Controllers
                     new ArraySegment<byte>(buffer), CancellationToken.None);
 
                 string msg = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
-                if (!string.IsNullOrEmpty(msg)) {
+                if (!string.IsNullOrEmpty(msg))
+                {
                     await _harvestedService.CompleteFMESpatial(msg);
                 }
                 Console.WriteLine("New message received : " + msg);
@@ -505,6 +492,5 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
     }
 }

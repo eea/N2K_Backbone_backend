@@ -1,7 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.Data.Common;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
@@ -19,9 +17,5 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 .ToTable("DataQualityTypes")
                 .HasKey(c => c.Id);
         }
-       
-
-
-
     }
 }

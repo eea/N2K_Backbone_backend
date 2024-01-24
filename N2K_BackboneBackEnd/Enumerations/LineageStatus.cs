@@ -9,6 +9,5 @@ namespace N2K_BackboneBackEnd.Enumerations
         Proposed = 0,
         [DataMember]
         Consolidated = 1
-
     }
 }

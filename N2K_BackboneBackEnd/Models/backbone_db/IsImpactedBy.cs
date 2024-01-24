@@ -22,7 +22,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? ImpactType { get; set; }
         public long Id { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public IsImpactedBy() { }
 
@@ -30,7 +30,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             dbConnection = db;
         }
-
 
         public async static Task<int> SaveBulkRecord(string db, List<IsImpactedBy> listData)
         {
@@ -54,7 +53,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 return 0;
             }
         }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {

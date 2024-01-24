@@ -1,12 +1,8 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
 using Newtonsoft.Json.Linq;
-using NuGet.Protocol.Plugins;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -19,11 +15,10 @@ namespace N2K_BackboneBackEnd.Services
         private readonly N2KBackboneContext _dataContext;
         private readonly ILogger<BackgroundSpatialHarvestJobs> _logger;
         private readonly IOptions<ConfigSettings> _appSettings;
-        private List<HarvestedEnvelope> result = new List<HarvestedEnvelope> { };
+        private List<HarvestedEnvelope> result = new() { };
         //private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
 
-
-        public BackgroundSpatialHarvestJobs(N2KBackboneContext dataContext, IOptions<ConfigSettings> appSettings, 
+        public BackgroundSpatialHarvestJobs(N2KBackboneContext dataContext, IOptions<ConfigSettings> appSettings,
             ILogger<BackgroundSpatialHarvestJobs> logger)
         {
             _dataContext = dataContext;
@@ -44,7 +39,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             //if (_fmeJobs.Count == 0) _signal.Release();
 
-            HttpClient client = new HttpClient();
+            HttpClient client = new();
             try
             {
                 //String serverUrl = String.Format(appSettings.Value.fme_service_spatialload, envelope.VersionId, envelope.CountryCode, appSettings.Value.fme_security_token);
@@ -61,7 +56,6 @@ namespace N2K_BackboneBackEnd.Services
                    _appSettings.Value.fme_service_spatialload.repository,
                    _appSettings.Value.fme_service_spatialload.workspace);
 
-                
                 string body = string.Format(@"{{""publishedParameters"":[" +
                     @"{{""name"":""CountryVersionId"",""value"":{0}}}," +
                     @"{{""name"":""Environment"",""value"":{1}}}," +
@@ -72,11 +66,11 @@ namespace N2K_BackboneBackEnd.Services
                 client.DefaultRequestHeaders.Accept
                     .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));//ACCEPT header
 
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body,
-                                                    Encoding.UTF8,
-                                                    "application/json");//CONTENT-TYPE header
-                
+                HttpRequestMessage request = new(HttpMethod.Post, url)
+                {
+                    Content = new StringContent(body, Encoding.UTF8, "application/json")//CONTENT-TYPE header
+                };
+
                 //call the FME script in async 
                 var res = await client.SendAsync(request);
                 //get the JobId 
@@ -87,7 +81,6 @@ namespace N2K_BackboneBackEnd.Services
                 //create a text file to control the FME Jobs (Countr-Version) launched
                 var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
                             string.Format("FMELaunched-{0}-{1}.txt", envelope.CountryCode, envelope.VersionId));
-
 
                 //check if there are FME jobs launched for the country
                 //if there are no such jobs, this FME job is the first
@@ -111,17 +104,15 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                     firstInCountry = envelope.VersionId < minVersionCountry;
-
                 }
                 else
                     firstInCountry = true;
-
 
                 //if the file exists means that the event was handled and we ignore it
                 if (!File.Exists(fileName))
                 {
                     //if it doesn´t exist create a file saying if it is the first of the country or not
-                    StreamWriter sw = new StreamWriter(fileName, true, Encoding.ASCII);
+                    StreamWriter sw = new(fileName, true, Encoding.ASCII);
                     await sw.WriteAsync(firstInCountry.ToString());
                     //await sw.WriteAsync(jobId);
                     //close the file
@@ -133,7 +124,6 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestGeodata", "", _dataContext.Database.GetConnectionString());
-
             }
             finally
             {
@@ -173,7 +163,6 @@ namespace N2K_BackboneBackEnd.Services
                 JObject jResponse = JObject.Parse(json);
                 if (jResponse.GetValue("status").ToString() == "SUCCESS" || jResponse.GetValue("status").ToString() == "ERROR")
                 {
-
                     await CompleteTask(spatialHarvestjob.Value);
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Harvest spatial {0}-{1} completed", spatialHarvestjob.Value.CountryCode, spatialHarvestjob.Value.VersionId), "HarvestSpatialData", "", _dataContext.Database.GetConnectionString());
                 }
@@ -184,14 +173,11 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task CompleteTask(EnvelopesToProcess envelope)
         {
-            
             await Task.Delay(1);
             //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Complete Task {0}-{1}", envelope.CountryCode, envelope.VersionId), "Complete task", "", _dataContext.Database.GetConnectionString());
             await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Complete Task with fme job {0}-{1}", envelope.CountryCode, envelope.VersionId), "Complete task", "", _dataContext.Database.GetConnectionString());
             await OnFMEJobIdCompleted(envelope);
-
         }
-
 
         protected async virtual Task OnFMEJobIdCompleted(EnvelopesToProcess envelope)
         {
@@ -207,7 +193,6 @@ namespace N2K_BackboneBackEnd.Services
             //read the file. The first line shows if the job is the first of the country
             string line1 = File.ReadLines(fileName).First();
             firstInCountry = bool.Parse(line1);
-
 
             /*
             //fetch the FME jobs launched for the present country
@@ -237,7 +222,7 @@ namespace N2K_BackboneBackEnd.Services
                 File.Delete(fileName);
             }
 
-            FMEJobEventArgs evt = new FMEJobEventArgs
+            FMEJobEventArgs evt = new()
             {
                 Envelope = envelope,
                 FirstInCountry = firstInCountry
@@ -246,6 +231,5 @@ namespace N2K_BackboneBackEnd.Services
             FMEJobCompleted?.Invoke(this, evt);
             //_semaphore.Release();
         }
-
     }
 }

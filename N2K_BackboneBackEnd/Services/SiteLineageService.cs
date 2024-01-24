@@ -6,21 +6,13 @@ using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Enumerations;
-using N2K_BackboneBackEnd.Models.versioning_db;
 using System.Data;
-using NuGet.Protocol;
-using N2K_BackboneBackEnd.Helpers;
-using System.Security.Policy;
-using System.Collections.Generic;
-using N2K_BackboneBackEnd.Models.BackboneDB;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.SignalR;
 using N2K_BackboneBackEnd.Hubs;
 
 namespace N2K_BackboneBackEnd.Services
 {
-
 
     public class SiteLineageService : ISiteLineageService
     {
@@ -39,54 +31,61 @@ namespace N2K_BackboneBackEnd.Services
             _hubContext = hubContext;
         }
 
-
         public async Task<List<SiteLineage>> GetSiteLineageAsync(string siteCode)
         {
             try
             {
                 int limit = 0; //Set a release limit to show
-                SqlParameter paramSitecode = new SqlParameter("@sitecode", siteCode);
+                SqlParameter paramSitecode = new("@sitecode", siteCode);
                 List<Lineage> list = await _dataContext.Set<Lineage>().FromSqlRaw($"exec [dbo].[spGetSiteLineageBySitecode]  @sitecode",
                 paramSitecode).ToListAsync();
 
                 var changeIDs = list.Select(r => r.ID);
-                List<LineageAntecessors> predecessors = await _dataContext.Set<LineageAntecessors>().Where(a => changeIDs.Contains(a.LineageID)).AsNoTracking().ToListAsync();
+                List<LineageAntecessors> predecessors = await _dataContext.Set<LineageAntecessors>().Where(a => changeIDs.Contains(a.LineageID) || a.SiteCode == siteCode).AsNoTracking().ToListAsync();
+                predecessors = predecessors.GroupBy(o => new { o.SiteCode, o.Version, o.N2KVersioningVersion, o.LineageID }).Select(o => o.FirstOrDefault()).ToList();
 
-                var sitecodesfilter = new DataTable("sitecodesfilter");
+                DataTable sitecodesfilter = new("sitecodesfilter");
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
                 predecessors.ForEach(d =>
                 {
                     sitecodesfilter.Rows.Add(new Object[] { d.SiteCode, d.Version });
                 });
-                SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-                paramTable.Value = sitecodesfilter;
-                paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+                SqlParameter paramTable = new("@siteCodes", System.Data.SqlDbType.Structured)
+                {
+                    Value = sitecodesfilter,
+                    TypeName = "[dbo].[SiteCodeFilter]"
+                };
                 list.AddRange(await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetSiteLineageBySitecodeAndVersion  @siteCodes", paramTable).AsNoTracking().ToListAsync());
+
+                var predecessorIDs = predecessors.Select(r => r.LineageID);
+                list.AddRange(await _dataContext.Set<Lineage>().Where(a => predecessorIDs.Contains(a.ID) && a.Release != null).AsNoTracking().ToListAsync());
+
+                list = list.GroupBy(o => o.ID).Select(o => o.FirstOrDefault()).ToList();
 
                 List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().AsNoTracking().ToListAsync();
                 headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
 
-                List<SiteLineage> result = new List<SiteLineage>();
+                List<SiteLineage> result = new();
 
-                List<long?> releases = new List<long?>();
+                List<long?> releases = new();
                 foreach (Lineage lineage in list)
                 {
                     releases.Add(lineage.Release);
                 }
                 releases = releases.Distinct().ToList();
 
-                List<long?> ULHIds = new List<long?>();
+                List<long?> ULHIds = new();
                 foreach (UnionListHeader header in headers)
                 {
                     ULHIds.Add(header.idULHeader);
                 }
                 releases = releases.OrderBy(i => ULHIds.IndexOf(i)).ToList();
                 if (limit > 0)
-                    releases = releases.Skip(Math.Max(0, releases.Count() - limit)).ToList();
+                    releases = releases.Skip(Math.Max(0, releases.Count - limit)).ToList();
 
                 list = list.OrderBy(i => ULHIds.IndexOf(i.Release)).ToList();
-                if (list.Count > 0)
+                if (list.Any())
                 {
                     foreach (Lineage lineage in list)
                     {
@@ -94,23 +93,41 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             try
                             {
-                                SiteLineage temp = new SiteLineage();
-                                temp.SiteCode = lineage.SiteCode;
-                                temp.Release = headers.Where(c => c.idULHeader == lineage.Release).FirstOrDefault().Name;
-                                if (predecessors.Where(c => c.LineageID == lineage.ID).ToList().Count() > 0)
+                                SiteLineage temp = new()
                                 {
-                                    temp.Predecessors.SiteCode = string.Join(",", predecessors.Where(c => c.LineageID == lineage.ID).Select(r => r.SiteCode));
-                                    temp.Predecessors.Release = headers.Where(c => c.idULHeader == (list.Where(c =>
-                                            c.SiteCode == predecessors.Where(c => c.LineageID == lineage.ID).FirstOrDefault().SiteCode &&
-                                            c.Version == predecessors.Where(c => c.LineageID == lineage.ID).FirstOrDefault().Version).FirstOrDefault().Release)).FirstOrDefault().Name;
+                                    SiteCode = lineage.SiteCode,
+                                    Release = headers.Where(c => c.idULHeader == lineage.Release).FirstOrDefault().Name
+                                };
+                                if (predecessors.Where(c => c.LineageID == lineage.ID).ToList().Any())
+                                {
+                                    try
+                                    {
+                                        temp.Predecessors.SiteCode = string.Join(",", predecessors.Where(c => c.LineageID == lineage.ID).Select(r => r.SiteCode));
+                                        temp.Predecessors.Release = headers.Where(c => c.idULHeader == (list.Where(c =>
+                                                c.SiteCode == predecessors.Where(c => c.LineageID == lineage.ID).FirstOrDefault().SiteCode &&
+                                                c.Version == predecessors.Where(c => c.LineageID == lineage.ID).FirstOrDefault().Version).FirstOrDefault().Release)).FirstOrDefault().Name;
+                                    }
+                                    catch (Exception)
+                                    {
+                                        temp.Predecessors.SiteCode = null;
+                                        temp.Predecessors.Release = null;
+                                    }
                                 }
-                                if (predecessors.Where(c => c.SiteCode == lineage.SiteCode && c.Version == lineage.Version).ToList().Count() > 0)
+                                if (predecessors.Where(c => c.SiteCode == lineage.SiteCode && c.Version == lineage.Version).ToList().Any())
                                 {
-                                    temp.Successors.SiteCode = string.Join(",", list.Where(c => predecessors.Where(c =>
+                                    try
+                                    {
+                                        temp.Successors.SiteCode = string.Join(",", list.Where(c => predecessors.Where(c =>
                                             c.SiteCode == lineage.SiteCode && c.Version == lineage.Version).Select(r => r.LineageID).Contains(c.ID)).Select(b => b.SiteCode));
-                                    temp.Successors.Release = headers.Where(c => c.idULHeader == (list.Where(c =>
-                                            c.ID == predecessors.Where(c => c.SiteCode == lineage.SiteCode && c.Version == lineage.Version).FirstOrDefault().LineageID)
-                                                .FirstOrDefault().Release)).FirstOrDefault().Name;
+                                        temp.Successors.Release = headers.Where(c => c.idULHeader == (list.Where(c =>
+                                                c.ID == predecessors.Where(c => c.SiteCode == lineage.SiteCode && c.Version == lineage.Version).FirstOrDefault().LineageID)
+                                                    .FirstOrDefault().Release)).FirstOrDefault().Name;
+                                    }
+                                    catch (Exception)
+                                    {
+                                        temp.Successors.SiteCode = null;
+                                        temp.Successors.Release = null;
+                                    }
                                 }
                                 result.Add(temp);
                             }
@@ -121,6 +138,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
+                result = result.GroupBy(o => new { o.SiteCode, o.Release }).Select(o => o.FirstOrDefault()).ToList();
                 return result;
             }
             catch (Exception ex)
@@ -129,7 +147,6 @@ namespace N2K_BackboneBackEnd.Services
                 throw ex;
             }
         }
-
 
         public async Task<List<LineageCountry>> GetOverview()
         {
@@ -144,16 +161,15 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-
         public async Task<List<LineageChanges>> GetChanges(string country, LineageStatus status, IMemoryCache cache, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
-            List<LineageChanges> result = new List<LineageChanges>();
+            List<LineageChanges> result = new();
             try
             {
                 LineageStatus statusLineage;
                 Enum.TryParse<LineageStatus>(status.ToString(), out statusLineage);
-                SqlParameter paramCountry = new SqlParameter("@country", country);
-                SqlParameter paramStatus = new SqlParameter("@status", statusLineage);
+                SqlParameter paramCountry = new("@country", country);
+                SqlParameter paramStatus = new("@status", statusLineage);
                 List<LineageExtended> changes = await _dataContext.Set<LineageExtended>().FromSqlRaw($"exec dbo.spGetLineageData  @country, @status",
                                 paramCountry, paramStatus).ToListAsync();
 
@@ -172,13 +188,15 @@ namespace N2K_BackboneBackEnd.Services
 
                 foreach (LineageExtended change in changes)
                 {
-                    var site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == change.SiteCode && site.Version == change.Version).FirstOrDefaultAsync();
-                    LineageChanges temp = new LineageChanges();
-                    temp.ChangeId = change.ID;
-                    temp.SiteCode = change.SiteCode;
-                    temp.SiteName = change.Name;
-                    temp.SiteType = await _dataContext.Set<SiteTypes>().AsNoTracking().Where(t => t.Code == site.SiteType).Select(t => t.Classification).FirstOrDefaultAsync();
-                    temp.Type = change.Type;
+                    Sites? site = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == change.SiteCode && site.Version == change.Version).FirstOrDefaultAsync();
+                    LineageChanges temp = new()
+                    {
+                        ChangeId = change.ID,
+                        SiteCode = change.SiteCode,
+                        SiteName = change.Name,
+                        SiteType = await _dataContext.Set<SiteTypes>().AsNoTracking().Where(t => t.Code == site.SiteType).Select(t => t.Classification).FirstOrDefaultAsync(),
+                        Type = change.Type
+                    };
                     if (change.AntecessorsSiteCodes != null)
                     {
                         temp.Reference = change.AntecessorsSiteCodes;
@@ -215,14 +233,13 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-
         public async Task<LineageCount> GetCodesCount(string country, IMemoryCache cache, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
-            LineageCount result = new LineageCount();
+            LineageCount result = new();
             try
             {
-                SqlParameter paramCountry = new SqlParameter("@country", country);
-                SqlParameter paramStatus = new SqlParameter("@status", LineageStatus.Proposed);
+                SqlParameter paramCountry = new("@country", country);
+                SqlParameter paramStatus = new("@status", LineageStatus.Proposed);
                 List<LineageExtended> proposed = await _dataContext.Set<LineageExtended>().FromSqlRaw($"exec dbo.spGetLineageData  @country, @status",
                                 paramCountry, paramStatus).ToListAsync();
                 paramStatus = new SqlParameter("@status", LineageStatus.Consolidated);
@@ -243,8 +260,8 @@ namespace N2K_BackboneBackEnd.Services
                 proposed = proposed.Where(c => filter.Contains(c.Type.ToString())).ToList();
                 consolidated = consolidated.Where(c => filter.Contains(c.Type.ToString())).ToList();
 
-                result.Proposed = proposed.Count();
-                result.Consolidated = consolidated.Count();
+                result.Proposed = proposed.Count;
+                result.Consolidated = consolidated.Count;
             }
             catch (Exception ex)
             {
@@ -253,7 +270,6 @@ namespace N2K_BackboneBackEnd.Services
             }
             return result;
         }
-
 
         public async Task<long> SaveEdition(LineageConsolidation consolidateChanges)
         {
@@ -264,7 +280,7 @@ namespace N2K_BackboneBackEnd.Services
                 //When changing to Creation, check if antecessors have more successors, if not, create Deletion records for the antecessors
                 if (consolidateChanges.Type == LineageTypes.Creation)
                 {
-                    var lineageInsertion = new DataTable("LineageInsertion");
+                    DataTable lineageInsertion = new("LineageInsertion");
                     lineageInsertion.Columns.Add("SiteCode", typeof(string));
                     lineageInsertion.Columns.Add("Version", typeof(int));
                     lineageInsertion.Columns.Add("N2KVersioningVersion", typeof(int));
@@ -284,28 +300,32 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     });
 
-                    SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-                    paramTable.Value = lineageInsertion;
-                    paramTable.TypeName = "[dbo].[LineageInsertion]";
+                    SqlParameter paramTable = new("@siteCodes", System.Data.SqlDbType.Structured)
+                    {
+                        Value = lineageInsertion,
+                        TypeName = "[dbo].[LineageInsertion]"
+                    };
                     await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spInsertIntoLineageBulk  @siteCodes", paramTable);
                 }
 
-                SqlParameter param1 = new SqlParameter("@country", lineage.SiteCode.Substring(0, 2));
+                SqlParameter param1 = new("@country", lineage.SiteCode[..2]);
                 List<SiteBasic> resultSites = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
                                     param1).ToListAsync();
                 resultSites = resultSites.Where(c => consolidateChanges.Predecessors.Contains(c.SiteCode)).ToList();
 
-                var sitecodesfilter = new DataTable("sitecodesfilter");
+                DataTable sitecodesfilter = new("sitecodesfilter");
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
                 resultSites.ToList().ForEach(cs =>
                 {
                     sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.Version });
                 });
-                SqlParameter paramId = new SqlParameter("@id", consolidateChanges.ChangeId);
-                SqlParameter paramSitecodesTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-                paramSitecodesTable.Value = sitecodesfilter;
-                paramSitecodesTable.TypeName = "[dbo].[SiteCodeFilter]";
+                SqlParameter paramId = new("@id", consolidateChanges.ChangeId);
+                SqlParameter paramSitecodesTable = new("@siteCodes", System.Data.SqlDbType.Structured)
+                {
+                    Value = sitecodesfilter,
+                    TypeName = "[dbo].[SiteCodeFilter]"
+                };
 
                 await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spConsolidatePredecessors @id, @siteCodes", paramId, paramSitecodesTable);
 
@@ -322,7 +342,7 @@ namespace N2K_BackboneBackEnd.Services
                 });
                 await _dataContext.SaveChangesAsync();
 
-                HarvestedService harvest = new HarvestedService(_dataContext, _versioningContext, _hubContext, _appSettings, _fmeHarvestJobs);
+                HarvestedService harvest = new(_dataContext, _versioningContext, _hubContext, _appSettings, _fmeHarvestJobs);
                 await harvest.ChangeDetectionSingleSite(lineage.SiteCode, lineage.Version, _dataContext.Database.GetConnectionString());
             }
             catch (Exception ex)
@@ -336,21 +356,23 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<LineageEditionInfo>> GetPredecessorsInfo(long ChangeId)
         {
-            List<LineageEditionInfo> result = new List<LineageEditionInfo>();
+            List<LineageEditionInfo> result = new();
             try
             {
                 List<LineageAntecessors> antecessors = await _dataContext.Set<LineageAntecessors>().AsNoTracking().Where(c => c.LineageID == ChangeId).ToListAsync();
 
-                var sitecodesfilter = new DataTable("sitecodesfilter");
+                DataTable sitecodesfilter = new("sitecodesfilter");
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
                 antecessors.ForEach(d =>
                 {
                     sitecodesfilter.Rows.Add(new Object[] { d.SiteCode, d.Version });
                 });
-                SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-                paramTable.Value = sitecodesfilter;
-                paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+                SqlParameter paramTable = new("@siteCodes", System.Data.SqlDbType.Structured)
+                {
+                    Value = sitecodesfilter,
+                    TypeName = "[dbo].[SiteCodeFilter]"
+                };
                 List<SiteToHarvest> antecessorSites = await _dataContext.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetSitesBySiteCodeFilter  @siteCodes",
                                 paramTable).ToListAsync();
                 List<SiteBioRegionsAndArea> bioregions = await _dataContext.Set<SiteBioRegionsAndArea>().FromSqlRaw($"exec dbo.spGetBioRegionsAndAreaBySitecodeAndVersion  @siteCodes",
@@ -366,14 +388,14 @@ namespace N2K_BackboneBackEnd.Services
                         SiteCode = d.SiteCode,
                         SiteName = d.SiteName,
                         SiteType = d.SiteType,
-                        BioRegion = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().BioRegions != null ? (bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().BioRegions) : "",
+                        BioRegion = (bioregions.Any()) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().BioRegions != null ? (bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().BioRegions) : "",
                         AreaSDF = d.AreaHa != null ? Convert.ToDouble(d.AreaHa) : null,
-                        AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area) : null,
+                        AreaGEO = (bioregions.Any()) && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == d.SiteCode && b.Version == d.VersionId).FirstOrDefault().area) : null,
                         Length = d.LengthKm != null ? Convert.ToDouble(d.LengthKm) : null,
                         Status = LineageStatus.Consolidated.ToString(),
-                        ReleaseDate = antecessorsLineage.Count() == 0 ? null
+                        ReleaseDate = antecessorsLineage.Count == 0 ? null
                             : antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release != null
-                                ? unionListHeader.Where(b => b.idULHeader == antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release).FirstOrDefault().Date 
+                                ? unionListHeader.Where(b => b.idULHeader == antecessorsLineage.Where(a => a.SiteCode == d.SiteCode && a.Version == d.VersionId).FirstOrDefault().Release).FirstOrDefault().Date
                                 : null
                     });
                 });
@@ -387,7 +409,6 @@ namespace N2K_BackboneBackEnd.Services
             return result.Distinct().ToList();
         }
 
-
         public async Task<LineageEditionInfo> GetLineageChangesInfo(long ChangeId)
         {
             LineageEditionInfo result = null;
@@ -396,13 +417,15 @@ namespace N2K_BackboneBackEnd.Services
                 Lineage change = await _dataContext.Set<Lineage>().AsNoTracking().Where(c => c.ID == ChangeId).FirstOrDefaultAsync();
                 Sites site = await _dataContext.Set<Sites>().AsNoTracking().Where(c => c.SiteCode == change.SiteCode && c.Version == change.Version).FirstOrDefaultAsync();
 
-                var sitecodesfilter = new DataTable("sitecodesfilter");
+                DataTable sitecodesfilter = new("sitecodesfilter");
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
                 sitecodesfilter.Rows.Add(new Object[] { change.SiteCode, change.Version });
-                SqlParameter paramTable = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-                paramTable.Value = sitecodesfilter;
-                paramTable.TypeName = "[dbo].[SiteCodeFilter]";
+                SqlParameter paramTable = new("@siteCodes", System.Data.SqlDbType.Structured)
+                {
+                    Value = sitecodesfilter,
+                    TypeName = "[dbo].[SiteCodeFilter]"
+                };
                 List<SiteBioRegionsAndArea> bioregions = await _dataContext.Set<SiteBioRegionsAndArea>().FromSqlRaw($"exec dbo.spGetBioRegionsAndAreaBySitecodeAndVersion  @siteCodes",
                     paramTable).ToListAsync();
 
@@ -411,9 +434,9 @@ namespace N2K_BackboneBackEnd.Services
                     SiteCode = site.SiteCode,
                     SiteName = site.Name,
                     SiteType = site.SiteType,
-                    BioRegion = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().BioRegions != null ? (bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().BioRegions) : "",
+                    BioRegion = (bioregions.Any()) && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().BioRegions != null ? (bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().BioRegions) : "",
                     AreaSDF = site.Area != null ? Convert.ToDouble(site.Area) : null,
-                    AreaGEO = (bioregions.Count() > 0) && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().area) : null,
+                    AreaGEO = (bioregions.Any()) && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().area) : null,
                     Length = site.Length != null ? Convert.ToDouble(site.Length) : null,
                     Status = change.Status.ToString()
                 };
@@ -426,13 +449,12 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-
         public async Task<List<SiteBasic>> GetLineageReferenceSites(string country)
         {
-            List<SiteBasic> result = new List<SiteBasic>();
+            List<SiteBasic> result = new();
             try
             {
-                SqlParameter param1 = new SqlParameter("@country", country);
+                SqlParameter param1 = new("@country", country);
                 result = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
                                     param1).ToListAsync();
             }
@@ -444,17 +466,18 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-
         public DataSet GetDataSet(string storedProcName, DataTable param)
         {
-            SqlConnection backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
-            var command = new SqlCommand(storedProcName, backboneConn) { CommandType = CommandType.StoredProcedure };
-            SqlParameter paramTable1 = new SqlParameter("@siteCodes", System.Data.SqlDbType.Structured);
-            paramTable1.Value = param;
-            paramTable1.TypeName = "[dbo].[SiteCodeFilter]";
+            SqlConnection backboneConn = new(_dataContext.Database.GetConnectionString());
+            SqlCommand command = new(storedProcName, backboneConn) { CommandType = CommandType.StoredProcedure };
+            SqlParameter paramTable1 = new("@siteCodes", System.Data.SqlDbType.Structured)
+            {
+                Value = param,
+                TypeName = "[dbo].[SiteCodeFilter]"
+            };
             command.Parameters.Add(paramTable1);
-            var result = new DataSet();
-            var dataAdapter = new SqlDataAdapter(command);
+            DataSet result = new();
+            SqlDataAdapter dataAdapter = new(command);
             dataAdapter.Fill(result);
 
             dataAdapter.Dispose();
@@ -463,16 +486,13 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-
         private async Task<List<SiteCodeView>> swapSiteInListCache(IMemoryCache pCache, SiteChangeStatus? pStatus, Level? pLevel, SiteChangeStatus? pListNameFrom, SiteCodeView pSite)
         {
-
             await Task.Delay(10);
-            List<SiteCodeView> cachedlist = new List<SiteCodeView>();
-
+            List<SiteCodeView> cachedlist = new();
 
             //Site comes from this list
-            string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", pSite.SiteCode.Substring(0, 2), pListNameFrom.ToString(), pLevel.ToString());
+            string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", pSite.SiteCode[..2], pListNameFrom.ToString(), pLevel.ToString());
             if (pCache.TryGetValue(listName, out cachedlist))
             {
                 SiteCodeView element = cachedlist.Where(cl => cl.SiteCode == pSite.SiteCode).FirstOrDefault();
@@ -482,9 +502,8 @@ namespace N2K_BackboneBackEnd.Services
                 }
             }
 
-
             //Site goes to that list
-            listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", pSite.SiteCode.Substring(0, 2), pStatus.ToString(), pLevel.ToString());
+            listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", pSite.SiteCode[..2], pStatus.ToString(), pLevel.ToString());
             if (pCache.TryGetValue(listName, out cachedlist))
             {
                 SiteCodeView element = cachedlist.Where(cl => cl.SiteCode == pSite.SiteCode).FirstOrDefault();
@@ -497,11 +516,8 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     cachedlist.Add(pSite);
                 }
-
             }
             return null;
         }
-
-
     }
 }

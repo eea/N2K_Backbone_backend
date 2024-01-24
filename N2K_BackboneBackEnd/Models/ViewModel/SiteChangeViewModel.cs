@@ -1,10 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using N2K_BackboneBackEnd.Enumerations;
-using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models.versioning_db;
-
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
@@ -12,12 +8,10 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     public class SiteChangeViewModel : SiteChangeView, IEntityModel
     {
         public List<SiteChangeView>? Subrows { get; set; } = new List<SiteChangeView>();
-
         public SiteChangeViewModel()
         {
-            this.Subrows = new List<SiteChangeView> ();
+            this.Subrows = new List<SiteChangeView>();
         }
-
 
         new public static void OnModelCreating(ModelBuilder builder)
         {
