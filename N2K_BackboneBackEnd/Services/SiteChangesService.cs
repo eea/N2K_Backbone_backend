@@ -917,14 +917,16 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     else if (changeCategory == "Species")
                     {
+                        string? speciesName = GetCodeName(changedItem);
                         CodeChangeDetail changeDetail =
                             new CodeChangeDetail
                             {
-                                Code = changedItem.Code.Any(char.IsDigit) ? changedItem.Code : "-",
-                                Name = changedItem.Code.Any(char.IsDigit) ? "-" : changedItem.Code,
+                                Code = changedItem.Code,
+                                Name = speciesName,
                                 ChangeId = changedItem.ChangeId,
                                 Fields = fields
                             };
+
                         if (changeType == "Population Change"
                             || changeType == "Population Increase"
                             || changeType == "Population Decrease")
