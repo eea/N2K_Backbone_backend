@@ -659,14 +659,12 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             RelatedSites? siteRelation = sitesRelation.Where(s => s.PreviousSiteCode == storedSite.SiteCode && s.PreviousVersion == storedSite.VersionId).FirstOrDefault();
                             SiteToHarvest? harvestingSite = null;
-                            LineageDetection ld = detectedLineageChanges.FirstOrDefault(e => e.new_sitecode == storedSite.SiteCode && e.new_version == storedSite.VersionId);
                             if (siteRelation != null)
                                 harvestingSite = newsites.Where(s => s.SiteCode == siteRelation.NewSiteCode && s.VersionId == siteRelation.NewVersion).FirstOrDefault();
                             if (siteRelation != null && harvestingSite == null)
                             {
-                                //if the is the site has been recoded do not add it to the changed sites
-                                LineageDetection? temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
-                                if (temp == null) //the site has not been RECODED
+                                Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == storedSite.SiteCode && l.Version == storedSite.VersionId);
+                                if (lineage?.Type == LineageTypes.Deletion) //the site is not been recoded, split or merge
                                 {
                                     SiteChangeDb siteChange = new()
                                     {
@@ -686,12 +684,6 @@ namespace N2K_BackboneBackEnd.Services
                                         ReferenceSiteCode = storedSite.SiteCode,
                                         N2KVersioningVersion = envelope.VersionId
                                     };
-                                    if (ld != null)
-                                    {
-                                        siteChange.ChangeType = "Site ";
-                                        siteChange.ChangeType += ld.op.ToLower() == "split" ? "Split" : "";
-                                        siteChange.ChangeType += ld.op.ToLower() == "merge" ? "Merge" : "";
-                                    }
                                     changes.Add(siteChange);
                                 }
                             }
@@ -1810,9 +1802,8 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else if (storedSite != null && harvestingSite == null)
                 {
-                    //if the is the site has been recoded do not add it to the changed sites
-                    LineageDetection temp = detectedLineageChanges.Where(c => c.old_sitecode == storedSite.SiteCode && c.op == "RECODING").FirstOrDefault();
-                    if (temp == null)
+                    Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == storedSite.SiteCode && l.Version == storedSite.VersionId);
+                    if (lineage?.Type == LineageTypes.Deletion) //the site is not been recoded, split or merge
                     {
                         SiteChangeDb siteChange = new()
                         {
