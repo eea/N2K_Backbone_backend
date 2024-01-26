@@ -920,8 +920,8 @@ namespace N2K_BackboneBackEnd.Services
                         CodeChangeDetail changeDetail =
                             new CodeChangeDetail
                             {
-                                Code = "-",
-                                Name = changedItem.Code,
+                                Code = changedItem.Code.Any(char.IsDigit) ? changedItem.Code : "-",
+                                Name = changedItem.Code.Any(char.IsDigit) ? "-" : changedItem.Code,
                                 ChangeId = changedItem.ChangeId,
                                 Fields = fields
                             };
