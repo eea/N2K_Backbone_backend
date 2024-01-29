@@ -1,23 +1,16 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
-using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
-using System.Diagnostics.Metrics;
-using System.Linq;
-using System.Resources;
-using Microsoft.Build.Execution;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml;
 using System.IO.Compression;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
-using N2K_BackboneBackEnd.Models.BackboneDB;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -51,7 +44,7 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 string listName = string.Format("{0}_{1}_{2}_{3}", GlobalData.Username, ulBioRegSites, idSource, idTarget);
-                List<BioRegionSiteCode> resultCodes = new List<BioRegionSiteCode>();
+                List<BioRegionSiteCode> resultCodes = new();
                 if (cache.TryGetValue(listName, out List<BioRegionSiteCode> cachedList))
                 {
                     resultCodes = cachedList;
@@ -67,13 +60,13 @@ namespace N2K_BackboneBackEnd.Services
                 {
 
 
-                    SqlParameter param1 = new SqlParameter("@idULHeaderSource", idSource);
-                    SqlParameter param2 = new SqlParameter("@idULHeaderTarget", idTarget);
-                    SqlParameter param3 = new SqlParameter("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
+                    SqlParameter param1 = new("@idULHeaderSource", idSource);
+                    SqlParameter param2 = new("@idULHeaderTarget", idTarget);
+                    SqlParameter param3 = new("@bioRegions", string.IsNullOrEmpty(bioRegions) ? string.Empty : bioRegions);
 
                     resultCodes = await _dataContext.Set<BioRegionSiteCode>().FromSqlRaw($"exec dbo.spGetBioregionSiteCodesInUnionListComparer  @idULHeaderSource, @idULHeaderTarget, @bioRegions",
                                     param1, param2, param3).ToListAsync();
-                    var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    MemoryCacheEntryOptions cacheEntryOptions = new MemoryCacheEntryOptions()
                             .SetSlidingExpiration(TimeSpan.FromSeconds(60))
                             .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
                             .SetPriority(CacheItemPriority.Normal)
@@ -93,7 +86,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                UnionListComparerSummaryViewModel res = new UnionListComparerSummaryViewModel();
+                UnionListComparerSummaryViewModel res = new();
                 if (idSource == null || idTarget == null)
                     return res;
                 List<BioRegionSiteCode> resultCodes = await GetBioregionSiteCodesInUnionListComparer(idSource, idTarget, bioRegions, cache);
@@ -102,13 +95,13 @@ namespace N2K_BackboneBackEnd.Services
                 //Get the number of site codes per bio region
                 List<BioRegionTypes> ulBioRegions = await GetUnionBioRegionTypes();
 
-                var codesGrouped = resultCodes.GroupBy(n => n.BioRegion)
+                List<UnionListComparerBioReg> codesGrouped = resultCodes.GroupBy(n => n.BioRegion)
                              .Select(n => new UnionListComparerBioReg
                              {
                                  BioRegion = n.Key,
                                  Count = n.Count()
                              }).ToList();
-                var _bioRegionSummary =
+                List<UnionListComparerBioReg> _bioRegionSummary =
                     (
                     from p in ulBioRegions
                     join co in codesGrouped on p.BioRegionShortCode equals co.BioRegion into PersonasColegio
@@ -144,7 +137,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
 
                 //get the bioReg-SiteCodes of the source UL
-                var _ulDetails = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idSource).ToListAsync();
+                List<UnionListDetail> _ulDetails = await _dataContext.Set<UnionListDetail>().AsNoTracking().Where(uld => uld.idUnionListHeader == idSource).ToListAsync();
                 List<UnionListDetail> ulDetailsSource = (from src1 in ulSites
                                                          from trgt1 in _ulDetails.Where(trg1 => (src1.SiteCode == trg1.SCI_code) && (src1.BioRegion == trg1.BioRegion))
                                                          select trgt1
@@ -162,7 +155,7 @@ namespace N2K_BackboneBackEnd.Services
                 _ulDetails.Clear();
                 ulSites.Clear();
 
-                List<UnionListComparerDetailedViewModel> result = new List<UnionListComparerDetailedViewModel>();
+                List<UnionListComparerDetailedViewModel> result = new();
                 //Changed
                 var changedSites = (from source1 in ulDetailsSource
                                     join target1 in ulDetailsTarget
@@ -175,46 +168,48 @@ namespace N2K_BackboneBackEnd.Services
 
                 foreach (var item in changedSites)
                 {
-                    UnionListComparerDetailedViewModel changedItem = new UnionListComparerDetailedViewModel();
-                    changedItem.BioRegion = item.source1.BioRegion;
-                    changedItem.Sitecode = item.source1.SCI_code;
-
-                    changedItem.SiteName = new UnionListValues<string>
+                    UnionListComparerDetailedViewModel changedItem = new()
                     {
-                        Source = item.source1.SCI_Name,
-                        Target = item.target1.SCI_Name
-                    };
+                        BioRegion = item.source1.BioRegion,
+                        Sitecode = item.source1.SCI_code,
+
+                        SiteName = new UnionListValues<string>
+                        {
+                            Source = item.source1.SCI_Name,
+                            Target = item.target1.SCI_Name
+                        },
 
 
-                    changedItem.Priority = new UnionListValues<bool>
-                    {
-                        Source = item.source1.Priority,
-                        Target = item.target1.Priority
-                    };
+                        Priority = new UnionListValues<bool>
+                        {
+                            Source = item.source1.Priority,
+                            Target = item.target1.Priority
+                        },
 
 
-                    changedItem.Area = new UnionListValues<double>
-                    {
-                        Source = item.source1.Area,
-                        Target = item.target1.Area
-                    };
+                        Area = new UnionListValues<double>
+                        {
+                            Source = item.source1.Area,
+                            Target = item.target1.Area
+                        },
 
-                    changedItem.Length = new UnionListValues<double>
-                    {
-                        Source = item.source1.Length,
-                        Target = item.target1.Length
-                    };
+                        Length = new UnionListValues<double>
+                        {
+                            Source = item.source1.Length,
+                            Target = item.target1.Length
+                        },
 
-                    changedItem.Longitude = new UnionListValues<double>
-                    {
-                        Source = item.source1.Long,
-                        Target = item.target1.Long
-                    };
+                        Longitude = new UnionListValues<double>
+                        {
+                            Source = item.source1.Long,
+                            Target = item.target1.Long
+                        },
 
-                    changedItem.Latitude = new UnionListValues<double>
-                    {
-                        Source = item.source1.Lat,
-                        Target = item.target1.Lat
+                        Latitude = new UnionListValues<double>
+                        {
+                            Source = item.source1.Lat,
+                            Target = item.target1.Lat
+                        }
                     };
 
 
@@ -225,8 +220,8 @@ namespace N2K_BackboneBackEnd.Services
 
                     if ((bool?)changedItem.Priority.Source != (bool?)changedItem.Priority.Target)
                     {
-                        bool prioSource = ((bool?)changedItem.Priority.Source).HasValue ? ((bool?)changedItem.Priority.Source).Value : false;
-                        bool prioTarget = ((bool?)changedItem.Priority.Target).HasValue ? ((bool?)changedItem.Priority.Target).Value : false;
+                        bool prioSource = ((bool?)changedItem.Priority.Source) ?? false;
+                        bool prioTarget = ((bool?)changedItem.Priority.Target) ?? false;
 
                         if (prioSource && !prioTarget)
                         {
@@ -246,8 +241,8 @@ namespace N2K_BackboneBackEnd.Services
 
                     if ((double?)changedItem.Area.Source != (double?)changedItem.Area.Target)
                     {
-                        double source = ((double?)changedItem.Area.Source).HasValue ? ((double?)changedItem.Area.Source).Value : 0.0;
-                        double target = ((double?)changedItem.Area.Target).HasValue ? ((double?)changedItem.Area.Target).Value : 0.0;
+                        double source = ((double?)changedItem.Area.Source) ?? 0.0;
+                        double target = ((double?)changedItem.Area.Target) ?? 0.0;
 
                         if (source < target)
                         {
@@ -265,8 +260,8 @@ namespace N2K_BackboneBackEnd.Services
 
                     if ((double?)changedItem.Length.Source != (double?)changedItem.Length.Target)
                     {
-                        double source = ((double?)changedItem.Length.Source).HasValue ? ((double?)changedItem.Length.Source).Value : 0.0;
-                        double target = ((double?)changedItem.Length.Target).HasValue ? ((double?)changedItem.Length.Target).Value : 0.0;
+                        double source = ((double?)changedItem.Length.Source) ?? 0.0;
+                        double target = ((double?)changedItem.Length.Target) ?? 0.0;
 
                         if (source < target)
                         {
@@ -305,49 +300,51 @@ namespace N2K_BackboneBackEnd.Services
                                        select source2).ToList();
                 foreach (var item in sourceOnlySites)
                 {
-                    UnionListComparerDetailedViewModel changedItem = new UnionListComparerDetailedViewModel();
-                    changedItem.BioRegion = item.BioRegion;
-                    changedItem.Sitecode = item.SCI_code;
-
-                    changedItem.SiteName = new UnionListValues<string>
+                    UnionListComparerDetailedViewModel changedItem = new()
                     {
-                        Source = item.SCI_Name,
-                        Target = null
+                        BioRegion = item.BioRegion,
+                        Sitecode = item.SCI_code,
+
+                        SiteName = new UnionListValues<string>
+                        {
+                            Source = item.SCI_Name,
+                            Target = null
+                        },
+
+                        Priority = new UnionListValues<bool>
+                        {
+                            Source = item.Priority,
+                            Target = null
+                        },
+
+
+                        Area = new UnionListValues<double>
+                        {
+                            Source = item.Area,
+                            Target = null
+                        },
+
+                        Length = new UnionListValues<double>
+                        {
+                            Source = item.Length,
+                            Target = null
+                        },
+
+                        Latitude = new UnionListValues<double>
+                        {
+                            Source = item.Lat,
+                            Target = null
+                        },
+
+
+                        Longitude = new UnionListValues<double>
+                        {
+                            Source = item.Long,
+                            Target = null
+                        },
+
+                        Changes = "DELETED"
                     };
-
-                    changedItem.Priority = new UnionListValues<bool>
-                    {
-                        Source = item.Priority,
-                        Target = null
-                    };
-
-
-                    changedItem.Area = new UnionListValues<double>
-                    {
-                        Source = item.Area,
-                        Target = null
-                    };
-
-                    changedItem.Length = new UnionListValues<double>
-                    {
-                        Source = item.Length,
-                        Target = null
-                    };
-
-                    changedItem.Latitude = new UnionListValues<double>
-                    {
-                        Source = item.Lat,
-                        Target = null
-                    };
-
-
-                    changedItem.Longitude = new UnionListValues<double>
-                    {
-                        Source = item.Long,
-                        Target = null
-                    };
-
-                    changedItem.Changes = "DELETED";
                     result.Add(changedItem);
                 }
 
@@ -360,48 +357,50 @@ namespace N2K_BackboneBackEnd.Services
                                        select target3).ToList();
                 foreach (var item in targetOnlySites)
                 {
-                    UnionListComparerDetailedViewModel changedItem = new UnionListComparerDetailedViewModel();
-                    changedItem.BioRegion = item.BioRegion;
-                    changedItem.Sitecode = item.SCI_code;
-
-                    changedItem.SiteName = new UnionListValues<string>
+                    UnionListComparerDetailedViewModel changedItem = new()
                     {
-                        Target = item.SCI_Name,
-                        Source = null
+                        BioRegion = item.BioRegion,
+                        Sitecode = item.SCI_code,
+
+                        SiteName = new UnionListValues<string>
+                        {
+                            Target = item.SCI_Name,
+                            Source = null
+                        },
+
+                        Priority = new UnionListValues<bool>
+                        {
+                            Target = item.Priority,
+                            Source = null
+                        },
+
+
+                        Area = new UnionListValues<double>
+                        {
+                            Target = item.Area,
+                            Source = null
+                        },
+
+                        Length = new UnionListValues<double>
+                        {
+                            Target = item.Length,
+                            Source = null
+                        },
+
+                        Latitude = new UnionListValues<double>
+                        {
+                            Target = item.Lat,
+                            Source = null
+                        },
+
+
+                        Longitude = new UnionListValues<double>
+                        {
+                            Target = item.Long,
+                            Source = null
+                        },
+                        Changes = "ADDED"
                     };
-
-                    changedItem.Priority = new UnionListValues<bool>
-                    {
-                        Target = item.Priority,
-                        Source = null
-                    };
-
-
-                    changedItem.Area = new UnionListValues<double>
-                    {
-                        Target = item.Area,
-                        Source = null
-                    };
-
-                    changedItem.Length = new UnionListValues<double>
-                    {
-                        Target = item.Length,
-                        Source = null
-                    };
-
-                    changedItem.Latitude = new UnionListValues<double>
-                    {
-                        Target = item.Lat,
-                        Source = null
-                    };
-
-
-                    changedItem.Longitude = new UnionListValues<double>
-                    {
-                        Target = item.Long,
-                        Source = null
-                    };
-                    changedItem.Changes = "ADDED";
                     result.Add(changedItem);
                 }
                 return result.OrderBy(a => a.BioRegion).ThenBy(b => b.Sitecode).ToList();
@@ -416,7 +415,7 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<string> UnionListDownload(string bioregs)
         {
             IAttachedFileHandler? fileHandler = null;
-            var username = GlobalData.Username;
+            string username = GlobalData.Username;
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
             if (_appSettings.Value.AttachedFiles.AzureBlob)
             {
@@ -490,18 +489,18 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             currentUnionListSite.BioRegion = "MED";
                         }
-                        else if (currentUnionListSite.BioRegion == "MAT" && currentUnionListSite.SCI_code.Substring(0, 2) != "DK") //Marine Atlantic
+                        else if (currentUnionListSite.BioRegion == "MAT" && currentUnionListSite.SCI_code[..2] != "DK") //Marine Atlantic
                         {
                             currentUnionListSite.BioRegion = "ATL";
                         }
-                        else if (currentUnionListSite.BioRegion == "MBA" && currentUnionListSite.SCI_code.Substring(0, 2) != "DK") //Marine Baltic
+                        else if (currentUnionListSite.BioRegion == "MBA" && currentUnionListSite.SCI_code[..2] != "DK") //Marine Baltic
                         {
-                            if (currentUnionListSite.SCI_code.Substring(0, 2) == "FI" || currentUnionListSite.SCI_code.Substring(0, 2) == "LV"
-                                || currentUnionListSite.SCI_code.Substring(0, 2) == "EE" || currentUnionListSite.SCI_code.Substring(0, 2) == "LT")
+                            if (currentUnionListSite.SCI_code[..2] == "FI" || currentUnionListSite.SCI_code[..2] == "LV"
+                                || currentUnionListSite.SCI_code[..2] == "EE" || currentUnionListSite.SCI_code[..2] == "LT")
                             {
                                 currentUnionListSite.BioRegion = "BOR";
                             }
-                            else if (currentUnionListSite.SCI_code.Substring(0, 2) == "DE" || currentUnionListSite.SCI_code.Substring(0, 2) == "PL")
+                            else if (currentUnionListSite.SCI_code[..2] == "DE" || currentUnionListSite.SCI_code[..2] == "PL")
                             {
                                 currentUnionListSite.BioRegion = "CON";
                             }
@@ -517,32 +516,34 @@ namespace N2K_BackboneBackEnd.Services
                     SpreadsheetDocument workbook = SpreadsheetDocument.Create(filePath, DocumentFormat.OpenXml.SpreadsheetDocumentType.Workbook);
                     //Create the different sections and parts necesaries for the Excel
                     WorkbookPart workbookPart = workbook.AddWorkbookPart();
-                    workbook.WorkbookPart.Workbook = new Workbook();
-                    workbook.WorkbookPart.Workbook.Sheets = new Sheets();
+                    workbook.WorkbookPart.Workbook = new Workbook
+                    {
+                        Sheets = new Sheets()
+                    };
                     WorksheetPart sheetPart = workbook.WorkbookPart.AddNewPart<WorksheetPart>();
-                    SheetData sheetData = new SheetData();
-                    sheetPart.Worksheet = new Worksheet(sheetData);
+                    SheetData sheetData = new();
+                    sheetPart.Worksheet = new(sheetData);
                     Sheets sheets = workbook.WorkbookPart.Workbook.GetFirstChild<Sheets>();
                     string relationshipId = workbook.WorkbookPart.GetIdOfPart(sheetPart);
                     //Just a sheet for the excel book
                     uint sheetId = 1;
-                    if (sheets.Elements<Sheet>().Count() > 0)
+                    if (sheets.Elements<Sheet>().Any())
                     {
                         sheetId = sheets.Elements<Sheet>().Select(s => s.SheetId.Value).Max() + 1;
                     }
 
-                    Sheet sheet = new Sheet() { Id = relationshipId, SheetId = sheetId, Name = bioRegion }; //Page name = BioRegion name
+                    Sheet sheet = new() { Id = relationshipId, SheetId = sheetId, Name = bioRegion }; //Page name = BioRegion name
                     sheets.Append(sheet);
 
                     try
                     {
 
                         #region Retrive the data to insert
-                        List<UnionListDetailExcel> currentDetails = new List<UnionListDetailExcel>();
+                        List<UnionListDetailExcel> currentDetails = new();
 
                         foreach (UnionListDetail site in currentUnionListSites.Where(l => l.BioRegion == bioRegion).ToList())
                         {
-                            UnionListDetailExcel temp = new UnionListDetailExcel()
+                            UnionListDetailExcel temp = new()
                             {
                                 SCI_code = site.SCI_code,
                                 SCI_Name = site.SCI_Name,
@@ -615,8 +616,8 @@ namespace N2K_BackboneBackEnd.Services
                         stylesPart.Stylesheet.Save();
                         #endregion
 
-                        Row row = new Row();
-                        Cell cell = new Cell();
+                        Row row = new();
+                        Cell cell = new();
 
                         #region Header of the columns, but we can handwrite it because we know the structure
                         //SCI code
@@ -624,93 +625,119 @@ namespace N2K_BackboneBackEnd.Services
                         cell.CellValue = new CellValue("SCI code");
                         cell.StyleIndex = 2;
                         row.AppendChild(cell);
-                        cell = new Cell();
-                        //Name of SCI
-                        cell.DataType = CellValues.String;
-                        cell.CellValue = new CellValue("Name of SCI");
-                        cell.StyleIndex = 2;
+                        cell = new Cell
+                        {
+                            //Name of SCI
+                            DataType = CellValues.String,
+                            CellValue = new CellValue("Name of SCI"),
+                            StyleIndex = 2
+                        };
                         row.AppendChild(cell);
-                        cell = new Cell();
-                        //Priority
-                        cell.DataType = CellValues.String;
-                        cell.CellValue = new CellValue("Priority");
-                        cell.StyleIndex = 2;
+                        cell = new Cell
+                        {
+                            //Priority
+                            DataType = CellValues.String,
+                            CellValue = new CellValue("Priority"),
+                            StyleIndex = 2
+                        };
                         row.AppendChild(cell);
-                        cell = new Cell();
-                        //Area of SCI (ha)
-                        cell.DataType = CellValues.String;
-                        cell.CellValue = new CellValue("Area of SCI (ha)");
-                        cell.StyleIndex = 2;
+                        cell = new Cell
+                        {
+                            //Area of SCI (ha)
+                            DataType = CellValues.String,
+                            CellValue = new CellValue("Area of SCI (ha)"),
+                            StyleIndex = 2
+                        };
                         row.AppendChild(cell);
-                        cell = new Cell();
-                        //Length of SCI (km)
-                        cell.DataType = CellValues.String;
-                        cell.CellValue = new CellValue("Length of SCI (km)");
-                        cell.StyleIndex = 2;
+                        cell = new Cell
+                        {
+                            //Length of SCI (km)
+                            DataType = CellValues.String,
+                            CellValue = new CellValue("Length of SCI (km)"),
+                            StyleIndex = 2
+                        };
                         row.AppendChild(cell);
-                        cell = new Cell();
-                        //Longitude
-                        cell.DataType = CellValues.String;
-                        cell.CellValue = new CellValue("Longitude");
-                        cell.StyleIndex = 2;
+                        cell = new Cell
+                        {
+                            //Longitude
+                            DataType = CellValues.String,
+                            CellValue = new CellValue("Longitude"),
+                            StyleIndex = 2
+                        };
                         row.AppendChild(cell);
-                        cell = new Cell();
-                        //Latitude
-                        cell.DataType = CellValues.String;
-                        cell.CellValue = new CellValue("Latitude");
-                        cell.StyleIndex = 2;
+                        cell = new Cell
+                        {
+                            //Latitude
+                            DataType = CellValues.String,
+                            CellValue = new CellValue("Latitude"),
+                            StyleIndex = 2
+                        };
                         row.AppendChild(cell);
                         cell = new Cell();
                         #endregion
 
                         sheetData.AppendChild(row);
-                        row = new Row();
+                        row = new();
                         foreach (UnionListDetailExcel ulde in currentDetails)
                         {
                             #region Content row creation
                             row = new Row();
                             //In the same way we know the structure of the data, so we can call for each field
                             //SCI code
-                            cell = new Cell();
-                            cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                            cell.CellValue = new CellValue(ulde.SCI_code); //The GetString is because SqlDataReader. With the Entity it's not necesary
-                            cell.StyleIndex = 0;
+                            cell = new Cell
+                            {
+                                DataType = CellValues.String, //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                                CellValue = new CellValue(ulde.SCI_code), //The GetString is because SqlDataReader. With the Entity it's not necesary
+                                StyleIndex = 0
+                            };
                             row.AppendChild(cell);
                             //Name of SCI
-                            cell = new Cell();
-                            cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                            cell.CellValue = new CellValue(ulde.SCI_Name);
-                            cell.StyleIndex = 0;
+                            cell = new Cell
+                            {
+                                DataType = CellValues.String, //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                                CellValue = new CellValue(ulde.SCI_Name),
+                                StyleIndex = 0
+                            };
                             row.AppendChild(cell);
                             //Priority
-                            cell = new Cell();
-                            cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                            cell.CellValue = new CellValue(ulde.Priority);
-                            cell.StyleIndex = 0;
+                            cell = new Cell
+                            {
+                                DataType = CellValues.String, //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                                CellValue = new CellValue(ulde.Priority),
+                                StyleIndex = 0
+                            };
                             row.AppendChild(cell);
                             //Area of SCI (ha)
-                            cell = new Cell();
-                            cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                            cell.CellValue = new CellValue(ulde.Area);
-                            cell.StyleIndex = 1;
+                            cell = new Cell
+                            {
+                                DataType = CellValues.String, //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                                CellValue = new CellValue(ulde.Area),
+                                StyleIndex = 1
+                            };
                             row.AppendChild(cell);
                             //Length of SCI (km)
-                            cell = new Cell();
-                            cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                            cell.CellValue = new CellValue(ulde.Length);
-                            cell.StyleIndex = 1;
+                            cell = new Cell
+                            {
+                                DataType = CellValues.String, //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                                CellValue = new CellValue(ulde.Length),
+                                StyleIndex = 1
+                            };
                             row.AppendChild(cell);
                             //Longitude
-                            cell = new Cell();
-                            cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                            cell.CellValue = new CellValue(ulde.Long);
-                            cell.StyleIndex = 1;
+                            cell = new Cell
+                            {
+                                DataType = CellValues.String, //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                                CellValue = new CellValue(ulde.Long),
+                                StyleIndex = 1
+                            };
                             row.AppendChild(cell);
                             //Latitude
-                            cell = new Cell();
-                            cell.DataType = CellValues.String; //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
-                            cell.CellValue = new CellValue(ulde.Lat);
-                            cell.StyleIndex = 1;
+                            cell = new Cell
+                            {
+                                DataType = CellValues.String, //It is mandatory and value depends on the type of the data. If not declared, the Excel shows an error in the opening
+                                CellValue = new CellValue(ulde.Lat),
+                                StyleIndex = 1
+                            };
                             row.AppendChild(cell);
                             #endregion
 
@@ -763,9 +790,9 @@ namespace N2K_BackboneBackEnd.Services
                 UnionListHeader? latestUnionList = await _dataContext.Set<UnionListHeader>().AsNoTracking().Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) && (ulh.CreatedBy != _appSettings.Value.current_ul_createdby) && (ulh.Final == true)).OrderByDescending(ulh => ulh.Date).FirstOrDefaultAsync();
 
                 //Create Current
-                SqlParameter param1 = new SqlParameter("@name", _appSettings.Value.current_ul_name);
-                SqlParameter param2 = new SqlParameter("@creator", _appSettings.Value.current_ul_createdby);
-                SqlParameter param3 = new SqlParameter("@final", false);
+                SqlParameter param1 = new("@name", _appSettings.Value.current_ul_name);
+                SqlParameter param2 = new("@creator", _appSettings.Value.current_ul_createdby);
+                SqlParameter param3 = new("@final", false);
                 await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spCreateNewUnionList  @name, @creator, @final ", param1, param2, param3);
 
                 //Get Current

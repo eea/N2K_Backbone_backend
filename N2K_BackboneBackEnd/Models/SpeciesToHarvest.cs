@@ -17,7 +17,6 @@ namespace N2K_BackboneBackEnd.Models
         }
     }
 
-
     [Keyless]
     public class SpeciesToHarvestPerEnvelope : SpeciesToHarvest, IEntityModel
     {

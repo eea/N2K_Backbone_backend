@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.ServiceResponse;
 using AutoMapper;
 using N2K_BackboneBackEnd.Services;
@@ -17,7 +16,6 @@ namespace N2K_BackboneBackEnd.Controllers
     {
         private readonly ICountryService _countryService;
         private readonly IMapper _mapper;
-
 
         public CountriesController(ICountryService controllerSiteChanges, IMapper mapper)
         {
@@ -140,7 +138,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         [HttpGet("GetSiteCount")]
         public async Task<ActionResult<ServiceResponse<List<CountriesSiteCountView>>>> GetSiteCount()
         {
@@ -183,6 +180,29 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Message = ex.Message;
                 response.Count = 0;
                 response.Data = new List<SitesWithChangesView>();
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("GetEditionCountries")]
+        public async Task<ActionResult<ServiceResponse<List<EditionCountriesCountViewModel>>>> GetEditionCountries()
+        {
+            var response = new ServiceResponse<List<EditionCountriesCountViewModel>>();
+            try
+            {
+                var countriesEdition = await _countryService.GetEditionCountries();
+                response.Success = true;
+                response.Message = "";
+                response.Data = countriesEdition;
+                response.Count = (countriesEdition == null) ? 0 : countriesEdition.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<EditionCountriesCountViewModel>();
                 return Ok(response);
             }
         }

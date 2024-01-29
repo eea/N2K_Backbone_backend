@@ -17,7 +17,6 @@ namespace N2K_BackboneBackEnd.Controllers
         private readonly IEULoginService _euLoginService;
         private readonly IMapper _mapper;
 
-
         public EULoginController(IOptions<ConfigSettings> app, IEULoginService euLoginService, IMapper mapper)
         {
             _appSettings = app;
@@ -49,7 +48,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = "";
                 return Ok(response);
             }
-
         }
 
         /// <summary>
@@ -82,7 +80,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         /*
         [AllowAnonymous]
         [HttpGet("GetToken/redirectionUrl={redirectionUrl}&code={code}&code_verifier={code_verifier}")]
@@ -107,10 +104,8 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = "";
                 return Ok(response);
             }
-
         }
         */
-
 
         [AllowAnonymous]
         [Route("GetToken/")]
@@ -136,7 +131,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = "";
                 return Ok(response);
             }
-
         }
 
         [AllowAnonymous]
@@ -161,7 +155,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = "";
                 return Ok(response);
             }
-
         }
 
         [AllowAnonymous]
@@ -186,10 +179,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = "";
                 return Ok(response);
             }
-
         }
-
-
-
     }
 }

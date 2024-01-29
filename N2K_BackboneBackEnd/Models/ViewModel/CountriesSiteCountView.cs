@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using N2K_BackboneBackEnd.Models.backbone_db;
 using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
@@ -17,6 +16,5 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         {
             builder.Entity<CountriesSiteCountView>();
         }
-
     }
 }

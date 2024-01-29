@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using N2K_BackboneBackEnd.Helpers;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 
@@ -14,8 +13,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
         public string HabitatCode { get; set; } = string.Empty;
-
-        [Column(TypeName = "decimal(18, 3)")]
+        [Column(TypeName = "decimal(18, 4)")]
         public decimal? CoverHA { get; set; }
         public Boolean? PriorityForm { get; set; }
         public string? Representativity { get; set; }
@@ -30,8 +28,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? PF { get; set; }
         public int? NonPresenciInSite { get; set; }
 
-
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public Habitats() { }
 
@@ -39,7 +36,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             dbConnection = db;
         }
-
 
         public async static Task<int> SaveBulkRecord(string db, List<Habitats> listData)
         {
@@ -63,6 +59,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 return 0;
             }
         }
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<Habitats>()

@@ -1,45 +1,26 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Drawing;
-using System.Reflection.Emit;
-using DocumentFormat.OpenXml.Office.CoverPageProps;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace N2K_BackboneBackEnd.Models.versioning_db
 {
-
     public class ReferenceMap : VersioningBase, IEntityModel
     {
-        public string COUNTRYCODE { get; set; } = "";
-
+        public string COUNTRYCODE { get; set; } = string.Empty;
         [Column(TypeName = "decimal(18, 0)")]
         public decimal VERSIONID { get; set; }
-
-
         [Column(TypeName = "decimal(18, 0)")]
         public decimal COUNTRYVERSIONID { get; set; }
-
         private Int32 OBJECTID { get; set; }
-
-        public string? SITECODE { get; set; } = "";
-
+        public string? SITECODE { get; set; } = string.Empty;
         private string? NATIONALMAPNUMBER { get; set; }
-
         private string? SCALE { get; set; }
-
         private string? PROJECTION { get; set; }
-
         private string? DETAILS { get; set; }
-
         public string? INSPIRE { get; set; }
-
         public Int16? PDFPROVIDED { get; set; }
-
         public NaturaSite NaturaSite { get; set; }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {
@@ -48,15 +29,16 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
             .HasKey(k => new { k.SITECODE, k.COUNTRYVERSIONID });
         }
     }
+
     public class NaturaSite : VersioningBase, IEntityModel
     {
         public Int32 OBJECTID { get; set; }
-        public string COUNTRYCODE { get; set; } = "";
+        public string COUNTRYCODE { get; set; } = string.Empty;
         [Column(TypeName = "decimal(18, 0)")]
         public decimal VERSIONID { get; set; }
         [Column(TypeName = "decimal(18, 0)")]
         public decimal COUNTRYVERSIONID { get; set; }
-        public string SITECODE { get; set; } = "";
+        public string SITECODE { get; set; } = string.Empty;
         public string? SITENAME { get; set; }
         public string? COUNTRY_CODE { get; set; }
         public DateTime? DATE_LOADED { get; set; }
@@ -70,7 +52,6 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         public DateTime? DATE_CONF_SCI { get; set; }
         public DateTime? DATE_SPA { get; set; }
         public DateTime? DATE_SAC { get; set; }
-
         [Column(TypeName = "decimal(38, 4)")]
         public decimal? AREAHA { get; set; }
         [Column(TypeName = "decimal(38, 2)")]
@@ -86,7 +67,6 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         public string? EXPLANATIONS { get; set; }
         [Column(TypeName = "decimal(38, 4)")]
         public decimal? MARINEAREA { get; set; }
-
         [NotMapped]
         public string? INSPIRE
         {
@@ -97,7 +77,6 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
                 return null;
             }
         }
-
         [NotMapped]
         public Int16? PDFPROVIDED
         {
@@ -108,9 +87,7 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
                 return null;
             }
         }
-
         private ReferenceMap RefMap { get; set; }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {
@@ -121,6 +98,4 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
                     .HasForeignKey<ReferenceMap>(b => new { b.SITECODE, b.COUNTRYVERSIONID });
         }
     }
-
-
 }

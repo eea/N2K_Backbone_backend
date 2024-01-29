@@ -9,6 +9,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? RefBioRegionCode { get; set; }
         public string? BioRegionShortCode { get; set; }
         public Boolean? isMarine { get; set; }
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<BioRegionTypes>()
