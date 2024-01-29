@@ -919,7 +919,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         CodeChangeDetail changeDetail;
                         string? speciesName = GetCodeName(changedItem);
-                        if (String.IsNullOrEmpty(speciesName))
+                        if (!String.IsNullOrEmpty(speciesName))
                         {
                             changeDetail = new CodeChangeDetail
                             {
