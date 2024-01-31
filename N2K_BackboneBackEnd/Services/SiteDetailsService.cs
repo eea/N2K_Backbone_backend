@@ -395,6 +395,7 @@ namespace N2K_BackboneBackEnd.Services
                     JustificationFiles justFile = new()
                     {
                         Path = fUrl,
+                        OriginalName = fUrl,
                         SiteCode = attachedFile.SiteCode,
                         Version = attachedFile.Version,
                         ImportDate = DateTime.Now,

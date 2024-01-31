@@ -8,40 +8,34 @@ namespace N2K_BackboneBackEnd.Helpers
 {
     public class AzureBlobHandler : AttachedFileHandler, IAttachedFileHandler
     {
-
         public AzureBlobHandler(AttachedFilesConfig attachedFilesConfig) : base(attachedFilesConfig)
         {
         }
-
 
         private BlobContainerClient ConnectToAzureBlob()
         {
             string connectionString = _attachedFilesConfig.AzureConnectionString;
 
-            BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
+            BlobServiceClient blobServiceClient = new(connectionString);
 
             // Create the container and return a container client object
             return blobServiceClient.GetBlobContainerClient(_attachedFilesConfig.JustificationFolder);
-
         }
-
 
         public async Task<List<string>> UploadFileAsync(AttachedFile files)
         {
-
-            var remoteUrl = "";
-            List<String> uploadedFiles = new List<string>();
+            string remoteUrl = "";
+            List<String> uploadedFiles = new();
             if (files == null || files.Files == null) return uploadedFiles;
 
-            var invalidFile = await AllFilesValid(files);
+            bool invalidFile = await AllFilesValid(files);
 
             foreach (var f in files.Files)
             {
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
-                var fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
+                var fileName = (ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"') + DateTime.Now).GetHashCode().ToString();
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
                 var fullPath = Path.Combine(_pathToSave, fileName);
-
 
                 //if the file is compressed (extract all the content)
                 if (CheckCompressionFormats(fileName))
@@ -67,20 +61,15 @@ namespace N2K_BackboneBackEnd.Helpers
                 File.Delete(fullPath);
             }
             return uploadedFiles;
-
         }
-
 
         public async Task<List<string>> UploadFileAsync(string file)
         {
-            var remoteUrl = "";
-            List<String> uploadedFiles = new List<string>();
+            string remoteUrl = "";
+            List<String> uploadedFiles = new();
             if (String.IsNullOrEmpty(file))
                 return uploadedFiles;
-
-#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
             var fileName = Path.GetFileName(file);
-#pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
             var fullPath = Path.Combine(_pathToSave, fileName);
 
             BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
@@ -91,9 +80,7 @@ namespace N2K_BackboneBackEnd.Helpers
             File.Delete(file);
 
             return uploadedFiles;
-
         }
-
 
         public async Task<int> DeleteFileAsync(string fileName)
         {
@@ -108,12 +95,11 @@ namespace N2K_BackboneBackEnd.Helpers
             return 1;
         }
 
-
         public async Task<int> DeleteUnionListsFilesAsync()
         {
             BlobContainerClient blobContainerClient = ConnectToAzureBlob();
             var remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-            var filesUrl = string.Format("{0}{1}", remoteUrl, _attachedFilesConfig.JustificationFolder);
+            string filesUrl = string.Format("{0}{1}", remoteUrl, _attachedFilesConfig.JustificationFolder);
 
             blobContainerClient.GetBlobs();
             foreach (BlobItem blob in blobContainerClient.GetBlobs())
@@ -123,9 +109,7 @@ namespace N2K_BackboneBackEnd.Helpers
                     await blobContainerClient.GetBlobClient(blob.Name).DeleteIfExistsAsync();
                 }
             }
-
             return 1;
         }
-
     }
 }
