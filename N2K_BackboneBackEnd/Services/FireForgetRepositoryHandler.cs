@@ -1,14 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using NuGet.Protocol.Core.Types;
-
-
-namespace N2K_BackboneBackEnd.Services
+﻿namespace N2K_BackboneBackEnd.Services
 {
     public class FireForgetRepositoryHandler : IFireForgetRepositoryHandler
     {
-
         private readonly IServiceScopeFactory _serviceScopeFactory;
 
         public FireForgetRepositoryHandler(IServiceScopeFactory serviceScopeFactory)
@@ -34,6 +27,5 @@ namespace N2K_BackboneBackEnd.Services
                 }
             });
         }
-
     }
 }

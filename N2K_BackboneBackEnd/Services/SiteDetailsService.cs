@@ -1,9 +1,4 @@
-﻿using DocumentFormat.OpenXml.Bibliography;
-using DocumentFormat.OpenXml.Office2019.Word.Cid;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Differencing;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -12,11 +7,7 @@ using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
-using N2K_BackboneBackEnd.Models.BackboneDB;
 using N2K_BackboneBackEnd.Models.ViewModel;
-using NuGet.Packaging;
-using System.ComponentModel.Design;
-using System.Security.Policy;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -38,7 +29,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             _cache = cache;
             _listName = listName;
-            List<T> cachedList = new List<T>();
+            List<T> cachedList = new();
             if (!cache.TryGetValue(listName, out cachedList))
             {
                 cache.Set(listName, new List<T>(), CreateCacheEntryOptions());
@@ -47,7 +38,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public List<T> GetCachedList()
         {
-            List<T> cachedList = new List<T>();
+            List<T> cachedList = new();
             if (!_cache.TryGetValue(_listName, out cachedList))
             {
                 if (cachedList == null)
@@ -60,7 +51,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             List<T> cachedList = GetCachedList();
             //build the list to return
-            List<T> finalResult = new List<T>();
+            List<T> finalResult = new();
             foreach (T item in dbList)
             {
                 //check if the item is in the cached list
@@ -90,10 +81,8 @@ namespace N2K_BackboneBackEnd.Services
         }
     }
 
-
     public class SiteDetailsService : ISiteDetailsService
     {
-
         private readonly N2KBackboneContext _dataContext;
         private readonly N2K_VersioningContext _versioningContext;
         private readonly IOptions<ConfigSettings> _appSettings;
@@ -110,29 +99,23 @@ namespace N2K_BackboneBackEnd.Services
 
         public long GetRandomId()
         {
-            Random random = new Random();
+            Random random = new();
             return random.NextInt64(1, 8696761735052207);
         }
-
 
         #region SiteGeometry
         public async Task<SiteGeometryDetailed> GetSiteGeometry(string siteCode, int version)
         {
             try
             {
-                SiteGeometryDetailed result = new SiteGeometryDetailed();
-                SqlParameter param1 = new SqlParameter("@SiteCode", siteCode);
-                SqlParameter param2 = new SqlParameter("@Version", version);
+                SiteGeometryDetailed result = new();
+                SqlParameter param1 = new("@SiteCode", siteCode);
+                SqlParameter param2 = new("@Version", version);
 
                 var geometries = await _dataContext.Set<SiteGeometryDetailed>().FromSqlRaw($"exec dbo.spGetSiteVersionGeometryDetailed  @SiteCode, @Version",
                                 param1, param2).ToArrayAsync();
-
-
-#pragma warning disable CS8603 // Posible tipo de valor devuelto de referencia nulo
                 if (geometries.Length > 0 && !string.IsNullOrEmpty(geometries[0].SiteCode))
                     return geometries[0];
-
-#pragma warning restore CS8603 // Posible tipo de valor devuelto de referencia nulo
                 return result;
             }
             catch (Exception ex)
@@ -148,7 +131,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<StatusChanges> result = new List<StatusChanges>();
+                List<StatusChanges> result = new();
                 List<StatusChangesRelease> result2 = new();
                 result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == pSiteCode && ch.Version == pCountryVersion).ToListAsync();
                 result2 = await _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == pSiteCode.Substring(0, 2) && f.Release == null).ToListAsync();
@@ -173,7 +156,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 if (temporal)
                 {
-                    CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                    CachedListItem<StatusChanges> ComItem = new(comlistName, cache);
                     return ComItem.GetFinalList(result);
                 }
                 return result;
@@ -185,12 +168,11 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-
         public async Task<List<StatusChanges>> AddComment(StatusChanges comment, IMemoryCache cache, bool temporal = false)
         {
             try
             {
-                List<StatusChanges> result = new List<StatusChanges>();
+                List<StatusChanges> result = new();
                 comment.Date = DateTime.Now;
                 comment.Owner = GlobalData.Username;
                 comment.Temporal = true;
@@ -207,7 +189,7 @@ namespace N2K_BackboneBackEnd.Services
                 else
                 {
                     comment.Temporal = true;
-                    CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                    CachedListItem<StatusChanges> ComItem = new(comlistName, cache);
                     List<StatusChanges> cachedList = ComItem.GetCachedList();
                     comment.Id = GetRandomId();
                     cachedList.Add(comment);
@@ -232,7 +214,7 @@ namespace N2K_BackboneBackEnd.Services
                 StatusChanges? comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == CommentId);
                 if (temporal)
                 {
-                    CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                    CachedListItem<StatusChanges> ComItem = new(comlistName, cache);
                     List<StatusChanges> cachedList = ComItem.GetCachedList();
                     //if it is a comment existing in the database add it to the cache tagged as deleted
                     if (comment != null)
@@ -277,13 +259,13 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<StatusChanges> result = new List<StatusChanges>();
-                var edited = 1;
-                List<StatusChanges> cachedList = new List<StatusChanges>();
+                List<StatusChanges> result = new();
+                int edited = 1;
+                List<StatusChanges> cachedList = new();
                 StatusChanges? _comment = await _dataContext.Set<StatusChanges>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == comment.Id);
                 if (temporal)
                 {
-                    CachedListItem<StatusChanges> ComItem = new CachedListItem<StatusChanges>(comlistName, cache);
+                    CachedListItem<StatusChanges> ComItem = new(comlistName, cache);
                     cachedList = ComItem.GetCachedList();
                     //if it is a comment existing in the database add it to the cache tagged as updated
                     if (_comment != null)
@@ -324,7 +306,6 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                 }
-
                 else
                 {
                     if (_comment != null)
@@ -354,7 +335,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<JustificationFiles> result = new List<JustificationFiles>();
+                List<JustificationFiles> result = new();
                 List<JustificationFilesRelease> result2 = new();
                 result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(f => f.SiteCode == pSiteCode && f.Version == pCountryVersion).ToListAsync();
                 result2 = await _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == pSiteCode.Substring(0, 2) && f.Release == null).ToListAsync();
@@ -377,7 +358,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 if (temporal)
                 {
-                    CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
+                    CachedListItem<JustificationFiles> JustifItem = new(justiflistName, cache);
                     return JustifItem.GetFinalList(result);
                 }
                 return result;
@@ -393,9 +374,9 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<JustificationFiles> result = new List<JustificationFiles>();
+                List<JustificationFiles> result = new();
                 IAttachedFileHandler? fileHandler = null;
-                var username = GlobalData.Username;
+                string username = GlobalData.Username;
 
                 if (_appSettings.Value.AttachedFiles == null) return result;
 
@@ -407,11 +388,11 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
                 }
-                var fileUrl = await fileHandler.UploadFileAsync(attachedFile);
-                List<JustificationFiles> cachedList = new List<JustificationFiles>();
-                foreach (var fUrl in fileUrl)
+                List<string> fileUrl = await fileHandler.UploadFileAsync(attachedFile);
+                List<JustificationFiles> cachedList = new();
+                foreach (string fUrl in fileUrl)
                 {
-                    JustificationFiles justFile = new JustificationFiles
+                    JustificationFiles justFile = new()
                     {
                         Path = fUrl,
                         SiteCode = attachedFile.SiteCode,
@@ -421,7 +402,7 @@ namespace N2K_BackboneBackEnd.Services
                     };
                     if (temporal)
                     {
-                        CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
+                        CachedListItem<JustificationFiles> JustifItem = new(justiflistName, cache);
                         cachedList = JustifItem.GetCachedList();
                         justFile.Id = GetRandomId();
                         cachedList.Add(justFile);
@@ -442,7 +423,6 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-
         public async Task<int> DeleteFile(long justificationId, IMemoryCache cache, bool temporal = false)
         {
             try
@@ -451,7 +431,7 @@ namespace N2K_BackboneBackEnd.Services
                 JustificationFiles? justification = await _dataContext.Set<JustificationFiles>().AsNoTracking().FirstOrDefaultAsync(c => c.Id == justificationId);
                 if (temporal)
                 {
-                    CachedListItem<JustificationFiles> JustifItem = new CachedListItem<JustificationFiles>(justiflistName, cache);
+                    CachedListItem<JustificationFiles> JustifItem = new(justiflistName, cache);
                     List<JustificationFiles> cachedList = JustifItem.GetCachedList();
                     //if it is a justification existing in the database, add it to the cache tagged as deleted
                     if (justification != null)
@@ -541,7 +521,7 @@ namespace N2K_BackboneBackEnd.Services
         #region SiteEdition
         public async Task<string> SaveEdition(ChangeEditionDb changeEdition, IMemoryCache cache)
         {
-            var username = GlobalData.Username;
+            string username = GlobalData.Username;
             Sites site = null;
             SiteChangeDb change = null, reject = null;
             SiteActivities activityCheck = null;
@@ -566,11 +546,8 @@ namespace N2K_BackboneBackEnd.Services
                 //Verify the site & current version exists
                 site = _dataContext.Set<Sites>().Single(x => x.SiteCode == changeEdition.SiteCode && x.Current == true);
 
-
                 if (site != null && (site.CurrentStatus == SiteChangeStatus.Accepted || site.CurrentStatus == SiteChangeStatus.Rejected))
                 {
-
-
                     activity = new SiteActivities
                     {
                         SiteCode = changeEdition.SiteCode,
@@ -643,9 +620,9 @@ namespace N2K_BackboneBackEnd.Services
                         if (changeEdition.BioRegion != null && changeEdition.BioRegion != "string" && changeEdition.BioRegion != "")
                         {
                             string[] bioregions = changeEdition.BioRegion.Split(",");
-                            foreach (var bioregion in bioregions)
+                            foreach (string bioregion in bioregions)
                             {
-                                BioRegions bioreg = new BioRegions
+                                BioRegions bioreg = new()
                                 {
                                     SiteCode = changeEdition.SiteCode,
                                     Version = site.Version,
@@ -703,7 +680,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                SqlParameter param1 = new SqlParameter("@sitecode", siteCode);
+                SqlParameter param1 = new("@sitecode", siteCode);
                 List<ChangeEditionDbExtended> list = await _dataContext.Set<ChangeEditionDbExtended>().FromSqlRaw($"exec dbo.[spGetReferenceEditInfo]  @sitecode",
                                     param1).ToListAsync();
                 ChangeEditionDbExtended changeEdition = list.FirstOrDefault();
@@ -713,7 +690,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else
                 {
-                    ChangeEditionViewModelOriginalExtended result = new ChangeEditionViewModelOriginalExtended()
+                    ChangeEditionViewModelOriginalExtended result = new()
                     {
                         Area = changeEdition.Area is null ? null : changeEdition.Area,
                         BioRegion = !string.IsNullOrEmpty(changeEdition.BioRegion) ? changeEdition.BioRegion.Split(',').Select(it => int.Parse(it)).ToList() : new List<int>(),
@@ -731,7 +708,7 @@ namespace N2K_BackboneBackEnd.Services
                     SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == siteCode && e.Version == changeEdition.Version && e.ChangeType == "User edition").FirstOrDefaultAsync();
                     if (change != null)
                     {
-                        SqlParameter param2 = new SqlParameter("@version", change.VersionReferenceId);
+                        SqlParameter param2 = new("@version", change.VersionReferenceId);
                         List<ChangeEditionDb> listOriginal = await _dataContext.Set<ChangeEditionDb>().FromSqlRaw($"exec dbo.[spGetOriginalEditInfo]  @sitecode, @version",
                                             param1, param2).ToListAsync();
                         ChangeEditionDb changeEditionOriginal = listOriginal.FirstOrDefault();

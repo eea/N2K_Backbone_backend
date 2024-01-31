@@ -4,15 +4,8 @@ using N2K_BackboneBackEnd.ServiceResponse;
 using AutoMapper;
 using N2K_BackboneBackEnd.Services;
 using N2K_BackboneBackEnd.Models.ViewModel;
-using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.backbone_db;
-using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Authorization;
-using Azure.Core;
-using NuGet.Common;
-using System.IdentityModel.Tokens.Jwt;
-using Newtonsoft.Json.Linq;
-using N2K_BackboneBackEnd.Helpers;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace N2K_BackboneBackEnd.Controllers
@@ -22,23 +15,22 @@ namespace N2K_BackboneBackEnd.Controllers
     [ApiController]
     public class SiteDetailsController : ControllerBase
     {
-
         private readonly ISiteDetailsService _siteDetailsService;
         private readonly IMapper _mapper;
         private IMemoryCache _cache;
 
-        public SiteDetailsController(ISiteDetailsService siteDetailsService, IMapper mapper, IMemoryCache cache) { 
+        public SiteDetailsController(ISiteDetailsService siteDetailsService, IMapper mapper, IMemoryCache cache)
+        {
             _siteDetailsService = siteDetailsService;
             _mapper = mapper;
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
-
         #region SiteGeometry
         [HttpGet("GetSiteGeometry/siteCode={pSiteCode}&version={pCountryVersion}")]
         public async Task<ActionResult<SiteGeometryDetailed>> GetSiteGeometry(string pSiteCode, int pCountryVersion)
         {
-            ServiceResponse<SiteGeometryDetailed> response = new ServiceResponse<SiteGeometryDetailed>();
+            ServiceResponse<SiteGeometryDetailed> response = new();
             try
             {
                 SiteGeometryDetailed siteGeometry = await _siteDetailsService.GetSiteGeometry(pSiteCode, pCountryVersion);
@@ -57,16 +49,13 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
-
-
         #endregion
 
-
         #region SiteComments        
-        [HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]        
-        public async Task<ActionResult<List<StatusChanges>>> ListSiteComments(string pSiteCode, int pCountryVersion)            
+        [HttpGet("GetSiteComments/siteCode={pSiteCode}&version={pCountryVersion}")]
+        public async Task<ActionResult<List<StatusChanges>>> ListSiteComments(string pSiteCode, int pCountryVersion)
         {
-            ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
+            ServiceResponse<List<StatusChanges>> response = new();
             try
             {
                 List<StatusChanges> siteComments = await _siteDetailsService.ListSiteComments(pSiteCode, pCountryVersion, _cache);
@@ -87,7 +76,6 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         /*
-
         [HttpGet("GetSiteTemporalComments/siteCode={pSiteCode}&version={pCountryVersion}")]
         public async Task<ActionResult<List<StatusChanges>>> GetSiteTemporalComments(string pSiteCode, int pCountryVersion)
         {
@@ -112,13 +100,11 @@ namespace N2K_BackboneBackEnd.Controllers
         }
         */
 
-
         [Route("SiteComments/Add")]
         [HttpPost]
         public async Task<ActionResult<List<StatusChanges>>> AddComment([FromBody] StatusChanges comment)
         {
-
-            ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
+            ServiceResponse<List<StatusChanges>> response = new();
             try
             {
                 List<StatusChanges> siteComments = await _siteDetailsService.AddComment(comment, _cache);
@@ -143,7 +129,6 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpPost]
         public async Task<ActionResult<List<StatusChanges>>> AddTemporal([FromBody] StatusChanges comment)
         {
-
             ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
             try
             {
@@ -169,7 +154,7 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpDelete]
         public async Task<ActionResult<int>> Delete([FromBody] long Id)
         {
-            ServiceResponse<int> response = new ServiceResponse<int>();
+            ServiceResponse<int> response = new();
             try
             {
                 int siteComments = await _siteDetailsService.DeleteComment(Id, _cache);
@@ -215,12 +200,11 @@ namespace N2K_BackboneBackEnd.Controllers
         }
         */
 
-
         [Route("SiteComments/Update")]
         [HttpPut]
         public async Task<ActionResult<List<StatusChanges>>> UpdateComment([FromBody] StatusChanges comment)
         {
-            ServiceResponse<List<StatusChanges>> response = new ServiceResponse<List<StatusChanges>>();
+            ServiceResponse<List<StatusChanges>> response = new();
             try
             {
                 List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment, _cache);
@@ -265,9 +249,7 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
         */
-
         #endregion
-
 
         #region SiteFiles
         [HttpGet("GetAttachedFiles/siteCode={pSiteCode}&version={pCountryVersion}")]
@@ -334,14 +316,12 @@ namespace N2K_BackboneBackEnd.Controllers
                     return Ok(response);
                 }
                 //var formCollection = await Request.ReadFormAsync();
-                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles,_cache);
+                List<JustificationFiles> siteFiles = await _siteDetailsService.UploadFile(attachedFiles, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteFiles;
                 response.Count = (siteFiles == null) ? 0 : siteFiles.Count;
                 return Ok(response);
-
-
             }
             catch (Exception ex)
             {
@@ -351,7 +331,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = null;
                 return Ok(response);
             }
-
         }
 
         /*
@@ -377,8 +356,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = siteFiles;
                 response.Count = (siteFiles == null) ? 0 : siteFiles.Count;
                 return Ok(response);
-
-
             }
             catch (Exception ex)
             {
@@ -388,7 +365,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = null;
                 return Ok(response);
             }
-
         }
         */
 
@@ -396,11 +372,10 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpDelete]
         public async Task<ActionResult<int>> DeleteFile([FromQuery] long justificationId)
         {
-
-            ServiceResponse<int> response = new ServiceResponse<int>();
+            ServiceResponse<int> response = new();
             try
             {
-                int siteComments = await _siteDetailsService.DeleteFile(justificationId,_cache);
+                int siteComments = await _siteDetailsService.DeleteFile(justificationId, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;
@@ -415,8 +390,6 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = 0;
                 return Ok(response);
             }
-
-
         }
 
         /*
@@ -424,7 +397,6 @@ namespace N2K_BackboneBackEnd.Controllers
         [HttpDelete]
         public async Task<ActionResult<int>> DeleteTemporalAttachedFile([FromQuery] long justificationId)
         {
-
             ServiceResponse<int> response = new ServiceResponse<int>();
             try
             {
@@ -443,13 +415,9 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = 0;
                 return Ok(response);
             }
-
-
         }
         */
-
         #endregion
-
 
         [Route("SaveEdition/")]
         [HttpPost]

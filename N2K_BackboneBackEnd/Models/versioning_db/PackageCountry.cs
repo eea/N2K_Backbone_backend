@@ -7,13 +7,11 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
     [Keyless]
     public class PackageCountry : VersioningBase, IEntityModel
     {
-        public string CountryCode { get; set; } = "";
-
+        public string CountryCode { get; set; } = string.Empty;
         [Column(TypeName = "decimal(18, 0)")]
         public float CountryVersionID { get; set; }
         public string? Path { get; set; }
         public DateTime? Importdate { get; set; }
-
         [Column(TypeName = "decimal(18, 0)")]
         public decimal VERSIONID { get; set; }
         public bool Versioned { get; set; }
@@ -23,21 +21,18 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
         {
             builder.Entity<PackageCountry>()
                 .ToTable("PackageCountry")
-                .HasKey(c=> new { c.CountryCode, c.CountryVersionID });
+                .HasKey(c => new { c.CountryCode, c.CountryVersionID });
         }
     }
 
     [Keyless]
     public class PackageCountrySpatial : VersioningBase, IEntityModel
     {
-        public string CountryCode { get; set; } = "";
-
+        public string CountryCode { get; set; } = string.Empty;
         [Column(TypeName = "decimal(18, 0)")]
         public float CountryVersionID { get; set; }
-
         public string? Path { get; set; }
         public DateTime? Importdate { get; set; }
-
         [Column(TypeName = "decimal(18, 0)")]
         public decimal VERSIONID { get; set; }
         public bool Versioned { get; set; }
@@ -51,5 +46,4 @@ namespace N2K_BackboneBackEnd.Models.versioning_db
                 .HasKey(c => new { c.CountryCode, c.CountryVersionID });
         }
     }
-
 }

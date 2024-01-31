@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
-using System.ComponentModel.DataAnnotations;
 using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
@@ -38,10 +37,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? SacLegalReference { get; set; }
         public string? Explanations { get; set; }
         public decimal? MarineArea { get; set; }
-        public string? Inspire_ID { get; set; } = "";
+        public string? Inspire_ID { get; set; } = string.Empty;
         public Int16? PDFProvided { get; set; }
 
-        private string dbConnection = "";
+        private string dbConnection = string.Empty;
 
         public Sites() { }
 
@@ -49,7 +48,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             dbConnection = db;
         }
-
 
         public async static Task<int> SaveBulkRecord(string db, List<Sites> listData)
         {
@@ -73,7 +71,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 return 0;
             }
         }
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {

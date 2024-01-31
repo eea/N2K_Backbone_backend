@@ -1,11 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public abstract class DocumentationChanges 
+    public abstract class DocumentationChanges
     {
         [Key]
         public long Id { get; set; }
@@ -18,6 +16,4 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public bool Release { get; set; } = false;
 
     }
-
-
 }

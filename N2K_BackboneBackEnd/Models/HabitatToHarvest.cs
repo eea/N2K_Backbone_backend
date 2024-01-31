@@ -2,7 +2,6 @@
 
 namespace N2K_BackboneBackEnd.Models
 {
-
     [Keyless]
     public class HabitatToHarvest : IEntityModel
     {
@@ -13,6 +12,7 @@ namespace N2K_BackboneBackEnd.Models
         public double? Cover_ha { get; set; }
         //public string? HabitatType { get; set; }
         public bool? PriorityForm { get; set; } // "PF" in the versioning DB
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<HabitatToHarvest>()
@@ -30,6 +30,5 @@ namespace N2K_BackboneBackEnd.Models
             builder.Entity<HabitatsToHarvestPerEnvelope>()
                 .HasNoKey();
         }
-
     }
 }

@@ -10,6 +10,6 @@ namespace N2K_BackboneBackEnd.Enumerations
         [DataMember]
         Warning = 1,
         [DataMember]
-        Critical= 2
+        Critical = 2
     }
 }

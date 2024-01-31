@@ -2,7 +2,7 @@
 {
     public class JustificationModel
     {
-        public string SiteCode { get; set; } = "";
+        public string SiteCode { get; set; } = string.Empty;
         public int VersionId { get; set; }
         public bool? Justification { get; set; }
     }

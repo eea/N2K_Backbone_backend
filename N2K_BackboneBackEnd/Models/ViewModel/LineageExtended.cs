@@ -9,7 +9,6 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Name { get; set; }
         public string? AntecessorsSiteCodes { get; set; }
 
-
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<LineageExtended>();

@@ -5,20 +5,18 @@ using Microsoft.Data.SqlClient;
 
 namespace N2K_BackboneBackEnd.Models
 {
-
     public static class TimeLog
     {
-
         public static void setTime(N2KBackboneContext pDataContext, string pProcessName, string pAction)
         {
             try
             {
-                ProcessTimeLog ptl = new ProcessTimeLog();
-
-                ptl.ProcessName = pProcessName;
-                ptl.ActionPerformed = pAction;
-                ptl.StampTime = DateTime.Now;
-
+                ProcessTimeLog ptl = new()
+                {
+                    ProcessName = pProcessName,
+                    ActionPerformed = pAction,
+                    StampTime = DateTime.Now
+                };
 
                 pDataContext.Set<ProcessTimeLog>().Add(ptl);
                 pDataContext.SaveChanges();
@@ -31,7 +29,6 @@ namespace N2K_BackboneBackEnd.Models
             {
 
             }
-
         }
 
         public static void setTimeStamp(string pProcessName, string pAction)
@@ -46,8 +43,6 @@ namespace N2K_BackboneBackEnd.Models
 
             try
             {
-               ;
-
                 conn = new SqlConnection(WebApplication.CreateBuilder().Configuration.GetConnectionString("N2K_BackboneBackEndContext"));
                 conn.Open();
                 cmd = conn.CreateCommand();
@@ -61,7 +56,6 @@ namespace N2K_BackboneBackEnd.Models
                 cmd.Parameters.Add(param3);
 
                 cmd.ExecuteNonQuery();
-
             }
             catch (Exception ex)
             {
@@ -80,11 +74,9 @@ namespace N2K_BackboneBackEnd.Models
                     if(conn.State != System.Data.ConnectionState.Closed) conn.Close();
                     conn.Dispose();
                 }
-               
             }
             */
         }
-
     }
 
     public static class SystemLog
@@ -105,7 +97,7 @@ namespace N2K_BackboneBackEnd.Models
             Debug
         }
 
-        public static void write(errorLevel pLevel, string pMessage, string pClass, string pSource, string connString="")
+        public static void write(errorLevel pLevel, string pMessage, string pClass, string pSource, string connString = "")
         {
             SqlConnection conn = null;
             SqlCommand cmd = null;
@@ -138,7 +130,6 @@ namespace N2K_BackboneBackEnd.Models
                 cmd.Parameters.Add(param5);
 
                 cmd.ExecuteNonQuery();
-
             }
             catch (Exception ex)
             {
@@ -160,9 +151,7 @@ namespace N2K_BackboneBackEnd.Models
                     if (conn.State != System.Data.ConnectionState.Closed) conn.Close();
                     conn.Dispose();
                 }
-
             }
-
         }
 
         public static void write(errorLevel pLevel, Exception pException, string pClass, string pSource)
@@ -178,8 +167,6 @@ namespace N2K_BackboneBackEnd.Models
                     exec = exec.InnerException;
                 }
                 write(pLevel, pException.StackTrace, pClass, "StackTrace");
-
-
             }
             catch
             {
@@ -189,7 +176,6 @@ namespace N2K_BackboneBackEnd.Models
             {
 
             }
-
         }
 
         public static async Task WriteAsync(errorLevel pLevel, Exception pException, string pClass, string pSource, string? connString)
@@ -215,7 +201,6 @@ namespace N2K_BackboneBackEnd.Models
             {
 
             }
-
         }
 
         public static async Task WriteAsync(SystemLog.errorLevel pLevel, string pMessage, string pClass, string pSource, string connString)
@@ -249,7 +234,6 @@ namespace N2K_BackboneBackEnd.Models
                 cmd.Parameters.Add(param5);
 
                 cmd.ExecuteNonQuery();
-
             }
             catch (Exception ex)
             {
@@ -271,12 +255,10 @@ namespace N2K_BackboneBackEnd.Models
                     if (conn.State != System.Data.ConnectionState.Closed) conn.Close();
                     conn.Dispose();
                 }
-
             }
-
         }
-
     }
+
     /// <summary>
     /// Adds a site inte the list of the refused sites in the harvest
     /// </summary>
@@ -287,7 +269,6 @@ namespace N2K_BackboneBackEnd.Models
             Exception e = null;
             try
             {
-
                 string mess = pException.Message;
                 e = pException.InnerException;
                 while (e != null)
@@ -297,8 +278,6 @@ namespace N2K_BackboneBackEnd.Models
                 }
 
                 write(pEnvelope.CountryCode, pEnvelope.VersionId, pSite.SITECODE, Int32.Parse(pSite.VERSIONID.ToString()), mess, "", "", "Detected");
-
-
             }
             catch
             {
@@ -309,7 +288,6 @@ namespace N2K_BackboneBackEnd.Models
                 e = null;
             }
         }
-
 
         public static void addAsRefused(versioning_db.NaturaSite pSite, EnvelopesToProcess pEnvelope, Exception pException, string pChildType, string pChildIdentificacion)
         {
@@ -323,7 +301,6 @@ namespace N2K_BackboneBackEnd.Models
 
             write(pEnvelope.CountryCode, pEnvelope.VersionId, pSite.SITECODE, Int32.Parse(pSite.VERSIONID.ToString()), mess, "", "", "Detected");
         }
-
 
         private static void write(string pCountry, int pEnvelopVErsion, string pSitecode, int pVersionId, string pCause, string pChildEntity, string pChildIdentification, string pStatus)
         {
@@ -347,7 +324,6 @@ namespace N2K_BackboneBackEnd.Models
                 cmd.Parameters.Add(new SqlParameter("@Status", pStatus));
 
                 cmd.ExecuteNonQuery();
-
             }
             catch
             {
@@ -365,10 +341,6 @@ namespace N2K_BackboneBackEnd.Models
                     conn.Dispose();
                 }
             }
-
         }
-
     }
-
-
 }
