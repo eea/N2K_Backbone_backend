@@ -900,14 +900,29 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     else if (changeCategory == "Species")
                     {
-                        CodeChangeDetail changeDetail =
-                            new()
+                        CodeChangeDetail changeDetail;
+                        string? speciesName = GetCodeName(changedItem);
+                        if (!String.IsNullOrEmpty(speciesName))
+                        {
+                            changeDetail = new CodeChangeDetail
+                            {
+                                Code = changedItem.Code,
+                                Name = speciesName,
+                                ChangeId = changedItem.ChangeId,
+                                Fields = fields
+                            };
+                        }
+                        else
+                        {
+                            changeDetail = new CodeChangeDetail
                             {
                                 Code = "-",
                                 Name = changedItem.Code,
                                 ChangeId = changedItem.ChangeId,
                                 Fields = fields
                             };
+                        }
+                        
                         if (changeType == "Population Change"
                             || changeType == "Population Increase"
                             || changeType == "Population Decrease")
