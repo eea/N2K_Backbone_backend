@@ -1,10 +1,6 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using N2K_BackboneBackEnd.Enumerations;
-using N2K_BackboneBackEnd.Helpers;
-using System.ComponentModel.DataAnnotations;
-using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
@@ -18,7 +14,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string SiteType { get; set; } = string.Empty;
         public string Reference { get; set; } = string.Empty;
         public string Submission { get; set; } = string.Empty;
-
 
         public static void OnModelCreating(ModelBuilder builder)
         {

@@ -4,7 +4,6 @@ using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.ServiceResponse;
 using AutoMapper;
 using N2K_BackboneBackEnd.Services;
-using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using Microsoft.AspNetCore.Authorization;
@@ -20,14 +19,12 @@ namespace N2K_BackboneBackEnd.Controllers
         private readonly IMapper _mapper;
         private IMemoryCache _cache;
 
-
         public SiteLineageController(ISiteLineageService siteLineageService, IMapper mapper, IMemoryCache cache)
         {
             _siteLineageService = siteLineageService;
             _mapper = mapper;
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
-
 
         [HttpGet("GetSiteLineage")]
         public async Task<ActionResult<ServiceResponse<List<SiteLineage>>>> GetSiteLineage(string siteCode)
@@ -52,7 +49,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         [HttpGet("GetOverview")]
         public async Task<ActionResult<List<LineageCountry>>> GetOverview()
         {
@@ -76,7 +72,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         [HttpGet("GetChanges")]
         public async Task<ActionResult<List<LineageChanges>>> GetChanges(string country, LineageStatus status, int page = 1, int pageLimit = 0, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
         {
@@ -98,9 +93,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = new List<LineageChanges>();
                 return Ok(response);
             }
-
         }
-
 
         [HttpGet("GetCodesCount")]
         public async Task<ActionResult<LineageCount>> GetCodesCount(string country, bool creation = true, bool deletion = true, bool split = true, bool merge = true, bool recode = true)
@@ -123,9 +116,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = new LineageCount();
                 return Ok(response);
             }
-
         }
-
 
         [Route("SaveEdition")]
         [HttpPost]
@@ -151,7 +142,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         [HttpGet("GetPredecessorsInfo")]
         public async Task<ActionResult<List<LineageEditionInfo>>> GetPredecessorsInfo(long ChangeId)
         {
@@ -173,9 +163,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = new List<LineageEditionInfo>();
                 return Ok(response);
             }
-
         }
-
 
         [HttpGet("GetLineageChangesInfo")]
         public async Task<ActionResult<LineageEditionInfo>> GetLineageChangesInfo(long ChangeId)
@@ -198,9 +186,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Data = null;
                 return Ok(response);
             }
-
         }
-
 
         [HttpGet("GetLineageReferenceSites")]
         public async Task<ActionResult<List<SiteBasic>>> GetLineageReferenceSites(string country)

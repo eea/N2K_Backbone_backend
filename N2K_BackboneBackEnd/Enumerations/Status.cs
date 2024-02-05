@@ -27,6 +27,5 @@ namespace N2K_BackboneBackEnd.Enumerations
         DataLoaded = 9,
         [DataMember]
         Error = 10
-
     }
 }

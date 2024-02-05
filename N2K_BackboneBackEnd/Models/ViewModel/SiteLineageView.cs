@@ -1,7 +1,4 @@
-﻿
-using Microsoft.EntityFrameworkCore;
-using N2K_BackboneBackEnd.Enumerations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace N2K_BackboneBackEnd.Models.ViewModel
 {
@@ -10,6 +7,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     {
         public string? SiteCode { get; set; }
         public string? Release { get; set; }
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SiteLineageView>();

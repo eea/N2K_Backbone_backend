@@ -7,7 +7,6 @@ namespace N2K_BackboneBackEnd.Models
     {
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
-
         [NotMapped]
         public List<IFormFile>? Files { get; set; }
 

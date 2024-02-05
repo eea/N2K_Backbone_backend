@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Data.SqlTypes;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
@@ -12,6 +10,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public DateTime? Date { get; set; }
         [NotMapped]
         public string? XMLContent { get; set; }
+
         public static void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<SitesInXML>()
