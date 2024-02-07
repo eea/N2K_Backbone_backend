@@ -513,6 +513,41 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        public async Task<List<CountriesAttachmentCountViewModel>> GetCountriesAttachmentCount()
+        {
+            try
+            {
+                List<CountriesAttachmentCountViewModel> result = new List<CountriesAttachmentCountViewModel>();
+                List<Countries> countries = await _dataContext.Set<Countries>()
+                    .AsNoTracking()
+                    .Select(c => new Countries
+                    {
+                        Code = c.Code.ToUpper(),
+                        Country = c.Country,
+                        isEUCountry = c.isEUCountry
+                    })
+                    .ToListAsync();
+                foreach (Countries c in countries)
+                {
+                    int documents = _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == c.Code && f.Release == null).Count();
+                    int comments = _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == c.Code && f.Release == null).Count();
+                    result.Add(new CountriesAttachmentCountViewModel
+                    {
+                        Country = c.Country,
+                        NumDocuments = documents,
+                        NumComments = comments
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - GetCountriesAttachmentCount", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
         public async Task<List<Releases>> CreateRelease(string title, Boolean? Final, string? character)
         {
             try

@@ -239,6 +239,30 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        [Route("GetAttachmentsCount")]
+        [HttpGet]
+        public async Task<ActionResult<List<CountriesAttachmentCountViewModel>>> GetCountriesAttachmentCount()
+        {
+            ServiceResponse<List<CountriesAttachmentCountViewModel>> response = new();
+            try
+            {
+                List<CountriesAttachmentCountViewModel> attachmentCount = await _releaseService.GetCountriesAttachmentCount();
+                response.Success = true;
+                response.Message = "";
+                response.Data = attachmentCount;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
         [Route("Create")]
         [HttpPost]
         public async Task<ActionResult<List<Releases>>> CreateRelease([FromBody] ReleasesInputParam release)
