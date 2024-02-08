@@ -518,15 +518,7 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 List<CountriesAttachmentCountViewModel> result = new List<CountriesAttachmentCountViewModel>();
-                List<Countries> countries = await _dataContext.Set<Countries>()
-                    .AsNoTracking()
-                    .Select(c => new Countries
-                    {
-                        Code = c.Code.ToUpper(),
-                        Country = c.Country,
-                        isEUCountry = c.isEUCountry
-                    })
-                    .ToListAsync();
+                List<Countries> countries = await _dataContext.Set<Countries>().ToListAsync();
                 foreach (Countries c in countries)
                 {
                     int documents = _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == c.Code && f.Release == null).Count();
@@ -534,6 +526,7 @@ namespace N2K_BackboneBackEnd.Services
                     result.Add(new CountriesAttachmentCountViewModel
                     {
                         Country = c.Country,
+                        Code = c.Code.ToUpper(),
                         NumDocuments = documents,
                         NumComments = comments
                     });

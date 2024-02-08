@@ -7,8 +7,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     {
         [Key]
         public string Code { get; set; } = string.Empty;
-        public string? Country { get; set; }
-        public bool? isEUCountry { get; set; }
+        public string Country { get; set; } = string.Empty;
+        public bool isEUCountry { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
