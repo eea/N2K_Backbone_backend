@@ -215,7 +215,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 if (_ctx == null) _ctx = _dataContext;
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
                         opt => opt.EnableRetryOnFailure()).Options;
-                using (var ctx = new N2KBackboneContext(options))
+                using (N2KBackboneContext ctx = new(options))
                 {
                     List<SpeciesToHarvest> speciesOtherVersioning = null;
                     if (speciesOtherVersioningEnvelope != null)
@@ -249,6 +249,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         SpeciesToHarvest storedSpecies = referencedSpecies.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                         if (storedSpecies != null)
                         {
+                            harvestingSpecies.Population =
+                                String.IsNullOrEmpty(harvestingSpecies.Population) ? "-"
+                                : harvestingSpecies.Population;
+
+                            storedSpecies.Population =
+                                String.IsNullOrEmpty(storedSpecies.Population) ? "-"
+                                : storedSpecies.Population;
+
                             if (storedSpecies.Population.ToUpper() != "D" && harvestingSpecies.Population.ToUpper() == "D")
                             {
                                 SiteChangeDb siteChange = new()
@@ -261,8 +269,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     Level = Enumerations.Level.Warning,
                                     Status = (SiteChangeStatus?)processedEnvelope.Status,
                                     Tags = string.Empty,
-                                    NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null,
-                                    OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null,
+                                    NewValue = harvestingSpecies.Population,
+                                    OldValue = storedSpecies.Population,
                                     Code = harvestingSpecies.SpeciesCode,
                                     Section = "Species",
                                     VersionReferenceId = storedSpecies.VersionId,
@@ -284,8 +292,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     Level = Enumerations.Level.Info,
                                     Status = (SiteChangeStatus?)processedEnvelope.Status,
                                     Tags = string.Empty,
-                                    NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null,
-                                    OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null,
+                                    NewValue = harvestingSpecies.Population,
+                                    OldValue = storedSpecies.Population,
                                     Code = harvestingSpecies.SpeciesCode,
                                     Section = "Species",
                                     VersionReferenceId = storedSpecies.VersionId,
@@ -306,8 +314,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     Country = envelope.CountryCode,
                                     Level = Enumerations.Level.Info,
                                     Status = (SiteChangeStatus?)processedEnvelope.Status,
-                                    NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null,
-                                    OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null,
+                                    NewValue = harvestingSpecies.Population,
+                                    OldValue = storedSpecies.Population,
                                     Tags = string.Empty,
                                     Code = harvestingSpecies.SpeciesCode,
                                     Section = "Species",
@@ -318,6 +326,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 };
                                 changes.Add(siteChange);
                             }
+
+                            harvestingSpecies.PopulationType =
+                                String.IsNullOrEmpty(harvestingSpecies.PopulationType) ? "-"
+                                : harvestingSpecies.PopulationType;
+
+                            storedSpecies.PopulationType =
+                                String.IsNullOrEmpty(storedSpecies.PopulationType) ? "-"
+                                : storedSpecies.PopulationType;
+
                             if (storedSpecies.PopulationType != harvestingSpecies.PopulationType)
                             {
                                 SiteChangeDb siteChange = new()
@@ -330,8 +347,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     Level = Enumerations.Level.Info,
                                     Status = (SiteChangeStatus?)processedEnvelope.Status,
                                     Tags = string.Empty,
-                                    NewValue = !String.IsNullOrEmpty(harvestingSpecies.PopulationType) ? harvestingSpecies.PopulationType : null,
-                                    OldValue = !String.IsNullOrEmpty(storedSpecies.PopulationType) ? storedSpecies.PopulationType : null,
+                                    NewValue = harvestingSpecies.PopulationType,
+                                    OldValue = storedSpecies.PopulationType,
                                     Code = harvestingSpecies.SpeciesCode,
                                     Section = "Species",
                                     VersionReferenceId = storedSpecies.VersionId,
@@ -350,9 +367,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 //These booleans declare whether or not each species is a priority
                                 Boolean isStoredPriority = false;
                                 Boolean isHarvestingPriority = false;
-                                if ((storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null) && (storedSpecies.Motivation == null || storedSpecies.Motivation == ""))
+                                if ((storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null || storedSpecies.Population == "-") && (storedSpecies.Motivation == null || storedSpecies.Motivation == ""))
                                     isStoredPriority = true;
-                                if ((harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null) && (harvestingSpecies.Motivation == null || harvestingSpecies.Motivation == ""))
+                                if ((harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null || harvestingSpecies.Population == "-") && (harvestingSpecies.Motivation == null || harvestingSpecies.Motivation == ""))
                                     isHarvestingPriority = true;
 
                                 if (isStoredPriority && !isHarvestingPriority)
@@ -465,6 +482,14 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         SpeciesToHarvest storedSpecies = referencedSpeciesOther.Where(s => s.SpeciesCode == harvestingSpecies.SpeciesCode).FirstOrDefault();
                         if (storedSpecies != null)
                         {
+                            harvestingSpecies.Population =
+                                String.IsNullOrEmpty(harvestingSpecies.Population) ? "-"
+                                : harvestingSpecies.Population;
+
+                            storedSpecies.Population =
+                                String.IsNullOrEmpty(storedSpecies.Population) ? "-"
+                                : storedSpecies.Population;
+
                             if (storedSpecies.Population.ToUpper() != "D" && harvestingSpecies.Population.ToUpper() == "D")
                             {
                                 SiteChangeDb siteChange = new()
@@ -477,8 +502,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     Level = Enumerations.Level.Info,
                                     Status = (SiteChangeStatus?)processedEnvelope.Status,
                                     Tags = string.Empty,
-                                    NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null,
-                                    OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null,
+                                    NewValue = harvestingSpecies.Population,
+                                    OldValue = storedSpecies.Population,
                                     Code = harvestingSpecies.SpeciesCode,
                                     Section = "Species",
                                     VersionReferenceId = storedSpecies.VersionId,
@@ -500,8 +525,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     Level = Enumerations.Level.Info,
                                     Status = (SiteChangeStatus?)processedEnvelope.Status,
                                     Tags = string.Empty,
-                                    NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null,
-                                    OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null,
+                                    NewValue = harvestingSpecies.Population,
+                                    OldValue = storedSpecies.Population,
                                     Code = harvestingSpecies.SpeciesCode,
                                     Section = "Species",
                                     VersionReferenceId = storedSpecies.VersionId,
@@ -522,8 +547,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     Country = envelope.CountryCode,
                                     Level = Enumerations.Level.Info,
                                     Status = (SiteChangeStatus?)processedEnvelope.Status,
-                                    NewValue = !String.IsNullOrEmpty(harvestingSpecies.Population) ? harvestingSpecies.Population : null,
-                                    OldValue = !String.IsNullOrEmpty(storedSpecies.Population) ? storedSpecies.Population : null,
+                                    NewValue = harvestingSpecies.Population,
+                                    OldValue = storedSpecies.Population,
                                     Tags = string.Empty,
                                     Code = harvestingSpecies.SpeciesCode,
                                     Section = "Species",
@@ -534,6 +559,15 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 };
                                 changes.Add(siteChange);
                             }
+
+                            harvestingSpecies.PopulationType =
+                                String.IsNullOrEmpty(harvestingSpecies.PopulationType) ? "-"
+                                : harvestingSpecies.PopulationType;
+
+                            storedSpecies.PopulationType =
+                                String.IsNullOrEmpty(storedSpecies.PopulationType) ? "-"
+                                : storedSpecies.PopulationType;
+
                             if (storedSpecies.PopulationType != harvestingSpecies.PopulationType)
                             {
                                 SiteChangeDb siteChange = new()
@@ -546,8 +580,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     Level = Enumerations.Level.Info,
                                     Status = (SiteChangeStatus?)processedEnvelope.Status,
                                     Tags = string.Empty,
-                                    NewValue = !String.IsNullOrEmpty(harvestingSpecies.PopulationType) ? harvestingSpecies.PopulationType : null,
-                                    OldValue = !String.IsNullOrEmpty(storedSpecies.PopulationType) ? storedSpecies.PopulationType : null,
+                                    NewValue = harvestingSpecies.PopulationType,
+                                    OldValue = storedSpecies.PopulationType,
                                     Code = harvestingSpecies.SpeciesCode,
                                     Section = "Species",
                                     VersionReferenceId = storedSpecies.VersionId,
@@ -565,9 +599,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 //These booleans declare whether or not each species is a priority
                                 Boolean isStoredPriority = false;
                                 Boolean isHarvestingPriority = false;
-                                if ((storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null) && (storedSpecies.Motivation == null || storedSpecies.Motivation == ""))
+                                if ((storedSpecies.Population.ToUpper() != "D" || storedSpecies.Population == null || storedSpecies.Population == "-") && (storedSpecies.Motivation == null || storedSpecies.Motivation == ""))
                                     isStoredPriority = true;
-                                if ((harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null) && (harvestingSpecies.Motivation == null || harvestingSpecies.Motivation == ""))
+                                if ((harvestingSpecies.Population.ToUpper() != "D" || harvestingSpecies.Population == null || harvestingSpecies.Population == "-") && (harvestingSpecies.Motivation == null || harvestingSpecies.Motivation == ""))
                                     isHarvestingPriority = true;
 
                                 if (isStoredPriority && !isHarvestingPriority)

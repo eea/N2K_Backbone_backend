@@ -901,7 +901,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 if (_ctx == null) _ctx = _dataContext;
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
                         opt => opt.EnableRetryOnFailure()).Options;
-                using (var ctx = new N2KBackboneContext(options))
+                using (N2KBackboneContext ctx = new(options))
                 {
                     if (harvestingSite.SiteCode != storedSite.SiteCode)
                     {
@@ -969,7 +969,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             lineage.Version = harvestingSite.VersionId;
                             lineage.Type = LineageTypes.NoGeometryReported;
                         }
-
                         //else if ((storedGeometry == null || storedGeometry.data == false) && harvestingGeometry != null && harvestingGeometry.data == true)
                         else if ((!storedSite.HasGeometry) && harvestingSite.HasGeometry)
                         {
@@ -1006,7 +1005,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         _dataContext.Set<Lineage>().Update(lineage);
                         _dataContext.SaveChanges();
                     }
-                    if (harvestingSite.SiteName != storedSite.SiteName)
+                    if ((harvestingSite.SiteName ?? "") != (storedSite.SiteName ?? ""))
                     {
                         SiteChangeDb siteChange = new()
                         {
@@ -1029,7 +1028,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         };
                         changes.Add(siteChange);
                     }
-                    if (harvestingSite.SiteType != storedSite.SiteType)
+                    if ((harvestingSite.SiteType ?? "") != (storedSite.SiteType ?? ""))
                     {
                         SiteChangeDb siteChange = new()
                         {
@@ -1052,9 +1051,10 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         };
                         changes.Add(siteChange);
                     }
-                    if (!Convert.ToString(harvestingSite.DateConfSCI).Equals(Convert.ToString(storedSite.DateConfSCI)))
+                    if (!Convert.ToString(harvestingSite.DateConfSCI == null ? "" : harvestingSite.DateConfSCI).Equals(Convert.ToString(storedSite.DateConfSCI == null ? "" : storedSite.DateConfSCI)))
                     {
-                        if (Convert.ToString(harvestingSite.DateConfSCI).Equals("01/01/1900 0:00:00") && !Convert.ToString(storedSite.DateConfSCI).Equals("01/01/1900 0:00:00"))
+                        if (Convert.ToString(harvestingSite.DateConfSCI == null ? "" : harvestingSite.DateConfSCI).Equals("")
+                            && !Convert.ToString(storedSite.DateConfSCI == null ? "" : storedSite.DateConfSCI).Equals(""))
                         {
                             SiteChangeDb siteChange = new()
                             {
@@ -1077,7 +1077,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             };
                             changes.Add(siteChange);
                         }
-                        else if (!Convert.ToString(harvestingSite.DateConfSCI).Equals("01/01/1900 0:00:00") && Convert.ToString(storedSite.DateConfSCI).Equals("01/01/1900 0:00:00"))
+                        else if (!Convert.ToString(harvestingSite.DateConfSCI == null ? "" : harvestingSite.DateConfSCI).Equals("")
+                            && Convert.ToString(storedSite.DateConfSCI == null ? "" : storedSite.DateConfSCI).Equals(""))
                         {
                             SiteChangeDb siteChange = new()
                             {
@@ -1124,7 +1125,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             changes.Add(siteChange);
                         }
                     }
-                    if (harvestingSite.AreaHa > storedSite.AreaHa)
+                    if (harvestingSite.AreaHa != null && storedSite.AreaHa != null && harvestingSite.AreaHa > storedSite.AreaHa)
                     {
                         if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
                         {
@@ -1137,8 +1138,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 Country = envelope.CountryCode,
                                 Level = Enumerations.Level.Info,
                                 Status = (SiteChangeStatus?)processedEnvelope.Status,
-                                NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null,
-                                OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null,
+                                NewValue = harvestingSite.AreaHa.ToString(),
+                                OldValue = storedSite.AreaHa.ToString(),
                                 Tags = string.Empty,
                                 Code = harvestingSite.SiteCode,
                                 Section = "Site",
@@ -1150,7 +1151,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             changes.Add(siteChange);
                         }
                     }
-                    else if (harvestingSite.AreaHa < storedSite.AreaHa)
+                    else if (harvestingSite.AreaHa != null && storedSite.AreaHa != null && harvestingSite.AreaHa < storedSite.AreaHa)
                     {
                         if (Math.Abs((double)(harvestingSite.AreaHa - storedSite.AreaHa)) > siteAreaHaTolerance)
                         {
@@ -1163,8 +1164,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 Country = envelope.CountryCode,
                                 Level = Enumerations.Level.Warning,
                                 Status = (SiteChangeStatus?)processedEnvelope.Status,
-                                NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null,
-                                OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null,
+                                NewValue = harvestingSite.AreaHa.ToString(),
+                                OldValue = storedSite.AreaHa.ToString(),
                                 Tags = string.Empty,
                                 Code = harvestingSite.SiteCode,
                                 Section = "Site",
@@ -1176,7 +1177,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             changes.Add(siteChange);
                         }
                     }
-                    else if (harvestingSite.AreaHa != storedSite.AreaHa)
+                    else if ((harvestingSite.AreaHa ?? -1) != (storedSite.AreaHa ?? -1))
                     {
                         SiteChangeDb siteChange = new()
                         {
@@ -1187,8 +1188,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                             Country = envelope.CountryCode,
                             Level = Enumerations.Level.Info,
                             Status = (SiteChangeStatus?)processedEnvelope.Status,
-                            NewValue = harvestingSite.AreaHa != -1 ? harvestingSite.AreaHa.ToString() : null,
-                            OldValue = storedSite.AreaHa != -1 ? storedSite.AreaHa.ToString() : null,
+                            NewValue = harvestingSite.AreaHa != null ? harvestingSite.AreaHa.ToString() : null,
+                            OldValue = storedSite.AreaHa != null ? storedSite.AreaHa.ToString() : null,
                             Tags = string.Empty,
                             Code = harvestingSite.SiteCode,
                             Section = "Site",
@@ -1199,7 +1200,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         };
                         changes.Add(siteChange);
                     }
-                    if (harvestingSite.LengthKm != storedSite.LengthKm)
+                    if ((harvestingSite.LengthKm ?? -1) != (storedSite.LengthKm ?? -1))
                     {
                         if (Math.Abs((double)(harvestingSite.LengthKm - storedSite.LengthKm)) > siteLengthKmTolerance)
                         {
@@ -1212,8 +1213,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 Country = envelope.CountryCode,
                                 Level = Enumerations.Level.Info,
                                 Status = (SiteChangeStatus?)processedEnvelope.Status,
-                                NewValue = harvestingSite.LengthKm != -1 ? harvestingSite.LengthKm.ToString() : null,
-                                OldValue = storedSite.LengthKm != -1 ? storedSite.LengthKm.ToString() : null,
+                                NewValue = harvestingSite.LengthKm != null ? harvestingSite.LengthKm.ToString() : null,
+                                OldValue = storedSite.LengthKm != null ? storedSite.LengthKm.ToString() : null,
                                 Tags = string.Empty,
                                 Code = harvestingSite.SiteCode,
                                 Section = "Site",
@@ -1241,7 +1242,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 if (_ctx == null) _ctx = _dataContext;
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
                         opt => opt.EnableRetryOnFailure()).Options;
-                using (var ctx = new N2KBackboneContext(options))
+                using (N2KBackboneContext ctx = new(options))
                 {
                     //Get the lists of bioregion types
                     List<BioRegionTypes> bioRegionTypes = await ctx.Set<BioRegionTypes>().AsNoTracking().ToListAsync();

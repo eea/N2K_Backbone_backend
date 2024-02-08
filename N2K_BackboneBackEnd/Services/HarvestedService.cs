@@ -3120,7 +3120,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     if (((habitat.HabitatCode != "21A0" && habitat.PriorityForm == true)
                                         || (habitat.HabitatCode == "21A0" && sitecode[..Math.Min(sitecode.Length, 2)] == "IE"))
-                                             && (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null))
+                                             && (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null || habitat.Representativity == "-"))
                                     {
                                         isSitePriority = true;
                                         break;
@@ -3128,7 +3128,7 @@ namespace N2K_BackboneBackEnd.Services
                                 }
                                 else
                                 {
-                                    if (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null)
+                                    if (habitat.Representativity.ToUpper() != "D" || habitat.Representativity == null || habitat.Representativity == "-")
                                     {
                                         isSitePriority = true;
                                         break;
@@ -3147,7 +3147,7 @@ namespace N2K_BackboneBackEnd.Services
                                 SpeciesPriority priorityCount = speciesPriority.Where(s => s.SpecieCode == specie.SpeciesCode).FirstOrDefault();
                                 if (priorityCount != null)
                                 {
-                                    if ((specie.Population.ToUpper() != "D" || specie.Population == null) && (specie.Motivation == null || specie.Motivation == ""))
+                                    if ((specie.Population.ToUpper() != "D" || specie.Population == null || specie.Population == "-") && (specie.Motivation == null || specie.Motivation == ""))
                                     {
                                         isSitePriority = true;
                                         break;
