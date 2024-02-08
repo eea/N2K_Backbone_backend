@@ -47,39 +47,63 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param1 = new("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
-                String queryString = @"select SITECODE as SiteCode,		
-                    SPECIESCODE as SpecieCode,
-					CASE WHEN  LOWERBOUND IS NOT NULL then CAST(LOWERBOUND AS int) ELSE NULL END PopulationMin,
-					CASE WHEN  UPPERBOUND IS NOT NULL then CAST(UPPERBOUND AS int) ELSE NULL END PopulationMax,
-					CASE WHEN  SENSITIVE IS NOT NULL then 
-						CASE WHEN SENSITIVE =1 THEN CAST(1 as BIT) ELSE CAST(0 as BIT) END
-					ELSE NULL END as SensitiveInfo,
-                    RESIDENT as Resident,
-                    BREEDING as Breeding,
-                    WINTER as Winter ,
-                    STAGING as  Staging,
-                    --PATH as Path,  -- // ??? PENDING
-                    ABUNDANCECATEGORY as AbundaceCategory,
-                    Motivation ,
-                    POPULATION_TYPE as PopulationType ,
-                    CountingUnit,
-                    Population,
-                    ISOLATIONFACTOR as Insolation,
-                    Conservation ,
-                    GLOBALIMPORTANCE as Global ,
-					--item.NonPersistence = (element.NONPRESENCEINSITE != null) ? ((element.NONPRESENCEINSITE == 1) ? true : false) : null;
-
-					CASE WHEN  NONPRESENCEINSITE IS NOT NULL then 
-						CASE WHEN NONPRESENCEINSITE =1 THEN CAST(1 as BIT) ELSE CAST(0 as BIT) END
-					ELSE NULL END as NonPersistence,
-                    DataQuality ,
-                    SPTYPE as SpecieType,
-                    SPECIESNAMECLEAN,
-                    SPECIESNAME,
-                    OTHERSPECIES
-
-                    FROM ContainsSpecies
-                    WHERE COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                String queryString = @"SELECT SITECODE AS SiteCode,
+	                CASE 
+		                WHEN SPECIESCODE NOT LIKE '?%'
+			                AND ascii(UPPER(substring(SPECIESCODE, 1, 1))) = 63
+			                THEN 'A' + SUBSTRING(speciescode, 2, len(speciescode) - 1)
+		                ELSE SPECIESCODE
+		                END AS SpecieCode,
+	                CASE 
+		                WHEN LOWERBOUND IS NOT NULL
+			                THEN CAST(LOWERBOUND AS INT)
+		                ELSE NULL
+		                END PopulationMin,
+	                CASE 
+		                WHEN UPPERBOUND IS NOT NULL
+			                THEN CAST(UPPERBOUND AS INT)
+		                ELSE NULL
+		                END PopulationMax,
+	                CASE 
+		                WHEN SENSITIVE IS NOT NULL
+			                THEN CASE 
+					                WHEN SENSITIVE = 1
+						                THEN CAST(1 AS BIT)
+					                ELSE CAST(0 AS BIT)
+					                END
+		                ELSE NULL
+		                END AS SensitiveInfo,
+	                RESIDENT AS Resident,
+	                BREEDING AS Breeding,
+	                WINTER AS Winter,
+	                STAGING AS Staging,
+	                --PATH as Path,  -- // ??? PENDING
+	                ABUNDANCECATEGORY AS AbundaceCategory,
+	                Motivation,
+	                POPULATION_TYPE AS PopulationType,
+	                CountingUnit,
+	                Population,
+	                ISOLATIONFACTOR AS Insolation,
+	                Conservation,
+	                GLOBALIMPORTANCE AS GLOBAL,
+	                --item.NonPersistence = (element.NONPRESENCEINSITE != null) ? ((element.NONPRESENCEINSITE == 1) ? true : false) : null;
+	                CASE 
+		                WHEN NONPRESENCEINSITE IS NOT NULL
+			                THEN CASE 
+					                WHEN NONPRESENCEINSITE = 1
+						                THEN CAST(1 AS BIT)
+					                ELSE CAST(0 AS BIT)
+					                END
+		                ELSE NULL
+		                END AS NonPersistence,
+	                DataQuality,
+	                SPTYPE AS SpecieType,
+	                SPECIESNAMECLEAN,
+	                SPECIESNAME,
+	                OTHERSPECIES
+                FROM ContainsSpecies
+                WHERE COUNTRYCODE = @COUNTRYCODE
+	                AND COUNTRYVERSIONID = @COUNTRYVERSIONID";
 
                 //Console.WriteLine(String.Format("Start species Query -> {0}", (DateTime.Now - start).TotalSeconds));
                 versioningConn.Open();
