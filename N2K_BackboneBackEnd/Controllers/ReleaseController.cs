@@ -263,6 +263,55 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        [Route("GetCountryDocuments")]
+        [HttpGet]
+        public async Task<ActionResult<List<JustificationFilesRelease>>> GetCountryDocuments(string country)
+        {
+            ServiceResponse<List<JustificationFilesRelease>> response = new();
+            try
+            {
+                List<JustificationFilesRelease> attachments = await _releaseService.GetCountryDocuments(country);
+                response.Success = true;
+                response.Message = "";
+                response.Data = attachments;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("GetCountryComments")]
+        [HttpGet]
+        public async Task<ActionResult<List<StatusChangesRelease>>> GetCountryComments(string country)
+        {
+            ServiceResponse<List<StatusChangesRelease>> response = new();
+            try
+            {
+                List<StatusChangesRelease> attachments = await _releaseService.GetCountryComments(country);
+                response.Success = true;
+                response.Message = "";
+                response.Data = attachments;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+
         [Route("Create")]
         [HttpPost]
         public async Task<ActionResult<List<Releases>>> CreateRelease([FromBody] ReleasesInputParam release)

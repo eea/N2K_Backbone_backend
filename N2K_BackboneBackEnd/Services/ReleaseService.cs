@@ -548,6 +548,32 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        public async Task<List<JustificationFilesRelease>> GetCountryDocuments(string country)
+        {
+            try
+            {
+                List<JustificationFilesRelease> result = _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == country && f.Release == null).ToList();
+                return result;
+            } catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - GetCountryDocuments", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<StatusChangesRelease>> GetCountryComments(string country)
+        {
+            try
+            {
+                List<StatusChangesRelease> result = _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == country && f.Release == null).ToList();
+                return result;
+            } catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - GetCountryComments", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
         public async Task<List<Releases>> CreateRelease(string title, Boolean? Final, string? character)
         {
             try
