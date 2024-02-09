@@ -449,7 +449,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 await Task.Delay(1);
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
                         opt => opt.EnableRetryOnFailure()).Options;
-                using (var ctx = new N2KBackboneContext(options))
+                using (N2KBackboneContext ctx = new(options))
                 {
                     //For each habitat in Versioning compare it with that habitat in backboneDB
                     foreach (HabitatToHarvest harvestingHabitat in habitatVersioning)
@@ -536,6 +536,16 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 };
                                 changes.Add(siteChange);
                             }
+
+                            harvestingHabitat.Representativity =
+                                String.IsNullOrEmpty(harvestingHabitat.Representativity) ? "-"
+                                : harvestingHabitat.Representativity;
+
+                            storedHabitat.Representativity =
+                                String.IsNullOrEmpty(storedHabitat.Representativity) ? "-"
+                                : storedHabitat.Representativity;
+
+
                             if (storedHabitat.Representativity.ToUpper() != "D" && harvestingHabitat.Representativity.ToUpper() == "D")
                             {
                                 SiteChangeDb siteChange = new()
@@ -605,7 +615,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                 };
                                 changes.Add(siteChange);
                             }
-                            if (storedHabitat.Cover_ha > harvestingHabitat.Cover_ha)
+                            if (storedHabitat.Cover_ha != null && harvestingHabitat.Cover_ha != null && storedHabitat.Cover_ha > harvestingHabitat.Cover_ha)
                             {
                                 if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
                                 {
@@ -631,7 +641,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     changes.Add(siteChange);
                                 }
                             }
-                            else if (storedHabitat.Cover_ha < harvestingHabitat.Cover_ha)
+                            else if (storedHabitat.Cover_ha != null && harvestingHabitat.Cover_ha != null && storedHabitat.Cover_ha < harvestingHabitat.Cover_ha)
                             {
                                 if (Math.Abs((double)(storedHabitat.Cover_ha - harvestingHabitat.Cover_ha)) > habitatCoverHaTolerance)
                                 {
@@ -657,7 +667,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     changes.Add(siteChange);
                                 }
                             }
-                            else if (storedHabitat.Cover_ha != harvestingHabitat.Cover_ha)
+                            else if ((storedHabitat.Cover_ha ?? -1) != (harvestingHabitat.Cover_ha ?? -1))
                             {
                                 SiteChangeDb siteChange = new()
                                 {
@@ -668,8 +678,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     Country = envelope.CountryCode,
                                     Level = Enumerations.Level.Info,
                                     Status = (SiteChangeStatus?)processedEnvelope.Status,
-                                    NewValue = harvestingHabitat.Cover_ha != -1 ? harvestingHabitat.Cover_ha.ToString() : null,
-                                    OldValue = storedHabitat.Cover_ha != -1 ? storedHabitat.Cover_ha.ToString() : null,
+                                    NewValue = harvestingHabitat.Cover_ha != null ? harvestingHabitat.Cover_ha.ToString() : null,
+                                    OldValue = storedHabitat.Cover_ha != null ? storedHabitat.Cover_ha.ToString() : null,
                                     Tags = string.Empty,
                                     Code = harvestingHabitat.HabitatCode,
                                     Section = "Habitats",
@@ -718,19 +728,19 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                                     //If the Habitat is an exception, three conditions are checked
                                     if (((storedHabitat.HabitatCode != "21A0" && storedHabitat.PriorityForm == true)
                                         || (storedHabitat.HabitatCode == "21A0" && storedSite.CountryCode == "IE"))
-                                            && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null))
+                                            && (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null || storedHabitat.Representativity == "-"))
                                         isStoredPriority = true;
                                     if (((harvestingHabitat.HabitatCode != "21A0" && harvestingHabitat.PriorityForm == true)
                                         || (harvestingHabitat.HabitatCode == "21A0" && harvestingSite.CountryCode == "IE"))
-                                            && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null))
+                                            && (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null || harvestingHabitat.Representativity == "-"))
                                         isHarvestingPriority = true;
                                 }
                                 else
                                 {
                                     //If there is no exception, then two conditions are checked
-                                    if (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null)
+                                    if (storedHabitat.Representativity.ToUpper() != "D" || storedHabitat.Representativity == null || storedHabitat.Representativity == "-")
                                         isStoredPriority = true;
-                                    if (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null)
+                                    if (harvestingHabitat.Representativity.ToUpper() != "D" || harvestingHabitat.Representativity == null || harvestingHabitat.Representativity == "-")
                                         isHarvestingPriority = true;
                                 }
 
@@ -842,6 +852,5 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             }
             return changes;
         }
-
     }
 }
