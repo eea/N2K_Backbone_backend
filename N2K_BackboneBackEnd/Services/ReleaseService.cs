@@ -541,31 +541,148 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        #region CountryDocuments
         public async Task<List<JustificationFilesRelease>> GetCountryDocuments(string country)
         {
             try
             {
                 List<JustificationFilesRelease> result = _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == country && f.Release == null).ToList();
                 return result;
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - GetCountryDocuments", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
 
+        public async Task<List<JustificationFilesRelease>> AddCountryDocument(JustificationFilesRelease file)
+        {
+            try
+            {
+                List<JustificationFilesRelease> result = new List<JustificationFilesRelease>();
+                // TODO
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - AddCountryDocument", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<JustificationFilesRelease>> UpdateCountryDocument(JustificationFilesRelease file)
+        {
+            try
+            {
+                List<JustificationFilesRelease> result = new List<JustificationFilesRelease>();
+                // TODO
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - UpdateCountryDocument", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<JustificationFilesRelease>> DeleteCountryDocument(long fileId)
+        {
+            try
+            {
+                List<JustificationFilesRelease> result = new List<JustificationFilesRelease>();
+                // TODO
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - DeleteCountryDocument", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+        #endregion
+
+        #region CountryComments
         public async Task<List<StatusChangesRelease>> GetCountryComments(string country)
         {
             try
             {
                 List<StatusChangesRelease> result = _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == country && f.Release == null).ToList();
                 return result;
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - GetCountryComments", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
+
+        public async Task<List<StatusChangesRelease>> AddCountryComment(StatusChangesRelease comment)
+        {
+            try
+            {
+                List<StatusChangesRelease> result = new();
+                comment.Date = DateTime.Now;
+                comment.Owner = GlobalData.Username;
+                comment.Edited = 0;
+                await _dataContext.Set<StatusChangesRelease>().AddAsync(comment);
+                await _dataContext.SaveChangesAsync();
+                result = await _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(ch => ch.CountryCode == comment.CountryCode).ToListAsync();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - AddCountryComment", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<StatusChangesRelease>> UpdateCountryComment(StatusChangesRelease comment)
+        {
+            try
+            {
+                StatusChangesRelease prev = _dataContext.Set<StatusChangesRelease>().Where(c => c.Id == comment.Id).OrderBy(c => c.Edited).Last();
+                if (prev != null)
+                {
+                    comment.Edited = prev.Edited + 1;
+                    comment.EditedDate = DateTime.Now;
+                    comment.EditedBy = GlobalData.Username;
+                    _dataContext.Set<StatusChangesRelease>().Update(comment);
+                    await _dataContext.SaveChangesAsync();
+                }
+                return await GetCountryComments(comment.CountryCode);
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - UpdateCountryComment", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<StatusChangesRelease>> DeleteCountryComment(long commentId)
+        {
+            try
+            {
+                List<StatusChangesRelease> comments = _dataContext.Set<StatusChangesRelease>().Where(c => c.Id == commentId).ToList();
+                if (comments.Count() > 0)
+                {
+                    foreach (StatusChangesRelease c in comments)
+                    {
+                        _dataContext.Set<StatusChangesRelease>().Remove(c);
+                    }
+                    await _dataContext.SaveChangesAsync();
+                    return await GetCountryComments(comments.First().CountryCode);
+                }
+                
+                return new List<StatusChangesRelease>();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - DeleteCountryComment", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+        #endregion
 
         public async Task<List<Releases>> CreateRelease(string title, Boolean? Final, string? character)
         {

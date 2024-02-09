@@ -14,7 +14,13 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<UnionListComparerDetailedViewModel>> CompareReleases(long? idSource, long? idTarget, string? bioRegions, string? country, IMemoryCache cache, int page = 1, int pageLimit = 0);
         Task<List<CountriesAttachmentCountViewModel>> GetCountriesAttachmentCount();
         Task<List<JustificationFilesRelease>> GetCountryDocuments(string country);
+        Task<List<JustificationFilesRelease>> AddCountryDocument(JustificationFilesRelease document);
+        Task<List<JustificationFilesRelease>> UpdateCountryDocument(JustificationFilesRelease document);
+        Task<List<JustificationFilesRelease>> DeleteCountryDocument(long documentId);
         Task<List<StatusChangesRelease>> GetCountryComments(string country);
+        Task<List<StatusChangesRelease>> AddCountryComment(StatusChangesRelease comment);
+        Task<List<StatusChangesRelease>> UpdateCountryComment(StatusChangesRelease comment);
+        Task<List<StatusChangesRelease>> DeleteCountryComment(long commentId);
         Task<List<Releases>> CreateRelease(string title, Boolean? Final, string? character);
         Task<List<Releases>> UpdateRelease(long id, string name, Boolean final);
         Task<int> DeleteRelease(long id);
