@@ -1250,7 +1250,7 @@ namespace N2K_BackboneBackEnd.Services
             List<ModifiedSiteCode> result = new();
             try
             {
-                var sitecodesfilter = new DataTable("sitecodesfilter");
+                DataTable sitecodesfilter = new("sitecodesfilter");
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
 

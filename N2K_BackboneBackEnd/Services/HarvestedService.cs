@@ -898,7 +898,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<SiteChangeDb>> SiteChangeDetection(List<SiteChangeDb> changes, List<LineageDetection>? detectedLineageChanges, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciesPriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, List<RelatedSites>? sitesRelation, bool manualEdition = false, N2KBackboneContext? _ctx = null,
+        public async Task<List<SiteChangeDb>> ParallelSiteChangeDetection(List<LineageDetection>? detectedLineageChanges, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciesPriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, List<RelatedSites>? sitesRelation, bool manualEdition = false, N2KBackboneContext? _ctx = null,
             List<HabitatsToHarvestPerEnvelope>? habitatsVersioningEnvelope = null, List<HabitatsToHarvestPerEnvelope>? habitatsReferenceEnvelope = null,
             List<SpeciesToHarvestPerEnvelope>? speciesVersioningEnvelope = null, List<SpeciesToHarvestPerEnvelope>? speciesReferenceEnvelope = null,
             List<SpeciesToHarvestPerEnvelope>? speciesOtherVersioningEnvelope = null, List<SpeciesToHarvestPerEnvelope>? speciesOtherReferenceEnvelope = null,
@@ -909,6 +909,7 @@ namespace N2K_BackboneBackEnd.Services
             double siteAreaHaTolerance = 0.0;
             double siteLengthKmTolerance = 0.0;
             double habitatCoverHaTolerance = 0.0;
+            List<SiteChangeDb> changes = new();
 
             try
             {
@@ -924,7 +925,8 @@ namespace N2K_BackboneBackEnd.Services
                     if (siteRelation != null)
                     {
                         storedSite = referencedSites.Where(s => s.SiteCode == siteRelation.PreviousSiteCode && s.VersionId == siteRelation.PreviousVersion).FirstOrDefault();
-                        ld = detectedLineageChanges.FirstOrDefault(e => e.new_sitecode == storedSite.SiteCode && e.new_version == storedSite.VersionId);
+                        if (storedSite != null)
+                            ld = detectedLineageChanges.FirstOrDefault(e => e.new_sitecode == storedSite.SiteCode && e.new_version == storedSite.VersionId);
                     }
                     if (siteRelation != null && storedSite != null)
                     {
@@ -1033,8 +1035,8 @@ namespace N2K_BackboneBackEnd.Services
                                 speciesOtherVersioningEnvelope, speciesOtherReferenceEnvelope);
 
                         //These booleans declare whether or not each site is a priority
-                        Boolean isStoredSitePriority = await SitePriorityChecker(storedSite.SiteCode, storedSite.VersionId, habitatPriority, speciesPriority, habitatVersioning, speciesVersioning);
-                        Boolean isHarvestingSitePriority = await SitePriorityChecker(harvestingSite.SiteCode, harvestingSite.VersionId, habitatPriority, speciesPriority, referencedHabitats, referencedSpecies);
+                        Boolean isStoredSitePriority = (bool)await ctx.Set<Sites>().Where(s => s.SiteCode == storedSite.SiteCode && s.Version == storedSite.VersionId).Select(c => c.Priority).FirstOrDefaultAsync();
+                        Boolean isHarvestingSitePriority = (bool)await ctx.Set<Sites>().Where(s => s.SiteCode == harvestingSite.SiteCode && s.Version == harvestingSite.VersionId).Select(c => c.Priority).FirstOrDefaultAsync();
 
                         if (isStoredSitePriority && !isHarvestingSitePriority)
                         {
@@ -1243,361 +1245,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangeDetection - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", _ctx.Database.GetConnectionString());
-            }
-
-            return changes;
-        }
-
-
-        public async Task<List<SiteChangeDb>> ParallelSiteChangeDetection(List<LineageDetection>? detectedLineageChanges, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciesPriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, List<RelatedSites>? sitesRelation, bool manualEdition = false, N2KBackboneContext? _ctx = null,
-            List<HabitatsToHarvestPerEnvelope>? habitatsVersioningEnvelope = null, List<HabitatsToHarvestPerEnvelope>? habitatsReferenceEnvelope = null,
-            List<SpeciesToHarvestPerEnvelope>? speciesVersioningEnvelope = null, List<SpeciesToHarvestPerEnvelope>? speciesReferenceEnvelope = null,
-            List<SpeciesToHarvestPerEnvelope>? speciesOtherVersioningEnvelope = null, List<SpeciesToHarvestPerEnvelope>? speciesOtherReferenceEnvelope = null,
-            List<BioRegions>? bioRegionsVersioningEnvelope = null, List<BioRegions>? bioRegionsRefereceEnvelope = null)
-        {
-            //Tolerance values. If the difference between reference and versioning values is bigger than these numbers, then they are notified.
-            //If the tolerance is at 0, then it registers ALL changes, no matter how small they are.
-            double siteAreaHaTolerance = 0.0;
-            double siteLengthKmTolerance = 0.0;
-            double habitatCoverHaTolerance = 0.0;
-            List<SiteChangeDb> changes = new();
-
-            try
-            {
-                if (_ctx == null) _ctx = _dataContext;
-                var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
-                        opt => opt.EnableRetryOnFailure()).Options;
-                using (N2KBackboneContext ctx = new(options))
-                {
-                    processedEnvelope.Status = await GetSiteChangeStatus(processedEnvelope.Status, ctx);
-                    RelatedSites? siteRelation = sitesRelation.Where(s => s.NewSiteCode == harvestingSite.SiteCode && s.NewVersion == harvestingSite.VersionId).FirstOrDefault();
-                    SiteToHarvest? storedSite = null;
-                    LineageDetection ld = null;
-                    if (siteRelation != null)
-                    {
-                        storedSite = referencedSites.Where(s => s.SiteCode == siteRelation.PreviousSiteCode && s.VersionId == siteRelation.PreviousVersion).FirstOrDefault();
-                        if (storedSite != null)
-                            ld = detectedLineageChanges.FirstOrDefault(e => e.new_sitecode == storedSite.SiteCode && e.new_version == storedSite.VersionId);
-                    }
-                    if (siteRelation != null && storedSite != null)
-                    {
-                        //SiteAttributesChecking
-                        HarvestSiteCode siteCode = new(ctx, _versioningContext);
-                        changes = await siteCode.ChangeDetectionSiteAttributes(changes, envelope, harvestingSite, storedSite, siteAreaHaTolerance, siteLengthKmTolerance, processedEnvelope, ctx);
-
-                        SqlParameter param3 = new("@site", harvestingSite.SiteCode);
-                        int maxVersionSite = harvestingSite.VersionId;
-                        SqlParameter param4 = new("@versionId", maxVersionSite);
-                        int previousVersionSite = storedSite.VersionId;
-                        SqlParameter param5 = new("@versionId", previousVersionSite);
-
-                        List<BioRegions> bioRegionsVersioning = null;
-                        if (bioRegionsVersioningEnvelope != null)
-                        {
-                            bioRegionsVersioning = bioRegionsVersioningEnvelope
-                                .Where(spEnv => spEnv.SiteCode == harvestingSite.SiteCode && spEnv.Version == maxVersionSite)
-                                //.Select (sp => (SpeciesToHarvest) sp)
-                                .ToList<BioRegions>();
-                        }
-                        else
-                        {
-                            bioRegionsVersioning = await ctx.Set<BioRegions>().FromSqlRaw($"exec dbo.spGetReferenceBioRegionsBySiteCodeAndVersion  @site, @versionId",
-                                        param3, param4).ToListAsync();
-                        }
-
-                        List<BioRegions> referencedBioRegions = null;
-                        if (bioRegionsRefereceEnvelope != null)
-                        {
-                            referencedBioRegions = bioRegionsRefereceEnvelope
-                                .Where(spEnv => spEnv.SiteCode == harvestingSite.SiteCode && spEnv.Version == storedSite.VersionId)
-                                //.Select (sp => (SpeciesToHarvest) sp)
-                                .ToList<BioRegions>();
-                        }
-                        else
-                        {
-                            referencedBioRegions = await ctx.Set<BioRegions>().FromSqlRaw($"exec dbo.spGetReferenceBioRegionsBySiteCodeAndVersion  @site, @versionId",
-                                        param3, param5).ToListAsync();
-                        }
-                        changes = await siteCode.ChangeDetectionBioRegions(bioRegionsVersioning, referencedBioRegions, changes, envelope, harvestingSite, storedSite, param3, param4, param5, processedEnvelope, ctx);
-
-                        //HabitatChecking
-                        List<HabitatToHarvest> habitatVersioning = null;
-                        if (habitatsVersioningEnvelope != null)
-                        {
-                            habitatVersioning = habitatsVersioningEnvelope
-                                .Where(spEnv => spEnv.SiteCode == harvestingSite.SiteCode && spEnv.VersionId == maxVersionSite)
-                                //.Select (sp => (SpeciesToHarvest) sp)
-                                .ToList<HabitatToHarvest>();
-                        }
-                        else
-                        {
-                            habitatVersioning = await ctx.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
-                                       param3, param4).ToListAsync();
-                        }
-
-                        List<HabitatToHarvest> referencedHabitats = null;
-                        if (habitatsReferenceEnvelope != null)
-                        {
-                            referencedHabitats = habitatsReferenceEnvelope
-                                .Where(spEnv => spEnv.SiteCode == harvestingSite.SiteCode && spEnv.VersionId == storedSite.VersionId)
-                                //.Select (sp => (SpeciesToHarvest) sp)
-                                .ToList<HabitatToHarvest>();
-                        }
-                        else
-                        {
-                            referencedHabitats = await ctx.Set<HabitatToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceHabitatsBySiteCodeAndVersion  @site, @versionId",
-                                        param3, param5).ToListAsync();
-                        }
-                        HarvestHabitats habitats = new(ctx, _versioningContext);
-                        changes = await habitats.ChangeDetectionHabitat(habitatVersioning, referencedHabitats, changes, envelope, harvestingSite, storedSite, param3, param4, param5, habitatCoverHaTolerance, habitatPriority, processedEnvelope, ctx);
-
-                        //SpeciesChecking
-                        List<SpeciesToHarvest> speciesVersioning = null;
-                        if (speciesVersioningEnvelope != null)
-                        {
-                            speciesVersioning =
-                                speciesVersioningEnvelope
-                                .Where(spEnv => spEnv.SiteCode == harvestingSite.SiteCode && spEnv.VersionId == maxVersionSite)
-                                //.Select (sp => (SpeciesToHarvest) sp)
-                                .ToList<SpeciesToHarvest>();
-                        }
-                        else
-                        {
-                            speciesVersioning = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
-                                        param3, param4).ToListAsync();
-                        }
-
-                        List<SpeciesToHarvest> referencedSpecies = null;
-                        if (speciesVersioningEnvelope != null)
-                        {
-                            referencedSpecies =
-                                speciesReferenceEnvelope
-                                .Where(spEnv => spEnv.SiteCode == harvestingSite.SiteCode && spEnv.VersionId == storedSite.VersionId)
-                                //.Select (sp => (SpeciesToHarvest) sp)
-                                .ToList<SpeciesToHarvest>();
-                        }
-                        else
-                        {
-                            referencedSpecies = await ctx.Set<SpeciesToHarvest>().FromSqlRaw($"exec dbo.spGetReferenceSpeciesBySiteCodeAndVersion  @site, @versionId",
-                                       param3, param5).ToListAsync();
-                        }
-                        HarvestSpecies species = new(ctx, _versioningContext);
-                        changes = await species.ChangeDetectionSpecies(speciesVersioning, referencedSpecies, changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority, processedEnvelope, ctx,
-                                speciesOtherVersioningEnvelope, speciesOtherReferenceEnvelope);
-
-                        //These booleans declare whether or not each site is a priority
-                        Boolean isStoredSitePriority = await SitePriorityChecker(storedSite.SiteCode, storedSite.VersionId, habitatPriority, speciesPriority, habitatVersioning, speciesVersioning);
-                        Boolean isHarvestingSitePriority = await SitePriorityChecker(harvestingSite.SiteCode, harvestingSite.VersionId, habitatPriority, speciesPriority, referencedHabitats, referencedSpecies);
-
-                        if (isStoredSitePriority && !isHarvestingSitePriority)
-                        {
-                            SiteChangeDb siteChange = new()
-                            {
-                                SiteCode = harvestingSite.SiteCode,
-                                Version = harvestingSite.VersionId,
-                                ChangeCategory = "Site General Info",
-                                ChangeType = "Site Losing Priority",
-                                LineageChangeType = LineageTypes.NoChanges,
-                                Country = envelope.CountryCode,
-                                Level = Enumerations.Level.Critical,
-                                Status = (SiteChangeStatus?)processedEnvelope.Status,
-                                Tags = string.Empty,
-                                NewValue = Convert.ToString(isHarvestingSitePriority),
-                                OldValue = Convert.ToString(isStoredSitePriority),
-                                Code = harvestingSite.SiteCode,
-                                Section = "Site",
-                                VersionReferenceId = storedSite.VersionId,
-                                FieldName = "Priority",
-                                ReferenceSiteCode = storedSite.SiteCode,
-                                N2KVersioningVersion = envelope.VersionId
-                            };
-                            changes.Add(siteChange);
-                        }
-                        else if (!isStoredSitePriority && isHarvestingSitePriority)
-                        {
-                            SiteChangeDb siteChange = new()
-                            {
-                                SiteCode = harvestingSite.SiteCode,
-                                Version = harvestingSite.VersionId,
-                                ChangeCategory = "Site General Info",
-                                ChangeType = "Site Getting Priority",
-                                LineageChangeType = LineageTypes.NoChanges,
-                                Country = envelope.CountryCode,
-                                Level = Enumerations.Level.Info,
-                                Status = (SiteChangeStatus?)processedEnvelope.Status,
-                                Tags = string.Empty,
-                                NewValue = Convert.ToString(isHarvestingSitePriority),
-                                OldValue = Convert.ToString(isStoredSitePriority),
-                                Code = harvestingSite.SiteCode,
-                                Section = "Site",
-                                VersionReferenceId = storedSite.VersionId,
-                                FieldName = "Priority",
-                                ReferenceSiteCode = storedSite.SiteCode,
-                                N2KVersioningVersion = envelope.VersionId
-                            };
-                            changes.Add(siteChange);
-                        }
-
-                        await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isStoredSitePriority + "' WHERE [SiteCode] = '" + storedSite.SiteCode + "' AND [Version] = '" + storedSite.VersionId + "'");
-                        await ctx.Database.ExecuteSqlRawAsync("UPDATE [dbo].[Sites] SET [Priority] = '" + isHarvestingSitePriority + "' WHERE [SiteCode] = '" + harvestingSite.SiteCode + "' AND [Version] = '" + harvestingSite.VersionId + "'");
-
-                        Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == harvestingSite.SiteCode && l.Version == harvestingSite.VersionId);
-                        if (lineage?.Type == LineageTypes.Merge)
-                        {
-                            string antecessors = string.Join(',',
-                                await ctx.Set<LineageAntecessors>().Where(a => a.LineageID == lineage.ID)
-                                .Select(a => a.SiteCode).ToArrayAsync());
-                            SiteChangeDb siteChange = new()
-                            {
-                                SiteCode = harvestingSite.SiteCode,
-                                Version = harvestingSite.VersionId,
-                                ChangeCategory = "Network general structure",
-                                ChangeType = "Site Merged",
-                                Country = envelope.CountryCode,
-                                Level = Enumerations.Level.Critical,
-                                Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx),
-                                Tags = string.Empty,
-                                NewValue = harvestingSite.SiteCode,
-                                OldValue = antecessors,
-                                Code = harvestingSite.SiteCode,
-                                Section = "Site",
-                                VersionReferenceId = storedSite.VersionId,
-                                ReferenceSiteCode = storedSite.SiteCode,
-                                N2KVersioningVersion = envelope.VersionId
-                            };
-                            changes.Add(siteChange);
-                        }
-                        else if (lineage?.Type == LineageTypes.Split)
-                        {
-                            // get sibling sites (sites that resulted from the split)
-                            List<long> siblingIDs = await ctx.Set<LineageAntecessors>()
-                                .Where(a => a.SiteCode == storedSite.SiteCode && a.N2KVersioningVersion == storedSite.N2KVersioningVersion)
-                                .Select(a => a.LineageID).ToListAsync();
-                            string siblingSites = string.Join(',',
-                                await ctx.Set<Lineage>()
-                                .Where(l => siblingIDs.Contains(l.ID))
-                                .Select(l => l.SiteCode).ToArrayAsync());
-
-                            SiteChangeDb siteChange = new()
-                            {
-                                SiteCode = harvestingSite.SiteCode,
-                                Version = harvestingSite.VersionId,
-                                ChangeCategory = "Network general structure",
-                                ChangeType = "Site Split",
-                                Country = envelope.CountryCode,
-                                Level = Enumerations.Level.Critical,
-                                Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx),
-                                Tags = string.Empty,
-                                NewValue = siblingSites,
-                                OldValue = storedSite.SiteCode,
-                                Code = harvestingSite.SiteCode,
-                                Section = "Site",
-                                VersionReferenceId = storedSite.VersionId,
-                                ReferenceSiteCode = storedSite.SiteCode,
-                                N2KVersioningVersion = envelope.VersionId
-                            };
-                            changes.Add(siteChange);
-                        }
-
-                        //Add justification files and comments from the current to the new version
-                        Sites current = ctx.Set<Sites>().Where(x => x.SiteCode == harvestingSite.SiteCode && x.Current == true).FirstOrDefault();
-                        if (current != null)
-                        {
-                            SqlParameter paramSitecode = new("@sitecode", harvestingSite.SiteCode);
-                            SqlParameter paramOldVersion = new("@oldVersion", current.Version);
-                            SqlParameter paramNewVersion = new("@newVersion", harvestingSite.VersionId);
-                            await ctx.Database.ExecuteSqlRawAsync($"exec dbo.spCopyJustificationFilesAndStatusChanges  @sitecode, @oldVersion, @newVersion",
-                                    paramSitecode, paramOldVersion, paramNewVersion);
-                        }
-                    }
-                    else
-                    {
-                        Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == harvestingSite.SiteCode && l.Version == harvestingSite.VersionId);
-                        if (lineage?.Type == LineageTypes.Merge)
-                        {
-                            string antecessors = string.Join(',',
-                                await ctx.Set<LineageAntecessors>().Where(a => a.LineageID == lineage.ID)
-                                .Select(a => a.SiteCode).ToArrayAsync());
-                            SiteChangeDb siteChange = new()
-                            {
-                                SiteCode = harvestingSite.SiteCode,
-                                Version = harvestingSite.VersionId,
-                                ChangeCategory = "Network general structure",
-                                ChangeType = "Site Merged",
-                                Country = envelope.CountryCode,
-                                Level = Enumerations.Level.Critical,
-                                Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx),
-                                Tags = string.Empty,
-                                NewValue = harvestingSite.SiteCode,
-                                OldValue = antecessors,
-                                Code = harvestingSite.SiteCode,
-                                Section = "Site",
-                                VersionReferenceId = harvestingSite.VersionId,
-                                N2KVersioningVersion = envelope.VersionId
-                            };
-                            changes.Add(siteChange);
-                        }
-                        else if (lineage?.Type == LineageTypes.Split)
-                        {
-                            // get sibling sites (sites that resulted from the split)
-                            LineageAntecessors? antecessor = await ctx.Set<LineageAntecessors>()
-                                .FirstOrDefaultAsync(a => a.LineageID == lineage.ID);
-                            List<long> siblingIDs = await ctx.Set<LineageAntecessors>()
-                                .Where(a => a.SiteCode == antecessor.SiteCode)
-                                .Select(a => a.LineageID).ToListAsync();
-                            string siblings = string.Join(',',
-                                await ctx.Set<Lineage>()
-                                .Where(l => siblingIDs.Contains(l.ID))
-                                .Select(l => l.SiteCode).ToArrayAsync());
-
-                            SiteChangeDb siteChange = new()
-                            {
-                                SiteCode = harvestingSite.SiteCode,
-                                Version = harvestingSite.VersionId,
-                                ChangeCategory = "Network general structure",
-                                ChangeType = "Site Split",
-                                Country = envelope.CountryCode,
-                                Level = Enumerations.Level.Critical,
-                                Status = (SiteChangeStatus?)await GetSiteChangeStatus(processedEnvelope.Status, ctx),
-                                Tags = string.Empty,
-                                NewValue = siblings,
-                                OldValue = antecessor.SiteCode,
-                                Code = harvestingSite.SiteCode,
-                                Section = "Site",
-                                VersionReferenceId = antecessor.Version,
-                                ReferenceSiteCode = antecessor.SiteCode,
-                                N2KVersioningVersion = envelope.VersionId
-                            };
-                            changes.Add(siteChange);
-                        }
-                        else
-                        {
-                            SiteChangeDb siteChange = new()
-                            {
-                                SiteCode = harvestingSite.SiteCode,
-                                Version = harvestingSite.VersionId,
-                                ChangeCategory = "Network general structure",
-                                ChangeType = "Site Added",
-                                Country = envelope.CountryCode,
-                                Level = Enumerations.Level.Critical,
-                                Status = (SiteChangeStatus?)processedEnvelope.Status,
-                                Tags = string.Empty,
-                                NewValue = harvestingSite.SiteCode,
-                                OldValue = null,
-                                Code = harvestingSite.SiteCode,
-                                Section = "Site",
-                                VersionReferenceId = harvestingSite.VersionId,
-                                N2KVersioningVersion = envelope.VersionId
-                            };
-                            changes.Add(siteChange);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangeDetection - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", _ctx.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ParallelSiteChangeDetection - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", _ctx.Database.GetConnectionString());
             }
             return changes;
         }
@@ -1654,8 +1302,8 @@ namespace N2K_BackboneBackEnd.Services
                     changes = await species.ChangeDetectionSpecies(speciesVersioning, referencedSpecies, changes, envelope, harvestingSite, storedSite, param3, param4, param5, speciesPriority, processedEnvelope, ctx);
 
                     //These booleans declare whether or not each site is a priority
-                    Boolean isStoredSitePriority = await SitePriorityChecker(storedSite.SiteCode, storedSite.VersionId, habitatPriority, speciesPriority, habitatVersioning, speciesVersioning);
-                    Boolean isHarvestingSitePriority = await SitePriorityChecker(harvestingSite.SiteCode, harvestingSite.VersionId, habitatPriority, speciesPriority, referencedHabitats, referencedSpecies);
+                    Boolean isStoredSitePriority = (bool)await ctx.Set<Sites>().Where(s => s.SiteCode == storedSite.SiteCode && s.Version == storedSite.VersionId).Select(c => c.Priority).FirstOrDefaultAsync();
+                    Boolean isHarvestingSitePriority = (bool)await ctx.Set<Sites>().Where(s => s.SiteCode == harvestingSite.SiteCode && s.Version == harvestingSite.VersionId).Select(c => c.Priority).FirstOrDefaultAsync();
 
                     if (isStoredSitePriority && !isHarvestingSitePriority)
                     {
@@ -2287,6 +1935,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         //harvest the extended tabular data
                         HarvestedEnvelope bbEnvelope = await HarvestEnvelopeTabular(envelope, sitesPerEnvelope[envelope], startEnvelopes[envelope]);
+                        await PriorityChecker(envelope.CountryCode, envelope.VersionId, false, null);
 
                         //Harvest proccess did its work successfully
                         if (bbEnvelope.Status == HarvestingStatus.DataLoaded)
@@ -2938,9 +2587,58 @@ namespace N2K_BackboneBackEnd.Services
                         sites = await ctx.Set<Sites>().ToListAsync();
                     }
 
+                    DataTable sitecodesfilter = new("sitecodesfilter");
+                    sitecodesfilter.Columns.Add("SiteCode", typeof(string));
+                    sitecodesfilter.Columns.Add("Version", typeof(int));
+
+                    sites.ToList().ForEach(cs =>
+                    {
+                        sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.Version });
+                    });
+                    SqlParameter paramTable = new("@siteCodes", System.Data.SqlDbType.Structured)
+                    {
+                        Value = sitecodesfilter,
+                        TypeName = "[dbo].[SiteCodeFilter]"
+                    };
+
+                    List<HabitatsToHarvestPerEnvelope>? habitatsEnvelope = await ctx.Set<HabitatsToHarvestPerEnvelope>().FromSqlRaw("exec spGetReferenceHabitatsBySiteCodes @siteCodes", paramTable).AsNoTracking().ToListAsync();
+                    List<SpeciesToHarvestPerEnvelope>? speciesEnvelope = await ctx.Set<SpeciesToHarvestPerEnvelope>().FromSqlRaw("exec spGetReferenceSpeciesBySiteCodes @siteCodes", paramTable).AsNoTracking().ToListAsync();
+
                     foreach (Sites temp in sites)
                     {
-                        await SitePriorityChecker(temp.SiteCode, temp.Version, habitatPriority, speciesPriority);
+                        List<HabitatsToHarvestPerEnvelope>? habitatsTemp = habitatsEnvelope.Where(t => t.SiteCode == temp.SiteCode && t.VersionId == temp.Version).ToList();
+                        List<SpeciesToHarvestPerEnvelope>? speciesTemp = speciesEnvelope.Where(t => t.SiteCode == temp.SiteCode && t.VersionId == temp.Version).ToList();
+                        List<HabitatToHarvest>? habitats = new();
+                        List<SpeciesToHarvest>? species = new();
+
+                        foreach (HabitatsToHarvestPerEnvelope hab in habitatsTemp)
+                        {
+                            HabitatToHarvest habitat = new()
+                            {
+                                HabitatCode = hab.HabitatCode,
+                                VersionId = hab.VersionId,
+                                RelSurface = hab.RelSurface,
+                                Representativity = hab.Representativity,
+                                Cover_ha = hab.Cover_ha,
+                                PriorityForm = hab.PriorityForm
+                            };
+                            habitats.Add(habitat);
+                        }
+
+                        foreach (SpeciesToHarvestPerEnvelope spe in speciesTemp)
+                        {
+                            SpeciesToHarvest specie = new()
+                            {
+                                SpeciesCode = spe.SpeciesCode,
+                                VersionId = spe.VersionId,
+                                Population = spe.Population,
+                                PopulationType = spe.PopulationType,
+                                Motivation = spe.Motivation
+                            };
+                            species.Add(specie);
+                        }
+
+                        await SitePriorityChecker(temp.SiteCode, temp.Version, habitatPriority, speciesPriority, habitats, species);
                     }
                 }
                 catch (Exception ex)

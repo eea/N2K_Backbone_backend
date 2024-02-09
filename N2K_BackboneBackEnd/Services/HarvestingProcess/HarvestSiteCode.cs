@@ -211,10 +211,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestSiteCode", "", _dataContext.Database.GetConnectionString());
                 return null;
             }
-            finally
-            {
-
-            }
         }
 
         /// <summary>
