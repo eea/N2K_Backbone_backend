@@ -556,13 +556,39 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<JustificationFilesRelease>> AddCountryDocument(JustificationFilesRelease file)
+        public async Task<List<JustificationFilesRelease>> AddCountryDocument(AttachedFileRelease attachedFile)
         {
             try
             {
-                List<JustificationFilesRelease> result = new List<JustificationFilesRelease>();
-                // TODO
-                return result;
+                List<JustificationFilesRelease> result = new();
+                IAttachedFileHandler? fileHandler = null;
+                string username = GlobalData.Username;
+
+                if (_appSettings.Value.AttachedFiles == null) return result;
+
+                if (_appSettings.Value.AttachedFiles.AzureBlob)
+                {
+                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                }
+                else
+                {
+                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                }
+                List<string> fileUrl = await fileHandler.UploadFileAsync(attachedFile);
+                foreach (string fUrl in fileUrl)
+                {
+                    JustificationFilesRelease justFile = new()
+                    {
+                        Path = fUrl,
+                        OriginalName = fUrl,
+                        CountryCode = attachedFile.Country,
+                        ImportDate = DateTime.Now,
+                        Username = username
+                    };
+                    await _dataContext.Set<JustificationFilesRelease>().AddAsync(justFile);
+                    await _dataContext.SaveChangesAsync();
+                }
+                return await GetCountryDocuments(attachedFile.Country);
             }
             catch (Exception ex)
             {
@@ -571,28 +597,18 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<JustificationFilesRelease>> UpdateCountryDocument(JustificationFilesRelease file)
-        {
-            try
-            {
-                List<JustificationFilesRelease> result = new List<JustificationFilesRelease>();
-                // TODO
-                return result;
-            }
-            catch (Exception ex)
-            {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - UpdateCountryDocument", "", _dataContext.Database.GetConnectionString());
-                throw ex;
-            }
-        }
-
         public async Task<List<JustificationFilesRelease>> DeleteCountryDocument(long fileId)
         {
             try
             {
-                List<JustificationFilesRelease> result = new List<JustificationFilesRelease>();
-                // TODO
-                return result;
+                JustificationFilesRelease file = _dataContext.Set<JustificationFilesRelease>().First(f => f.ID == fileId);
+                if(file != null)
+                {
+                    _dataContext.Set<JustificationFilesRelease>().Remove(file);
+                    await _dataContext.SaveChangesAsync();
+                    return await GetCountryDocuments(file.CountryCode);
+                }
+                return new List<JustificationFilesRelease>();
             }
             catch (Exception ex)
             {
@@ -673,7 +689,7 @@ namespace N2K_BackboneBackEnd.Services
                     await _dataContext.SaveChangesAsync();
                     return await GetCountryComments(comments.First().CountryCode);
                 }
-                
+
                 return new List<StatusChangesRelease>();
             }
             catch (Exception ex)

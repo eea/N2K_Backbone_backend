@@ -7,10 +7,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     {
         [Key]
         public long ID { get; set; }
-        public string? CountryCode { get; set; }
+        public string CountryCode { get; set; } = String.Empty;
         public long? Release { get; set; }
-        public String? Path { get; set; }
-        public String? OriginalName { get; set; }
+        public String Path { get; set; } = String.Empty;
+        public String OriginalName { get; set; } = String.Empty;
         public DateTime? ImportDate { get; set; }
         public string? Username { get; set; }
 

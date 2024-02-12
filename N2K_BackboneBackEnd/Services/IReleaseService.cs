@@ -1,5 +1,6 @@
 ﻿using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
+using N2K_BackboneBackEnd.Models;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace N2K_BackboneBackEnd.Services
@@ -14,8 +15,7 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<UnionListComparerDetailedViewModel>> CompareReleases(long? idSource, long? idTarget, string? bioRegions, string? country, IMemoryCache cache, int page = 1, int pageLimit = 0);
         Task<List<CountriesAttachmentCountViewModel>> GetCountriesAttachmentCount();
         Task<List<JustificationFilesRelease>> GetCountryDocuments(string country);
-        Task<List<JustificationFilesRelease>> AddCountryDocument(JustificationFilesRelease document);
-        Task<List<JustificationFilesRelease>> UpdateCountryDocument(JustificationFilesRelease document);
+        Task<List<JustificationFilesRelease>> AddCountryDocument(AttachedFileRelease document);
         Task<List<JustificationFilesRelease>> DeleteCountryDocument(long documentId);
         Task<List<StatusChangesRelease>> GetCountryComments(string country);
         Task<List<StatusChangesRelease>> AddCountryComment(StatusChangesRelease comment);

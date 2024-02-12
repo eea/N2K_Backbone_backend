@@ -7,7 +7,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     {
         [Key]
         public long Id { get; set; }
-        public string? CountryCode { get; set; }
+        public string CountryCode { get; set; } = String.Empty;
         public long? Release { get; set; }
         public DateTime? Date { get; set; }
         public string? Owner { get; set; }
