@@ -290,38 +290,13 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("AddCountryDocument")]
         [HttpPost]
-        public async Task<ActionResult<List<JustificationFilesRelease>>> AddCountryDocument([FromQuery] AttachedFile document)
+        public async Task<ActionResult<List<JustificationFilesRelease>>> AddCountryDocument([FromQuery] AttachedFileRelease document)
         {
             ServiceResponse<List<JustificationFilesRelease>> response = new();
             try
             {
                 // TODO
                 List<JustificationFilesRelease> attachments = await _releaseService.AddCountryDocument(document);
-                response.Success = true;
-                response.Message = "";
-                response.Data = attachments;
-                response.Count = attachments.Count();
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = null;
-                return Ok(response);
-            }
-        }
-
-        [Route("UpdateCountryDocument")]
-        [HttpPut]
-        public async Task<ActionResult<List<JustificationFilesRelease>>> UpdateCountryDocument([FromQuery] AttachedFile document)
-        {
-            ServiceResponse<List<JustificationFilesRelease>> response = new();
-            try
-            {
-                // TODO
-                List<JustificationFilesRelease> attachments = await _releaseService.UpdateCountryDocument(document);
                 response.Success = true;
                 response.Message = "";
                 response.Data = attachments;

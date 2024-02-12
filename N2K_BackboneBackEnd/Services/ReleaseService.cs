@@ -574,7 +574,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
                 }
-                List<string> fileUrl = await fileHandler.UploadFileAsync(attachedFile);
+                List<string> fileUrl = await fileHandler.UploadFileAsync(new AttachedFile() { Files = attachedFile.Files});
                 foreach (string fUrl in fileUrl)
                 {
                     JustificationFilesRelease justFile = new()
@@ -641,6 +641,8 @@ namespace N2K_BackboneBackEnd.Services
                 comment.Date = DateTime.Now;
                 comment.Owner = GlobalData.Username;
                 comment.Edited = 0;
+                comment.EditedBy = null;
+                comment.EditedDate = null;
                 await _dataContext.Set<StatusChangesRelease>().AddAsync(comment);
                 await _dataContext.SaveChangesAsync();
                 result = await _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(ch => ch.CountryCode == comment.CountryCode).ToListAsync();
@@ -660,10 +662,11 @@ namespace N2K_BackboneBackEnd.Services
                 StatusChangesRelease prev = _dataContext.Set<StatusChangesRelease>().Where(c => c.Id == comment.Id).OrderBy(c => c.Edited).Last();
                 if (prev != null)
                 {
-                    comment.Edited = prev.Edited + 1;
-                    comment.EditedDate = DateTime.Now;
-                    comment.EditedBy = GlobalData.Username;
-                    _dataContext.Set<StatusChangesRelease>().Update(comment);
+                    prev.Edited = prev.Edited + 1;
+                    prev.EditedDate = DateTime.Now;
+                    prev.EditedBy = GlobalData.Username;
+                    prev.Comments = comment.Comments;
+                    _dataContext.Set<StatusChangesRelease>().Update(prev);
                     await _dataContext.SaveChangesAsync();
                 }
                 return await GetCountryComments(comment.CountryCode);
