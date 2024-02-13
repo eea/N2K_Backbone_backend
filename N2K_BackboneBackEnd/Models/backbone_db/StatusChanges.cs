@@ -15,7 +15,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public override string? Tags { get; set; } = string.Empty;
         public int? Edited { get; set; }
         public DateTime? EditedDate { get; set; }
-        public string? Editedby { get; set; }
+        public string? EditedBy { get; set; }
         //[NotMapped]
         //public bool Temporal { get; set; } = false;
 
