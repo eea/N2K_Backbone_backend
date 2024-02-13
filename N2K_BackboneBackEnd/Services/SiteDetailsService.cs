@@ -395,7 +395,7 @@ namespace N2K_BackboneBackEnd.Services
                     JustificationFiles justFile = new()
                     {
                         Path = fUrl,
-                        OriginalName = fUrl,
+                        OriginalName = attachedFile.Files[0].FileName,
                         SiteCode = attachedFile.SiteCode,
                         Version = attachedFile.Version,
                         ImportDate = DateTime.Now,
@@ -482,16 +482,6 @@ namespace N2K_BackboneBackEnd.Services
                         //delete record from DB
                         _dataContext.Set<JustificationFiles>().Remove(justification);
                         await _dataContext.SaveChangesAsync();
-                    }
-                }
-
-                if (justification != null)
-                {
-                    if (!temporal)
-                    {
-                        //delete record from DB
-                        _dataContext.Set<JustificationFiles>().Remove(justification);
-                        await _dataContext.SaveChangesAsync();
 
                         //delete file from repository
                         IAttachedFileHandler? fileHandler = null;
@@ -509,6 +499,7 @@ namespace N2K_BackboneBackEnd.Services
                         result = 1;
                     }
                 }
+
                 return result;
             }
             catch (Exception ex)

@@ -580,7 +580,7 @@ namespace N2K_BackboneBackEnd.Services
                     JustificationFilesRelease justFile = new()
                     {
                         Path = fUrl,
-                        OriginalName = fUrl,
+                        OriginalName = attachedFile.Files[0].FileName,
                         CountryCode = attachedFile.Country,
                         ImportDate = DateTime.Now,
                         Username = username
