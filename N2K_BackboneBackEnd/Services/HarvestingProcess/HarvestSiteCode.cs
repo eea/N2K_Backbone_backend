@@ -1198,7 +1198,9 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     }
                     if ((harvestingSite.LengthKm ?? -1) != (storedSite.LengthKm ?? -1))
                     {
-                        if (Math.Abs((double)(harvestingSite.LengthKm - storedSite.LengthKm)) > siteLengthKmTolerance)
+                        if ((harvestingSite.LengthKm != null && storedSite.LengthKm != null
+                            && Math.Abs((double)(harvestingSite.LengthKm - storedSite.LengthKm)) > siteLengthKmTolerance)
+                            || harvestingSite.LengthKm == null || storedSite.LengthKm == null)
                         {
                             SiteChangeDb siteChange = new()
                             {
