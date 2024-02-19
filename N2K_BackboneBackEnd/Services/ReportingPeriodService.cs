@@ -8,12 +8,10 @@ namespace N2K_BackboneBackEnd.Services
     public class ReportingPeriodService : IReportingPeriodService
     {
         private readonly N2KBackboneContext _dataContext;
-        private IEnumerable<RepPeriod> _rpContext;
 
         public ReportingPeriodService(N2KBackboneContext dataContext)
         {
             _dataContext = dataContext;
-            _rpContext = _dataContext.Set<RepPeriod>();
         }
 
         public async Task<List<RepPeriodView>> Get()
@@ -21,10 +19,10 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 List<RepPeriodView> result = new();
-                List<RepPeriod> periods = _rpContext.ToList();
+                List<RepPeriod> periods = await _dataContext.Set<RepPeriod>().ToListAsync();
                 foreach (RepPeriod period in periods)
                 {
-                    List<UnionListHeader>? releases = _dataContext.Set<UnionListHeader>().Where(r => r.Date >= period.InitDate && r.Date <= period.EndDate)?.ToList();
+                    List<UnionListHeader>? releases = await _dataContext.Set<UnionListHeader>().Where(r => r.Date >= period.InitDate && r.Date <= period.EndDate).ToListAsync();
                     result.Add(new RepPeriodView
                     {
                         Id = period.Id,
@@ -47,7 +45,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                RepPeriod? period = _rpContext.SingleOrDefault(r => r.Id == id);
+                RepPeriod? period = await _dataContext.Set<RepPeriod>().Where(r => r.Id == id).FirstOrDefaultAsync();
                 if(period  == null)
                 {
                     throw new Exception("Reporting Period not found");
@@ -68,7 +66,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                RepPeriod? active = _rpContext.SingleOrDefault(r => r.Active);
+                RepPeriod? active = await _dataContext.Set<RepPeriod>().FirstOrDefaultAsync(r => r.Active);
                 if (active != null)
                 {
                     throw new Exception("An active reporting period already exists");
@@ -97,7 +95,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                RepPeriod? active = _rpContext.SingleOrDefault(r => r.Active);
+                RepPeriod? active = await _dataContext.Set<RepPeriod>().FirstOrDefaultAsync(r => r.Active);
                 if (active != null)
                 {
                     active.Active = false;
