@@ -2449,45 +2449,6 @@ namespace N2K_BackboneBackEnd.Services
         }
 
         /// <summary>
-        ///  This method retrives the complete information for a Site in Versioning and stores it in BackBone.
-        ///  (Just the Site)
-        /// </summary>
-        /// <param name="pVSite">The definition ogf the versioning Site</param>
-        /// <param name="pEnvelope">The envelope to process</param>
-        /// <returns>Returns a BackBone Site object</returns>
-        private async Task<List<Respondents>>? HarvestRespondents(List<Contact> vContact, EnvelopesToProcess pEnvelope)
-        {
-            await Task.Delay(1);
-            List<Respondents> items = new();
-            foreach (Contact contact in vContact)
-            {
-                Respondents respondent = new();
-                try
-                {
-                    respondent.SiteCode = contact.SITECODE;
-                    respondent.Version = (int)contact.VERSIONID;
-                    respondent.locatorName = contact.LOCATOR_NAME;
-                    respondent.addressArea = contact.ADDRESS_AREA;
-                    respondent.postName = contact.POST_NAME;
-                    respondent.postCode = contact.POSTCODE;
-                    respondent.thoroughfare = contact.THOROUGHFARE;
-                    respondent.addressUnstructured = contact.UNSTRUCTURED_ADD;
-                    respondent.name = contact.CONTACT_NAME;
-                    respondent.Email = contact.EMAIL;
-                    respondent.AdminUnit = contact.ADMIN_UNIT;
-                    respondent.LocatorDesignator = contact.LOCATOR_DESIGNATOR;
-                    items.Add(respondent);
-                }
-                catch (Exception ex)
-                {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestRespondents", "", _dataContext.Database.GetConnectionString());
-                    return null;
-                }
-            }
-            return items;
-        }
-
-        /// <summary>
         /// Method to accept sites with no changes
         /// </summary>
         /// <param name="envelope">Envelope to process</param>

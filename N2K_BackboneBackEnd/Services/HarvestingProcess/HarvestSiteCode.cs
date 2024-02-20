@@ -1327,9 +1327,22 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param1 = new("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
-                String queryString = @"select SITECODE as SiteCode,LOCATOR_NAME as locatorName,ADDRESS_AREA as addressArea,POST_NAME as postName,POSTCODE as postCode,THOROUGHFARE as thoroughfare,UNSTRUCTURED_ADD as addressUnstructured,CONTACT_NAME as name, EMAIL as Email, ADMIN_UNIT as AdminUnit,LOCATOR_DESIGNATOR as LocatorDesignator,OBJECTID as ObjectID
-                                       from CONTACT
-                                       where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                String queryString = @"SELECT SITECODE AS SiteCode,
+	                                        LOCATOR_NAME AS locatorName,
+	                                        ADDRESS_AREA AS addressArea,
+	                                        POST_NAME AS postName,
+	                                        POSTCODE AS postCode,
+	                                        THOROUGHFARE AS thoroughfare,
+	                                        UNSTRUCTURED_ADD AS addressUnstructured,
+	                                        CONTACT_NAME AS ContactName,
+	                                        ORG_NAME AS OrgName,
+	                                        EMAIL AS Email,
+	                                        ADMIN_UNIT AS AdminUnit,
+	                                        LOCATOR_DESIGNATOR AS LocatorDesignator,
+	                                        OBJECTID AS ObjectID
+                                        FROM CONTACT
+                                        WHERE COUNTRYCODE = @COUNTRYCODE
+	                                        AND COUNTRYVERSIONID = @COUNTRYVERSIONID";
 
 
                 //Console.WriteLine(String.Format("Start respondents  Query -> {0}", (DateTime.Now - start).TotalSeconds));
@@ -1356,11 +1369,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         respondent.postCode = TypeConverters.CheckNull<string>(reader["postCode"]);
                         respondent.thoroughfare = TypeConverters.CheckNull<string>(reader["thoroughfare"]);
                         respondent.addressUnstructured = TypeConverters.CheckNull<string>(reader["addressUnstructured"]);
-                        respondent.name = TypeConverters.CheckNull<string>(reader["name"]);
+                        respondent.ContactName = TypeConverters.CheckNull<string>(reader["ContactName"]);
                         respondent.Email = TypeConverters.CheckNull<string>(reader["Email"]);
                         respondent.AdminUnit = TypeConverters.CheckNull<string>(reader["AdminUnit"]);
                         respondent.LocatorDesignator = TypeConverters.CheckNull<string>(reader["LocatorDesignator"]);
                         respondent.ObjectID = TypeConverters.CheckNull<int>(reader["ObjectID"]);
+                        respondent.OrgName = TypeConverters.CheckNull<string>(reader["OrgName"]);
                         items.Add(respondent);
                     }
                     else
