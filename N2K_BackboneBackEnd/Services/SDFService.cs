@@ -89,7 +89,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (respondents != null && respondents.Count > 0) //UNSURE
                 {
-                    result.SiteIdentification.Respondent.Name = respondents.FirstOrDefault().name;
+                    result.SiteIdentification.Respondent.Name = respondents.FirstOrDefault().ContactName;
                     result.SiteIdentification.Respondent.Address = respondents.FirstOrDefault().addressArea;
                     result.SiteIdentification.Respondent.Email = respondents.FirstOrDefault().Email;
                 }
@@ -315,7 +315,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         BodyResponsible temp = new()
                         {
-                            Organisation = h.name,
+                            Organisation = h.ContactName,
                             Address = h.addressArea,
                             Email = h.Email
                         };
