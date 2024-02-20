@@ -5,8 +5,8 @@ namespace N2K_BackboneBackEnd.Services
     public interface IReportingPeriodService
     {
         Task<List<RepPeriodView>> Get();
-        Task<List<RepPeriodView>> Edit(long id, DateTime newEndDate);
-        Task<List<RepPeriodView>> Create(DateTime init, DateTime end);
+        Task<List<RepPeriodView>> Edit(RepPeriod rp);
+        Task<List<RepPeriodView>> Create(RepPeriod rp);
         Task<List<RepPeriodView>> Close();
     }
 }
