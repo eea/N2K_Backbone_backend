@@ -47,12 +47,12 @@ namespace N2K_BackboneBackEnd.Controllers
         
         [Route("Create")]
         [HttpPost]
-        public async Task<ActionResult<ServiceResponse<List<RepPeriodView>>>> Create(DateTime init, DateTime end)
+        public async Task<ActionResult<ServiceResponse<List<RepPeriodView>>>> Create(RepPeriod rp)
         {
             var response = new ServiceResponse<List<RepPeriodView>>();
             try
             {
-                var repPeriods = await _reportingPeriodService.Create(init, end);
+                var repPeriods = await _reportingPeriodService.Create(rp);
                 response.Success = true;
                 response.Message = "";
                 response.Data = repPeriods;
@@ -71,12 +71,12 @@ namespace N2K_BackboneBackEnd.Controllers
         
         [Route("Edit")]
         [HttpPut]
-        public async Task<ActionResult<ServiceResponse<List<RepPeriodView>>>> Edit(long id, DateTime newEndDate)
+        public async Task<ActionResult<ServiceResponse<List<RepPeriodView>>>> Edit(RepPeriod rp)
         {
             var response = new ServiceResponse<List<RepPeriodView>>();
             try
             {
-                var repPeriods = await _reportingPeriodService.Edit(id, newEndDate);
+                var repPeriods = await _reportingPeriodService.Edit(rp);
                 response.Success = true;
                 response.Message = "";
                 response.Data = repPeriods;

@@ -41,16 +41,16 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<RepPeriodView>> Edit(long id, DateTime newEndDate)
+        public async Task<List<RepPeriodView>> Edit(RepPeriod rp)
         {
             try
             {
-                RepPeriod? period = await _dataContext.Set<RepPeriod>().Where(r => r.Id == id).FirstOrDefaultAsync();
+                RepPeriod? period = await _dataContext.Set<RepPeriod>().Where(r => r.Id == rp.Id).FirstOrDefaultAsync();
                 if(period  == null)
                 {
                     throw new Exception("Reporting Period not found");
                 }
-                period.EndDate = newEndDate;
+                period.EndDate = rp.EndDate;
                 _dataContext.Set<RepPeriod>().Update(period);
                 await _dataContext.SaveChangesAsync();
                 return await Get();
@@ -62,7 +62,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<RepPeriodView>> Create(DateTime init, DateTime end)
+        public async Task<List<RepPeriodView>> Create(RepPeriod rp)
         {
             try
             {
@@ -74,8 +74,8 @@ namespace N2K_BackboneBackEnd.Services
 
                 RepPeriod newRp = new RepPeriod
                 {
-                    InitDate = init,
-                    EndDate = end,
+                    InitDate = rp.InitDate,
+                    EndDate = rp.EndDate,
                     Active = true
                 };
 
