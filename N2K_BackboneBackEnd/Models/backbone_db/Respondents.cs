@@ -18,11 +18,12 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? postCode { get; set; }
         public string? thoroughfare { get; set; }
         public string? addressUnstructured { get; set; }
-        public string? name { get; set; }
+        public string? ContactName { get; set; }
         public string? Email { get; set; }
         public string? AdminUnit { get; set; }
         public string? LocatorDesignator { get; set; }
         public int? ObjectID { get; set; }
+        public string? OrgName { get; set; }
 
         private string dbConnection = string.Empty;
 
