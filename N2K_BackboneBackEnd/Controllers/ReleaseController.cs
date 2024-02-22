@@ -6,6 +6,7 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
+using N2K_BackboneBackEnd.Models;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
@@ -238,6 +239,201 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+        [Route("GetAttachmentsCount")]
+        [HttpGet]
+        public async Task<ActionResult<List<CountriesAttachmentCountViewModel>>> GetCountriesAttachmentCount()
+        {
+            ServiceResponse<List<CountriesAttachmentCountViewModel>> response = new();
+            try
+            {
+                List<CountriesAttachmentCountViewModel> attachmentCount = await _releaseService.GetCountriesAttachmentCount();
+                response.Success = true;
+                response.Message = "";
+                response.Data = attachmentCount;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("GetCountryDocuments")]
+        [HttpGet]
+        public async Task<ActionResult<List<JustificationFilesRelease>>> GetCountryDocuments(string country)
+        {
+            ServiceResponse<List<JustificationFilesRelease>> response = new();
+            try
+            {
+                List<JustificationFilesRelease> attachments = await _releaseService.GetCountryDocuments(country);
+                response.Success = true;
+                response.Message = "";
+                response.Data = attachments;
+                response.Count = attachments.Count();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("AddCountryDocument")]
+        [HttpPost]
+        public async Task<ActionResult<List<JustificationFilesRelease>>> AddCountryDocument([FromQuery] AttachedFileRelease document)
+        {
+            ServiceResponse<List<JustificationFilesRelease>> response = new();
+            try
+            {
+                // TODO
+                List<JustificationFilesRelease> attachments = await _releaseService.AddCountryDocument(document);
+                response.Success = true;
+                response.Message = "";
+                response.Data = attachments;
+                response.Count = attachments.Count();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("DeleteCountryDocument")]
+        [HttpDelete]
+        public async Task<ActionResult<List<JustificationFilesRelease>>> DeleteCountryDocument(long documentId)
+        {
+            ServiceResponse<List<JustificationFilesRelease>> response = new();
+            try
+            {
+                // TODO
+                List<JustificationFilesRelease> attachments = await _releaseService.DeleteCountryDocument(documentId);
+                response.Success = true;
+                response.Message = "";
+                response.Data = attachments;
+                response.Count = attachments.Count();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("GetCountryComments")]
+        [HttpGet]
+        public async Task<ActionResult<List<StatusChangesRelease>>> GetCountryComments(string country)
+        {
+            ServiceResponse<List<StatusChangesRelease>> response = new();
+            try
+            {
+                List<StatusChangesRelease> attachments = await _releaseService.GetCountryComments(country);
+                response.Success = true;
+                response.Message = "";
+                response.Data = attachments;
+                response.Count = attachments.Count();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("AddCountryComment")]
+        [HttpPost]
+        public async Task<ActionResult<List<StatusChangesRelease>>> AddCountryComment(StatusChangesRelease comment)
+        {
+            ServiceResponse<List<StatusChangesRelease>> response = new();
+            try
+            {
+                List<StatusChangesRelease> attachments = await _releaseService.AddCountryComment(comment);
+                response.Success = true;
+                response.Message = "";
+                response.Data = attachments;
+                response.Count = attachments.Count();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("UpdateCountryComment")]
+        [HttpPut]
+        public async Task<ActionResult<List<StatusChangesRelease>>> UpdateCountryComment(StatusChangesRelease comment)
+        {
+            ServiceResponse<List<StatusChangesRelease>> response = new();
+            try
+            {
+                List<StatusChangesRelease> attachments = await _releaseService.UpdateCountryComment(comment);
+                response.Success = true;
+                response.Message = "";
+                response.Data = attachments;
+                response.Count = attachments.Count();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("DeleteCountryComment")]
+        [HttpDelete]
+        public async Task<ActionResult<List<StatusChangesRelease>>> DeleteCountryComment(long commentId)
+        {
+            ServiceResponse<List<StatusChangesRelease>> response = new();
+            try
+            {
+                List<StatusChangesRelease> attachments = await _releaseService.DeleteCountryComment(commentId);
+                response.Success = true;
+                response.Message = "";
+                response.Data = attachments;
+                response.Count = attachments.Count();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
 
         [Route("Create")]
         [HttpPost]
