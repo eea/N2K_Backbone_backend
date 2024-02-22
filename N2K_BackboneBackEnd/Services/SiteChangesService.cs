@@ -457,8 +457,9 @@ namespace N2K_BackboneBackEnd.Services
                         EditedBy = activity is null ? null : activity.Author,
                         EditedDate = activity is null ? null : activity.Date,
                         LineageChangeType = changeLineage,
-                        Type = change.Type
-                    };
+                        Type = change.Type,
+                        JustificationRequired = await _dataContext.Set<Sites>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).Select(s => s.JustificationRequired).FirstOrDefaultAsync()
+                };
                     result.Add(temp);
                 }
                 if (onlyedited)
