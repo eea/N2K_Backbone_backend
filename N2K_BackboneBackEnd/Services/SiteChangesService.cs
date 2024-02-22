@@ -165,7 +165,7 @@ namespace N2K_BackboneBackEnd.Services
                             if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
                                 siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
 
-                            if (change.ReferenceSiteCode != null && change.ReferenceSiteCode != "" && !lineageChange.Equals(LineageTypes.Creation))
+                            if (change.ReferenceSiteCode != null && change.ReferenceSiteCode != "" && !siteChange.LineageChangeType.Equals(LineageTypes.Creation))
                                 siteChange.ReferenceSiteCode = change.ReferenceSiteCode;
                             siteChange.Version = change.Version;
                             SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
