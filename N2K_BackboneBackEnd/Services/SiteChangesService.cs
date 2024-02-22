@@ -666,7 +666,7 @@ namespace N2K_BackboneBackEnd.Services
                                     _Section.DeletedCodes.Add(new CategoryChangeDetail
                                     {
                                         ChangeCategory = _levelDetail.Section,
-                                        ChangeType = String.Format("List of {0} Deleted", _levelDetail.Section),
+                                        ChangeType = String.Format("{0} Deleted", _levelDetail.Section),
                                         ChangedCodesDetail = new List<CodeChangeDetail>()
                                     });
                                 }
@@ -702,7 +702,7 @@ namespace N2K_BackboneBackEnd.Services
                                 _Section.AddedCodes.Add(new CategoryChangeDetail
                                 {
                                     ChangeCategory = _levelDetail.Section,
-                                    ChangeType = String.Format("List of {0} Added", _levelDetail.Section),
+                                    ChangeType = String.Format("{0} Added", _levelDetail.Section),
                                     ChangedCodesDetail = new List<CodeChangeDetail>()
                                 });
                             }
