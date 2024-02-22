@@ -158,7 +158,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Level = null;
                             siteChange.Status = null;
                             siteChange.Tags = "";
-                            
+
                             Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
                             siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
 
@@ -232,7 +232,7 @@ namespace N2K_BackboneBackEnd.Services
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
                 if (onlyjustreq)
-                    result = result.Where(x => x.JustificationRequired ?? false).ToList();
+                    result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
                 return result;
             }
             catch (Exception ex)
@@ -351,7 +351,7 @@ namespace N2K_BackboneBackEnd.Services
                 };
 
                 // Get the harvested envelope
-                ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == pSiteCode.Substring(0,2) && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
+                ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == pSiteCode.Substring(0, 2) && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
 
                 // Get lineage change type from Lineage table
                 Lineage? lineageChange = await _dataContext.Set<Lineage>().AsNoTracking().FirstOrDefaultAsync(l => l.SiteCode == pSiteCode && l.Version == pCountryVersion && l.N2KVersioningVersion == harvestedEnvelope.Version);
@@ -386,7 +386,7 @@ namespace N2K_BackboneBackEnd.Services
                 changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
                 if (changesDb != null)
                 {
-                    if(!changeDetailVM.LineageChangeType.Equals(LineageTypes.Creation))
+                    if (!changeDetailVM.LineageChangeType.Equals(LineageTypes.Creation))
                     {
                         changeDetailVM.ReferenceSiteCode = changesDb.FirstOrDefault()?.ReferenceSiteCode;
                     }
@@ -459,16 +459,14 @@ namespace N2K_BackboneBackEnd.Services
                         LineageChangeType = changeLineage,
                         Type = change.Type,
                         JustificationRequired = await _dataContext.Set<Sites>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).Select(s => s.JustificationRequired).FirstOrDefaultAsync()
-                };
+                    };
                     result.Add(temp);
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
                 if (onlyjustreq)
                 {
-                    List<string> justReqSites = await _dataContext.Set<Sites>()
-                        .Where(s => s.CountryCode == country && s.CurrentStatus == SiteChangeStatus.Pending && (s.JustificationRequired ?? false)).Select(s => s.SiteCode).ToListAsync();
-                    result = result.Join(justReqSites, r => r.SiteCode, j => j, (r, j) => r).ToList();
+                    result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
                 }
                 return result;
             }
@@ -536,7 +534,8 @@ namespace N2K_BackboneBackEnd.Services
                             EditedBy = activity is null ? null : activity.Author,
                             EditedDate = activity is null ? null : activity.Date,
                             LineageChangeType = changeLineage,
-                            Type = change.Type
+                            Type = change.Type,
+                            JustificationRequired = await _dataContext.Set<Sites>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).Select(s => s.JustificationRequired).FirstOrDefaultAsync()
                         };
                         result.Add(temp);
                     }
@@ -551,9 +550,7 @@ namespace N2K_BackboneBackEnd.Services
                     result = result.Where(x => x.EditedDate != null).ToList();
                 if (onlyjustreq)
                 {
-                    List<string> justReqSites = await _dataContext.Set<Sites>()
-                        .Where(s => s.CountryCode == country && s.CurrentStatus == status && (s.JustificationRequired ?? false)).Select(s => s.SiteCode).ToListAsync();
-                    result = result.Join(justReqSites, r => r.SiteCode, j => j, (r, j) => r).ToList();
+                    result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
                 }
                 return result.OrderBy(o => o.SiteCode).ToList();
             }
@@ -941,7 +938,7 @@ namespace N2K_BackboneBackEnd.Services
                                 Fields = fields
                             };
                         }
-                        
+
                         if (changeType == "Population Change"
                             || changeType == "Population Increase"
                             || changeType == "Population Decrease")
