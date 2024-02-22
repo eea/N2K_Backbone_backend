@@ -60,7 +60,7 @@ namespace N2K_BackboneBackEnd.Services
             _lineage = _dataContext.Set<Lineage>().AsNoTracking().ToList();
         }
 
-        public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false)
+        public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false, bool onlyjustreq = false)
         {
             try
             {
@@ -158,7 +158,14 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Level = null;
                             siteChange.Status = null;
                             siteChange.Tags = "";
-                            if (change.ReferenceSiteCode != null && change.ReferenceSiteCode != "")
+                            
+                            Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
+                            siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
+
+                            if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
+                                siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
+
+                            if (change.ReferenceSiteCode != null && change.ReferenceSiteCode != "" && !lineageChange.Equals(LineageTypes.Creation))
                                 siteChange.ReferenceSiteCode = change.ReferenceSiteCode;
                             siteChange.Version = change.Version;
                             SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
@@ -175,12 +182,6 @@ namespace N2K_BackboneBackEnd.Services
 
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
-
-                            Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
-                            siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
-
-                            if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
-                                siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
 
                             var changeView = new SiteChangeView
                             {
@@ -230,6 +231,8 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
+                if (onlyjustreq)
+                    result = result.Where(x => x.JustificationRequired ?? false).ToList();
                 return result;
             }
             catch (Exception ex)
@@ -383,7 +386,10 @@ namespace N2K_BackboneBackEnd.Services
                 changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
                 if (changesDb != null)
                 {
-                    changeDetailVM.ReferenceSiteCode = changesDb.FirstOrDefault()?.ReferenceSiteCode;
+                    if(!changeDetailVM.LineageChangeType.Equals(LineageTypes.Creation))
+                    {
+                        changeDetailVM.ReferenceSiteCode = changesDb.FirstOrDefault()?.ReferenceSiteCode;
+                    }
                     if (changesDb.FirstOrDefault()?.ChangeType == "Site Deleted")
                     {
                         changeDetailVM.Status = changesDb.FirstOrDefault()?.Status;
@@ -414,7 +420,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited)
+        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited, Boolean onlyjustreq)
         {
             try
             {
@@ -457,6 +463,12 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
+                if (onlyjustreq)
+                {
+                    List<string> justReqSites = await _dataContext.Set<Sites>()
+                        .Where(s => s.CountryCode == country && s.CurrentStatus == SiteChangeStatus.Pending && (s.JustificationRequired ?? false)).Select(s => s.SiteCode).ToListAsync();
+                    result = result.Join(justReqSites, r => r.SiteCode, j => j, (r, j) => r).ToList();
+                }
                 return result;
             }
             catch (Exception ex)
@@ -466,7 +478,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false)
+        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false, bool onlyjustreq = false)
         {
             try
             {
@@ -536,6 +548,12 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
+                if (onlyjustreq)
+                {
+                    List<string> justReqSites = await _dataContext.Set<Sites>()
+                        .Where(s => s.CountryCode == country && s.CurrentStatus == status && (s.JustificationRequired ?? false)).Select(s => s.SiteCode).ToListAsync();
+                    result = result.Join(justReqSites, r => r.SiteCode, j => j, (r, j) => r).ToList();
+                }
                 return result.OrderBy(o => o.SiteCode).ToList();
             }
             catch (Exception ex)
