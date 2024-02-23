@@ -12,5 +12,8 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public abstract string? Tags { get; set; }
         [NotMapped]
         public bool Temporal { get; set; } = false;
+        [NotMapped]
+        public bool Release { get; set; } = false;
+
     }
 }

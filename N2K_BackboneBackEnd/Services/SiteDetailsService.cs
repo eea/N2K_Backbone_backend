@@ -132,7 +132,27 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 List<StatusChanges> result = new();
+                List<StatusChangesRelease> result2 = new();
                 result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == pSiteCode && ch.Version == pCountryVersion).ToListAsync();
+                result2 = await _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == pSiteCode.Substring(0, 2) && f.Release == null).ToListAsync();
+
+                foreach (StatusChangesRelease release in result2)
+                {
+                    StatusChanges temp = new()
+                    {
+                        Id = release.Id,
+                        SiteCode = pSiteCode,
+                        Version = pCountryVersion,
+                        Release = true,
+                        Date = release.Date,
+                        Owner = release.Owner,
+                        Comments = release.Comments,
+                        Edited = release.Edited,
+                        EditedDate = release.EditedDate,
+                        EditedBy = release.EditedBy
+                    };
+                    result.Add(temp);
+                }
 
                 if (temporal)
                 {
@@ -201,7 +221,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         comment.EditedDate = DateTime.Now;
                         comment.Tags = "Deleted";
-                        comment.Editedby = GlobalData.Username;
+                        comment.EditedBy = GlobalData.Username;
                         cachedList.Add(comment);
 
                         cache.Set(comlistName, cachedList);
@@ -256,7 +276,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             item.EditedDate = DateTime.Now;
                             item.Edited = edited;
-                            item.Editedby = GlobalData.Username;
+                            item.EditedBy = GlobalData.Username;
                             item.Tags = "Updated";
                             item.Comments = comment.Comments;
                             item.Date = _comment.Date;
@@ -269,7 +289,7 @@ namespace N2K_BackboneBackEnd.Services
                             comment.EditedDate = DateTime.Now;
                             comment.Edited = edited;
                             comment.Temporal = true;
-                            comment.Editedby = GlobalData.Username;
+                            comment.EditedBy = GlobalData.Username;
                             comment.Tags = "Updated";
                             cachedList.Add(comment);
                         }
@@ -294,7 +314,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         comment.EditedDate = DateTime.Now;
                         comment.Edited = edited;
-                        comment.Editedby = GlobalData.Username;
+                        comment.EditedBy = GlobalData.Username;
                         _dataContext.Set<StatusChanges>().Update(comment);
                         await _dataContext.SaveChangesAsync();
                     }
@@ -316,7 +336,25 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 List<JustificationFiles> result = new();
+                List<JustificationFilesRelease> result2 = new();
                 result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(f => f.SiteCode == pSiteCode && f.Version == pCountryVersion).ToListAsync();
+                result2 = await _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == pSiteCode.Substring(0, 2) && f.Release == null).ToListAsync();
+
+                foreach (JustificationFilesRelease release in result2)
+                {
+                    JustificationFiles temp = new()
+                    {
+                        Id = release.ID,
+                        SiteCode = pSiteCode,
+                        Version = pCountryVersion,
+                        Release = true,
+                        Path = release.Path,
+                        ImportDate = release.ImportDate,
+                        Username = release.Username,
+                        OriginalName = release.OriginalName
+                    };
+                    result.Add(temp);
+                }
 
                 if (temporal)
                 {
@@ -357,6 +395,7 @@ namespace N2K_BackboneBackEnd.Services
                     JustificationFiles justFile = new()
                     {
                         Path = fUrl,
+                        OriginalName = attachedFile.Files[0].FileName,
                         SiteCode = attachedFile.SiteCode,
                         Version = attachedFile.Version,
                         ImportDate = DateTime.Now,
@@ -443,16 +482,6 @@ namespace N2K_BackboneBackEnd.Services
                         //delete record from DB
                         _dataContext.Set<JustificationFiles>().Remove(justification);
                         await _dataContext.SaveChangesAsync();
-                    }
-                }
-
-                if (justification != null)
-                {
-                    if (!temporal)
-                    {
-                        //delete record from DB
-                        _dataContext.Set<JustificationFiles>().Remove(justification);
-                        await _dataContext.SaveChangesAsync();
 
                         //delete file from repository
                         IAttachedFileHandler? fileHandler = null;
@@ -470,6 +499,7 @@ namespace N2K_BackboneBackEnd.Services
                         result = 1;
                     }
                 }
+
                 return result;
             }
             catch (Exception ex)
