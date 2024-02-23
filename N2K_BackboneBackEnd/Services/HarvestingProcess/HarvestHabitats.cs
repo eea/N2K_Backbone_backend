@@ -91,26 +91,27 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param1 = new("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
-                String queryString = @"select COUNTRYCODE as CountryCode,
-                                        VERSIONID as Version,
-                                        COUNTRYVERSIONID as CountryVersionId ,
-                                        SITECODE as SiteCode,
-                                        HABITATCODE as HabitatCode,
-                                        PERCENTAGECOVER as PercentageCover,
-                                        REPRESENTATIVITY as Representativity,
-                                        RELSURFACE as RelSurface,
-                                        CONSSTATUS as ConsStatus,
-                                        GLOBALASSESMENT as GlobalAssesment,
-                                        STARTDATE as StartDate,
-                                        ENDDATE as EndDate,
-                                        RID as Rid,
-                                        NONPRESENCEINSITE as NonPresenceSite,
-                                        CAVES as Caves ,
-                                        DATAQUALITY as DataQuality,
-                                        COVER_HA as Cover_HA,
-                                        PF
-                                       from CONTAINSHABITAT
-                                       where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                String queryString = @"SELECT COUNTRYCODE AS CountryCode,
+	                                        VERSIONID AS Version,
+	                                        COUNTRYVERSIONID AS CountryVersionId,
+	                                        SITECODE AS SiteCode,
+	                                        HABITATCODE AS HabitatCode,
+	                                        PERCENTAGECOVER AS PercentageCover,
+	                                        REPRESENTATIVITY AS Representativity,
+	                                        RELSURFACE AS RelSurface,
+	                                        CONSSTATUS AS ConsStatus,
+	                                        GLOBALASSESMENT AS GlobalAssesment,
+	                                        STARTDATE AS StartDate,
+	                                        ENDDATE AS EndDate,
+	                                        RID AS Rid,
+	                                        NONPRESENCEINSITE AS NonPresenceSite,
+	                                        CAVES AS Caves,
+	                                        DATAQUALITY AS DataQuality,
+	                                        COVER_HA AS Cover_HA,
+	                                        PF
+                                        FROM CONTAINSHABITAT
+                                        WHERE COUNTRYCODE = @COUNTRYCODE
+	                                        AND COUNTRYVERSIONID = @COUNTRYVERSIONID";
 
                 //Console.WriteLine(String.Format("Start habitats Query -> {0}", (DateTime.Now - start).TotalSeconds));
                 versioningConn.Open();
@@ -211,13 +212,27 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param2 = new("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
                 SqlParameter param3 = new("@NEWVERSION", pVersion);
 
-                String queryString = @"select COUNTRYCODE as CountryCode,VERSIONID as Version,COUNTRYVERSIONID as CountryVersionId ,
-                                       SITECODE as SiteCode,HABITATCODE as HabitatCode,PERCENTAGECOVER as PercentageCover,
-                                       REPRESENTATIVITY as Representativity,RELSURFACE as RelSurface,CONSSTATUS as ConsStatus,
-                                       GLOBALASSESMENT as GlobalAssesment,STARTDATE as StartDate,ENDDATE as EndDate,RID as Rid,NONPRESENCEINSITE as NonPresenceSite,
-                                       CAVES as Caves ,DATAQUALITY as DataQuality,COVER_HA as Cover_HA,PF
-                                       from CONTAINSHABITAT
-                                       where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                String queryString = @"SELECT COUNTRYCODE AS CountryCode,
+	                                        VERSIONID AS Version,
+	                                        COUNTRYVERSIONID AS CountryVersionId,
+	                                        SITECODE AS SiteCode,
+	                                        HABITATCODE AS HabitatCode,
+	                                        PERCENTAGECOVER AS PercentageCover,
+	                                        REPRESENTATIVITY AS Representativity,
+	                                        RELSURFACE AS RelSurface,
+	                                        CONSSTATUS AS ConsStatus,
+	                                        GLOBALASSESMENT AS GlobalAssesment,
+	                                        STARTDATE AS StartDate,
+	                                        ENDDATE AS EndDate,
+	                                        RID AS Rid,
+	                                        NONPRESENCEINSITE AS NonPresenceSite,
+	                                        CAVES AS Caves,
+	                                        DATAQUALITY AS DataQuality,
+	                                        COVER_HA AS Cover_HA,
+	                                        PF
+                                        FROM CONTAINSHABITAT
+                                        WHERE SITECODE = @SITECODE
+	                                        AND COUNTRYVERSIONID = @COUNTRYVERSIONID";
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
@@ -301,12 +316,12 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param1 = new("@COUNTRYCODE", countryCode);
                 SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
 
-                String queryString = @"select DISTINCT SITECODE as SiteCode,
-                                       HABITATCODE as HabitatCode,
-                                       max(PERCENTAGECOVER) as PercentageCover
-                                       from DESCRIBESSITES 
-                                       where COUNTRYCODE=@COUNTRYCODE and COUNTRYVERSIONID=@COUNTRYVERSIONID
-									   group by SITECODE,HABITATCODE";
+                String queryString = @"SELECT DISTINCT SITECODE AS SiteCode,
+	                                        HABITATCODE AS HabitatCode,
+	                                        PERCENTAGECOVER AS PercentageCover
+                                        FROM DESCRIBESSITES
+                                        WHERE COUNTRYCODE = @COUNTRYCODE
+	                                        AND COUNTRYVERSIONID = @COUNTRYVERSIONID";
 
                 //Console.WriteLine(String.Format("Start describeSites Query -> {0}", (DateTime.Now - start).TotalSeconds));
 
@@ -384,9 +399,16 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 SqlParameter param2 = new("@COUNTRYVERSIONID", pVSite.COUNTRYVERSIONID);
                 SqlParameter param3 = new("@NEWVERSION", pVersion);
 
-                String queryString = @"select COUNTRYCODE as CountryCode, VERSIONID as  Version, COUNTRYVERSIONID as CountryVersionID, SITECODE as SiteCode, HABITATCODE as HabitatCode, PERCENTAGECOVER as PercentageCover, RID 
-                            from DESCRIBESSITES 
-                            where SITECODE=@SITECODE and COUNTRYVERSIONID=@COUNTRYVERSIONID";
+                String queryString = @"SELECT COUNTRYCODE AS CountryCode,
+	                                        VERSIONID AS Version,
+	                                        COUNTRYVERSIONID AS CountryVersionID,
+	                                        SITECODE AS SiteCode,
+	                                        HABITATCODE AS HabitatCode,
+	                                        PERCENTAGECOVER AS PercentageCover,
+	                                        RID
+                                        FROM DESCRIBESSITES
+                                        WHERE SITECODE = @SITECODE
+	                                        AND COUNTRYVERSIONID = @COUNTRYVERSIONID";
 
                 versioningConn.Open();
                 command = new SqlCommand(queryString, versioningConn);
