@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
@@ -8,10 +9,12 @@ namespace N2K_BackboneBackEnd.Services
     public class ReportingPeriodService : IReportingPeriodService
     {
         private readonly N2KBackboneContext _dataContext;
+        private readonly IOptions<ConfigSettings> _appSettings;
 
-        public ReportingPeriodService(N2KBackboneContext dataContext)
+        public ReportingPeriodService(N2KBackboneContext dataContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
+            _appSettings = app;
         }
 
         public async Task<List<RepPeriodView>> Get()
@@ -22,7 +25,7 @@ namespace N2K_BackboneBackEnd.Services
                 List<RepPeriod> periods = await _dataContext.Set<RepPeriod>().ToListAsync();
                 foreach (RepPeriod period in periods)
                 {
-                    List<UnionListHeader>? releases = await _dataContext.Set<UnionListHeader>().Where(r => r.Date >= period.InitDate && r.Date <= period.EndDate).ToListAsync();
+                    List<UnionListHeader>? releases = await _dataContext.Set<UnionListHeader>().Where(r => r.Date >= period.InitDate && r.Date <= period.EndDate && r.Name != _appSettings.Value.current_ul_name).ToListAsync();
                     result.Add(new RepPeriodView
                     {
                         Id = period.Id,
