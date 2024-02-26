@@ -505,17 +505,27 @@ namespace N2K_BackboneBackEnd.Services
 
                     List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                                 param1).ToListAsync();
-                    List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
-                                param1).ToListAsync();
+
                     List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
-                                    param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
+                                param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
+
+                    List<SiteChangeDb> siteChanges = new();
+                    if (status != null)
+                    {
+                        siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country
+                                     && e.Status == status).ToListAsync();
+                    }
+                    else
+                    {
+                        siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country).ToListAsync();
+                    }
 
                     foreach (var change in (await changes.ToListAsync()))
                     {
                         SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                         if (activity == null)
                         {
-                            SiteChangeDb editionChange = editionChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
+                            SiteChangeDb editionChange = siteChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
                             if (editionChange != null)
                                 activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                         }
@@ -525,6 +535,36 @@ namespace N2K_BackboneBackEnd.Services
                             l => l.SiteCode == change.SiteCode
                                 && l.Version == change.Version
                             )?.Type ?? LineageTypes.NoChanges;
+
+                        if (changeLineage == LineageTypes.NoChanges)
+                        {
+                            SiteChangeDb lineageChange = siteChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version
+                                && (e.ChangeType == "Site Added" || e.ChangeType == "Site Merged" || e.ChangeType == "Site Recoded"
+                                || e.ChangeType == "Site Split" || e.ChangeType == "Site Deleted"));
+                            if (lineageChange != null)
+                            {
+                                switch (lineageChange.ChangeType)
+                                {
+                                    case "Site Added":
+                                        changeLineage = LineageTypes.Creation;
+                                        break;
+                                    case "Site Deleted":
+                                        changeLineage = LineageTypes.Deletion;
+                                        break;
+                                    case "Site Split":
+                                        changeLineage = LineageTypes.Split;
+                                        break;
+                                    case "Site Merged":
+                                        changeLineage = LineageTypes.Merge;
+                                        break;
+                                    case "Site Recoded":
+                                        changeLineage = LineageTypes.Recode;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
 
                         SiteCodeView temp = new()
                         {
