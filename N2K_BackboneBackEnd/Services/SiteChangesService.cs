@@ -125,10 +125,20 @@ namespace N2K_BackboneBackEnd.Services
                 var siteCode = string.Empty;
                 List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                                 param1).ToListAsync();
-                List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
-                                param1).ToListAsync();
                 List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
                                 param1, param5).ToListAsync();
+
+                List<SiteChangeDb> siteChanges = new();
+                if (status != null)
+                {
+                    siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country
+                                 && e.Status == status).ToListAsync();
+                }
+                else
+                {
+                    siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country).ToListAsync();
+                }
+
                 foreach (var sCode in orderedChanges)
                 {
                     //load all the changes for each of the site codes ordered by level
@@ -162,6 +172,36 @@ namespace N2K_BackboneBackEnd.Services
                             Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
                             siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
 
+                            if (siteChange.LineageChangeType == LineageTypes.NoChanges)
+                            {
+                                SiteChangeDb lineageSiteChange = siteChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version
+                                    && (e.ChangeType == "Site Added" || e.ChangeType == "Site Merged" || e.ChangeType == "Site Recoded"
+                                    || e.ChangeType == "Site Split" || e.ChangeType == "Site Deleted"));
+                                if (lineageChange != null)
+                                {
+                                    switch (lineageSiteChange.ChangeType)
+                                    {
+                                        case "Site Added":
+                                            siteChange.LineageChangeType = LineageTypes.Creation;
+                                            break;
+                                        case "Site Deleted":
+                                            siteChange.LineageChangeType = LineageTypes.Deletion;
+                                            break;
+                                        case "Site Split":
+                                            siteChange.LineageChangeType = LineageTypes.Split;
+                                            break;
+                                        case "Site Merged":
+                                            siteChange.LineageChangeType = LineageTypes.Merge;
+                                            break;
+                                        case "Site Recoded":
+                                            siteChange.LineageChangeType = LineageTypes.Recode;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                            }
+
                             if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
                                 siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
 
@@ -171,7 +211,7 @@ namespace N2K_BackboneBackEnd.Services
                             SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                             if (activity == null)
                             {
-                                SiteChangeDb editionChange = editionChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
+                                SiteChangeDb editionChange = siteChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
                                 if (editionChange != null)
                                     activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                                 if (activity == null)
