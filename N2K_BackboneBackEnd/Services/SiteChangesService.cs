@@ -177,7 +177,7 @@ namespace N2K_BackboneBackEnd.Services
                                 SiteChangeDb lineageSiteChange = siteChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version
                                     && (e.ChangeType == "Site Added" || e.ChangeType == "Site Merged" || e.ChangeType == "Site Recoded"
                                     || e.ChangeType == "Site Split" || e.ChangeType == "Site Deleted"));
-                                if (lineageChange != null)
+                                if (lineageSiteChange != null)
                                 {
                                     switch (lineageSiteChange.ChangeType)
                                     {
@@ -395,7 +395,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 // Get lineage change type from Lineage table
                 Lineage? lineageChange = await _dataContext.Set<Lineage>().AsNoTracking().FirstOrDefaultAsync(l => l.SiteCode == pSiteCode && l.Version == pCountryVersion && l.N2KVersioningVersion == harvestedEnvelope.Version);
-                changeDetailVM.LineageChangeType = lineageChange?.Type;
+                changeDetailVM.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
 
                 // Get affected sites list only in certain lineage change types
                 if (lineageCases.Contains((LineageTypes)changeDetailVM.LineageChangeType))
