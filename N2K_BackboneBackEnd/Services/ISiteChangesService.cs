@@ -19,5 +19,6 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache);
         Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification);
         Task<List<ModifiedSiteCode>> JustificationProvided(JustificationModel[] justification);
+        Task<List<SiteCodeVersion>> GetNoChanges(string country, IMemoryCache cache, int page = 1, int pageLimit = 0, bool refresh = false);
     }
 }
