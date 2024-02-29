@@ -615,6 +615,29 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        [HttpGet("GetNoChanges")]
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeVersion>>>> GetNoChanges(string country, int page, int limit)
+        {
+            var response = new ServiceResponse<List<SiteCodeVersion>>();
+            try
+            {
+                var siteChanges = await _siteChangesService.GetNoChanges(country, _cache, page, limit);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<SiteCodeVersion>();
+                return Ok(response);
+            }
+        }
+
         /*
         // PUT api/<SiteChangesController>/5
         [HttpPut("{id}")]

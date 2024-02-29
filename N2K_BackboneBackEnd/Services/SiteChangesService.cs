@@ -2365,5 +2365,63 @@ namespace N2K_BackboneBackEnd.Services
             }
             return null;
         }
+
+        public async Task<List<SiteCodeVersion>> GetNoChanges(string country, IMemoryCache cache, int page = 1, int pageLimit = 0, bool refresh = false)
+        {
+            try
+            {
+                string listNameNoChanges = string.Format("{0}_{1}", "listcodes", country);
+
+                //if there has been a change in the status refresh the changed sitecodes cache
+                if (refresh) cache.Remove(listNameNoChanges);
+
+                List<SiteCodeVersion> result = new();
+                List<SiteCodeVersion> sitelist = new();
+                if (cache.TryGetValue(listNameNoChanges, out List<SiteCodeVersion> cachedList))
+                {
+                    sitelist = cachedList;
+                }
+                else
+                {
+                    SqlParameter param1 = new("@country", country);
+                    IQueryable<SiteCodeVersion> sites = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetSitesWithNoChanges]  @country",
+                                param1);
+                    sitelist = await sites.ToListAsync();
+                    var cacheEntryOptions = new MemoryCacheEntryOptions()
+                            .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
+                            .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
+                            .SetPriority(CacheItemPriority.Normal)
+                            .SetSize(40000);
+                    cache.Set(listNameNoChanges, sitelist, cacheEntryOptions);
+                }
+
+                var startRow = (page - 1) * pageLimit;
+                if (pageLimit > 0)
+                {
+                    sitelist = sitelist.OrderBy(s => s.SiteCode)
+                        .Skip(startRow)
+                        .Take(pageLimit)
+                        .ToList();
+                }
+
+                foreach (var site in sitelist)
+                {
+                    SiteCodeVersion temp = new()
+                    {
+                        SiteCode = site.SiteCode,
+                        Version = site.Version,
+                        Name = site.Name,
+                        Type = site.Type
+                    };
+                    result.Add(temp);
+                }
+                return result.OrderBy(o => o.SiteCode).ToList();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetNoChanges", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
     }
 }
