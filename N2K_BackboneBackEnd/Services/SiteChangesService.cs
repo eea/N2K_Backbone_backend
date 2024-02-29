@@ -60,7 +60,7 @@ namespace N2K_BackboneBackEnd.Services
             _lineage = _dataContext.Set<Lineage>().AsNoTracking().ToList();
         }
 
-        public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false)
+        public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false, bool onlysci = false)
         {
             try
             {
@@ -179,6 +179,8 @@ namespace N2K_BackboneBackEnd.Services
                             Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
                             siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
 
+                            siteChange.SiteType = sitesList.Find(s => s.SiteCode == siteChange.SiteCode && s.Version == siteChange.Version)?.Type;
+
                             if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
                                 siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
 
@@ -230,6 +232,8 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
+                if (onlysci)
+                    result = result.Where(x => x.SiteType == "B").ToList();
                 return result;
             }
             catch (Exception ex)
@@ -414,7 +418,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited)
+        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited = false, Boolean onlysci = false)
         {
             try
             {
@@ -457,6 +461,8 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
+                if (onlysci)
+                    result = result.Where(x => x.Type == "B").ToList();
                 return result;
             }
             catch (Exception ex)
@@ -466,7 +472,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false)
+        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false, bool onlysci = false)
         {
             try
             {
@@ -536,6 +542,8 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
+                if (onlysci)
+                    result = result.Where(x => x.Type == "B").ToList();
                 return result.OrderBy(o => o.SiteCode).ToList();
             }
             catch (Exception ex)
