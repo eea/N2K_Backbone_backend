@@ -397,13 +397,13 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [HttpGet("Get/country={country:string}&status={status:Status}&level={level:Level}&page={page:int}&limit={limit:int}&onlyedited={onlyedited:bool}&onlyjustreq={onlyjustreq:bool}")]
-        public async Task<ActionResult<ServiceResponse<List<SiteChangeDbEdition>>>> GetByCountryAndStatusAndLevelPaginated(string country, SiteChangeStatus status, Level level, int page, int limit, bool onlyedited, bool onlyjustreq)
+        [HttpGet("Get/country={country:string}&status={status:Status}&level={level:Level}&page={page:int}&limit={limit:int}&onlyedited={onlyedited:bool}&onlyjustreq={onlyjustreq:bool}&onlysci={onlysci:bool}")]
+        public async Task<ActionResult<ServiceResponse<List<SiteChangeDbEdition>>>> GetByCountryAndStatusAndLevelPaginated(string country, SiteChangeStatus status, Level level, int page, int limit, bool onlyedited, bool onlyjustreq, bool onlysci)
         {
             var response = new ServiceResponse<List<SiteChangeDbEdition>>();
             try
             {
-                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, level, _cache, page, limit, onlyedited, onlyjustreq);
+                var siteChanges = await _siteChangesService.GetSiteChangesAsync(country, status, level, _cache, page, limit, onlyedited, onlyjustreq, onlysci);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -420,14 +420,14 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("GetSiteCodes/country={country:string}&status={status:Status}&level={level:Level}&onlyedited={onlyedited:bool}&onlyjustreq={onlyjustreq:bool}/")]
+        [Route("GetSiteCodes/country={country:string}&status={status:Status}&level={level:Level}&onlyedited={onlyedited:bool}&onlyjustreq={onlyjustreq:bool}&onlysci={onlysci:bool}/")]
         [HttpGet()]
-        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, bool onlyedited, bool onlyjustreq)
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, bool onlyedited, bool onlyjustreq, bool onlysci)
         {
             var response = new ServiceResponse<List<SiteCodeView>>();
             try
             {
-                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, status, level, _cache, false, onlyedited, onlyjustreq);
+                var siteCodes = await _siteChangesService.GetSiteCodesByStatusAndLevelAndCountry(country, status, level, _cache, false, onlyedited, onlyjustreq, onlysci);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteCodes;
@@ -443,14 +443,14 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-        [Route("GetNonPendingSiteCodes/country={country:string}&onlyedited={onlyedited:bool}&onlyjustreq={onlyjustreq:bool}/")]
+        [Route("GetNonPendingSiteCodes/country={country:string}&onlyedited={onlyedited:bool}&onlyjustreq={onlyjustreq:bool}&onlysci={onlysci:bool}/")]
         [HttpGet()]
-        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetNonPendingSiteCodes(string country, Boolean onlyedited, Boolean onlyjustreq)
+        public async Task<ActionResult<ServiceResponse<List<SiteCodeView>>>> GetNonPendingSiteCodes(string country, Boolean onlyedited, Boolean onlyjustreq, Boolean onlysci)
         {
             var response = new ServiceResponse<List<SiteCodeView>>();
             try
             {
-                var siteCodes = await _siteChangesService.GetNonPendingSiteCodes(country, onlyedited, onlyjustreq);
+                var siteCodes = await _siteChangesService.GetNonPendingSiteCodes(country, onlyedited, onlyjustreq, onlysci);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteCodes;
