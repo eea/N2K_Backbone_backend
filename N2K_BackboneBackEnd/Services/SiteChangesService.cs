@@ -223,9 +223,6 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
 
-                            Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
-                            siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
-
                             siteChange.SiteType = sitesList.Find(s => s.SiteCode == siteChange.SiteCode && s.Version == siteChange.Version)?.Type;
 
                             if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
