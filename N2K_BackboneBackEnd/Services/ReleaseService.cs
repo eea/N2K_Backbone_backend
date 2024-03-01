@@ -517,7 +517,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<CountriesAttachmentCountViewModel> result = new List<CountriesAttachmentCountViewModel>();
+                List<CountriesAttachmentCountViewModel> result = new();
                 List<Countries> countries = await _dataContext.Set<Countries>().ToListAsync();
                 foreach (Countries c in countries)
                 {
@@ -568,11 +568,11 @@ namespace N2K_BackboneBackEnd.Services
 
                 if (_appSettings.Value.AttachedFiles.AzureBlob)
                 {
-                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles, _dataContext);
                 }
                 else
                 {
-                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
                 }
                 List<string> fileUrl = await fileHandler.UploadFileAsync(new AttachedFile() { Files = attachedFile.Files});
                 foreach (string fUrl in fileUrl)
@@ -662,7 +662,7 @@ namespace N2K_BackboneBackEnd.Services
                 StatusChangesRelease prev = _dataContext.Set<StatusChangesRelease>().Where(c => c.Id == comment.Id).OrderBy(c => c.Edited).Last();
                 if (prev != null)
                 {
-                    prev.Edited = prev.Edited + 1;
+                    prev.Edited++;
                     prev.EditedDate = DateTime.Now;
                     prev.EditedBy = GlobalData.Username;
                     prev.Comments = comment.Comments;
@@ -683,7 +683,7 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 List<StatusChangesRelease> comments = _dataContext.Set<StatusChangesRelease>().Where(c => c.Id == commentId).ToList();
-                if (comments.Count() > 0)
+                if (comments.Any())
                 {
                     foreach (StatusChangesRelease c in comments)
                     {
