@@ -37,9 +37,10 @@ namespace N2K_BackboneBackEnd.Helpers
                 foreach (var f in files.Files)
                 {
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
-                    string? fileName = (ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"') + DateTime.Now).GetHashCode().ToString();
+                    //string? fileName = (ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"') + DateTime.Now).GetHashCode().ToString();
+                    string? fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
-                    string? fullPath = Path.Combine(_pathToSave, f.FileName);
+                    string? fullPath = Path.Combine(_pathToSave, fileName);
 
                     //if the file is compressed (extract all the content)
                     if (CheckCompressionFormats(fileName))
