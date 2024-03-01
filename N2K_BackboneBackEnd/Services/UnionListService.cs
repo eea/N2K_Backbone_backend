@@ -419,11 +419,11 @@ namespace N2K_BackboneBackEnd.Services
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
             if (_appSettings.Value.AttachedFiles.AzureBlob)
             {
-                fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles, _dataContext);
             }
             else
             {
-                fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
             }
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
 
