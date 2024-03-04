@@ -663,7 +663,7 @@ namespace N2K_BackboneBackEnd.Services
                                 harvestingSite = newsites.Where(s => s.SiteCode == siteRelation.NewSiteCode && s.VersionId == siteRelation.NewVersion).FirstOrDefault();
                             if (siteRelation != null && harvestingSite == null)
                             {
-                                Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == storedSite.SiteCode && l.Version == storedSite.VersionId);
+                                Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == storedSite.SiteCode && l.Version == storedSite.VersionId && l.N2KVersioningVersion == envelope.VersionId);
                                 if (lineage?.Type == LineageTypes.Deletion) //the site is not been recoded, split or merge
                                 {
                                     SiteChangeDb siteChange = new()
@@ -1450,7 +1450,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else if (storedSite != null && harvestingSite == null)
                 {
-                    Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == storedSite.SiteCode && l.Version == storedSite.VersionId);
+                    Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == storedSite.SiteCode && l.Version == storedSite.VersionId && l.N2KVersioningVersion == envelope.VersionId);
                     if (lineage?.Type == LineageTypes.Deletion) //the site is not been recoded, split or merge
                     {
                         SiteChangeDb siteChange = new()
