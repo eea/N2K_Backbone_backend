@@ -27,7 +27,6 @@ namespace N2K_BackboneBackEnd.Helpers
                 foreach (var f in files.Files)
                 {
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
-                    //string? fileName = (ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"') + DateTime.Now).GetHashCode().ToString();
                     string? fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
                     string? fullPath = Path.Combine(_pathToSave, fileName);
@@ -40,15 +39,14 @@ namespace N2K_BackboneBackEnd.Helpers
                         {
                             remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
                             uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, uncompressed));
-                            File.Delete(Path.Combine(_pathToSave, uncompressed));
                         }
+                        File.Delete(fullPath);
                     }
                     else
                     {
                         remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
                         uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
                     }
-                    File.Delete(fullPath);
                 }
                 return uploadedFiles;
             }
@@ -95,7 +93,6 @@ namespace N2K_BackboneBackEnd.Helpers
 
                 string? fullPath = Path.Combine(_pathToSave, fileName);
                 File.Delete(fullPath);
-
                 return 1;
             }
             catch (Exception ex)
