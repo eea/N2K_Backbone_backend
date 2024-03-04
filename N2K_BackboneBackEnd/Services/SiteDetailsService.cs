@@ -464,7 +464,7 @@ namespace N2K_BackboneBackEnd.Services
                                 {
                                     fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
                                 }
-                                if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
+                                if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.OriginalName);
                             }
 
                             //remove item from cache
@@ -495,7 +495,7 @@ namespace N2K_BackboneBackEnd.Services
                             fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
                         }
 
-                        if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
+                        if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.OriginalName);
                         result = 1;
                     }
                 }
