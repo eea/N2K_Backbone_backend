@@ -8,10 +8,10 @@ namespace N2K_BackboneBackEnd.Services
 {
     public interface ISiteChangesService
     {
-        Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false, bool onlyjustreq = false);
+        Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false, bool onlyjustreq = false, bool onlysci = false);
         Task<SiteChangeDetailViewModel> GetSiteChangesDetail(string pSiteCode, int pCountryVersion);
-        Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited, Boolean onlyjustreq = false);
-        Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false, bool onlyjustreq = false);
+        Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited, Boolean onlyjustreq = false, Boolean onlysci = false);
+        Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false, bool onlyjustreq = false, bool onlysci = false);
         Task<int> GetPendingChangesByCountry(string? country, IMemoryCache cache);
         Task<List<SiteChangeViewModel>> GetSiteChangesFromSP();
         Task<List<ModifiedSiteCode>> AcceptChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache);
@@ -19,5 +19,6 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache);
         Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification);
         Task<List<ModifiedSiteCode>> JustificationProvided(JustificationModel[] justification);
+        Task<List<SiteCodeVersion>> GetNoChanges(string country, IMemoryCache cache, int page = 1, int pageLimit = 0, bool refresh = false);
     }
 }

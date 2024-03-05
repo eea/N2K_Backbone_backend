@@ -60,7 +60,7 @@ namespace N2K_BackboneBackEnd.Services
             _lineage = _dataContext.Set<Lineage>().AsNoTracking().ToList();
         }
 
-        public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false, bool onlyjustreq = false)
+        public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false, bool onlyjustreq = false, bool onlysci = false)
         {
             try
             {
@@ -223,6 +223,11 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
 
+                            siteChange.SiteType = sitesList.Find(s => s.SiteCode == siteChange.SiteCode && s.Version == siteChange.Version)?.Type;
+
+                            if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
+                                siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
+
                             var changeView = new SiteChangeView
                             {
                                 ChangeId = change.ChangeId,
@@ -273,6 +278,8 @@ namespace N2K_BackboneBackEnd.Services
                     result = result.Where(x => x.EditedDate != null).ToList();
                 if (onlyjustreq)
                     result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
+                if (onlysci)
+                    result = result.Where(x => x.SiteType == "B").ToList();
                 return result;
             }
             catch (Exception ex)
@@ -460,7 +467,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited, Boolean onlyjustreq)
+        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited = false, Boolean onlyjustreq = false, Boolean onlysci = false)
         {
             try
             {
@@ -505,9 +512,9 @@ namespace N2K_BackboneBackEnd.Services
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
                 if (onlyjustreq)
-                {
                     result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
-                }
+                if (onlysci)
+                    result = result.Where(x => x.Type == "B").ToList();
                 return result;
             }
             catch (Exception ex)
@@ -517,7 +524,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false, bool onlyjustreq = false)
+        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false, bool onlyjustreq = false, bool onlysci = false)
         {
             try
             {
@@ -525,7 +532,7 @@ namespace N2K_BackboneBackEnd.Services
                     country,
                     status.ToString(),
                     level.ToString()
-                   );
+               );
                 //if there has been a change in the status refresh the changed sitecodes cache
                 if (refresh) cache.Remove(listName);
 
@@ -629,9 +636,9 @@ namespace N2K_BackboneBackEnd.Services
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
                 if (onlyjustreq)
-                {
                     result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
-                }
+                if (onlysci)
+                    result = result.Where(x => x.Type == "B").ToList();
                 return result.OrderBy(o => o.SiteCode).ToList();
             }
             catch (Exception ex)
@@ -2364,6 +2371,64 @@ namespace N2K_BackboneBackEnd.Services
                 }
             }
             return null;
+        }
+
+        public async Task<List<SiteCodeVersion>> GetNoChanges(string country, IMemoryCache cache, int page = 1, int pageLimit = 0, bool refresh = false)
+        {
+            try
+            {
+                string listNameNoChanges = string.Format("{0}_{1}", "listcodes", country);
+
+                //if there has been a change in the status refresh the changed sitecodes cache
+                if (refresh) cache.Remove(listNameNoChanges);
+
+                List<SiteCodeVersion> result = new();
+                List<SiteCodeVersion> sitelist = new();
+                if (cache.TryGetValue(listNameNoChanges, out List<SiteCodeVersion> cachedList))
+                {
+                    sitelist = cachedList;
+                }
+                else
+                {
+                    SqlParameter param1 = new("@country", country);
+                    IQueryable<SiteCodeVersion> sites = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetSitesWithNoChanges]  @country",
+                                param1);
+                    sitelist = await sites.ToListAsync();
+                    var cacheEntryOptions = new MemoryCacheEntryOptions()
+                            .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
+                            .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
+                            .SetPriority(CacheItemPriority.Normal)
+                            .SetSize(40000);
+                    cache.Set(listNameNoChanges, sitelist, cacheEntryOptions);
+                }
+
+                var startRow = (page - 1) * pageLimit;
+                if (pageLimit > 0)
+                {
+                    sitelist = sitelist.OrderBy(s => s.SiteCode)
+                        .Skip(startRow)
+                        .Take(pageLimit)
+                        .ToList();
+                }
+
+                foreach (var site in sitelist)
+                {
+                    SiteCodeVersion temp = new()
+                    {
+                        SiteCode = site.SiteCode,
+                        Version = site.Version,
+                        Name = site.Name,
+                        Type = site.Type
+                    };
+                    result.Add(temp);
+                }
+                return result.OrderBy(o => o.SiteCode).ToList();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetNoChanges", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
     }
 }
