@@ -15,5 +15,6 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public DateTime? EditedDate { get; set; }
         public LineageTypes? LineageChangeType { get; set; }
         public string? Type { get; set; }
+        public Boolean? JustificationRequired { get; set; }
     }
 }

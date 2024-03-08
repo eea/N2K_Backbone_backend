@@ -513,6 +513,196 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        public async Task<List<CountriesAttachmentCountViewModel>> GetCountriesAttachmentCount()
+        {
+            try
+            {
+                List<CountriesAttachmentCountViewModel> result = new();
+                List<Countries> countries = await _dataContext.Set<Countries>().ToListAsync();
+                foreach (Countries c in countries)
+                {
+                    int documents = _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == c.Code && f.Release == null).Count();
+                    int comments = _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == c.Code && f.Release == null).Count();
+                    result.Add(new CountriesAttachmentCountViewModel
+                    {
+                        Country = c.Country,
+                        Code = c.Code.ToUpper(),
+                        NumDocuments = documents,
+                        NumComments = comments
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - GetCountriesAttachmentCount", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        #region CountryDocuments
+        public async Task<List<JustificationFilesRelease>> GetCountryDocuments(string country)
+        {
+            try
+            {
+                List<JustificationFilesRelease> result = _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == country && f.Release == null).ToList();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - GetCountryDocuments", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<JustificationFilesRelease>> AddCountryDocument(AttachedFileRelease attachedFile)
+        {
+            try
+            {
+                List<JustificationFilesRelease> result = new();
+                IAttachedFileHandler? fileHandler = null;
+                string username = GlobalData.Username;
+
+                if (_appSettings.Value.AttachedFiles == null) return result;
+
+                if (_appSettings.Value.AttachedFiles.AzureBlob)
+                {
+                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles, _dataContext);
+                }
+                else
+                {
+                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
+                }
+                List<string> fileUrl = await fileHandler.UploadFileAsync(new AttachedFile() { Files = attachedFile.Files});
+                foreach (string fUrl in fileUrl)
+                {
+                    JustificationFilesRelease justFile = new()
+                    {
+                        Path = fUrl,
+                        OriginalName = attachedFile.Files[0].FileName,
+                        CountryCode = attachedFile.Country,
+                        ImportDate = DateTime.Now,
+                        Username = username
+                    };
+                    await _dataContext.Set<JustificationFilesRelease>().AddAsync(justFile);
+                    await _dataContext.SaveChangesAsync();
+                }
+                return await GetCountryDocuments(attachedFile.Country);
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - AddCountryDocument", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<JustificationFilesRelease>> DeleteCountryDocument(long fileId)
+        {
+            try
+            {
+                JustificationFilesRelease file = _dataContext.Set<JustificationFilesRelease>().First(f => f.ID == fileId);
+                if(file != null)
+                {
+                    _dataContext.Set<JustificationFilesRelease>().Remove(file);
+                    await _dataContext.SaveChangesAsync();
+                    return await GetCountryDocuments(file.CountryCode);
+                }
+                return new List<JustificationFilesRelease>();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - DeleteCountryDocument", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+        #endregion
+
+        #region CountryComments
+        public async Task<List<StatusChangesRelease>> GetCountryComments(string country)
+        {
+            try
+            {
+                List<StatusChangesRelease> result = _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == country && f.Release == null).ToList();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - GetCountryComments", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<StatusChangesRelease>> AddCountryComment(StatusChangesRelease comment)
+        {
+            try
+            {
+                List<StatusChangesRelease> result = new();
+                comment.Date = DateTime.Now;
+                comment.Owner = GlobalData.Username;
+                comment.Edited = 0;
+                comment.EditedBy = null;
+                comment.EditedDate = null;
+                await _dataContext.Set<StatusChangesRelease>().AddAsync(comment);
+                await _dataContext.SaveChangesAsync();
+                result = await _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(ch => ch.CountryCode == comment.CountryCode).ToListAsync();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - AddCountryComment", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<StatusChangesRelease>> UpdateCountryComment(StatusChangesRelease comment)
+        {
+            try
+            {
+                StatusChangesRelease prev = _dataContext.Set<StatusChangesRelease>().Where(c => c.Id == comment.Id).OrderBy(c => c.Edited).Last();
+                if (prev != null)
+                {
+                    prev.Edited++;
+                    prev.EditedDate = DateTime.Now;
+                    prev.EditedBy = GlobalData.Username;
+                    prev.Comments = comment.Comments;
+                    _dataContext.Set<StatusChangesRelease>().Update(prev);
+                    await _dataContext.SaveChangesAsync();
+                }
+                return await GetCountryComments(comment.CountryCode);
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - UpdateCountryComment", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<StatusChangesRelease>> DeleteCountryComment(long commentId)
+        {
+            try
+            {
+                List<StatusChangesRelease> comments = _dataContext.Set<StatusChangesRelease>().Where(c => c.Id == commentId).ToList();
+                if (comments.Any())
+                {
+                    foreach (StatusChangesRelease c in comments)
+                    {
+                        _dataContext.Set<StatusChangesRelease>().Remove(c);
+                    }
+                    await _dataContext.SaveChangesAsync();
+                    return await GetCountryComments(comments.First().CountryCode);
+                }
+
+                return new List<StatusChangesRelease>();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - DeleteCountryComment", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+        #endregion
+
         public async Task<List<Releases>> CreateRelease(string title, Boolean? Final, string? character)
         {
             try

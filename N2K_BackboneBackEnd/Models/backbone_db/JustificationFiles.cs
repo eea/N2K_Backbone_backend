@@ -16,8 +16,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public override string? Tags { get; set; } = string.Empty;
         //[NotMapped]
         //public bool Temporal { get; set; } = false;
+        public String? OriginalName { get; set; }
 
-        public static void OnModelCreating(ModelBuilder builder)
+        public static  void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<JustificationFiles>()
                 .ToTable("JustificationFiles");
