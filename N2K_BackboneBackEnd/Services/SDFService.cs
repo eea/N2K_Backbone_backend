@@ -89,7 +89,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (respondents != null && respondents.Count > 0) //UNSURE
                 {
-                    result.SiteIdentification.Respondent.Name = respondents.FirstOrDefault().name;
+                    result.SiteIdentification.Respondent.Name = respondents.FirstOrDefault().ContactName;
                     result.SiteIdentification.Respondent.Address = respondents.FirstOrDefault().addressArea;
                     result.SiteIdentification.Respondent.Email = respondents.FirstOrDefault().Email;
                 }
@@ -137,11 +137,11 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         HabitatSDF temp = new()
                         {
-                            HabitatName = habitatTypes.Where(t => t.Code == h.HabitatCode).FirstOrDefault().Name,
+                            HabitatName = h.HabitatCode != null ? habitatTypes.Where(t => t.Code == h.HabitatCode).FirstOrDefault().Name : null,
                             Code = h.HabitatCode,
                             Cover = h.CoverHA,
                             Cave = h.Caves,
-                            DataQuality = dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().Name,
+                            DataQuality = h.DataQty != null ? dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().Name : null,
                             Representativity = h.Representativity,
                             RelativeSurface = h.RelativeSurface,
                             Conservation = h.ConsStatus,
@@ -160,7 +160,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         SpeciesSDF temp = new()
                         {
-                            SpeciesName = speciesTypes.Where(t => t.Code == h.SpecieCode).FirstOrDefault().Name,
+                            SpeciesName = h.SpecieCode != null ? speciesTypes.Where(t => t.Code == h.SpecieCode).FirstOrDefault().Name : null,
                             Code = h.SpecieCode,
                             Group = h.SpecieType,
                             Type = h.PopulationType,
@@ -188,7 +188,7 @@ namespace N2K_BackboneBackEnd.Services
                         SpeciesSDF temp = new()
                         {
                             SpeciesName = h.SpecieCode,
-                            Code = "-",
+                            Code = h.OtherSpecieCode ?? "-",
                             Group = h.SpecieType,
                             Min = h.PopulationMin,
                             Max = h.PopulationMax,
@@ -315,14 +315,14 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         BodyResponsible temp = new()
                         {
-                            Organisation = h.name,
+                            Organisation = h.ContactName,
                             Address = h.addressArea,
                             Email = h.Email
                         };
                         result.SiteManagement.BodyResponsible.Add(temp);
                     });
                 }
-                if (siteLargeDescriptions != null && respondents.Count > 0)
+                if (siteLargeDescriptions != null && siteLargeDescriptions.Count > 0)
                 {
                     siteLargeDescriptions.ForEach(h =>
                     {

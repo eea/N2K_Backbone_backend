@@ -7,9 +7,10 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 {
     public class DescribeSites : IEntityModel, IEntityModelBackboneDB
     {
+        public long ID { get; set; }
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
-        public string HabitatCode { get; set; } = string.Empty;
+        public string? HabitatCode { get; set; } = string.Empty;
         public decimal? Percentage { get; set; }
 
         private string dbConnection = string.Empty;
@@ -53,7 +54,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 
             builder.Entity<DescribeSites>()
                 .ToTable("DescribeSites")
-                .HasKey(c => new { c.SiteCode, c.Version, c.HabitatCode });
+                .HasKey(c => new { c.ID });
         }
     }
 }

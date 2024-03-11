@@ -1,4 +1,5 @@
-﻿using N2K_BackboneBackEnd.Models;
+﻿using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Models;
 using SevenZip;
 using System.IO.Compression;
 using System.Net.Http.Headers;
@@ -11,13 +12,14 @@ namespace N2K_BackboneBackEnd.Helpers
         protected readonly AttachedFilesConfig _attachedFilesConfig;
         protected readonly string _folderName;
         protected string _pathToSave;
+        protected readonly N2KBackboneContext _dataContext;
 
-
-        public AttachedFileHandler(AttachedFilesConfig attachedFilesConfig)
+        public AttachedFileHandler(AttachedFilesConfig attachedFilesConfig, N2KBackboneContext dataContext)
         {
             _attachedFilesConfig = attachedFilesConfig;
             _folderName = _attachedFilesConfig.JustificationFolder;
             _pathToSave = Path.Combine(Directory.GetCurrentDirectory(), _folderName);
+            _dataContext = dataContext;
         }
 
 
@@ -56,7 +58,7 @@ namespace N2K_BackboneBackEnd.Helpers
 
         private string returnSevenZipDllPath()
         {
-            return  Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Environment.Is64BitProcess ? "x64" : "x86", "7z.dll");
+            return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Environment.Is64BitProcess ? "x64" : "x86", "7z.dll");
         }
 
 
@@ -66,9 +68,9 @@ namespace N2K_BackboneBackEnd.Helpers
 
 
             using (Stream stream = File.OpenRead(fileName))
-            {                
+            {
                 SevenZipBase.SetLibraryPath(returnSevenZipDllPath());
-                using (SevenZipExtractor extr = new SevenZipExtractor(stream))
+                using (SevenZipExtractor extr = new(stream))
                 {
                     foreach (ArchiveFileInfo archiveFileInfo in extr.ArchiveFileData)
                     {
@@ -85,14 +87,15 @@ namespace N2K_BackboneBackEnd.Helpers
             }
 
 
-            if (invalidFile)   File.Delete(fileName);
+            if (invalidFile) File.Delete(fileName);
             return invalidFile;
         }
 
         private List<string> extractZipCompressedFiles(string fileName)
         {
             var fileList = new List<string>();
-            using (ZipArchive archive = ZipFile.OpenRead(fileName))  {
+            using (ZipArchive archive = ZipFile.OpenRead(fileName))
+            {
                 archive.ExtractToDirectory(_pathToSave);
                 return archive.Entries.Select(entry => entry.Name).ToList();
             }
@@ -105,7 +108,7 @@ namespace N2K_BackboneBackEnd.Helpers
             {
 
                 SevenZipBase.SetLibraryPath(returnSevenZipDllPath());
-                using (SevenZipExtractor extr = new SevenZipExtractor(stream))
+                using (SevenZipExtractor extr = new(stream))
                 {
                     foreach (ArchiveFileInfo archiveFileInfo in extr.ArchiveFileData)
                     {
@@ -115,7 +118,7 @@ namespace N2K_BackboneBackEnd.Helpers
                             {
                                 extr.ExtractFile(archiveFileInfo.Index, mem);
                                 string shortFileName = Path.GetFileName(archiveFileInfo.FileName);
-                                using (FileStream file = new FileStream(Path.Combine(_pathToSave, shortFileName), FileMode.Create, System.IO.FileAccess.Write))
+                                using (FileStream file = new(Path.Combine(_pathToSave, shortFileName), FileMode.Create, System.IO.FileAccess.Write))
                                 {
                                     byte[] bytes = new byte[mem.Length];
                                     mem.Read(bytes, 0, (int)mem.Length);
@@ -141,7 +144,8 @@ namespace N2K_BackboneBackEnd.Helpers
             else return checkSevenZipCompressedFiles(fileName);
         }
 
-        protected async Task<bool> CopyCompressedFileToTempFolder(IFormFile file, string fileName) { 
+        protected async Task<bool> CopyCompressedFileToTempFolder(IFormFile file, string fileName)
+        {
             using (var stream = new FileStream(fileName, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
@@ -163,7 +167,7 @@ namespace N2K_BackboneBackEnd.Helpers
 
         protected async Task<bool> AllFilesValid(AttachedFile files)
         {
-            if (files == null || files.Files ==null) return true;
+            if (files == null || files.Files == null) return true;
             var invalidFile = false;
             foreach (var f in files.Files)
             {

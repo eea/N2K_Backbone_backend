@@ -382,11 +382,11 @@ namespace N2K_BackboneBackEnd.Services
 
                 if (_appSettings.Value.AttachedFiles.AzureBlob)
                 {
-                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles, _dataContext);
                 }
                 else
                 {
-                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
                 }
                 List<string> fileUrl = await fileHandler.UploadFileAsync(attachedFile);
                 List<JustificationFiles> cachedList = new();
@@ -458,13 +458,13 @@ namespace N2K_BackboneBackEnd.Services
                                 if (_appSettings.Value.AttachedFiles == null) return 0;
                                 if (_appSettings.Value.AttachedFiles.AzureBlob)
                                 {
-                                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                                    fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles, _dataContext);
                                 }
                                 else
                                 {
-                                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                                    fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
                                 }
-                                if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
+                                if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.OriginalName);
                             }
 
                             //remove item from cache
@@ -488,14 +488,14 @@ namespace N2K_BackboneBackEnd.Services
                         if (_appSettings.Value.AttachedFiles == null) return 0;
                         if (_appSettings.Value.AttachedFiles.AzureBlob)
                         {
-                            fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles);
+                            fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles, _dataContext);
                         }
                         else
                         {
-                            fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles);
+                            fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
                         }
 
-                        if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
+                        if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.OriginalName);
                         result = 1;
                     }
                 }

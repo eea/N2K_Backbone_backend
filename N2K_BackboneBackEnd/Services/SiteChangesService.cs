@@ -60,7 +60,7 @@ namespace N2K_BackboneBackEnd.Services
             _lineage = _dataContext.Set<Lineage>().AsNoTracking().ToList();
         }
 
-        public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false)
+        public async Task<List<SiteChangeDbEdition>> GetSiteChangesAsync(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, int page = 1, int pageLimit = 0, bool onlyedited = false, bool onlyjustreq = false, bool onlysci = false)
         {
             try
             {
@@ -125,10 +125,20 @@ namespace N2K_BackboneBackEnd.Services
                 var siteCode = string.Empty;
                 List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                                 param1).ToListAsync();
-                List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
-                                param1).ToListAsync();
                 List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
                                 param1, param5).ToListAsync();
+
+                List<SiteChangeDb> siteChanges = new();
+                if (status != null)
+                {
+                    siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country
+                                 && e.Status == status).ToListAsync();
+                }
+                else
+                {
+                    siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country).ToListAsync();
+                }
+
                 foreach (var sCode in orderedChanges)
                 {
                     //load all the changes for each of the site codes ordered by level
@@ -158,13 +168,50 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.Level = null;
                             siteChange.Status = null;
                             siteChange.Tags = "";
-                            if (change.ReferenceSiteCode != null && change.ReferenceSiteCode != "")
+
+                            Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
+                            siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
+
+                            if (siteChange.LineageChangeType == LineageTypes.NoChanges)
+                            {
+                                SiteChangeDb lineageSiteChange = siteChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version
+                                    && (e.ChangeType == "Site Added" || e.ChangeType == "Site Merged" || e.ChangeType == "Site Recoded"
+                                    || e.ChangeType == "Site Split" || e.ChangeType == "Site Deleted"));
+                                if (lineageSiteChange != null)
+                                {
+                                    switch (lineageSiteChange.ChangeType)
+                                    {
+                                        case "Site Added":
+                                            siteChange.LineageChangeType = LineageTypes.Creation;
+                                            break;
+                                        case "Site Deleted":
+                                            siteChange.LineageChangeType = LineageTypes.Deletion;
+                                            break;
+                                        case "Site Split":
+                                            siteChange.LineageChangeType = LineageTypes.Split;
+                                            break;
+                                        case "Site Merged":
+                                            siteChange.LineageChangeType = LineageTypes.Merge;
+                                            break;
+                                        case "Site Recoded":
+                                            siteChange.LineageChangeType = LineageTypes.Recode;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                            }
+
+                            if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
+                                siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
+
+                            if (change.ReferenceSiteCode != null && change.ReferenceSiteCode != "" && !siteChange.LineageChangeType.Equals(LineageTypes.Creation))
                                 siteChange.ReferenceSiteCode = change.ReferenceSiteCode;
                             siteChange.Version = change.Version;
                             SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                             if (activity == null)
                             {
-                                SiteChangeDb editionChange = editionChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
+                                SiteChangeDb editionChange = siteChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
                                 if (editionChange != null)
                                     activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                                 if (activity == null)
@@ -176,8 +223,7 @@ namespace N2K_BackboneBackEnd.Services
                             siteChange.EditedBy = activity is null ? null : activity.Author;
                             siteChange.EditedDate = activity is null ? null : activity.Date;
 
-                            Lineage? lineageChange = lineageChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version);
-                            siteChange.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
+                            siteChange.SiteType = sitesList.Find(s => s.SiteCode == siteChange.SiteCode && s.Version == siteChange.Version)?.Type;
 
                             if (lineageCases.Contains((LineageTypes)siteChange.LineageChangeType))
                                 siteChange.AffectedSites = GetAffectedSites(siteCode, lineageChange).Result;
@@ -230,6 +276,10 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
+                if (onlyjustreq)
+                    result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
+                if (onlysci)
+                    result = result.Where(x => x.SiteType == "B").ToList();
                 return result;
             }
             catch (Exception ex)
@@ -348,11 +398,11 @@ namespace N2K_BackboneBackEnd.Services
                 };
 
                 // Get the harvested envelope
-                ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == pSiteCode.Substring(0,2) && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
+                ProcessedEnvelopes harvestedEnvelope = await _dataContext.Set<ProcessedEnvelopes>().AsNoTracking().Where(envelope => envelope.Country == pSiteCode.Substring(0, 2) && envelope.Status == HarvestingStatus.Harvested).FirstOrDefaultAsync();
 
                 // Get lineage change type from Lineage table
                 Lineage? lineageChange = await _dataContext.Set<Lineage>().AsNoTracking().FirstOrDefaultAsync(l => l.SiteCode == pSiteCode && l.Version == pCountryVersion && l.N2KVersioningVersion == harvestedEnvelope.Version);
-                changeDetailVM.LineageChangeType = lineageChange?.Type;
+                changeDetailVM.LineageChangeType = lineageChange?.Type ?? LineageTypes.NoChanges;
 
                 // Get affected sites list only in certain lineage change types
                 if (lineageCases.Contains((LineageTypes)changeDetailVM.LineageChangeType))
@@ -383,7 +433,10 @@ namespace N2K_BackboneBackEnd.Services
                 changesDb = changesDb.OrderByDescending(m => m.Version).DistinctBy(m => new { m.SiteCode, m.Country, m.Status, m.Tags, m.Level, m.ChangeCategory, m.ChangeType, m.NewValue, m.OldValue, m.Detail, m.Code, m.Section, m.VersionReferenceId, m.FieldName, m.ReferenceSiteCode, m.N2KVersioningVersion }).ToList();
                 if (changesDb != null)
                 {
-                    changeDetailVM.ReferenceSiteCode = changesDb.FirstOrDefault()?.ReferenceSiteCode;
+                    if (!changeDetailVM.LineageChangeType.Equals(LineageTypes.Creation))
+                    {
+                        changeDetailVM.ReferenceSiteCode = changesDb.FirstOrDefault()?.ReferenceSiteCode;
+                    }
                     if (changesDb.FirstOrDefault()?.ChangeType == "Site Deleted")
                     {
                         changeDetailVM.Status = changesDb.FirstOrDefault()?.Status;
@@ -414,7 +467,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited)
+        public async Task<List<SiteCodeView>> GetNonPendingSiteCodes(string country, Boolean onlyedited = false, Boolean onlyjustreq = false, Boolean onlysci = false)
         {
             try
             {
@@ -451,12 +504,17 @@ namespace N2K_BackboneBackEnd.Services
                         EditedBy = activity is null ? null : activity.Author,
                         EditedDate = activity is null ? null : activity.Date,
                         LineageChangeType = changeLineage,
-                        Type = change.Type
+                        Type = change.Type,
+                        JustificationRequired = await _dataContext.Set<Sites>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).Select(s => s.JustificationRequired).FirstOrDefaultAsync()
                     };
                     result.Add(temp);
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
+                if (onlyjustreq)
+                    result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
+                if (onlysci)
+                    result = result.Where(x => x.Type == "B").ToList();
                 return result;
             }
             catch (Exception ex)
@@ -466,7 +524,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false)
+        public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false, bool onlyjustreq = false, bool onlysci = false)
         {
             try
             {
@@ -474,7 +532,7 @@ namespace N2K_BackboneBackEnd.Services
                     country,
                     status.ToString(),
                     level.ToString()
-                   );
+               );
                 //if there has been a change in the status refresh the changed sitecodes cache
                 if (refresh) cache.Remove(listName);
 
@@ -494,17 +552,27 @@ namespace N2K_BackboneBackEnd.Services
 
                     List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
                                 param1).ToListAsync();
-                    List<SiteChangeDb> editionChanges = await _dataContext.Set<SiteChangeDb>().FromSqlRaw($"exec dbo.spGetActiveEnvelopeSiteChangesUserEditionByCountry  @country",
-                                param1).ToListAsync();
+
                     List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
-                                    param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
+                                param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
+
+                    List<SiteChangeDb> siteChanges = new();
+                    if (status != null)
+                    {
+                        siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country
+                                     && e.Status == status).ToListAsync();
+                    }
+                    else
+                    {
+                        siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country).ToListAsync();
+                    }
 
                     foreach (var change in (await changes.ToListAsync()))
                     {
                         SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
                         if (activity == null)
                         {
-                            SiteChangeDb editionChange = editionChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
+                            SiteChangeDb editionChange = siteChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
                             if (editionChange != null)
                                 activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
                         }
@@ -515,6 +583,36 @@ namespace N2K_BackboneBackEnd.Services
                                 && l.Version == change.Version
                             )?.Type ?? LineageTypes.NoChanges;
 
+                        if (changeLineage == LineageTypes.NoChanges)
+                        {
+                            SiteChangeDb lineageChange = siteChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version
+                                && (e.ChangeType == "Site Added" || e.ChangeType == "Site Merged" || e.ChangeType == "Site Recoded"
+                                || e.ChangeType == "Site Split" || e.ChangeType == "Site Deleted"));
+                            if (lineageChange != null)
+                            {
+                                switch (lineageChange.ChangeType)
+                                {
+                                    case "Site Added":
+                                        changeLineage = LineageTypes.Creation;
+                                        break;
+                                    case "Site Deleted":
+                                        changeLineage = LineageTypes.Deletion;
+                                        break;
+                                    case "Site Split":
+                                        changeLineage = LineageTypes.Split;
+                                        break;
+                                    case "Site Merged":
+                                        changeLineage = LineageTypes.Merge;
+                                        break;
+                                    case "Site Recoded":
+                                        changeLineage = LineageTypes.Recode;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+
                         SiteCodeView temp = new()
                         {
                             SiteCode = change.SiteCode,
@@ -523,7 +621,8 @@ namespace N2K_BackboneBackEnd.Services
                             EditedBy = activity is null ? null : activity.Author,
                             EditedDate = activity is null ? null : activity.Date,
                             LineageChangeType = changeLineage,
-                            Type = change.Type
+                            Type = change.Type,
+                            JustificationRequired = await _dataContext.Set<Sites>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).Select(s => s.JustificationRequired).FirstOrDefaultAsync()
                         };
                         result.Add(temp);
                     }
@@ -536,6 +635,10 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
+                if (onlyjustreq)
+                    result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
+                if (onlysci)
+                    result = result.Where(x => x.Type == "B").ToList();
                 return result.OrderBy(o => o.SiteCode).ToList();
             }
             catch (Exception ex)
@@ -666,7 +769,7 @@ namespace N2K_BackboneBackEnd.Services
                                     _Section.DeletedCodes.Add(new CategoryChangeDetail
                                     {
                                         ChangeCategory = _levelDetail.Section,
-                                        ChangeType = String.Format("List of {0} Deleted", _levelDetail.Section),
+                                        ChangeType = String.Format("{0} Deleted", _levelDetail.Section),
                                         ChangedCodesDetail = new List<CodeChangeDetail>()
                                     });
                                 }
@@ -702,7 +805,7 @@ namespace N2K_BackboneBackEnd.Services
                                 _Section.AddedCodes.Add(new CategoryChangeDetail
                                 {
                                     ChangeCategory = _levelDetail.Section,
-                                    ChangeType = String.Format("List of {0} Added", _levelDetail.Section),
+                                    ChangeType = String.Format("{0} Added", _levelDetail.Section),
                                     ChangedCodesDetail = new List<CodeChangeDetail>()
                                 });
                             }
@@ -922,7 +1025,7 @@ namespace N2K_BackboneBackEnd.Services
                                 Fields = fields
                             };
                         }
-                        
+
                         if (changeType == "Population Change"
                             || changeType == "Population Increase"
                             || changeType == "Population Decrease")
@@ -1275,21 +1378,27 @@ namespace N2K_BackboneBackEnd.Services
                 });
 
                 string queryString = @" 
-                        select  Changes.SiteCode,Changes.Version, Sites.Name as SiteName, Max(
-	                        case
-		                        when Level='Critical' then 2
-		                        when Level='Warning' then 1
-		                        when Level='Info' then 0
-                            end
-	                        ) as Level
-                        from 
-	                        [dbo].[Changes] inner join 
-	                        Sites ON   changes.sitecode= sites.sitecode and Changes.version=Sites.version 
-	                        inner join
-	                        @siteCodes T on  Changes.SiteCode= T.SiteCode and Changes.Version= T.Version
-
-                        group by 
-	                        changes.SiteCode, Changes.version, Sites.name";
+                        SELECT Changes.SiteCode,
+	                        Changes.Version,
+	                        Sites.Name AS SiteName,
+	                        Max(CASE 
+			                        WHEN LEVEL = 'Critical'
+				                        THEN 2
+			                        WHEN LEVEL = 'Warning'
+				                        THEN 1
+			                        WHEN LEVEL = 'Info'
+				                        THEN 0
+			                        END) AS LEVEL,
+	                        Sites.SiteType
+                        FROM [dbo].[Changes]
+                        INNER JOIN Sites ON changes.sitecode = sites.sitecode
+	                        AND Changes.version = Sites.version
+                        INNER JOIN @siteCodes T ON Changes.SiteCode = T.SiteCode
+	                        AND Changes.Version = T.Version
+                        GROUP BY changes.SiteCode,
+	                        Changes.version,
+	                        Sites.name,
+	                        Sites.SiteType";
 
                 SqlConnection backboneConn = null;
                 SqlCommand command = null;
@@ -1312,7 +1421,8 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             SiteCode = reader["SiteCode"].ToString(),
                             Version = int.Parse(reader["Version"].ToString()),
-                            Name = reader["SiteName"].ToString()
+                            Name = reader["SiteName"].ToString(),
+                            Type = reader["SiteType"].ToString()
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
 
@@ -1407,22 +1517,30 @@ namespace N2K_BackboneBackEnd.Services
                         Deleted = false
                     });
                 });
-                string queryString = @" 
-                        select  Changes.SiteCode,Changes.Version, Sites.Name as SiteName, Max(
-	                        case
-		                        when Level='Critical' then 2
-		                        when Level='Warning' then 1
-		                        when Level='Info' then 0
-                            end
-	                        ) as Level
-                        from 
-	                        [dbo].[Changes] inner join 
-	                        Sites ON   changes.sitecode= sites.sitecode and Changes.version=Sites.version 
-	                        inner join
-	                        @siteCodes T on  Changes.SiteCode= T.SiteCode and Changes.Version= T.Version
 
-                        group by 
-	                        changes.SiteCode, Changes.version, Sites.name";
+                string queryString = @" 
+                        SELECT Changes.SiteCode,
+	                        Changes.Version,
+	                        Sites.Name AS SiteName,
+	                        Max(CASE 
+			                        WHEN LEVEL = 'Critical'
+				                        THEN 2
+			                        WHEN LEVEL = 'Warning'
+				                        THEN 1
+			                        WHEN LEVEL = 'Info'
+				                        THEN 0
+			                        END) AS LEVEL,
+	                        Sites.SiteType
+                        FROM [dbo].[Changes]
+                        INNER JOIN Sites ON changes.sitecode = sites.sitecode
+	                        AND Changes.version = Sites.version
+                        INNER JOIN @siteCodes T ON Changes.SiteCode = T.SiteCode
+	                        AND Changes.Version = T.Version
+                        GROUP BY changes.SiteCode,
+	                        Changes.version,
+	                        Sites.name,
+	                        Sites.SiteType";
+
                 SqlConnection backboneConn = null;
                 SqlCommand command = null;
                 SqlDataReader reader = null;
@@ -1444,7 +1562,8 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             SiteCode = reader["SiteCode"].ToString(),
                             Version = int.Parse(reader["Version"].ToString()),
-                            Name = reader["SiteName"].ToString()
+                            Name = reader["SiteName"].ToString(),
+                            Type = reader["SiteType"].ToString()
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
 
@@ -1944,7 +2063,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         List<SiteChangeDb> changes = changesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).ToList();
                         if (changes == null || changes.Count == 0) continue;
-                        //Create the listView for the cached lists. By deafult this values
+                        //Create the listView for the cached lists. By default this values
                         SiteCodeView mySiteView = new()
                         {
                             SiteCode = modifiedSiteCode.SiteCode,
@@ -1952,7 +2071,7 @@ namespace N2K_BackboneBackEnd.Services
                             Name = changes.First().SiteName,
                             CountryCode = modifiedSiteCode.SiteCode[..2]
                         };
-
+                        mySiteView.Type = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).Select(x => x.SiteType).First().ToString();
                         mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
                             ?? LineageTypes.NoChanges;
 
@@ -1969,8 +2088,11 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             Lineage temp = await _dataContext.Set<Lineage>().Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).FirstOrDefaultAsync();
                             LineageAntecessors temp1 = await _dataContext.Set<LineageAntecessors>().Where(e => e.LineageID == temp.ID).FirstOrDefaultAsync();
-                            //Select the max version for the site with the currentsatatus accepted, but not the version of the change and the referenced version
-                            previousCurrent = await _dataContext.Set<Sites>().Where(e => e.SiteCode == temp1.SiteCode && e.Version == temp1.Version && e.CurrentStatus == SiteChangeStatus.Accepted).Select(e => e.Version).FirstOrDefaultAsync();
+                            if (temp1 != null)
+                            {
+                                //Select the max version for the site with the currentstatus accepted, but not the version of the change and the referenced version
+                                previousCurrent = await _dataContext.Set<Sites>().Where(e => e.SiteCode == temp1.SiteCode && e.Version == temp1.Version && e.CurrentStatus == SiteChangeStatus.Accepted).Select(e => e.Version).FirstOrDefaultAsync();
+                            }
                             //Search the previous activities
                             List<SiteActivities> activityDelete = activities.Where(e => (e.Version == modifiedSiteCode.VersionId || e.Version == change.VersionReferenceId) && e.Action == "User edition").ToList();
 
@@ -1991,12 +2113,12 @@ namespace N2K_BackboneBackEnd.Services
                             //Change the version and the name for the previous version
                             //paramVersionId = new SqlParameter("@version", change.VersionReferenceId);
                             mySiteView.Version = change.VersionReferenceId; //points to the final version
-                            string previousName = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).Select(x => x.Name).First().ToString();
-                            mySiteView.Name = previousName;
+                            mySiteView.Name = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).Select(x => x.Name).First().ToString();
+                            mySiteView.Type = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == change.VersionReferenceId).Select(x => x.SiteType).First().ToString();
                         }
                         #endregion
 
-                        #region Was this site edited after being rejected?
+                        #region Was this site edited after being rejected? (Unused)
                         List<SiteActivities> activityCheck = activities.Where(e => e.Action == "User edition after rejection of version " + modifiedSiteCode.VersionId).ToList();
                         if (activityCheck != null && activityCheck.Count > 0)
                         {
@@ -2031,7 +2153,8 @@ namespace N2K_BackboneBackEnd.Services
                             //await _dataContext.Database.ExecuteSqlRawAsync(
                             //    "exec spCopyJustificationFilesAndStatusChanges @sitecode, @oldVersion, @newVersion",
                             //    paramSiteCode, paramOldVersion, paramNewVersion2);
-                            JustificationFiles.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId, previousCurrent });
+                            if (previousCurrent != -1)
+                                JustificationFiles.Rows.Add(new Object[] { modifiedSiteCode.SiteCode, modifiedSiteCode.VersionId, previousCurrent });
 
                             //Delete edited version
                             if (siteToDelete != null)
@@ -2268,6 +2391,64 @@ namespace N2K_BackboneBackEnd.Services
                 }
             }
             return null;
+        }
+
+        public async Task<List<SiteCodeVersion>> GetNoChanges(string country, IMemoryCache cache, int page = 1, int pageLimit = 0, bool refresh = false)
+        {
+            try
+            {
+                string listNameNoChanges = string.Format("{0}_{1}", "listcodes", country);
+
+                //if there has been a change in the status refresh the changed sitecodes cache
+                if (refresh) cache.Remove(listNameNoChanges);
+
+                List<SiteCodeVersion> result = new();
+                List<SiteCodeVersion> sitelist = new();
+                if (cache.TryGetValue(listNameNoChanges, out List<SiteCodeVersion> cachedList))
+                {
+                    sitelist = cachedList;
+                }
+                else
+                {
+                    SqlParameter param1 = new("@country", country);
+                    IQueryable<SiteCodeVersion> sites = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetSitesWithNoChanges]  @country",
+                                param1);
+                    sitelist = await sites.ToListAsync();
+                    var cacheEntryOptions = new MemoryCacheEntryOptions()
+                            .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
+                            .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
+                            .SetPriority(CacheItemPriority.Normal)
+                            .SetSize(40000);
+                    cache.Set(listNameNoChanges, sitelist, cacheEntryOptions);
+                }
+
+                var startRow = (page - 1) * pageLimit;
+                if (pageLimit > 0)
+                {
+                    sitelist = sitelist.OrderBy(s => s.SiteCode)
+                        .Skip(startRow)
+                        .Take(pageLimit)
+                        .ToList();
+                }
+
+                foreach (var site in sitelist)
+                {
+                    SiteCodeVersion temp = new()
+                    {
+                        SiteCode = site.SiteCode,
+                        Version = site.Version,
+                        Name = site.Name,
+                        Type = site.Type
+                    };
+                    result.Add(temp);
+                }
+                return result.OrderBy(o => o.SiteCode).ToList();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetNoChanges", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
     }
 }

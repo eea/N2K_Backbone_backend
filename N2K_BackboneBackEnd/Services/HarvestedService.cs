@@ -663,7 +663,7 @@ namespace N2K_BackboneBackEnd.Services
                                 harvestingSite = newsites.Where(s => s.SiteCode == siteRelation.NewSiteCode && s.VersionId == siteRelation.NewVersion).FirstOrDefault();
                             if (siteRelation != null && harvestingSite == null)
                             {
-                                Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == storedSite.SiteCode && l.Version == storedSite.VersionId);
+                                Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == storedSite.SiteCode && l.Version == storedSite.VersionId && l.N2KVersioningVersion == envelope.VersionId);
                                 if (lineage?.Type == LineageTypes.Deletion) //the site is not been recoded, split or merge
                                 {
                                     SiteChangeDb siteChange = new()
@@ -1450,7 +1450,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else if (storedSite != null && harvestingSite == null)
                 {
-                    Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == storedSite.SiteCode && l.Version == storedSite.VersionId);
+                    Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == storedSite.SiteCode && l.Version == storedSite.VersionId && l.N2KVersioningVersion == envelope.VersionId);
                     if (lineage?.Type == LineageTypes.Deletion) //the site is not been recoded, split or merge
                     {
                         SiteChangeDb siteChange = new()
@@ -2186,6 +2186,17 @@ namespace N2K_BackboneBackEnd.Services
                                 }
                                 await ctx.Database.ExecuteSqlRawAsync(sqlToExecute, param1);
 
+                                if (toStatus == HarvestingStatus.Closed)
+                                {
+                                    SqlParameter paramCountry = new("@country", country);
+                                    SqlParameter paramVersionId = new("@version", version);
+
+                                    await _dataContext.Database.ExecuteSqlRawAsync(
+                                            "exec spAcceptIdenticalSiteCodesBulk @country, @version",
+                                            paramCountry,
+                                            paramVersionId);
+                                }
+
                                 if (toStatus == HarvestingStatus.Discarded || toStatus == HarvestingStatus.Closed)
                                 {
                                     ProcessedEnvelopes nextEnvelope = await ctx.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == country) && (pe.Status == HarvestingStatus.DataLoaded)).OrderBy(pe => pe.Version).FirstOrDefaultAsync();
@@ -2210,19 +2221,6 @@ namespace N2K_BackboneBackEnd.Services
                                                 GetCountryVersionToStatusFromSingleEnvelope(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested),
                                                 cache, true);
                                     }
-                                }
-
-                                if (toStatus == HarvestingStatus.Closed)
-                                {
-                                    HarvestedEnvelope bbEnvelope = new()
-                                    {
-                                        VersionId = version,
-                                        CountryCode = country,
-                                        NumChanges = 0,
-                                        Status = HarvestingStatus.Closed
-                                    };
-                                    //accept sites with no changes
-                                    await AcceptIdenticalSites(bbEnvelope);
                                 }
 
                                 if (toStatus == HarvestingStatus.Harvested || toStatus == HarvestingStatus.Closed)
@@ -2446,77 +2444,6 @@ namespace N2K_BackboneBackEnd.Services
             {
 
             }
-        }
-
-        /// <summary>
-        ///  This method retrives the complete information for a Site in Versioning and stores it in BackBone.
-        ///  (Just the Site)
-        /// </summary>
-        /// <param name="pVSite">The definition ogf the versioning Site</param>
-        /// <param name="pEnvelope">The envelope to process</param>
-        /// <returns>Returns a BackBone Site object</returns>
-        private async Task<List<Respondents>>? HarvestRespondents(List<Contact> vContact, EnvelopesToProcess pEnvelope)
-        {
-            await Task.Delay(1);
-            List<Respondents> items = new();
-            foreach (Contact contact in vContact)
-            {
-                Respondents respondent = new();
-                try
-                {
-                    respondent.SiteCode = contact.SITECODE;
-                    respondent.Version = (int)contact.VERSIONID;
-                    respondent.locatorName = contact.LOCATOR_NAME;
-                    respondent.addressArea = contact.ADDRESS_AREA;
-                    respondent.postName = contact.POST_NAME;
-                    respondent.postCode = contact.POSTCODE;
-                    respondent.thoroughfare = contact.THOROUGHFARE;
-                    respondent.addressUnstructured = contact.UNSTRUCTURED_ADD;
-                    respondent.name = contact.CONTACT_NAME;
-                    respondent.Email = contact.EMAIL;
-                    respondent.AdminUnit = contact.ADMIN_UNIT;
-                    respondent.LocatorDesignator = contact.LOCATOR_DESIGNATOR;
-                    items.Add(respondent);
-                }
-                catch (Exception ex)
-                {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - HarvestRespondents", "", _dataContext.Database.GetConnectionString());
-                    return null;
-                }
-            }
-            return items;
-        }
-
-        /// <summary>
-        /// Method to accept sites with no changes
-        /// </summary>
-        /// <param name="envelope">Envelope to process</param>
-        public async Task<HarvestedEnvelope> AcceptIdenticalSites(HarvestedEnvelope envelope)
-        {
-            try
-            {
-                List<Sites>? sites = await _dataContext.Set<Sites>().Where(e => e.CountryCode == envelope.CountryCode && e.N2KVersioningVersion == envelope.VersionId).ToListAsync();
-
-                foreach (Sites? site in sites)
-                {
-                    SiteChangeDb change = await _dataContext.Set<SiteChangeDb>().Where(e => e.SiteCode == site.SiteCode && e.Version == site.Version).FirstOrDefaultAsync();
-                    if (change == null)
-                    {
-                        SqlParameter paramSiteCode = new("@sitecode", site.SiteCode);
-                        SqlParameter paramVersionId = new("@version", site.Version);
-
-                        await _dataContext.Database.ExecuteSqlRawAsync(
-                                "exec spAcceptSiteCodeChanges @sitecode, @version",
-                                paramSiteCode,
-                                paramVersionId);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "AcceptIdenticalSites - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", _dataContext.Database.GetConnectionString());
-            }
-            return envelope;
         }
 
         public async Task CompleteFMESpatial(string webSocketMsg)
