@@ -1,10 +1,7 @@
-﻿using DocumentFormat.OpenXml.EMMA;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
-using NuGet.Common;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
@@ -12,19 +9,15 @@ namespace N2K_BackboneBackEnd.Services
 {
     public class DownloadService : IDownloadService
     {
-
         private readonly IOptions<ConfigSettings> _appSettings;
 
         private string decode64(string encoded)
         {
-
-
-            return  Base64UrlEncoder.Decode(encoded);
+            return Base64UrlEncoder.Decode(encoded);
 
             var decode = System.Convert.FromBase64String(encoded);
             return Encoding.UTF8.GetString(decode);
         }
-
 
         private bool IsValid(string token)
         {
@@ -54,12 +47,10 @@ namespace N2K_BackboneBackEnd.Services
             return file_bytes;
         }
 
-
         public DownloadService(IOptions<ConfigSettings> app)
         {
             _appSettings = app;
         }
-
 
         public async Task<ActionResult> DownloadAsFilename(string filename, string outputname)
         {
@@ -74,13 +65,11 @@ namespace N2K_BackboneBackEnd.Services
         {
             //validate token
 
-
             var handler = new JwtSecurityTokenHandler();
             var decodedValue = handler.ReadJwtToken(decode64(token));
 
             if (!IsValid(token))
                 throw new UnauthorizedAccessException("Token has expired!");
-
 
             var file_bytes = await readfile(decode64(filename));
             return new FileContentResult(file_bytes, "application/octet-stream")
@@ -91,7 +80,6 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<ActionResult> DownloadFile(string filename)
         {
-
             var file_bytes = await readfile(decode64(filename));
             return new FileContentResult(file_bytes, "application/octet-stream")
             {
@@ -107,7 +95,7 @@ namespace N2K_BackboneBackEnd.Services
             var decodedValue = handler.ReadJwtToken(decode64(token));
 
             if (!IsValid(token))
-                throw new UnauthorizedAccessException("Token has expired!" );
+                throw new UnauthorizedAccessException("Token has expired!");
 
 
             var file_bytes = await readfile(decode64(filename));

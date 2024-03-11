@@ -11,7 +11,5 @@ namespace N2K_BackboneBackEnd.Services
         public Task<ActionResult> DownloadAsFilename(string filename, string outputname);
                 
         public Task<ActionResult> DownloadAsFilename(string filename, string outputname,  string token);
-
-
     }
 }

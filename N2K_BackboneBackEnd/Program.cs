@@ -6,17 +6,9 @@ using N2K_BackboneBackEnd.Services;
 using N2K_BackboneBackEnd.Models;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.IO.Compression;
-using N2K_BackboneBackEnd.Enumerations;
 using N2K_BackboneBackEnd.Helpers;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System.Configuration;
-using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.SignalR;
 using N2K_BackboneBackEnd.Hubs;
 
 
