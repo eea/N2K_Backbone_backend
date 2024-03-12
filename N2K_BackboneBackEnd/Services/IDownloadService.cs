@@ -4,12 +4,8 @@ namespace N2K_BackboneBackEnd.Services
 {
     public interface IDownloadService
     {
-        public Task<ActionResult> DownloadFile(string filename);
+        Task<FileContentResult> DownloadFile(int id, int docuType);
 
-        public Task<ActionResult> DownloadFile(string filename, string token);
-
-        public Task<ActionResult> DownloadAsFilename(string filename, string outputname);
-                
-        public Task<ActionResult> DownloadAsFilename(string filename, string outputname,  string token);
+        Task<FileContentResult> DownloadFile(int id, int docuType, string token);
     }
 }

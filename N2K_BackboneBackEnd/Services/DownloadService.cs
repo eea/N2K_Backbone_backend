@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.backbone_db;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
@@ -10,6 +13,13 @@ namespace N2K_BackboneBackEnd.Services
     public class DownloadService : IDownloadService
     {
         private readonly IOptions<ConfigSettings> _appSettings;
+        private readonly N2KBackboneContext _dataContext;
+
+        public DownloadService(IOptions<ConfigSettings> app, N2KBackboneContext dataContext)
+        {
+            _appSettings = app;
+            _dataContext = dataContext;
+        }
 
         private string decode64(string encoded)
         {
@@ -30,7 +40,6 @@ namespace N2K_BackboneBackEnd.Services
             {
                 return false;
             }
-
             return jwtSecurityToken.ValidTo > DateTime.UtcNow;
         }
 
@@ -47,61 +56,58 @@ namespace N2K_BackboneBackEnd.Services
             return file_bytes;
         }
 
-        public DownloadService(IOptions<ConfigSettings> app)
+        public async Task<FileContentResult> DownloadFile(int id, int docuType)
         {
-            _appSettings = app;
-        }
+            string filename = string.Empty;
+            string outputname = string.Empty;
+            if (docuType == 0)
+            {
+                JustificationFiles temp = await _dataContext.Set<JustificationFiles>().Where(f => f.Id == id).AsNoTracking().FirstOrDefaultAsync();
+                filename = temp.Path;
+                outputname = temp.OriginalName;
+            }
+            else if (docuType == 1)
+            {
+                JustificationFilesRelease temp = await _dataContext.Set<JustificationFilesRelease>().Where(f => f.ID == id).AsNoTracking().FirstOrDefaultAsync();
+                filename = temp.Path;
+                outputname = temp.OriginalName;
+            }
 
-        public async Task<ActionResult> DownloadAsFilename(string filename, string outputname)
-        {
             var file_bytes = await readfile(filename);
             return new FileContentResult(file_bytes, "application/octet-stream")
             {
-                FileDownloadName = decode64(outputname)
+                FileDownloadName = outputname
             };
         }
 
-        public async Task<ActionResult> DownloadAsFilename(string filename, string outputname, string token)
+        public async Task<FileContentResult> DownloadFile(int id, int docuType, string token)
         {
             //validate token
-
             var handler = new JwtSecurityTokenHandler();
             var decodedValue = handler.ReadJwtToken(decode64(token));
 
             if (!IsValid(token))
                 throw new UnauthorizedAccessException("Token has expired!");
 
-            var file_bytes = await readfile(decode64(filename));
-            return new FileContentResult(file_bytes, "application/octet-stream")
+            string filename = string.Empty;
+            string outputname = string.Empty;
+            if (docuType == 0)
             {
-                FileDownloadName = decode64(outputname)
-            };
-        }
-
-        public async Task<ActionResult> DownloadFile(string filename)
-        {
-            var file_bytes = await readfile(decode64(filename));
-            return new FileContentResult(file_bytes, "application/octet-stream")
+                JustificationFiles temp = await _dataContext.Set<JustificationFiles>().Where(f => f.Id == id).AsNoTracking().FirstOrDefaultAsync();
+                filename = temp.Path;
+                outputname = temp.OriginalName;
+            }
+            else if (docuType == 1)
             {
-                FileDownloadName = decode64(filename)
-            };
-        }
-
-        public async Task<ActionResult> DownloadFile(string filename, string token)
-        {
-            //validate token
-
-            var handler = new JwtSecurityTokenHandler();
-            var decodedValue = handler.ReadJwtToken(decode64(token));
-
-            if (!IsValid(token))
-                throw new UnauthorizedAccessException("Token has expired!");
-
+                JustificationFilesRelease temp = await _dataContext.Set<JustificationFilesRelease>().Where(f => f.ID == id).AsNoTracking().FirstOrDefaultAsync();
+                filename = temp.Path;
+                outputname = temp.OriginalName;
+            }
 
             var file_bytes = await readfile(decode64(filename));
             return new FileContentResult(file_bytes, "application/octet-stream")
             {
-                FileDownloadName = filename
+                FileDownloadName = outputname
             };
         }
     }

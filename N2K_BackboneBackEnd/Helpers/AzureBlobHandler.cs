@@ -51,7 +51,7 @@ namespace N2K_BackboneBackEnd.Helpers
                             BlobClient blobClient1 = ConnectToAzureBlob().GetBlobClient(uncompressed);
                             await blobClient1.UploadAsync(Path.Combine(_pathToSave, uncompressed), true);
                             remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, uncompressed));
+                            uploadedFiles.Add(uncompressed);
                             File.Delete(Path.Combine(_pathToSave, uncompressed));
                         }
                     }
@@ -60,7 +60,7 @@ namespace N2K_BackboneBackEnd.Helpers
                         BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
                         await blobClient.UploadAsync(fullPath, true);
                         remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                        uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
+                        uploadedFiles.Add(fileName);
                     }
                     File.Delete(fullPath);
                 }
@@ -87,7 +87,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
                 await blobClient.UploadAsync(fullPath, true);
                 remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
+                uploadedFiles.Add(fileName);
 
                 File.Delete(file);
 

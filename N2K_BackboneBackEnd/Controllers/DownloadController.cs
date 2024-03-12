@@ -9,7 +9,7 @@ namespace N2K_BackboneBackEnd.Controllers
     [Authorize(AuthenticationSchemes = "EULoginSchema")]
     [Route("api/[controller]")]
     [ApiController]
-    public class DownloadController : Controller
+    public class DownloadController : ControllerBase
     {
         private readonly IDownloadService _downloadService;
         private readonly IMapper _mapper;
@@ -20,31 +20,18 @@ namespace N2K_BackboneBackEnd.Controllers
             _mapper = mapper;
         }
 
-        [HttpGet("/justificationfiles/{filename:String}")]
-        public async Task<ActionResult> DownloadFile(string filename)
+        [HttpGet("Get/id={id:int}&docuType={docuType:int}")]
+        public async Task<ActionResult<FileContentResult>> DownloadFile(int id, int docuType)
         {
-            var response = new ServiceResponse<string>();
+            ServiceResponse<FileContentResult> response = new();
             try
             {
-                return await _downloadService.DownloadFile(filename);
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = null;
+                FileContentResult url = await _downloadService.DownloadFile(id, docuType);
+                response.Success = true;
+                response.Message = "";
+                response.Data = url;
+                response.Count = 1;
                 return Ok(response);
-            }
-        }
-
-        [HttpGet("/justificationfiles/{filename:String}/alias={alias:string}")]
-        public async Task<ActionResult> DownloadFileAsAlias(string filename, string alias)
-        {
-            var response = new ServiceResponse<string>();
-            try
-            {
-                return await _downloadService.DownloadAsFilename(filename, alias);
             }
             catch (Exception ex)
             {
@@ -57,37 +44,19 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 
-        [HttpGet("/justificationfiles/{filename:string}&token={token:string}")]
+        [HttpGet("Get/id={id:int}&docuType={docuType:int}&token={token:string}")]
         [AllowAnonymous]
-        public async Task<ActionResult> DownloadFileWithToken(string filename, string token)
+        public async Task<ActionResult<FileContentResult>> DownloadFileWithToken(int id, int docuType, string token)
         {
-            var response = new ServiceResponse<string>();
+            ServiceResponse<FileContentResult> response = new();
             try
             {
-                return await _downloadService.DownloadFile(filename, token);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Unauthorized();
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Count = 0;
-                response.Data = null;
+                FileContentResult url = await _downloadService.DownloadFile(id, docuType, token);
+                response.Success = true;
+                response.Message = "";
+                response.Data = url;
+                response.Count = 1;
                 return Ok(response);
-            }
-        }
-
-        [HttpGet("/justificationfiles/{filename:string}/alias={alias:string}&token={token:string}")]
-        [AllowAnonymous]
-        public async Task<ActionResult> DownloadFileAliasWithToken(string filename, string alias, string token)
-        {
-            var response = new ServiceResponse<string>();
-            try
-            {
-                return await _downloadService.DownloadAsFilename(filename, alias, token);
             }
             catch (UnauthorizedAccessException)
             {
