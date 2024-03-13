@@ -14,6 +14,7 @@ namespace N2K_BackboneBackEnd.Services
     {
         private readonly IOptions<ConfigSettings> _appSettings;
         private readonly N2KBackboneContext _dataContext;
+        
 
         public DownloadService(IOptions<ConfigSettings> app, N2KBackboneContext dataContext)
         {
@@ -24,9 +25,6 @@ namespace N2K_BackboneBackEnd.Services
         private string decode64(string encoded)
         {
             return Base64UrlEncoder.Decode(encoded);
-
-            var decode = System.Convert.FromBase64String(encoded);
-            return Encoding.UTF8.GetString(decode);
         }
 
         private bool IsValid(string token)
@@ -48,15 +46,12 @@ namespace N2K_BackboneBackEnd.Services
             string _folderName = _appSettings.Value.AttachedFiles.JustificationFolder;
             string path = Path.Combine(_folderName, filename);
 
-            //_folderName = @"C:\Proyectos\N2kBackbone\Code";
-            //filename = "sites_par.csv";
             path = Path.Combine(_folderName, filename);
-
             var file_bytes = await System.IO.File.ReadAllBytesAsync(path);
             return file_bytes;
         }
 
-        public async Task<FileContentResult> DownloadFile(int id, int docuType)
+        private async Task<(string?, string?)>  GetFileName(int id, int docuType)
         {
             string filename = string.Empty;
             string outputname = string.Empty;
@@ -72,6 +67,15 @@ namespace N2K_BackboneBackEnd.Services
                 filename = temp.Path;
                 outputname = temp.OriginalName;
             }
+
+
+            return (filename, outputname);
+        }
+
+
+        public async Task<FileContentResult> DownloadFile(int id, int docuType)
+        {
+            (string? filename, string? outputname) = await GetFileName(id, docuType);
 
             var file_bytes = await readfile(filename);
             return new FileContentResult(file_bytes, "application/octet-stream")
@@ -88,23 +92,9 @@ namespace N2K_BackboneBackEnd.Services
 
             if (!IsValid(token))
                 throw new UnauthorizedAccessException("Token has expired!");
-
-            string filename = string.Empty;
-            string outputname = string.Empty;
-            if (docuType == 0)
-            {
-                JustificationFiles temp = await _dataContext.Set<JustificationFiles>().Where(f => f.Id == id).AsNoTracking().FirstOrDefaultAsync();
-                filename = temp.Path;
-                outputname = temp.OriginalName;
-            }
-            else if (docuType == 1)
-            {
-                JustificationFilesRelease temp = await _dataContext.Set<JustificationFilesRelease>().Where(f => f.ID == id).AsNoTracking().FirstOrDefaultAsync();
-                filename = temp.Path;
-                outputname = temp.OriginalName;
-            }
-
-            var file_bytes = await readfile(decode64(filename));
+            
+            (string? filename, string? outputname) = await GetFileName(id, docuType);
+            var file_bytes = await readfile(filename);
             return new FileContentResult(file_bytes, "application/octet-stream")
             {
                 FileDownloadName = outputname

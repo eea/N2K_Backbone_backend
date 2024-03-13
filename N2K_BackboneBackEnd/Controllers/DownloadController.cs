@@ -21,17 +21,12 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [HttpGet("Get/id={id:int}&docuType={docuType:int}")]
-        public async Task<ActionResult<FileContentResult>> DownloadFile(int id, int docuType)
+        public async Task<ActionResult> DownloadFile(int id, int docuType)
         {
             ServiceResponse<FileContentResult> response = new();
             try
             {
-                FileContentResult url = await _downloadService.DownloadFile(id, docuType);
-                response.Success = true;
-                response.Message = "";
-                response.Data = url;
-                response.Count = 1;
-                return Ok(response);
+                return await _downloadService.DownloadFile(id, docuType);
             }
             catch (Exception ex)
             {
@@ -46,17 +41,13 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [HttpGet("Get/id={id:int}&docuType={docuType:int}&token={token:string}")]
         [AllowAnonymous]
-        public async Task<ActionResult<FileContentResult>> DownloadFileWithToken(int id, int docuType, string token)
+        public async Task<ActionResult> DownloadFileWithToken(int id, int docuType, string token)
         {
             ServiceResponse<FileContentResult> response = new();
             try
             {
-                FileContentResult url = await _downloadService.DownloadFile(id, docuType, token);
-                response.Success = true;
-                response.Message = "";
-                response.Data = url;
-                response.Count = 1;
-                return Ok(response);
+                                
+                return await _downloadService.DownloadFile(id, docuType,token);
             }
             catch (UnauthorizedAccessException)
             {
