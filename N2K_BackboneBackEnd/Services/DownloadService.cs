@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using System.IdentityModel.Tokens.Jwt;
@@ -43,11 +44,11 @@ namespace N2K_BackboneBackEnd.Services
 
         private async Task<byte[]> readfile(string filename)
         {
-            string _folderName = _appSettings.Value.AttachedFiles.JustificationFolder;
-            string path = Path.Combine(_folderName, filename);
+            IAttachedFileHandler? fileHandler  = _appSettings.Value.AttachedFiles.AzureBlob ?            
+                new AzureBlobHandler(_appSettings.Value.AttachedFiles, _dataContext) :
+                new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
 
-            path = Path.Combine(_folderName, filename);
-            var file_bytes = await System.IO.File.ReadAllBytesAsync(path);
+            byte[] file_bytes =await fileHandler.ReadFile(filename);
             return file_bytes;
         }
 

@@ -3,6 +3,7 @@ using Azure.Storage.Blobs.Models;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
+using System.Drawing;
 using System.Net.Http.Headers;
 
 
@@ -137,6 +138,29 @@ namespace N2K_BackboneBackEnd.Helpers
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "AzureBlobHandler - DeleteUnionListsFilesAsync", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<byte[]> ReadFile(string fileName)
+        {
+
+            try
+            {
+                BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
+                if (await blobClient.ExistsAsync())
+                {
+                    using (var ms = new MemoryStream())
+                    {
+                        blobClient.DownloadTo(ms);
+                        return ms.ToArray();
+                    }
+                }
+                return new byte[0];  // returns empty array
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "AzureBlobHandler - ReadFile", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }

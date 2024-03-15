@@ -123,5 +123,15 @@ namespace N2K_BackboneBackEnd.Helpers
                 throw ex;
             }
         }
+
+        public async Task<byte[]> ReadFile(string fileName)
+        {
+            string _folderName = _pathToSave;
+            string path = Path.Combine(_folderName, fileName);
+
+            path = Path.Combine(_folderName, fileName);
+            var file_bytes = await System.IO.File.ReadAllBytesAsync(path);
+            return file_bytes;
+        }
     }
 }
