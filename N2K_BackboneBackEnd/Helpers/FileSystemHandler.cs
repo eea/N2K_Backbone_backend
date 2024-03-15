@@ -38,14 +38,14 @@ namespace N2K_BackboneBackEnd.Helpers
                         foreach (var uncompressed in uncompressedFiles)
                         {
                             remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, uncompressed));
+                            uploadedFiles.Add(uncompressed);
                         }
                         File.Delete(fullPath);
                     }
                     else
                     {
                         remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                        uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
+                        uploadedFiles.Add(fileName);
                     }
                 }
                 return uploadedFiles;
@@ -69,7 +69,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 string? fileName = Path.GetFileName(file);
 
                 remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
+                uploadedFiles.Add(fileName);
 
                 await Task.Delay(10);
 
@@ -122,6 +122,16 @@ namespace N2K_BackboneBackEnd.Helpers
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "FileSystemHandler - DeleteUnionListsFilesAsync", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
+        }
+
+        public async Task<byte[]> ReadFile(string fileName)
+        {
+            string _folderName = _pathToSave;
+            string path = Path.Combine(_folderName, fileName);
+
+            path = Path.Combine(_folderName, fileName);
+            var file_bytes = await System.IO.File.ReadAllBytesAsync(path);
+            return file_bytes;
         }
     }
 }
