@@ -91,7 +91,7 @@ namespace N2K_BackboneBackEnd.Services
             var handler = new JwtSecurityTokenHandler();
             var decodedValue = handler.ReadJwtToken(decode64(token));
 
-            if (!IsValid(token))
+            if (!IsValid(decode64(token)))
                 throw new UnauthorizedAccessException("Token has expired!");
             
             (string? filename, string? outputname) = await GetFileName(id, docuType);
