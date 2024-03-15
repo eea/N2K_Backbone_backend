@@ -1389,7 +1389,8 @@ namespace N2K_BackboneBackEnd.Services
 			                        WHEN LEVEL = 'Info'
 				                        THEN 0
 			                        END) AS LEVEL,
-	                        Sites.SiteType
+	                        Sites.SiteType,
+	                        Sites.JustificationRequired
                         FROM [dbo].[Changes]
                         INNER JOIN Sites ON changes.sitecode = sites.sitecode
 	                        AND Changes.version = Sites.version
@@ -1398,7 +1399,8 @@ namespace N2K_BackboneBackEnd.Services
                         GROUP BY changes.SiteCode,
 	                        Changes.version,
 	                        Sites.name,
-	                        Sites.SiteType";
+	                        Sites.SiteType,
+	                        Sites.JustificationRequired";
 
                 SqlConnection backboneConn = null;
                 SqlCommand command = null;
@@ -1422,7 +1424,8 @@ namespace N2K_BackboneBackEnd.Services
                             SiteCode = reader["SiteCode"].ToString(),
                             Version = int.Parse(reader["Version"].ToString()),
                             Name = reader["SiteName"].ToString(),
-                            Type = reader["SiteType"].ToString()
+                            Type = reader["SiteType"].ToString(),
+                            JustificationRequired = (bool)reader["JustificationRequired"]
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
 
@@ -1530,7 +1533,8 @@ namespace N2K_BackboneBackEnd.Services
 			                        WHEN LEVEL = 'Info'
 				                        THEN 0
 			                        END) AS LEVEL,
-	                        Sites.SiteType
+	                        Sites.SiteType,
+	                        Sites.JustificationRequired
                         FROM [dbo].[Changes]
                         INNER JOIN Sites ON changes.sitecode = sites.sitecode
 	                        AND Changes.version = Sites.version
@@ -1539,7 +1543,8 @@ namespace N2K_BackboneBackEnd.Services
                         GROUP BY changes.SiteCode,
 	                        Changes.version,
 	                        Sites.name,
-	                        Sites.SiteType";
+	                        Sites.SiteType,
+	                        Sites.JustificationRequired";
 
                 SqlConnection backboneConn = null;
                 SqlCommand command = null;
@@ -1563,7 +1568,8 @@ namespace N2K_BackboneBackEnd.Services
                             SiteCode = reader["SiteCode"].ToString(),
                             Version = int.Parse(reader["Version"].ToString()),
                             Name = reader["SiteName"].ToString(),
-                            Type = reader["SiteType"].ToString()
+                            Type = reader["SiteType"].ToString(),
+                            JustificationRequired = (bool)reader["JustificationRequired"]
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
 
@@ -2072,6 +2078,7 @@ namespace N2K_BackboneBackEnd.Services
                             CountryCode = modifiedSiteCode.SiteCode[..2]
                         };
                         mySiteView.Type = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).Select(x => x.SiteType).First().ToString();
+                        mySiteView.JustificationRequired = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).Select(x => x.JustificationRequired).First();
                         mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
                             ?? LineageTypes.NoChanges;
 
