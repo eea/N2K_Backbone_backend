@@ -644,6 +644,8 @@ namespace N2K_BackboneBackEnd.Services
                                     //Exists, so update it
                                     element.Name = site.Name;
                                     element.Version = site.Version;
+                                    element.EditedBy = GlobalData.Username;
+                                    element.EditedDate = DateTime.Now;
                                 }
                             }
                         }

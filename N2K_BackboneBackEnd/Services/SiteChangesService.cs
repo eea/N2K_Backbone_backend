@@ -532,7 +532,7 @@ namespace N2K_BackboneBackEnd.Services
                     country,
                     status.ToString(),
                     level.ToString()
-               );
+                );
                 //if there has been a change in the status refresh the changed sitecodes cache
                 if (refresh) cache.Remove(listName);
 
@@ -2269,7 +2269,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification)
+        public async Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification, IMemoryCache cache)
         {
             List<ModifiedSiteCode> result = new();
             try
@@ -2293,6 +2293,21 @@ namespace N2K_BackboneBackEnd.Services
                         modifiedSiteCode.VersionId = just.VersionId;
                         modifiedSiteCode.OK = 1;
                         modifiedSiteCode.Error = string.Empty;
+
+                        //Change site in cache
+                        List<SiteChangeDb> sites = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == just.SiteCode && site.Version == just.VersionId).ToListAsync();
+                        Level level = (Level)sites.Max(a => a.Level);
+
+                        List<SiteCodeView> cachedlist = new();
+                        string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", just.SiteCode[..2], sites.FirstOrDefault().Status, level.ToString());
+                        if (cache.TryGetValue(listName, out cachedlist))
+                        {
+                            SiteCodeView element = cachedlist.Where(cl => cl.SiteCode == just.SiteCode).FirstOrDefault();
+                            if (element != null)
+                            {
+                                element.JustificationRequired = just.Justification;
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
