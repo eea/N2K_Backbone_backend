@@ -90,7 +90,7 @@ namespace N2K_BackboneBackEnd.Helpers
             List<string> fileList = new();
             using (ZipArchive archive = ZipFile.OpenRead(fileName))
             {
-                archive.ExtractToDirectory(_pathToSave);
+                archive.ExtractToDirectory(_pathToSave, true);
                 return archive.Entries.Select(entry => entry.Name).ToList();
             }
         }
