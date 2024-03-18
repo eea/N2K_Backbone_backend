@@ -574,13 +574,13 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
                 }
-                List<string> fileUrl = await fileHandler.UploadFileAsync(new AttachedFile() { Files = attachedFile.Files});
-                foreach (string fUrl in fileUrl)
+                List<JustificationFiles> fileUrl = await fileHandler.UploadFileAsync(new AttachedFile() { Files = attachedFile.Files});
+                foreach (JustificationFiles fUrl in fileUrl)
                 {
                     JustificationFilesRelease justFile = new()
                     {
-                        Path = fUrl,
-                        OriginalName = attachedFile.Files[0].FileName,
+                        Path = fUrl.Path,
+                        OriginalName = fUrl.OriginalName,
                         CountryCode = attachedFile.Country,
                         ImportDate = DateTime.Now,
                         Username = username
