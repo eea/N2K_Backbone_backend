@@ -68,7 +68,7 @@ namespace N2K_BackboneBackEnd.Helpers
                         JustificationFiles item = new JustificationFiles();
                         FileInfo fi = new FileInfo(fullPath);
                         string newfilename = string.Format("{0}_{1}{2}", System.Guid.NewGuid().ToString(), DateTime.Now.Ticks, fi.Extension);
-                        BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
+                        BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(newfilename);
                         await blobClient.UploadAsync(fullPath, true);
                         remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
                         item.Path = newfilename;
