@@ -495,7 +495,7 @@ namespace N2K_BackboneBackEnd.Services
                             fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
                         }
 
-                        if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.OriginalName);
+                        if (!string.IsNullOrEmpty(justification.Path)) await fileHandler.DeleteFileAsync(justification.Path);
                         result = 1;
                     }
                 }
