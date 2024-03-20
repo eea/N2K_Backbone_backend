@@ -1,6 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using DocumentFormat.OpenXml.Office.CustomUI;
+using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.backbone_db;
+using System.Diagnostics;
 using System.Net.Http.Headers;
 
 namespace N2K_BackboneBackEnd.Helpers
@@ -14,12 +17,12 @@ namespace N2K_BackboneBackEnd.Helpers
                 Path.Combine(_attachedFilesConfig.FilesRootPath, _folderName);
         }
 
-        public async Task<List<string>> UploadFileAsync(AttachedFile files)
+        public async Task<List<JustificationFiles>> UploadFileAsync(AttachedFile files)
         {
             try
             {
                 string remoteUrl = "";
-                List<String> uploadedFiles = new();
+                List<JustificationFiles> uploadedFiles = new();
                 if (files == null || files.Files == null)
                     return uploadedFiles;
                 bool invalidFile = await AllFilesValid(files);
@@ -37,15 +40,31 @@ namespace N2K_BackboneBackEnd.Helpers
                         List<string> uncompressedFiles = ExtractCompressedFiles(fullPath);
                         foreach (var uncompressed in uncompressedFiles)
                         {
+                            JustificationFiles item = new JustificationFiles();
                             remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, uncompressed));
+
+                            FileInfo fi = new FileInfo(Path.Combine(_pathToSave, uncompressed));
+                            string newfilename = string.Format("{0}_{1}{2}", System.Guid.NewGuid().ToString(), DateTime.Now.Ticks, fi.Extension);
+                            File.Move(Path.Combine(_pathToSave, uncompressed), Path.Combine(_pathToSave, newfilename));
+
+                            item.Path = newfilename;
+                            item.OriginalName = uncompressed;
+                            uploadedFiles.Add(item);
                         }
                         File.Delete(fullPath);
                     }
                     else
                     {
+                        FileInfo fi = new FileInfo(fullPath);
+                        string newfilename = string.Format("{0}_{1}{2}", System.Guid.NewGuid().ToString(), DateTime.Now.Ticks, fi.Extension);
+                        File.Move(fullPath, Path.Combine(_pathToSave, newfilename));
+
+                        JustificationFiles item = new JustificationFiles();
                         remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                        uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
+
+                        item.Path = newfilename;
+                        item.OriginalName = fileName;
+                        uploadedFiles.Add(item);
                     }
                 }
                 return uploadedFiles;
@@ -69,7 +88,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 string? fileName = Path.GetFileName(file);
 
                 remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
+                uploadedFiles.Add(fileName);
 
                 await Task.Delay(10);
 
@@ -122,6 +141,16 @@ namespace N2K_BackboneBackEnd.Helpers
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "FileSystemHandler - DeleteUnionListsFilesAsync", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
+        }
+
+        public async Task<byte[]> ReadFile(string fileName)
+        {
+            string _folderName = _pathToSave;
+            string path = Path.Combine(_folderName, fileName);
+
+            path = Path.Combine(_folderName, fileName);
+            var file_bytes = await System.IO.File.ReadAllBytesAsync(path);
+            return file_bytes;
         }
     }
 }

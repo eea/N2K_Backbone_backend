@@ -22,7 +22,6 @@ namespace N2K_BackboneBackEnd.Helpers
             _dataContext = dataContext;
         }
 
-
         public bool CheckExtensions(string fileName)
         {
             List<String> extensionWhiteList = _attachedFilesConfig.ExtensionWhiteList;
@@ -30,6 +29,7 @@ namespace N2K_BackboneBackEnd.Helpers
             string fileExtension = fileArray[fileArray.Length - 1];
             return extensionWhiteList.Any(x => x.ToLower() == fileExtension.ToLower());
         }
+
         public bool CheckCompressionFormats(string fileName)
         {
             List<String> compressionFormats = _attachedFilesConfig.CompressionFormats;
@@ -37,7 +37,6 @@ namespace N2K_BackboneBackEnd.Helpers
             string fileExtension = fileArray[fileArray.Length - 1];
             return compressionFormats.Any(x => x.ToLower() == fileExtension.ToLower());
         }
-
 
         private bool checkZipCompressedFiles(string fileName)
         {
@@ -61,12 +60,9 @@ namespace N2K_BackboneBackEnd.Helpers
             return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Environment.Is64BitProcess ? "x64" : "x86", "7z.dll");
         }
 
-
         private bool checkSevenZipCompressedFiles(string fileName)
         {
             bool invalidFile = false;
-
-
             using (Stream stream = File.OpenRead(fileName))
             {
                 SevenZipBase.SetLibraryPath(returnSevenZipDllPath());
@@ -85,28 +81,25 @@ namespace N2K_BackboneBackEnd.Helpers
                     }
                 }
             }
-
-
             if (invalidFile) File.Delete(fileName);
             return invalidFile;
         }
 
         private List<string> extractZipCompressedFiles(string fileName)
         {
-            var fileList = new List<string>();
+            List<string> fileList = new();
             using (ZipArchive archive = ZipFile.OpenRead(fileName))
             {
-                archive.ExtractToDirectory(_pathToSave);
+                archive.ExtractToDirectory(_pathToSave, true);
                 return archive.Entries.Select(entry => entry.Name).ToList();
             }
         }
 
         private List<string> extractSevenZipCompressedFiles(string fileName)
         {
-            var fileList = new List<string>();
+            List<string> fileList = new();
             using (Stream stream = File.OpenRead(fileName))
             {
-
                 SevenZipBase.SetLibraryPath(returnSevenZipDllPath());
                 using (SevenZipExtractor extr = new(stream))
                 {
@@ -114,7 +107,7 @@ namespace N2K_BackboneBackEnd.Helpers
                     {
                         if (!archiveFileInfo.IsDirectory)
                         {
-                            using (var mem = new MemoryStream())
+                            using (MemoryStream mem = new())
                             {
                                 extr.ExtractFile(archiveFileInfo.Index, mem);
                                 string shortFileName = Path.GetFileName(archiveFileInfo.FileName);
@@ -130,13 +123,11 @@ namespace N2K_BackboneBackEnd.Helpers
                     }
                 }
             }
-
             return fileList;
         }
 
         protected bool CheckCompressedFiles(string fileName)
         {
-
             if (fileName.ToLower().EndsWith(".zip"))
             {
                 return checkZipCompressedFiles(fileName);
@@ -146,14 +137,12 @@ namespace N2K_BackboneBackEnd.Helpers
 
         protected async Task<bool> CopyCompressedFileToTempFolder(IFormFile file, string fileName)
         {
-            using (var stream = new FileStream(fileName, FileMode.Create))
+            using (FileStream stream = new(fileName, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
             return true;
         }
-
-
 
         protected List<string> ExtractCompressedFiles(string fileName)
         {
@@ -164,17 +153,16 @@ namespace N2K_BackboneBackEnd.Helpers
             else return extractSevenZipCompressedFiles(fileName);
         }
 
-
         protected async Task<bool> AllFilesValid(AttachedFile files)
         {
             if (files == null || files.Files == null) return true;
-            var invalidFile = false;
+            bool invalidFile = false;
             foreach (var f in files.Files)
             {
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
                 string? fileName = ContentDispositionHeaderValue.Parse(f.ContentDisposition).FileName.Trim('"');
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
-                var fullPath = Path.Combine(_pathToSave, fileName);
+                string? fullPath = Path.Combine(_pathToSave, fileName);
                 bool res = await CopyCompressedFileToTempFolder(f, fullPath);
                 if (!CheckExtensions(fileName) || invalidFile == true)
                 {
@@ -193,7 +181,5 @@ namespace N2K_BackboneBackEnd.Helpers
 
             return invalidFile;
         }
-
-
     }
 }
