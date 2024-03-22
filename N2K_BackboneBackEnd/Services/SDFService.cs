@@ -18,7 +18,7 @@ namespace N2K_BackboneBackEnd.Services
             _appSettings = app;
         }
 
-        public async Task<SDF> GetData(string SiteCode)
+        public async Task<SDF> GetData(string SiteCode, int Version = -1)
         {
             try
             {
@@ -27,7 +27,16 @@ namespace N2K_BackboneBackEnd.Services
                 string booleanChecked = "x";
                 string booleanUnchecked = "";
 
-                Sites site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Current == true).AsNoTracking().FirstOrDefaultAsync();
+                Sites site;
+                if (Version == -1)
+                {
+                    site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Current == true).AsNoTracking().FirstOrDefaultAsync();
+                }
+                else
+                {
+                    site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Version == Version).AsNoTracking().FirstOrDefaultAsync();
+                }
+
                 List<Countries> countries = await _dataContext.Set<Countries>().AsNoTracking().ToListAsync();
                 List<Habitats> habitats = await _dataContext.Set<Habitats>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
