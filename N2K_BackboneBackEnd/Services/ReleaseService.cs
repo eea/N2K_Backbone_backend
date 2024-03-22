@@ -842,6 +842,11 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     _dataContext.Set<UnionListHeader>().Remove(unionlistheader);
                     await _dataContext.SaveChangesAsync();
+
+                    //Delete assignment to Release from Attachments and comments
+                    SqlParameter param1 = new("@id", unionlistheader.idULHeader);
+                    await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spDeleteReleaseUnionList  @id", param1);
+
                     result = 1;
                 }
 
