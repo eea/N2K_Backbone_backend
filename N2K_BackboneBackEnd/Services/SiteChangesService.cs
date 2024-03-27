@@ -911,7 +911,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                     if (catChange.ChangeType == "Deletion of Spatial Area" ||
-                        catChange.ChangeType == "Additon of Spatial Area")
+                        catChange.ChangeType == "Addition of Spatial Area")
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
@@ -924,7 +924,7 @@ namespace N2K_BackboneBackEnd.Services
                                 fields.Add("Cumulative deleted spatial area (ha)", "");
                                 deleted = true;
                                 break;
-                            case "Additon of Spatial Area":
+                            case "Addition of Spatial Area":
                                 fields.Add("Cumulative added spatial area (ha)", "");
                                 break;
                         }
