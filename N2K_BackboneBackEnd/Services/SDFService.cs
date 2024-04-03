@@ -30,7 +30,13 @@ namespace N2K_BackboneBackEnd.Services
                 Sites site;
                 if (Version == -1)
                 {
+                    // try to get reference, if it doesnt exist return current
+                    site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.CurrentStatus == Enumerations.SiteChangeStatus.Accepted)
+                        .OrderBy(a => a.Version).Reverse().AsNoTracking().FirstOrDefaultAsync();
+                    if (site == null)
+                    {
                     site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Current == true).AsNoTracking().FirstOrDefaultAsync();
+                    }
                 }
                 else
                 {
