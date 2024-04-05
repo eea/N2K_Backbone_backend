@@ -23,13 +23,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("GetData")]
         [HttpGet]
-        public async Task<ActionResult<SDF>> GetData(string SiteCode, int? Version)
+        public async Task<ActionResult<SDF>> GetData(string SiteCode, int Version = -1)
         {
             ServiceResponse<SDF> response = new();
             try
             {
-                if (Version == null) { Version = -1; }
-                SDF result = await _SDFService.GetData(SiteCode, (int)Version);
+                SDF result = await _SDFService.GetData(SiteCode, Version);
                 response.Success = true;
                 response.Message = "";
                 response.Data = result;
