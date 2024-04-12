@@ -81,6 +81,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 await harvestSiteLargeDescriptions(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
                 await harvestSiteOwnerType(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, ownerShipTypes, bbSites);
                 await harvestOwnership(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
+                await harvestDocumentationLinks(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
+                await harvestReferenceMap(countryCode, COUNTRYVERSIONID, versioningDB, backboneDb, bbSites);
 
                 //BioRegions.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await BioRegionsTask);
                 //Respondents.SaveBulkRecord(this._dataContext.Database.GetConnectionString(), await RespondentsTask);
@@ -202,8 +204,6 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                 bbSite.SacLegalReference = pVSite.SAC_LEGAL_REFERENCE;
                 bbSite.Explanations = pVSite.EXPLANATIONS;
                 bbSite.MarineArea = pVSite.MARINEAREA;
-                bbSite.Inspire_ID = pVSite.INSPIRE;
-                bbSite.PDFProvided = pVSite.PDFPROVIDED;
                 return bbSite;
             }
             catch (Exception ex)
@@ -874,6 +874,175 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestOwnership", "", backboneDb);
+                return 0;
+            }
+            finally
+            {
+                items.Clear();
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retrives the information of the DocumentationLinks elements for a Site and stores them in BackBone
+        /// </summary>
+        /// <param name="pVSite">The object Versioning Site</param>
+        /// <param name="pVersion">The version in BackBone</param>
+        /// <returns>List of DocumentationLinks stored</returns>
+        private async Task<int>? harvestDocumentationLinks(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
+        {
+            List<Models.backbone_db.DocumentationLinks> items = new();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            var start = DateTime.Now;
+            try
+            {
+                versioningConn = new SqlConnection(versioningDB);
+                String queryString = @"SELECT SITECODE AS SiteCode,
+	                                        URL AS Link
+                                        FROM DOCUMENTATION_LINK
+                                        WHERE COUNTRYCODE = @COUNTRYCODE
+	                                        AND COUNTRYVERSIONID = @COUNTRYVERSIONID
+	                                        AND URL IS NOT NULL AND URL NOT LIKE ''";
+
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+                    Models.backbone_db.DocumentationLinks item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                        item.Link = TypeConverters.CheckNull<string>(reader["Link"]);
+                        items.Add(item);
+                    }
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSiteCode - DocumentationLinks", "", backboneDb);
+                    }
+                }
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                try
+                {
+                    await Models.backbone_db.DocumentationLinks.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - DocumentationLinks.SaveBulkRecord", "", backboneDb);
+                }
+                //Console.WriteLine(String.Format("End save to list Site Large Description -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestDocumentationLinks", "", backboneDb);
+                return 0;
+            }
+            finally
+            {
+                items.Clear();
+                if (versioningConn != null)
+                {
+                    versioningConn.Close();
+                    versioningConn.Dispose();
+                    if (command != null) command.Dispose();
+                    if (reader != null) await reader.DisposeAsync();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retrives the information of the ReferenceMap elements for a Site and stores them in BackBone
+        /// </summary>
+        /// <param name="pVSite">The object Versioning Site</param>
+        /// <param name="pVersion">The version in BackBone</param>
+        /// <returns>List of ReferenceMap stored</returns>
+        private async Task<int>? harvestReferenceMap(string countryCode, decimal COUNTRYVERSIONID, string versioningDB, string backboneDb, List<Sites> sites)
+        {
+            List<Models.backbone_db.ReferenceMap> items = new();
+            SqlConnection versioningConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            var start = DateTime.Now;
+            try
+            {
+                versioningConn = new SqlConnection(versioningDB);
+                String queryString = @"SELECT SITECODE AS SiteCode,
+	                                        NATIONALMAPNUMBER,
+	                                        SCALE,
+	                                        PROJECTION,
+	                                        DETAILS,
+	                                        INSPIRE,
+	                                        PDFPROVIDED
+                                        FROM REFERENCEMAP
+                                        WHERE COUNTRYCODE = @COUNTRYCODE
+	                                        AND COUNTRYVERSIONID = @COUNTRYVERSIONID";
+
+                SqlParameter param1 = new("@COUNTRYCODE", countryCode);
+                SqlParameter param2 = new("@COUNTRYVERSIONID", COUNTRYVERSIONID);
+
+                versioningConn.Open();
+                command = new SqlCommand(queryString, versioningConn);
+                command.Parameters.Add(param1);
+                command.Parameters.Add(param2);
+
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+                    Models.backbone_db.ReferenceMap item = new()
+                    {
+                        SiteCode = TypeConverters.CheckNull<string>(reader["SiteCode"])
+                    };
+                    if (sites.Any(s => s.SiteCode == item.SiteCode))
+                    {
+                        item.Version = sites.FirstOrDefault(s => s.SiteCode == item.SiteCode).Version;
+                        item.NationalMapNumber = TypeConverters.CheckNull<string>(reader["NATIONALMAPNUMBER"]);
+                        item.Scale = TypeConverters.CheckNull<string>(reader["SCALE"]);
+                        item.Projection = TypeConverters.CheckNull<string>(reader["PROJECTION"]);
+                        item.Details = TypeConverters.CheckNull<string>(reader["DETAILS"]);
+                        item.Inspire = TypeConverters.CheckNull<string>(reader["INSPIRE"]);
+                        item.PDFProvided = TypeConverters.CheckNull<Int16>(reader["PDFPROVIDED"]);
+                        items.Add(item);
+                    }
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("The Site {0} from submission {1} was not reported.", item.SiteCode, sites.FirstOrDefault().N2KVersioningVersion), "HarvestSiteCode - ReferenceMap", "", backboneDb);
+                    }
+                }
+                //Console.WriteLine(String.Format("End loop -> {0}", (DateTime.Now - start).TotalSeconds));
+                try
+                {
+                    await Models.backbone_db.ReferenceMap.SaveBulkRecord(backboneDb, items);
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - ReferenceMap.SaveBulkRecord", "", backboneDb);
+                }
+                //Console.WriteLine(String.Format("End save to list Site Large Description -> {0}", (DateTime.Now - start).TotalSeconds));
+
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestSiteCode - harvestReferenceMap", "", backboneDb);
                 return 0;
             }
             finally
