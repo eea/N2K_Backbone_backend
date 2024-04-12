@@ -37,8 +37,6 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string? SacLegalReference { get; set; }
         public string? Explanations { get; set; }
         public decimal? MarineArea { get; set; }
-        public string? Inspire_ID { get; set; } = string.Empty;
-        public Int16? PDFProvided { get; set; }
 
         private string dbConnection = string.Empty;
 
