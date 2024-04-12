@@ -1537,7 +1537,6 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.SaveChanges();
 
                         //Get the sites submitted in the envelope
-                        List<ReferenceMap> vRefMap = await _versioningContext.Set<ReferenceMap>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
                         List<NaturaSite> vSites = await _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
 
                         //save in memory the fixed codes like priority species and habitat codes
@@ -1879,7 +1878,6 @@ namespace N2K_BackboneBackEnd.Services
 
                         //harvest SiteCode-version to fill Sites table.
                         //Get the sites submitted in the envelope
-                        List<ReferenceMap> vRefMap = await _versioningContext.Set<ReferenceMap>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
                         List<NaturaSite> vSites = await _versioningContext.Set<NaturaSite>().Where(v => (v.COUNTRYCODE == envelope.CountryCode) && (v.COUNTRYVERSIONID == envelope.VersionId)).ToListAsync();
 
                         //save in memory the fixed codes like priority species and habitat codes

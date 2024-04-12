@@ -48,6 +48,7 @@ namespace N2K_BackboneBackEnd.Services
                 List<DocumentationLinks> documentationLinks = await _dataContext.Set<DocumentationLinks>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<HasNationalProtection> hasNationalProtection = await _dataContext.Set<HasNationalProtection>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<DetailedProtectionStatus> detailedProtectionStatus = await _dataContext.Set<DetailedProtectionStatus>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+                ReferenceMap referenceMap = await _dataContext.Set<ReferenceMap>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().FirstOrDefaultAsync();
 
                 SDF result = new();
                 #region SiteInfo
@@ -338,8 +339,8 @@ namespace N2K_BackboneBackEnd.Services
                 #endregion
 
                 #region MapOfTheSite
-                result.MapOfTheSite.INSPIRE = site.Inspire_ID;
-                result.MapOfTheSite.MapDelivered = (site.PDFProvided != null && site.PDFProvided == 1) ? booleanTrue : booleanFalse;
+                result.MapOfTheSite.INSPIRE = referenceMap.Inspire;
+                result.MapOfTheSite.MapDelivered = (referenceMap.PDFProvided != null && referenceMap.PDFProvided == 1) ? booleanTrue : booleanFalse;
                 #endregion
 
                 return result;
