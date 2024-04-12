@@ -339,8 +339,11 @@ namespace N2K_BackboneBackEnd.Services
                 #endregion
 
                 #region MapOfTheSite
-                result.MapOfTheSite.INSPIRE = referenceMap.Inspire;
-                result.MapOfTheSite.MapDelivered = (referenceMap.PDFProvided != null && referenceMap.PDFProvided == 1) ? booleanTrue : booleanFalse;
+                if (referenceMap != null)
+                {
+                    result.MapOfTheSite.INSPIRE = referenceMap.Inspire;
+                    result.MapOfTheSite.MapDelivered = (referenceMap.PDFProvided != null && referenceMap.PDFProvided == 1) ? booleanTrue : booleanFalse;
+                }
                 #endregion
 
                 return result;
