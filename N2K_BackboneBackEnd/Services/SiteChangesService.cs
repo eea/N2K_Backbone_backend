@@ -532,7 +532,7 @@ namespace N2K_BackboneBackEnd.Services
                     country,
                     status.ToString(),
                     level.ToString()
-               );
+                );
                 //if there has been a change in the status refresh the changed sitecodes cache
                 if (refresh) cache.Remove(listName);
 
@@ -911,7 +911,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                     if (catChange.ChangeType == "Deletion of Spatial Area" ||
-                        catChange.ChangeType == "Additon of Spatial Area")
+                        catChange.ChangeType == "Addition of Spatial Area")
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
@@ -924,7 +924,7 @@ namespace N2K_BackboneBackEnd.Services
                                 fields.Add("Cumulative deleted spatial area (ha)", "");
                                 deleted = true;
                                 break;
-                            case "Additon of Spatial Area":
+                            case "Addition of Spatial Area":
                                 fields.Add("Cumulative added spatial area (ha)", "");
                                 break;
                         }
@@ -1389,7 +1389,8 @@ namespace N2K_BackboneBackEnd.Services
 			                        WHEN LEVEL = 'Info'
 				                        THEN 0
 			                        END) AS LEVEL,
-	                        Sites.SiteType
+	                        Sites.SiteType,
+	                        Sites.JustificationRequired
                         FROM [dbo].[Changes]
                         INNER JOIN Sites ON changes.sitecode = sites.sitecode
 	                        AND Changes.version = Sites.version
@@ -1398,7 +1399,8 @@ namespace N2K_BackboneBackEnd.Services
                         GROUP BY changes.SiteCode,
 	                        Changes.version,
 	                        Sites.name,
-	                        Sites.SiteType";
+	                        Sites.SiteType,
+	                        Sites.JustificationRequired";
 
                 SqlConnection backboneConn = null;
                 SqlCommand command = null;
@@ -1422,7 +1424,8 @@ namespace N2K_BackboneBackEnd.Services
                             SiteCode = reader["SiteCode"].ToString(),
                             Version = int.Parse(reader["Version"].ToString()),
                             Name = reader["SiteName"].ToString(),
-                            Type = reader["SiteType"].ToString()
+                            Type = reader["SiteType"].ToString(),
+                            JustificationRequired = (bool)reader["JustificationRequired"]
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
 
@@ -1530,7 +1533,8 @@ namespace N2K_BackboneBackEnd.Services
 			                        WHEN LEVEL = 'Info'
 				                        THEN 0
 			                        END) AS LEVEL,
-	                        Sites.SiteType
+	                        Sites.SiteType,
+	                        Sites.JustificationRequired
                         FROM [dbo].[Changes]
                         INNER JOIN Sites ON changes.sitecode = sites.sitecode
 	                        AND Changes.version = Sites.version
@@ -1539,7 +1543,8 @@ namespace N2K_BackboneBackEnd.Services
                         GROUP BY changes.SiteCode,
 	                        Changes.version,
 	                        Sites.name,
-	                        Sites.SiteType";
+	                        Sites.SiteType,
+	                        Sites.JustificationRequired";
 
                 SqlConnection backboneConn = null;
                 SqlCommand command = null;
@@ -1563,7 +1568,8 @@ namespace N2K_BackboneBackEnd.Services
                             SiteCode = reader["SiteCode"].ToString(),
                             Version = int.Parse(reader["Version"].ToString()),
                             Name = reader["SiteName"].ToString(),
-                            Type = reader["SiteType"].ToString()
+                            Type = reader["SiteType"].ToString(),
+                            JustificationRequired = (bool)reader["JustificationRequired"]
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
 
@@ -2072,6 +2078,7 @@ namespace N2K_BackboneBackEnd.Services
                             CountryCode = modifiedSiteCode.SiteCode[..2]
                         };
                         mySiteView.Type = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).Select(x => x.SiteType).First().ToString();
+                        mySiteView.JustificationRequired = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).Select(x => x.JustificationRequired).First();
                         mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
                             ?? LineageTypes.NoChanges;
 
@@ -2262,7 +2269,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification)
+        public async Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification, IMemoryCache cache)
         {
             List<ModifiedSiteCode> result = new();
             try
@@ -2286,6 +2293,21 @@ namespace N2K_BackboneBackEnd.Services
                         modifiedSiteCode.VersionId = just.VersionId;
                         modifiedSiteCode.OK = 1;
                         modifiedSiteCode.Error = string.Empty;
+
+                        //Change site in cache
+                        List<SiteChangeDb> sites = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == just.SiteCode && site.Version == just.VersionId).ToListAsync();
+                        Level level = (Level)sites.Max(a => a.Level);
+
+                        List<SiteCodeView> cachedlist = new();
+                        string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", just.SiteCode[..2], sites.FirstOrDefault().Status, level.ToString());
+                        if (cache.TryGetValue(listName, out cachedlist))
+                        {
+                            SiteCodeView element = cachedlist.Where(cl => cl.SiteCode == just.SiteCode).FirstOrDefault();
+                            if (element != null)
+                            {
+                                element.JustificationRequired = just.Justification;
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {

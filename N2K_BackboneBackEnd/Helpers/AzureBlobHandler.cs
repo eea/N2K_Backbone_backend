@@ -3,6 +3,9 @@ using Azure.Storage.Blobs.Models;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.backbone_db;
+using System;
+using System.Drawing;
 using System.Net.Http.Headers;
 
 
@@ -24,12 +27,12 @@ namespace N2K_BackboneBackEnd.Helpers
             return blobServiceClient.GetBlobContainerClient(_attachedFilesConfig.JustificationFolder);
         }
 
-        public async Task<List<string>> UploadFileAsync(AttachedFile files)
+        public async Task<List<JustificationFiles>> UploadFileAsync(AttachedFile files)
         {
             try
             {
                 string remoteUrl = "";
-                List<String> uploadedFiles = new();
+                List<JustificationFiles> uploadedFiles = new();
                 if (files == null || files.Files == null)
                     return uploadedFiles;
                 bool invalidFile = await AllFilesValid(files);
@@ -48,19 +51,29 @@ namespace N2K_BackboneBackEnd.Helpers
                         List<string> uncompressedFiles = ExtractCompressedFiles(fullPath);
                         foreach (var uncompressed in uncompressedFiles)
                         {
-                            BlobClient blobClient1 = ConnectToAzureBlob().GetBlobClient(uncompressed);
+                            JustificationFiles item = new JustificationFiles();
+                            FileInfo fi = new FileInfo(Path.Combine(_pathToSave, uncompressed));
+                            string newfilename= string.Format("{0}_{1}{2}", System.Guid.NewGuid().ToString(), DateTime.Now.Ticks, fi.Extension);
+                            BlobClient blobClient1 = ConnectToAzureBlob().GetBlobClient(newfilename);
                             await blobClient1.UploadAsync(Path.Combine(_pathToSave, uncompressed), true);
                             remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                            uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, uncompressed));
+                            item.Path = newfilename;
+                            item.OriginalName = uncompressed;
+                            uploadedFiles.Add(item);
                             File.Delete(Path.Combine(_pathToSave, uncompressed));
                         }
                     }
                     else
                     {
-                        BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
+                        JustificationFiles item = new JustificationFiles();
+                        FileInfo fi = new FileInfo(fullPath);
+                        string newfilename = string.Format("{0}_{1}{2}", System.Guid.NewGuid().ToString(), DateTime.Now.Ticks, fi.Extension);
+                        BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(newfilename);
                         await blobClient.UploadAsync(fullPath, true);
                         remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                        uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
+                        item.Path = newfilename;
+                        item.OriginalName = fileName;
+                        uploadedFiles.Add(item);
                     }
                     File.Delete(fullPath);
                 }
@@ -87,7 +100,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
                 await blobClient.UploadAsync(fullPath, true);
                 remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                uploadedFiles.Add(string.Format("{0}{1}/{2}", remoteUrl, _folderName, fileName));
+                uploadedFiles.Add(fileName);
 
                 File.Delete(file);
 
@@ -137,6 +150,29 @@ namespace N2K_BackboneBackEnd.Helpers
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "AzureBlobHandler - DeleteUnionListsFilesAsync", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<byte[]> ReadFile(string fileName)
+        {
+
+            try
+            {
+                BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(fileName);
+                if (await blobClient.ExistsAsync())
+                {
+                    using (var ms = new MemoryStream())
+                    {
+                        blobClient.DownloadTo(ms);
+                        return ms.ToArray();
+                    }
+                }
+                return new byte[0];  // returns empty array
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "AzureBlobHandler - ReadFile", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }

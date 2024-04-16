@@ -428,7 +428,6 @@ namespace N2K_BackboneBackEnd.Services
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
 
             string repositoryPath = string.IsNullOrEmpty(_appSettings.Value.AttachedFiles.FilesRootPath) ?
-
                 Path.Combine(Directory.GetCurrentDirectory(), _appSettings.Value.AttachedFiles.JustificationFolder) :
                 Path.Combine(_appSettings.Value.AttachedFiles.FilesRootPath, _appSettings.Value.AttachedFiles.JustificationFolder);
 
@@ -760,6 +759,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 archive.Dispose();
                 List<String> url = await fileHandler.UploadFileAsync(tempZipFile);
+                url[0] = _appSettings.Value.AttachedFiles.PublicFilesUrl + "/" + _appSettings.Value.AttachedFiles.JustificationFolder + "/" + url[0];
 
                 return url[0];
             }

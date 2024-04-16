@@ -4,6 +4,6 @@ namespace N2K_BackboneBackEnd.Services
 {
     public interface ISDFService
     {
-        Task<SDF> GetData(string SiteCode);
+        Task<SDF> GetData(string SiteCode, int Version = -1);
     }
 }

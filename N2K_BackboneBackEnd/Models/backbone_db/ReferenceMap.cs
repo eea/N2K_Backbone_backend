@@ -5,23 +5,28 @@ using System.Data;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class DocumentationLinks : IEntityModel, IEntityModelBackboneDB
+    public class ReferenceMap : IEntityModel, IEntityModelBackboneDB
     {
         public long ID { get; set; }
         public string? SiteCode { get; set; }
         public int? Version { get; set; }
-        public string? Link { get; set; }
+        public string? NationalMapNumber { get; set; }
+        public string? Scale { get; set; }
+        public string? Projection { get; set; }
+        public string? Details { get; set; }
+        public string? Inspire { get; set; }
+        public Int16? PDFProvided { get; set; }
 
         private string dbConnection = string.Empty;
 
-        public DocumentationLinks() { }
+        public ReferenceMap() { }
 
-        public DocumentationLinks(string db)
+        public ReferenceMap(string db)
         {
             dbConnection = db;
         }
 
-        public async static Task<int> SaveBulkRecord(string db, List<DocumentationLinks> listData)
+        public async static Task<int> SaveBulkRecord(string db, List<ReferenceMap> listData)
         {
             try
             {
@@ -29,9 +34,9 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
                 {
                     using (var copy = new SqlBulkCopy(db))
                     {
-                        copy.DestinationTableName = "DocumentationLinks";
+                        copy.DestinationTableName = "ReferenceMap";
                         copy.BulkCopyTimeout = 3000;
-                        DataTable data = TypeConverters.PrepareDataForBulkCopy<DocumentationLinks>(listData, copy);
+                        DataTable data = TypeConverters.PrepareDataForBulkCopy<ReferenceMap>(listData, copy);
                         await copy.WriteToServerAsync(data);
                     }
                 }
@@ -39,15 +44,15 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "DocumentationLinks - SaveBulkRecord", "", db);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReferenceMap - SaveBulkRecord", "", db);
                 return 0;
             }
         }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<DocumentationLinks>()
-                .ToTable("DocumentationLinks")
+            builder.Entity<ReferenceMap>()
+                .ToTable("ReferenceMap")
                 .HasKey(c => new { c.ID });
         }
     }
