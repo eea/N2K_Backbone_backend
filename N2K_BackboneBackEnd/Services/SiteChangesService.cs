@@ -2257,8 +2257,8 @@ namespace N2K_BackboneBackEnd.Services
 
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, false);
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, false);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, true);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
                 }
                 return result;
             }
