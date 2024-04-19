@@ -2254,11 +2254,14 @@ namespace N2K_BackboneBackEnd.Services
                 if (result.Count > 0)
                 {
                     var country = (result.First().SiteCode)[..2];
+                    List<SiteChangeDb> site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
+                    level = (Level)site.Max(a => a.Level);
+                    status = site.FirstOrDefault().Status;
 
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, true);
-                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, true);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, false);
+                    mockresult = await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, level, cache, false);
                 }
                 return result;
             }
