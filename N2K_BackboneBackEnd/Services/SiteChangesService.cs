@@ -2475,5 +2475,19 @@ namespace N2K_BackboneBackEnd.Services
                 throw ex;
             }
         }
+
+        public async Task<int> GetPendingVersion(string siteCode)
+        {
+            try
+            {
+                Sites result = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == siteCode && site.CurrentStatus == SiteChangeStatus.Pending).FirstOrDefaultAsync();
+                return result != null ? result.Version : -1;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetPendingVersion", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
     }
 }

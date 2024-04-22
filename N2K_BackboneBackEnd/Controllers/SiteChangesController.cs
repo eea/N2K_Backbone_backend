@@ -661,6 +661,29 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        [HttpGet("GetPendingVersion/siteCode={siteCode:string}")]
+        public async Task<ActionResult<ServiceResponse<int>>> GetPendingVersion(string siteCode)
+        {
+            var response = new ServiceResponse<int>();
+            try
+            {
+                var siteChanges = await _siteChangesService.GetPendingVersion(siteCode);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = -1;
+                return Ok(response);
+            }
+        }
+
         /*
         // PUT api/<SiteChangesController>/5
         [HttpPut("{id}")]
