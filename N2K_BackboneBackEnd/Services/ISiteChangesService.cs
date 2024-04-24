@@ -15,8 +15,11 @@ namespace N2K_BackboneBackEnd.Services
         Task<int> GetPendingChangesByCountry(string? country, IMemoryCache cache);
         Task<List<SiteChangeViewModel>> GetSiteChangesFromSP();
         Task<List<ModifiedSiteCode>> AcceptChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache);
+        Task<List<ModifiedSiteCode>> AcceptChangesBulk(string sitecodes, IMemoryCache cache);
         Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache);
+        Task<List<ModifiedSiteCode>> RejectChangesBulk(string sitecodes, IMemoryCache cache);
         Task<List<ModifiedSiteCode>> MoveToPending(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache);
+        Task<List<ModifiedSiteCode>> MoveToPendingBulk(string sitecodes, IMemoryCache cache);
         Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification, IMemoryCache cache);
         Task<List<ModifiedSiteCode>> JustificationProvided(JustificationModel[] justification);
         Task<List<SiteCodeVersion>> GetNoChanges(string country, IMemoryCache cache, int page = 1, int pageLimit = 0, bool refresh = false);

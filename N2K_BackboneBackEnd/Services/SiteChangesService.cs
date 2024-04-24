@@ -1347,6 +1347,82 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        public async Task<ModifiedSiteCode[]> BulkStatusCoverter(string sitecodes)
+        {
+            string[] sitecodeList = sitecodes.Split(',');
+            List<SiteBasicBulk> queryResults = new();
+            ModifiedSiteCode[] result = new ModifiedSiteCode[sitecodeList.Length];
+
+            string queryString = @" 
+                        SELECT DISTINCT [SiteCode],
+	                        MAX([Changes].[Version]) AS 'Version',
+	                        [N2KVersioningVersion]
+                        FROM [dbo].[Changes]
+                        INNER JOIN [dbo].[ProcessedEnvelopes] PE ON [Changes].[Country] = PE.[Country]
+	                        AND [Changes].[N2KVersioningVersion] = PE.[Version]
+	                        AND PE.[Status] = 3
+                        GROUP BY [SiteCode],
+	                        [N2KVersioningVersion]
+
+                        UNION
+
+                        SELECT DISTINCT [SiteCode],
+	                        MAX([Sites].[Version]) AS 'Version',
+	                        [N2KVersioningVersion]
+                        FROM [dbo].[Sites]
+                        INNER JOIN [dbo].[ProcessedEnvelopes] PE ON [Sites].[CountryCode] = PE.[Country]
+	                        AND [Sites].[N2KVersioningVersion] = PE.[Version]
+	                        AND PE.[Status] = 3
+                        GROUP BY [SiteCode],
+	                        [N2KVersioningVersion]
+                        ORDER BY [SiteCode]";
+
+            SqlConnection backboneConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            try
+            {
+                backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                backboneConn.Open();
+                command = new SqlCommand(queryString, backboneConn);
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+                    SiteBasicBulk mySiteView = new()
+                    {
+                        SiteCode = reader["SiteCode"].ToString(),
+                        Version = int.Parse(reader["Version"].ToString()),
+                        N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString())
+                    };
+                    queryResults.Add(mySiteView);
+                }
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "BulkStatusCoverter", "", _dataContext.Database.GetConnectionString());
+            }
+            finally
+            {
+                if (reader != null) await reader.DisposeAsync();
+                if (command != null) command.Dispose();
+                if (backboneConn != null) backboneConn.Dispose();
+            }
+
+            for (int counter = 0; counter < sitecodeList.Length; counter++)
+            {
+                ModifiedSiteCode temp = new()
+                {
+                    SiteCode = sitecodeList[counter],
+                    VersionId = queryResults.Where(w => w.SiteCode == sitecodeList[counter]).Select(s => s.Version).FirstOrDefault(),
+                    Status = SiteChangeStatus.Pending,
+                    OK = 1,
+                    Error = string.Empty
+                };
+                result[counter] = temp;
+            }
+            return result;
+        }
+
         public async Task<List<ModifiedSiteCode>> AcceptChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
             List<SiteActivities> siteActivities = new();
@@ -1491,6 +1567,11 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        public async Task<List<ModifiedSiteCode>> AcceptChangesBulk(string sitecodes, IMemoryCache cache)
+        {
+            return await AcceptChanges(await BulkStatusCoverter(sitecodes), cache);
+        }
+
         public async Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
             List<SiteActivities> siteActivities = new();
@@ -1633,6 +1714,11 @@ namespace N2K_BackboneBackEnd.Services
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - RejectChanges", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
+        }
+
+        public async Task<List<ModifiedSiteCode>> RejectChangesBulk(string sitecodes, IMemoryCache cache)
+        {
+            return await RejectChanges(await BulkStatusCoverter(sitecodes), cache);
         }
 
         private async Task<List<SiteActivities>> GetSiteActivities(DataTable sitecodesfilter)
@@ -2267,6 +2353,11 @@ namespace N2K_BackboneBackEnd.Services
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - MoveToPending", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
+        }
+
+        public async Task<List<ModifiedSiteCode>> MoveToPendingBulk(string sitecodes, IMemoryCache cache)
+        {
+            return await MoveToPending(await BulkStatusCoverter(sitecodes), cache);
         }
 
         public async Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification, IMemoryCache cache)
