@@ -2165,7 +2165,7 @@ namespace N2K_BackboneBackEnd.Services
                         };
                         mySiteView.Type = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).Select(x => x.SiteType).First().ToString();
                         mySiteView.JustificationRequired = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).Select(x => x.JustificationRequired).First();
-                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version && l.N2KVersioningVersion == changes.First().N2KVersioningVersion).First()?.Type
                             ?? LineageTypes.NoChanges;
 
                         Sites siteToDelete = null;
@@ -2340,6 +2340,9 @@ namespace N2K_BackboneBackEnd.Services
                 if (result.Count > 0)
                 {
                     var country = (result.First().SiteCode)[..2];
+                    List<SiteChangeDb> site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
+                    level = (Level)site.Max(a => a.Level);
+                    status = site.FirstOrDefault().Status;
 
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;
@@ -2560,6 +2563,20 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetNoChanges", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<int> GetPendingVersion(string siteCode)
+        {
+            try
+            {
+                Sites result = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == siteCode && site.CurrentStatus == SiteChangeStatus.Pending).FirstOrDefaultAsync();
+                return result != null ? result.Version : -1;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetPendingVersion", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }

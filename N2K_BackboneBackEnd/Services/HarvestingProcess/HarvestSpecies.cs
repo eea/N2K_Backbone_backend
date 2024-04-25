@@ -245,7 +245,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (speciesOtherVersioningEnvelope != null)
                     {
                         speciesOtherVersioning = speciesOtherVersioningEnvelope
-                            .Where(spEnv => spEnv.SiteCode == harvestingSite.SiteCode && spEnv.VersionId == storedSite.VersionId)
+                            .Where(spEnv => spEnv.SiteCode == harvestingSite.SiteCode && spEnv.VersionId == (int)param4.Value)
                             .ToList<SpeciesToHarvest>();
                     }
                     else
@@ -706,7 +706,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                     foreach (SpeciesToHarvest storedSpecies in referencedSpeciesOther)
                     {
-                        SpeciesToHarvest harvestingSpecies = speciesOtherVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode && s.PopulationType == storedSpecies.PopulationType).FirstOrDefault();
+                        SpeciesToHarvest harvestingSpecies = speciesOtherVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode).FirstOrDefault();
                         if (harvestingSpecies == null)
                         {
                             SiteChangeDb siteChange = new()
