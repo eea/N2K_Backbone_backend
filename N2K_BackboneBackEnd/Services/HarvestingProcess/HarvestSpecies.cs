@@ -706,7 +706,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
 
                     foreach (SpeciesToHarvest storedSpecies in referencedSpeciesOther)
                     {
-                        SpeciesToHarvest harvestingSpecies = speciesOtherVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode && s.PopulationType == storedSpecies.PopulationType).FirstOrDefault();
+                        SpeciesToHarvest harvestingSpecies = speciesOtherVersioning.Where(s => s.SpeciesCode == storedSpecies.SpeciesCode).FirstOrDefault();
                         if (harvestingSpecies == null)
                         {
                             SiteChangeDb siteChange = new()
