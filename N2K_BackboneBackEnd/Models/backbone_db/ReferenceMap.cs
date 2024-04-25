@@ -7,7 +7,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
 {
     public class ReferenceMap : IEntityModel, IEntityModelBackboneDB
     {
-        public long ID { get; set; }
+        public long Id { get; set; }
         public string? SiteCode { get; set; }
         public int? Version { get; set; }
         public string? NationalMapNumber { get; set; }
@@ -53,7 +53,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         {
             builder.Entity<ReferenceMap>()
                 .ToTable("ReferenceMap")
-                .HasKey(c => new { c.ID });
+                .HasKey(c => new { c.Id });
         }
     }
 }
