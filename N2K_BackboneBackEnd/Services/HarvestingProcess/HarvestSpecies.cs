@@ -245,7 +245,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                     if (speciesOtherVersioningEnvelope != null)
                     {
                         speciesOtherVersioning = speciesOtherVersioningEnvelope
-                            .Where(spEnv => spEnv.SiteCode == harvestingSite.SiteCode && spEnv.VersionId == storedSite.VersionId)
+                            .Where(spEnv => spEnv.SiteCode == harvestingSite.SiteCode && spEnv.VersionId == (int)param4.Value)
                             .ToList<SpeciesToHarvest>();
                     }
                     else
