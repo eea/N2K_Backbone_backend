@@ -911,7 +911,7 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     }
                     if (catChange.ChangeType == "Deletion of Spatial Area" ||
-                        catChange.ChangeType == "Additon of Spatial Area")
+                        catChange.ChangeType == "Addition of Spatial Area")
                     {
                         string? reportedString = nullCase;
                         string? referenceString = nullCase;
@@ -924,7 +924,7 @@ namespace N2K_BackboneBackEnd.Services
                                 fields.Add("Cumulative deleted spatial area (ha)", "");
                                 deleted = true;
                                 break;
-                            case "Additon of Spatial Area":
+                            case "Addition of Spatial Area":
                                 fields.Add("Cumulative added spatial area (ha)", "");
                                 break;
                         }
@@ -1347,6 +1347,82 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        public async Task<ModifiedSiteCode[]> BulkStatusCoverter(string sitecodes)
+        {
+            string[] sitecodeList = sitecodes.Split(',');
+            List<SiteBasicBulk> queryResults = new();
+            ModifiedSiteCode[] result = new ModifiedSiteCode[sitecodeList.Length];
+
+            string queryString = @" 
+                        SELECT DISTINCT [SiteCode],
+	                        MAX([Changes].[Version]) AS 'Version',
+	                        [N2KVersioningVersion]
+                        FROM [dbo].[Changes]
+                        INNER JOIN [dbo].[ProcessedEnvelopes] PE ON [Changes].[Country] = PE.[Country]
+	                        AND [Changes].[N2KVersioningVersion] = PE.[Version]
+	                        AND PE.[Status] = 3
+                        GROUP BY [SiteCode],
+	                        [N2KVersioningVersion]
+
+                        UNION
+
+                        SELECT DISTINCT [SiteCode],
+	                        MAX([Sites].[Version]) AS 'Version',
+	                        [N2KVersioningVersion]
+                        FROM [dbo].[Sites]
+                        INNER JOIN [dbo].[ProcessedEnvelopes] PE ON [Sites].[CountryCode] = PE.[Country]
+	                        AND [Sites].[N2KVersioningVersion] = PE.[Version]
+	                        AND PE.[Status] = 3
+                        GROUP BY [SiteCode],
+	                        [N2KVersioningVersion]
+                        ORDER BY [SiteCode]";
+
+            SqlConnection backboneConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            try
+            {
+                backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                backboneConn.Open();
+                command = new SqlCommand(queryString, backboneConn);
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+                    SiteBasicBulk mySiteView = new()
+                    {
+                        SiteCode = reader["SiteCode"].ToString(),
+                        Version = int.Parse(reader["Version"].ToString()),
+                        N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString())
+                    };
+                    queryResults.Add(mySiteView);
+                }
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "BulkStatusCoverter", "", _dataContext.Database.GetConnectionString());
+            }
+            finally
+            {
+                if (reader != null) await reader.DisposeAsync();
+                if (command != null) command.Dispose();
+                if (backboneConn != null) backboneConn.Dispose();
+            }
+
+            for (int counter = 0; counter < sitecodeList.Length; counter++)
+            {
+                ModifiedSiteCode temp = new()
+                {
+                    SiteCode = sitecodeList[counter],
+                    VersionId = queryResults.Where(w => w.SiteCode == sitecodeList[counter]).Select(s => s.Version).FirstOrDefault(),
+                    Status = SiteChangeStatus.Pending,
+                    OK = 1,
+                    Error = string.Empty
+                };
+                result[counter] = temp;
+            }
+            return result;
+        }
+
         public async Task<List<ModifiedSiteCode>> AcceptChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
             List<SiteActivities> siteActivities = new();
@@ -1491,6 +1567,11 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        public async Task<List<ModifiedSiteCode>> AcceptChangesBulk(string sitecodes, IMemoryCache cache)
+        {
+            return await AcceptChanges(await BulkStatusCoverter(sitecodes), cache);
+        }
+
         public async Task<List<ModifiedSiteCode>> RejectChanges(ModifiedSiteCode[] changedSiteStatus, IMemoryCache cache)
         {
             List<SiteActivities> siteActivities = new();
@@ -1633,6 +1714,11 @@ namespace N2K_BackboneBackEnd.Services
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - RejectChanges", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
+        }
+
+        public async Task<List<ModifiedSiteCode>> RejectChangesBulk(string sitecodes, IMemoryCache cache)
+        {
+            return await RejectChanges(await BulkStatusCoverter(sitecodes), cache);
         }
 
         private async Task<List<SiteActivities>> GetSiteActivities(DataTable sitecodesfilter)
@@ -2079,7 +2165,7 @@ namespace N2K_BackboneBackEnd.Services
                         };
                         mySiteView.Type = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).Select(x => x.SiteType).First().ToString();
                         mySiteView.JustificationRequired = sitesDB.Where(e => e.SiteCode == modifiedSiteCode.SiteCode && e.Version == modifiedSiteCode.VersionId).Select(x => x.JustificationRequired).First();
-                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
+                        mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version && l.N2KVersioningVersion == changes.First().N2KVersioningVersion).First()?.Type
                             ?? LineageTypes.NoChanges;
 
                         Sites siteToDelete = null;
@@ -2254,6 +2340,9 @@ namespace N2K_BackboneBackEnd.Services
                 if (result.Count > 0)
                 {
                     var country = (result.First().SiteCode)[..2];
+                    List<SiteChangeDb> site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
+                    level = (Level)site.Max(a => a.Level);
+                    status = site.FirstOrDefault().Status;
 
                     //refresh the cache of site codes
                     List<SiteCodeView> mockresult = null;
@@ -2267,6 +2356,11 @@ namespace N2K_BackboneBackEnd.Services
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - MoveToPending", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
+        }
+
+        public async Task<List<ModifiedSiteCode>> MoveToPendingBulk(string sitecodes, IMemoryCache cache)
+        {
+            return await MoveToPending(await BulkStatusCoverter(sitecodes), cache);
         }
 
         public async Task<List<ModifiedSiteCode>> MarkAsJustificationRequired(JustificationModel[] justification, IMemoryCache cache)
@@ -2469,6 +2563,20 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetNoChanges", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<int> GetPendingVersion(string siteCode)
+        {
+            try
+            {
+                Sites result = await _dataContext.Set<Sites>().AsNoTracking().Where(site => site.SiteCode == siteCode && site.CurrentStatus == SiteChangeStatus.Pending).FirstOrDefaultAsync();
+                return result != null ? result.Version : -1;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetPendingVersion", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }

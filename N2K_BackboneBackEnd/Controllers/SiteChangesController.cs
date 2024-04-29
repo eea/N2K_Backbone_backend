@@ -519,6 +519,31 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         // POST api/<SiteChangesController>
+        [Route("AcceptChangesBulk/")]
+        [HttpPost]
+        public async Task<ActionResult<List<ModifiedSiteCode>>> AcceptChangesBulk(string sitecodes)
+        {
+            var response = new ServiceResponse<List<ModifiedSiteCode>>();
+            try
+            {
+                var siteChanges = await _siteChangesService.AcceptChangesBulk(sitecodes, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<ModifiedSiteCode>();
+                return Ok(response);
+            }
+        }
+
+        // POST api/<SiteChangesController>
         [Route("MoveToPending/")]
         [HttpPost]
         public async Task<ActionResult<List<ModifiedSiteCode>>> MoveToPending([FromBody] ModifiedSiteCode[] changedSiteStatus)
@@ -543,6 +568,31 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        // POST api/<SiteChangesController>
+        [Route("MoveToPendingBulk/")]
+        [HttpPost]
+        public async Task<ActionResult<List<ModifiedSiteCode>>> MoveToPendingBulk(string sitecodes)
+        {
+            var response = new ServiceResponse<List<ModifiedSiteCode>>();
+            try
+            {
+                var siteChanges = await _siteChangesService.MoveToPendingBulk(sitecodes, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<ModifiedSiteCode>();
+                return Ok(response);
+            }
+        }
+
         [Route("RejectChanges/")]
         [HttpPost]
         public async Task<ActionResult<List<ModifiedSiteCode>>> RejectChanges([FromBody] ModifiedSiteCode[] rejectedChanges)
@@ -551,6 +601,30 @@ namespace N2K_BackboneBackEnd.Controllers
             try
             {
                 var siteChanges = await _siteChangesService.RejectChanges(rejectedChanges, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : siteChanges.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new List<ModifiedSiteCode>();
+                return Ok(response);
+            }
+        }
+
+        [Route("RejectChangesBulk/")]
+        [HttpPost]
+        public async Task<ActionResult<List<ModifiedSiteCode>>> RejectChangesBulk(string sitecodes)
+        {
+            var response = new ServiceResponse<List<ModifiedSiteCode>>();
+            try
+            {
+                var siteChanges = await _siteChangesService.RejectChangesBulk(sitecodes, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
@@ -657,6 +731,29 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Message = ex.Message;
                 response.Count = 0;
                 response.Data = new List<SiteCodeVersion>();
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("GetPendingVersion/siteCode={siteCode:string}")]
+        public async Task<ActionResult<ServiceResponse<int>>> GetPendingVersion(string siteCode)
+        {
+            var response = new ServiceResponse<int>();
+            try
+            {
+                var siteChanges = await _siteChangesService.GetPendingVersion(siteCode);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteChanges;
+                response.Count = (siteChanges == null) ? 0 : 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = -1;
                 return Ok(response);
             }
         }

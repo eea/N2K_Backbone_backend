@@ -18,7 +18,7 @@ namespace N2K_BackboneBackEnd.Services
             _appSettings = app;
         }
 
-        public async Task<SDF> GetData(string SiteCode)
+        public async Task<SDF> GetData(string SiteCode, int Version = -1)
         {
             try
             {
@@ -27,7 +27,22 @@ namespace N2K_BackboneBackEnd.Services
                 string booleanChecked = "x";
                 string booleanUnchecked = "";
 
-                Sites site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Current == true).AsNoTracking().FirstOrDefaultAsync();
+                Sites site;
+                if (Version == -1)
+                {
+                    // try to get reference, if it doesnt exist return current
+                    site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.CurrentStatus == Enumerations.SiteChangeStatus.Accepted)
+                        .OrderBy(a => a.Version).Reverse().AsNoTracking().FirstOrDefaultAsync();
+                    if (site == null)
+                    {
+                    site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Current == true).AsNoTracking().FirstOrDefaultAsync();
+                    }
+                }
+                else
+                {
+                    site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Version == Version).AsNoTracking().FirstOrDefaultAsync();
+                }
+
                 List<Countries> countries = await _dataContext.Set<Countries>().AsNoTracking().ToListAsync();
                 List<Habitats> habitats = await _dataContext.Set<Habitats>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
@@ -48,6 +63,7 @@ namespace N2K_BackboneBackEnd.Services
                 List<DocumentationLinks> documentationLinks = await _dataContext.Set<DocumentationLinks>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<HasNationalProtection> hasNationalProtection = await _dataContext.Set<HasNationalProtection>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<DetailedProtectionStatus> detailedProtectionStatus = await _dataContext.Set<DetailedProtectionStatus>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+                ReferenceMap referenceMap = await _dataContext.Set<ReferenceMap>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().FirstOrDefaultAsync();
 
                 SDF result = new();
                 #region SiteInfo
@@ -338,8 +354,11 @@ namespace N2K_BackboneBackEnd.Services
                 #endregion
 
                 #region MapOfTheSite
-                result.MapOfTheSite.INSPIRE = site.Inspire_ID;
-                result.MapOfTheSite.MapDelivered = (site.PDFProvided != null && site.PDFProvided == 1) ? booleanTrue : booleanFalse;
+                if (referenceMap != null)
+                {
+                    result.MapOfTheSite.INSPIRE = referenceMap.Inspire;
+                    result.MapOfTheSite.MapDelivered = (referenceMap.PDFProvided != null && referenceMap.PDFProvided == 1) ? booleanTrue : booleanFalse;
+                }
                 #endregion
 
                 return result;
