@@ -1350,6 +1350,7 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<ModifiedSiteCode[]> BulkStatusCoverter(string sitecodes)
         {
             string[] sitecodeList = sitecodes.Split(',');
+            sitecodeList = sitecodeList.Distinct().ToArray();
             List<SiteBasicBulk> queryResults = new();
             ModifiedSiteCode[] result = new ModifiedSiteCode[sitecodeList.Length];
 
