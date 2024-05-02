@@ -124,6 +124,30 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        [Route("SiteComments/AddBulk")]
+        [HttpPost]
+        public async Task<ActionResult<List<StatusChanges>>> AddCommentBulk(string sitecodes, string comment)
+        {
+            ServiceResponse<List<StatusChanges>> response = new();
+            try
+            {
+                List<StatusChanges> siteComments = await _siteDetailsService.AddCommentBulk(sitecodes, comment, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteComments;
+                response.Count = (siteComments == null) ? 0 : siteComments.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
         /*
         [Route("SiteComments/AddTemporal")]
         [HttpPost]
@@ -174,6 +198,30 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+        [Route("SiteComments/DeleteBulk")]
+        [HttpDelete]
+        public async Task<ActionResult<int>> DeleteBulk(string sitecodes, string comment)
+        {
+            ServiceResponse<int> response = new();
+            try
+            {
+                int siteComments = await _siteDetailsService.DeleteCommentBulk(sitecodes, comment, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteComments;
+                response.Count = siteComments;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = 0;
+                return Ok(response);
+            }
+        }
+
         /*
         [Route("SiteComments/DeleteTemporal")]
         [HttpDelete]
@@ -208,6 +256,30 @@ namespace N2K_BackboneBackEnd.Controllers
             try
             {
                 List<StatusChanges> siteComments = await _siteDetailsService.UpdateComment(comment, _cache);
+                response.Success = true;
+                response.Message = "";
+                response.Data = siteComments;
+                response.Count = (siteComments == null) ? 0 : siteComments.Count;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+        [Route("SiteComments/UpdateBulk")]
+        [HttpPut]
+        public async Task<ActionResult<List<StatusChanges>>> UpdateCommentBulk(string sitecodes, string oldComment, string newComment)
+        {
+            ServiceResponse<List<StatusChanges>> response = new();
+            try
+            {
+                List<StatusChanges> siteComments = await _siteDetailsService.UpdateCommentBulk(sitecodes, oldComment, newComment, _cache);
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteComments;

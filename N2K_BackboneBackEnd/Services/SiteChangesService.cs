@@ -1399,7 +1399,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "BulkStatusCoverter", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - BulkStatusCoverter", "", _dataContext.Database.GetConnectionString());
             }
             finally
             {
