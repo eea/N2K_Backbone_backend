@@ -252,7 +252,7 @@ namespace N2K_BackboneBackEnd.Services
                             Rank = h.Intensity,
                             Impacts = h.ActivityCode,
                             Pollution = h.PollutionCode,
-                            Origin = h.InOut
+                            Origin = h.Ocurrence
                         };
                         if (h.ImpactType == "N")
                         {
@@ -331,7 +331,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         BodyResponsible temp = new()
                         {
-                            Organisation = h.ContactName,
+                            Organisation = h.ContactName ?? h.OrgName,
                             Address = h.addressArea,
                             Email = h.Email
                         };
