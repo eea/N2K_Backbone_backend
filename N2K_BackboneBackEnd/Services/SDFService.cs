@@ -252,7 +252,7 @@ namespace N2K_BackboneBackEnd.Services
                             Rank = h.Intensity,
                             Impacts = h.ActivityCode,
                             Pollution = h.PollutionCode,
-                            Origin = h.InOut
+                            Origin = h.Ocurrence
                         };
                         if (h.ImpactType == "N")
                         {
