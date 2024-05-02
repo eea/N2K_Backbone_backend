@@ -171,6 +171,7 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<List<SiteBasicBulk>> GetBulkSites(string sitecodes)
         {
             List<string> sitecodeList = sitecodes.Split(',').ToList();
+            sitecodeList = sitecodeList.Distinct().ToList();
             List<SiteBasicBulk> queryResults = new();
 
             string queryString = @" 
