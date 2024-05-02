@@ -331,7 +331,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         BodyResponsible temp = new()
                         {
-                            Organisation = h.ContactName,
+                            Organisation = h.ContactName ?? h.OrgName,
                             Address = h.addressArea,
                             Email = h.Email
                         };
