@@ -168,6 +168,70 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        public async Task<List<SiteBasicBulk>> GetBulkSites(string sitecodes)
+        {
+            List<string> sitecodeList = sitecodes.Split(',').ToList();
+            sitecodeList = sitecodeList.Distinct().ToList();
+            List<SiteBasicBulk> queryResults = new();
+
+            string queryString = @" 
+                        SELECT DISTINCT [SiteCode],
+	                        MAX([Changes].[Version]) AS 'Version',
+	                        [N2KVersioningVersion]
+                        FROM [dbo].[Changes]
+                        INNER JOIN [dbo].[ProcessedEnvelopes] PE ON [Changes].[Country] = PE.[Country]
+	                        AND [Changes].[N2KVersioningVersion] = PE.[Version]
+	                        AND PE.[Status] = 3
+                        GROUP BY [SiteCode],
+	                        [N2KVersioningVersion]
+
+                        UNION
+
+                        SELECT DISTINCT [SiteCode],
+	                        MAX([Sites].[Version]) AS 'Version',
+	                        [N2KVersioningVersion]
+                        FROM [dbo].[Sites]
+                        INNER JOIN [dbo].[ProcessedEnvelopes] PE ON [Sites].[CountryCode] = PE.[Country]
+	                        AND [Sites].[N2KVersioningVersion] = PE.[Version]
+	                        AND PE.[Status] = 3
+                        GROUP BY [SiteCode],
+	                        [N2KVersioningVersion]
+                        ORDER BY [SiteCode]";
+
+            SqlConnection backboneConn = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+            try
+            {
+                backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                backboneConn.Open();
+                command = new SqlCommand(queryString, backboneConn);
+                reader = await command.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+                    SiteBasicBulk mySiteView = new()
+                    {
+                        SiteCode = reader["SiteCode"].ToString(),
+                        Version = int.Parse(reader["Version"].ToString()),
+                        N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString())
+                    };
+                    if (sitecodeList.Where(l => l == mySiteView.SiteCode).FirstOrDefault() != null)
+                        queryResults.Add(mySiteView);
+                }
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteDetailsService - GetBulkSites", "", _dataContext.Database.GetConnectionString());
+            }
+            finally
+            {
+                if (reader != null) await reader.DisposeAsync();
+                if (command != null) command.Dispose();
+                if (backboneConn != null) backboneConn.Dispose();
+            }
+            return queryResults;
+        }
+
         public async Task<List<StatusChanges>> AddComment(StatusChanges comment, IMemoryCache cache, bool temporal = false)
         {
             try
@@ -202,6 +266,42 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteDetailsService - AddComment", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<StatusChanges>> AddCommentBulk(string sitecodes, string comment, IMemoryCache cache)
+        {
+            try
+            {
+                List<SiteBasicBulk> sitecodesProcessed = await GetBulkSites(sitecodes);
+                List<StatusChanges> result = new();
+
+                DateTime currentDate = DateTime.Now;
+                string currentOwner = GlobalData.Username;
+
+                foreach (SiteBasicBulk item in sitecodesProcessed)
+                {
+                    StatusChanges temp = new()
+                    {
+                        SiteCode = item.SiteCode,
+                        Version = item.Version,
+                        Date = currentDate,
+                        Owner = currentOwner,
+                        Comments = comment,
+                        Edited = 0,
+                        Temporal = false
+                    };
+                    result.Add(temp);
+                }
+                await _dataContext.Set<StatusChanges>().AddRangeAsync(result);
+                await _dataContext.SaveChangesAsync();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteDetailsService - AddCommentBulk", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -251,6 +351,39 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteDetailsService - DeleteComment", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<int> DeleteCommentBulk(string sitecodes, string comment, IMemoryCache cache)
+        {
+            try
+            {
+                int result = 0;
+                List<SiteBasicBulk> sitecodesProcessed = await GetBulkSites(sitecodes);
+                List<StatusChanges>? commentList = await _dataContext.Set<StatusChanges>().Where(l => l.Comments == comment).ToListAsync();
+                List<StatusChanges> markedForDeletion = new();
+
+                foreach (StatusChanges item in commentList)
+                {
+                    SiteBasicBulk temp = sitecodesProcessed.Where(p => p.SiteCode == item.SiteCode && p.Version == item.Version).FirstOrDefault();
+                    if (temp != null)
+                    {
+                        markedForDeletion.Add(item);
+                    }
+                }
+
+                if (commentList != null && commentList.Any() && markedForDeletion != null && markedForDeletion.Any())
+                {
+                    _dataContext.Set<StatusChanges>().RemoveRange(markedForDeletion);
+                    await _dataContext.SaveChangesAsync();
+                    result = markedForDeletion.Count;
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteDetailsService - DeleteCommentBulk", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -325,6 +458,44 @@ namespace N2K_BackboneBackEnd.Services
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteDetailsService - UpdateComment", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<StatusChanges>> UpdateCommentBulk(string sitecodes, string oldComment, string newComment, IMemoryCache cache)
+        {
+            try
+            {
+                List<SiteBasicBulk> sitecodesProcessed = await GetBulkSites(sitecodes);
+                List<StatusChanges>? commentList = await _dataContext.Set<StatusChanges>().Where(l => l.Comments == oldComment).ToListAsync();
+                List<StatusChanges> markedForUpdate = new();
+
+                DateTime currentDate = DateTime.Now;
+                string currentOwner = GlobalData.Username;
+
+                foreach (StatusChanges item in commentList)
+                {
+                    SiteBasicBulk temp = sitecodesProcessed.Where(p => p.SiteCode == item.SiteCode && p.Version == item.Version).FirstOrDefault();
+                    if (temp != null)
+                    {
+                        item.EditedDate = currentDate;
+                        item.Edited++;
+                        item.EditedBy = currentOwner;
+                        item.Comments = newComment;
+                        markedForUpdate.Add(item);
+                    }
+                }
+
+                if (commentList != null && commentList.Any() && markedForUpdate != null && markedForUpdate.Any())
+                {
+                    _dataContext.Set<StatusChanges>().UpdateRange(markedForUpdate);
+                    await _dataContext.SaveChangesAsync();
+                }
+                return markedForUpdate;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteDetailsService - UpdateCommentBulk", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
