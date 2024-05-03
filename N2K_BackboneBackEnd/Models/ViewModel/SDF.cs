@@ -104,8 +104,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [NotMapped]
     public class HabitatSDF
     {
-        public string? HabitatName { get; set; }
         public string? Code { get; set; }
+        public string? HabitatName { get; set; }
         public string? PF { get; set; }
         public string? NP { get; set; }
         public decimal? Cover { get; set; }
@@ -120,9 +120,9 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [NotMapped]
     public class SpeciesSDF
     {
-        public string? SpeciesName { get; set; }
-        public string? Code { get; set; }
         public string? Group { get; set; }
+        public string? Code { get; set; }
+        public string? SpeciesName { get; set; }
         public string? Sensitive { get; set; }
         public string? NP { get; set; }
         public string? Type { get; set; }
