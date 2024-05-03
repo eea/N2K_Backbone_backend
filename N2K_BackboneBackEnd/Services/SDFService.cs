@@ -270,7 +270,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         N2K_BackboneBackEnd.Models.ViewModel.Ownership temp = new()
                         {
-                            Type = h.Type,
+                            Type = h.Type.ToLower(),
                             Percent = h.Percent
                         };
                         result.SiteDescription.Ownership.Add(temp);
