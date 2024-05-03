@@ -212,7 +212,7 @@ namespace N2K_BackboneBackEnd.Services
                             Category = h.AbundaceCategory
                         };
                         if (h.SensitiveInfo != null)
-                            temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanFalse;
+                            temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanUnchecked;
                         if (h.NonPersistence != null)
                             temp.NP = (h.NonPersistence == true) ? booleanChecked : booleanUnchecked;
                         if (h.Motivation != null)
@@ -310,12 +310,13 @@ namespace N2K_BackboneBackEnd.Services
                         RelationSites temp = new()
                         {
                             DesignationLevel = (h.DesignationCode != null && h.DesignationCode != "") ? "National or regional" : "International",
-                            TypeCode = h.DesignationCode,
+                            TypeCode = (h.DesignationCode != null && h.DesignationCode != "") ? h.DesignationCode : h.Convention,
                             SiteName = h.Name,
                             Type = h.OverlapCode,
                             Percent = h.OverlapPercentage
                         };
                         result.SiteProtectionStatus.RelationSites.Add(temp);
+                        result.SiteProtectionStatus.RelationSites = result.SiteProtectionStatus.RelationSites.OrderByDescending(o => o.DesignationLevel).ToList();
                     });
                 }
                 if (siteLargeDescriptions != null && siteLargeDescriptions.Count > 0)
