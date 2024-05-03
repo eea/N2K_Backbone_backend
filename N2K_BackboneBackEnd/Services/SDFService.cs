@@ -157,7 +157,7 @@ namespace N2K_BackboneBackEnd.Services
                             Code = h.HabitatCode,
                             Cover = h.CoverHA,
                             Cave = h.Caves,
-                            DataQuality = h.DataQty != null ? dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().Name : null,
+                            DataQuality = h.DataQty != null ? dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().HabitatCode : null,
                             Representativity = h.Representativity,
                             RelativeSurface = h.RelativeSurface,
                             Conservation = h.ConsStatus,
@@ -191,7 +191,7 @@ namespace N2K_BackboneBackEnd.Services
                             Global = h.Global
                         };
                         if (h.SensitiveInfo != null)
-                            temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanFalse;
+                            temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanUnchecked;
                         if (h.NonPersistence != null)
                             temp.NP = (h.NonPersistence == true) ? booleanChecked : booleanUnchecked;
                         result.EcologicalInformation.Species.Add(temp);
@@ -270,7 +270,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         N2K_BackboneBackEnd.Models.ViewModel.Ownership temp = new()
                         {
-                            Type = h.Type,
+                            Type = h.Type.ToLower(),
                             Percent = h.Percent
                         };
                         result.SiteDescription.Ownership.Add(temp);
