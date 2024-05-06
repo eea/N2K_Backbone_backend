@@ -1350,6 +1350,7 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<ModifiedSiteCode[]> BulkStatusCoverter(string sitecodes)
         {
             string[] sitecodeList = sitecodes.Split(',');
+            sitecodeList = sitecodeList.Distinct().ToArray();
             List<SiteBasicBulk> queryResults = new();
             ModifiedSiteCode[] result = new ModifiedSiteCode[sitecodeList.Length];
 
@@ -1399,7 +1400,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "BulkStatusCoverter", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - BulkStatusCoverter", "", _dataContext.Database.GetConnectionString());
             }
             finally
             {

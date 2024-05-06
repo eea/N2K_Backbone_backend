@@ -34,9 +34,9 @@ namespace N2K_BackboneBackEnd.Services
         private IList<Models.backbone_db.SpecieBase> _countrySpecies = new List<Models.backbone_db.SpecieBase>();
 
         private readonly IHubContext<ChatHub> _hubContext;
-        private static SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1);
+        //private static SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1);
 
-        //private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
+       //private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
 
         private IDictionary<Type, object> _siteItems = new Dictionary<Type, object>(); private struct SiteVersion
         {
@@ -1686,13 +1686,30 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 _fmeHarvestJobs.FMEJobCompleted += async (sender, env) =>
                 {
+                    //handle the event with a semaphore to ensure the same event is handled only one
                     string _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
-
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Enter Event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
+
+                    SemaphoreAsync _semaphore;
+                    string sem_name = string.Format("semaphore_{0}_{1}", env.Envelope.CountryCode, env.Envelope.VersionId);
+                    try
+                    {
+                        //Try to Open the Semaphore if Exists, if not throw an exception
+                        _semaphore = SemaphoreAsync.OpenExisting(sem_name);
+                        //if it exists it means it is running, So we cancel it
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Cancelled event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
+                        return;
+                    }
+                    catch
+                    {
+                        //If Semaphore not Exists, create a semaphore instance
+                        //Here Maximum 2 external threads can access the code at the same time
+                        _semaphore = new SemaphoreAsync(1, 1, sem_name);
+                    }
 
 
                     //make sure the execution completes until it starts a new one
-                    await _semaphoreSlim.WaitAsync();
+                    await _semaphore.WaitOne();
                     try
                     {
                         //avoid handling the same event more than once by the means of memory cache
@@ -1723,7 +1740,11 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         await SystemLog.WriteAsync(SystemLog.errorLevel.Error, string.Format("Error Event handler {0}", ex.Message), "EventHandler", "", _connectionString);
                     }
-                    _semaphoreSlim.Release();
+                    finally { 
+                        //release and reset the sempahore for the next execution
+                        _semaphore.Release();
+                        _semaphore.Dispose();
+                    }
 
                 };
             }
