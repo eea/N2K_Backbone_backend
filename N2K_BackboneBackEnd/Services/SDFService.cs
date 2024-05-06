@@ -35,7 +35,7 @@ namespace N2K_BackboneBackEnd.Services
                         .OrderBy(a => a.Version).Reverse().AsNoTracking().FirstOrDefaultAsync();
                     if (site == null)
                     {
-                    site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Current == true).AsNoTracking().FirstOrDefaultAsync();
+                        site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Current == true).AsNoTracking().FirstOrDefaultAsync();
                     }
                 }
                 else
@@ -329,13 +329,16 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     respondents.ForEach(h =>
                     {
-                        BodyResponsible temp = new()
+                        if (h.OrgName != null)
                         {
-                            Organisation = h.ContactName ?? h.OrgName,
-                            Address = h.addressArea,
-                            Email = h.Email
-                        };
-                        result.SiteManagement.BodyResponsible.Add(temp);
+                            BodyResponsible temp = new()
+                            {
+                                Organisation = h.OrgName,
+                                Address = h.addressArea,
+                                Email = h.Email
+                            };
+                            result.SiteManagement.BodyResponsible.Add(temp);
+                        }
                     });
                 }
                 if (siteLargeDescriptions != null && siteLargeDescriptions.Count > 0)
