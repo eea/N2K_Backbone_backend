@@ -279,7 +279,7 @@ namespace N2K_BackboneBackEnd.Services
                 if (onlyjustreq)
                     result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
                 if (onlysci)
-                    result = result.Where(x => x.SiteType == "B").ToList();
+                    result = result.Where(x => x.SiteType == "B" || x.SiteType == "C").ToList();
                 return result;
             }
             catch (Exception ex)
@@ -514,7 +514,7 @@ namespace N2K_BackboneBackEnd.Services
                 if (onlyjustreq)
                     result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
                 if (onlysci)
-                    result = result.Where(x => x.Type == "B").ToList();
+                    result = result.Where(x => x.Type == "B" || x.Type == "C").ToList();
                 return result;
             }
             catch (Exception ex)
@@ -638,7 +638,7 @@ namespace N2K_BackboneBackEnd.Services
                 if (onlyjustreq)
                     result = result.Where(x => x.JustificationRequired != null && x.JustificationRequired != false).ToList();
                 if (onlysci)
-                    result = result.Where(x => x.Type == "B").ToList();
+                    result = result.Where(x => x.Type == "B" || x.Type == "C").ToList();
                 return result.OrderBy(o => o.SiteCode).ToList();
             }
             catch (Exception ex)
