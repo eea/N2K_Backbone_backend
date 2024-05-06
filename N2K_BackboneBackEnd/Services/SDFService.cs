@@ -280,6 +280,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     result.SiteDescription.Quality = siteLargeDescriptions.FirstOrDefault().Quality;
                     result.SiteDescription.Documents = siteLargeDescriptions.FirstOrDefault().Documentation;
+                    result.SiteDescription.OtherCharacteristics = siteLargeDescriptions.FirstOrDefault().OtherCharact;
                 }
                 if (documentationLinks != null && documentationLinks.Count > 0)
                 {
