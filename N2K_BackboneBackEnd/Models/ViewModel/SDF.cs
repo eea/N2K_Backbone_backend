@@ -153,6 +153,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public List<N2K_BackboneBackEnd.Models.ViewModel.Ownership> Ownership { get; set; } = new List<Ownership>();
         public string? Documents { get; set; }
         public List<string> Links { get; set; } = new List<string>();
+        public string? OtherCharacteristics { get; set; }
     }
 
     [NotMapped]
