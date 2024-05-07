@@ -1473,6 +1473,7 @@ namespace N2K_BackboneBackEnd.Services
 	                        AND Changes.version = Sites.version
                         INNER JOIN @siteCodes T ON Changes.SiteCode = T.SiteCode
 	                        AND Changes.Version = T.Version
+                        WHERE Changes.Status = 'Pending'
                         GROUP BY changes.SiteCode,
 	                        Changes.version,
 	                        Sites.name,
@@ -1622,6 +1623,7 @@ namespace N2K_BackboneBackEnd.Services
 	                        AND Changes.version = Sites.version
                         INNER JOIN @siteCodes T ON Changes.SiteCode = T.SiteCode
 	                        AND Changes.Version = T.Version
+                        WHERE Changes.Status = 'Pending'
                         GROUP BY changes.SiteCode,
 	                        Changes.version,
 	                        Sites.name,
