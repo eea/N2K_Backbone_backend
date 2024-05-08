@@ -218,6 +218,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     {
         public string? Name { get; set; }
         public string? Link { get; set; }
+        public string? Exists { get; set; }
     }
 
     [NotMapped]
