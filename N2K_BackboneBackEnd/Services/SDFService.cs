@@ -350,7 +350,8 @@ namespace N2K_BackboneBackEnd.Services
                         ManagementPlan temp = new()
                         {
                             Name = h.ManagPlan,
-                            Link = h.ManagPlanUrl
+                            Link = h.ManagPlanUrl,
+                            Exists = h.ManagStatus
                         };
                         result.SiteManagement.ManagementPlan.Add(temp);
                     });
