@@ -22,8 +22,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                string booleanTrue = "yes";
-                string booleanFalse = "no";
+                string booleanTrue = "Yes";
+                string booleanFalse = "No";
                 string booleanChecked = "x";
                 string booleanUnchecked = "";
 
