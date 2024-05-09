@@ -103,11 +103,15 @@ namespace N2K_BackboneBackEnd.Services
                     }; //UNSURE HOW COULD THERE BE MORE THAN ONE
                     result.SiteIdentification.SiteDesignation.Add(siteDesignation);
                 }
-                if (respondents != null && respondents.Count > 0) //UNSURE
+                if (respondents != null && respondents.Count > 0)
                 {
-                    result.SiteIdentification.Respondent.Name = respondents.FirstOrDefault().ContactName;
-                    result.SiteIdentification.Respondent.Address = respondents.FirstOrDefault().addressArea;
-                    result.SiteIdentification.Respondent.Email = respondents.FirstOrDefault().Email;
+                    Respondents contact = respondents.Where(r => r.ContactName != null).FirstOrDefault();
+                    if (contact != null)
+                    {
+                        result.SiteIdentification.Respondent.Name = contact.ContactName;
+                        result.SiteIdentification.Respondent.Address = contact.addressArea;
+                        result.SiteIdentification.Respondent.Email = contact.Email;
+                    }
                 }
                 #endregion
 
