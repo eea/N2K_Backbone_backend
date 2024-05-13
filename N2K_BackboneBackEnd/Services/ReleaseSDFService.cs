@@ -4,21 +4,27 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.releases_db;
 
 namespace N2K_BackboneBackEnd.Services
 {
-    public class SDFService : ISDFService
+    public class ReleaseSDFService : IReleaseSDFService
     {
-        private readonly N2KBackboneContext _dataContext;
+        private readonly N2KReleasesContext _releaseContext;
         private readonly IOptions<ConfigSettings> _appSettings;
 
-        public SDFService(N2KBackboneContext dataContext, IOptions<ConfigSettings> app)
+        public ReleaseSDFService(N2KBackboneContext dataContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
             _appSettings = app;
         }
 
-        public async Task<SDF> GetData(string SiteCode, int Version = -1)
+        public async Task<List<Releases>> GetReleases()
+        {
+            
+        }
+
+        public async Task<ReleaseSDF> GetData(string SiteCode, int ReleaseId = -1)
         {
             try
             {
@@ -44,7 +50,9 @@ namespace N2K_BackboneBackEnd.Services
                 }
 
                 List<Countries> countries = await _dataContext.Set<Countries>().AsNoTracking().ToListAsync();
-                List<Habitats> habitats = await _dataContext.Set<Habitats>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+                //
+                List<HabitatsRelease> habitats = await _releaseContext.Set<HabitatsRelease>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == ReleaseId).AsNoTracking().ToListAsync();
+                // TODO
                 List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
                 List<Species> species = await _dataContext.Set<Species>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<SpeciesTypes> speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();

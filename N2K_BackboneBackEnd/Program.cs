@@ -39,6 +39,7 @@ builder.Services.AddScoped<IUnionListService, UnionListService>();
 builder.Services.AddScoped<IReleaseService, ReleaseService>();
 builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
 builder.Services.AddScoped<ISDFService, SDFService>();
+builder.Services.AddScoped<IReleaseSDFService, ReleaseSDFService>();
 builder.Services.AddScoped<IReportingPeriodService, ReportingPeriodService>();
 builder.Services.AddScoped<IDownloadService, DownloadService>();
 
