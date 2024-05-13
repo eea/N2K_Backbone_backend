@@ -1434,6 +1434,10 @@ namespace N2K_BackboneBackEnd.Services
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
 
+                DataTable sitecodesfilter2 = new("sitecodesfilter");
+                sitecodesfilter2.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter2.Columns.Add("Version", typeof(int));
+
                 changedSiteStatus.ToList().ForEach(cs =>
                 {
                     sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.VersionId });
@@ -1514,6 +1518,8 @@ namespace N2K_BackboneBackEnd.Services
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
                         //Alter cached listd. They come from pendign and goes to accepted
                         await swapSiteInListCache(cache, SiteChangeStatus.Accepted, level, SiteChangeStatus.Pending, mySiteView);
+
+                        sitecodesfilter2.Rows.Add(new Object[] { mySiteView.SiteCode, mySiteView.Version });
                     }
                 }
                 catch (Exception ex)
@@ -1531,7 +1537,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     SqlParameter paramTable = new("@siteCodes", System.Data.SqlDbType.Structured)
                     {
-                        Value = sitecodesfilter,
+                        Value = sitecodesfilter2,
                         TypeName = "[dbo].[SiteCodeFilter]"
                     };
 
@@ -1547,7 +1553,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
 
                 //Refresh site codes cache
-                if (result.Count > 0)
+                if (result.Count > 0 && sitecodesfilter2.Rows.Count > 0)
                 {
                     string country = (result.First().SiteCode)[..2];
                     List<SiteChangeDb> site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
@@ -1583,6 +1589,10 @@ namespace N2K_BackboneBackEnd.Services
                 var sitecodesfilter = new DataTable("sitecodesfilter");
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
+
+                DataTable sitecodesfilter2 = new("sitecodesfilter");
+                sitecodesfilter2.Columns.Add("SiteCode", typeof(string));
+                sitecodesfilter2.Columns.Add("Version", typeof(int));
 
                 changedSiteStatus.ToList().ForEach(cs =>
                 {
@@ -1664,6 +1674,8 @@ namespace N2K_BackboneBackEnd.Services
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
                         //Alter cached listd. They come from pendign and goes to rejected
                         await swapSiteInListCache(cache, SiteChangeStatus.Rejected, level, SiteChangeStatus.Pending, mySiteView);
+
+                        sitecodesfilter2.Rows.Add(new Object[] { mySiteView.SiteCode, mySiteView.Version });
                     }
                 }
                 catch (Exception ex)
@@ -1681,7 +1693,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     SqlParameter paramTable = new("@siteCodes", System.Data.SqlDbType.Structured)
                     {
-                        Value = sitecodesfilter,
+                        Value = sitecodesfilter2,
                         TypeName = "[dbo].[SiteCodeFilter]"
                     };
 
@@ -1697,7 +1709,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
 
                 //refresh the cache
-                if (result.Count > 0)
+                if (result.Count > 0 && sitecodesfilter2.Rows.Count > 0)
                 {
                     string country = (result.First().SiteCode)[..2];
                     List<SiteChangeDb> site = await _dataContext.Set<SiteChangeDb>().AsNoTracking().Where(site => site.SiteCode == result.First().SiteCode && site.Version == result.First().VersionId).ToListAsync();
