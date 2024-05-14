@@ -11,17 +11,19 @@ namespace N2K_BackboneBackEnd.Services
     public class ReleaseSDFService : IReleaseSDFService
     {
         private readonly N2KReleasesContext _releaseContext;
+        private readonly N2KBackboneContext _dataContext;
         private readonly IOptions<ConfigSettings> _appSettings;
 
-        public ReleaseSDFService(N2KBackboneContext dataContext, IOptions<ConfigSettings> app)
+        public ReleaseSDFService(N2KBackboneContext dataContext, N2KReleasesContext releaseContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
+            _releaseContext = releaseContext;
             _appSettings = app;
         }
 
-        public async Task<List<Releases>> GetReleases()
+        public async Task<List<Models.releases_db.Releases>> GetReleases()
         {
-            
+            return await _releaseContext.Set<Models.releases_db.Releases>().ToListAsync(); 
         }
 
         public async Task<ReleaseSDF> GetData(string SiteCode, int ReleaseId = -1)
@@ -33,39 +35,47 @@ namespace N2K_BackboneBackEnd.Services
                 string booleanChecked = "x";
                 string booleanUnchecked = "";
 
-                Sites site;
-                if (Version == -1)
+                Models.releases_db.Releases release;
+
+                if (ReleaseId == -1)
                 {
-                    // try to get reference, if it doesnt exist return current
-                    site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.CurrentStatus == Enumerations.SiteChangeStatus.Accepted)
-                        .OrderBy(a => a.Version).Reverse().AsNoTracking().FirstOrDefaultAsync();
-                    if (site == null)
-                    {
-                    site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Current == true).AsNoTracking().FirstOrDefaultAsync();
-                    }
+                    release = await _releaseContext.Set<Models.releases_db.Releases>().OrderBy(r => r.CreateDate).LastAsync();
                 }
                 else
                 {
-                    site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Version == Version).AsNoTracking().FirstOrDefaultAsync();
+                    release = await _releaseContext.Set<Models.releases_db.Releases>().Where(r => r.id == ReleaseId).FirstOrDefaultAsync();
                 }
 
-                List<Countries> countries = await _dataContext.Set<Countries>().AsNoTracking().ToListAsync();
-                //
-                List<HabitatsRelease> habitats = await _releaseContext.Set<HabitatsRelease>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == ReleaseId).AsNoTracking().ToListAsync();
-                // TODO
+                if (release == null)
+                {
+                    // TODO error
+                }
+
+                Natura2000Sites site = await _releaseContext.Set<Natura2000Sites>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).FirstOrDefaultAsync();
+
+                List<Models.releases_db.Habitats> habitats = await _releaseContext.Set<Models.releases_db.Habitats>().Where(h => h.SiteCode == SiteCode && h.ReleaseId == release.id).AsNoTracking().ToListAsync();
+                List<HabitatClass> habitatClasses = await _releaseContext.Set<HabitatClass>().AsNoTracking().ToListAsync();
                 List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
-                List<Species> species = await _dataContext.Set<Species>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+
+                List<Models.releases_db.Species> species = await _releaseContext.Set<Models.releases_db.Species>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).AsNoTracking().ToListAsync();
                 List<SpeciesTypes> speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
-                List<SpeciesOther> speciesOther = await _dataContext.Set<SpeciesOther>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+                List<OtherSpecies> speciesOther = await _releaseContext.Set<OtherSpecies>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).AsNoTracking().ToListAsync();
+
                 List<DataQualityTypes> dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
-                List<Respondents> respondents = await _dataContext.Set<Respondents>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+
+                List<Management> respondents = await _releaseContext.Set<Management>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).AsNoTracking().ToListAsync();
+
                 List<NutsBySite> nutsBySite = await _dataContext.Set<NutsBySite>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<Nuts> nuts = await _dataContext.Set<Nuts>().AsNoTracking().ToListAsync();
-                List<BioRegions> bioRegions = await _dataContext.Set<BioRegions>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+
+                List<BioRegion> bioRegions = await _releaseContext.Set<BioRegion>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).AsNoTracking().ToListAsync();
                 List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().AsNoTracking().ToListAsync();
+                
                 List<SiteLargeDescriptions> siteLargeDescriptions = await _dataContext.Set<SiteLargeDescriptions>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<DescribeSites> describeSites = await _dataContext.Set<DescribeSites>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
-                List<IsImpactedBy> isImpactedBy = await _dataContext.Set<IsImpactedBy>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+
+                List<Impact> isImpactedBy = await _releaseContext.Set<Impact>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).AsNoTracking().ToListAsync();
+
                 List<SiteOwnerType> siteOwnerType = await _dataContext.Set<SiteOwnerType>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<OwnerShipTypes> ownerShipTypes = await _dataContext.Set<OwnerShipTypes>().AsNoTracking().ToListAsync();
                 List<DocumentationLinks> documentationLinks = await _dataContext.Set<DocumentationLinks>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
@@ -73,17 +83,17 @@ namespace N2K_BackboneBackEnd.Services
                 List<DetailedProtectionStatus> detailedProtectionStatus = await _dataContext.Set<DetailedProtectionStatus>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 ReferenceMap referenceMap = await _dataContext.Set<ReferenceMap>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().FirstOrDefaultAsync();
 
-                SDF result = new();
+                ReleaseSDF result = new();
                 #region SiteInfo
                 if (site != null)
                 {
-                    result.SiteInfo.SiteName = site.Name;
-                    result.SiteInfo.Country = countries.Where(c => c.Code == site.CountryCode.ToLower()).FirstOrDefault().Country;
+                    result.SiteInfo.SiteName = site.SiteName;
+                    result.SiteInfo.Country = site.CountryCode;
                     result.SiteInfo.Directive = site.SiteType; //UNSURE
                     result.SiteInfo.SiteCode = SiteCode;
-                    result.SiteInfo.Area = site.Area;
-                    result.SiteInfo.Est = site.CompilationDate; //UNSURE
-                    result.SiteInfo.MarineArea = site.MarineArea;
+                    result.SiteInfo.Area = site.Areaha;
+                    result.SiteInfo.Est = site.DateCompilation; //UNSURE
+                    result.SiteInfo.MarineArea = site.MarineAreaPercentage;
                 }
                 if (habitats != null && habitats.Count > 0)
                     result.SiteInfo.Habitats = habitats.Count;
@@ -96,15 +106,15 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     result.SiteIdentification.Type = site.SiteType;
                     result.SiteIdentification.SiteCode = SiteCode;
-                    result.SiteIdentification.SiteName = site.Name;
-                    result.SiteIdentification.FirstCompletionDate = site.CompilationDate;
+                    result.SiteIdentification.SiteName = site.SiteName;
+                    result.SiteIdentification.FirstCompletionDate = site.DateCompilation;
                     result.SiteIdentification.UpdateDate = site.DateUpdate;
                     SiteDesignation siteDesignation = new()
                     {
                         ClassifiedSPA = site.DateSpa,
                         ReferenceSPA = site.SpaLegalReference,
-                        ProposedSCI = site.DatePropSCI,
-                        ConfirmedSCI = site.DateConfSCI,
+                        ProposedSCI = site.DatePropSci,
+                        ConfirmedSCI = site.DateConfSci,
                         DesignatedSAC = site.DateSac,
                         ReferenceSAC = site.SacLegalReference,
                         Explanations = site.Explanations
@@ -113,9 +123,9 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 if (respondents != null && respondents.Count > 0) //UNSURE
                 {
-                    result.SiteIdentification.Respondent.Name = respondents.FirstOrDefault().ContactName;
-                    result.SiteIdentification.Respondent.Address = respondents.FirstOrDefault().addressArea;
-                    result.SiteIdentification.Respondent.Email = respondents.FirstOrDefault().Email;
+                    result.SiteIdentification.Respondent.Name = respondents.FirstOrDefault().OrgName;
+                    result.SiteIdentification.Respondent.Address = respondents.FirstOrDefault().OrgAddress;
+                    result.SiteIdentification.Respondent.Email = respondents.FirstOrDefault().OrgEmail;
                 }
                 #endregion
 
@@ -124,9 +134,9 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     result.SiteLocation.Longitude = site.Longitude;
                     result.SiteLocation.Latitude = site.Latitude;
-                    result.SiteLocation.Area = site.Area;
-                    result.SiteLocation.MarineArea = site.MarineArea;
-                    result.SiteLocation.SiteLength = site.Length;
+                    result.SiteLocation.Area = site.Areaha;
+                    result.SiteLocation.MarineArea = site.MarineAreaPercentage;
+                    result.SiteLocation.SiteLength = site.Lengthkm;
                 }
                 if (nutsBySite != null && nutsBySite.Count > 0)
                 {
@@ -146,7 +156,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         BiogeographicalRegions temp = new()
                         {
-                            Name = bioRegionTypes.Where(t => t.Code == br.BGRID).FirstOrDefault().RefBioGeoName,
+                            Name = br.BioGeoGraphicReg,
                             Value = br.Percentage
                         };
                         result.SiteLocation.BiogeographicalRegions.Add(temp);
@@ -163,18 +173,19 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             HabitatName = h.HabitatCode != null ? habitatTypes.Where(t => t.Code == h.HabitatCode).FirstOrDefault().Name : null,
                             Code = h.HabitatCode,
-                            Cover = h.CoverHA,
+                            Cover = h.CoverHa,
                             Cave = h.Caves,
-                            DataQuality = h.DataQty != null ? dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().Name : null,
+                            // TODO data quality tables don't match!!
+                            //DataQuality = h.DataQuality != null ? dataQualityTypes.Where(c => c.Id == h.DataQuality).FirstOrDefault().Name : null,
                             Representativity = h.Representativity,
-                            RelativeSurface = h.RelativeSurface,
-                            Conservation = h.ConsStatus,
-                            Global = h.GlobalAssesments
+                            RelativeSurface = h.RelSurface,
+                            Conservation = h.Conservation,
+                            Global = h.Global
                         };
-                        if (h.PriorityForm != null)
-                            temp.PF = (h.PriorityForm == true) ? booleanChecked : booleanUnchecked;
-                        if (h.NonPresenciInSite != null)
-                            temp.NP = (h.NonPresenciInSite == 1) ? booleanChecked : booleanUnchecked;
+                        if (h.PriorityFormHabitatType != null)
+                            temp.PF = (h.PriorityFormHabitatType == true) ? booleanChecked : booleanUnchecked;
+                        if (h.NonPresenceInSite != null)
+                            temp.NP = (h.NonPresenceInSite == 1) ? booleanChecked : booleanUnchecked;
                         result.EcologicalInformation.HabitatTypes.Add(temp);
                     });
                 }
@@ -184,24 +195,24 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         SpeciesSDF temp = new()
                         {
-                            SpeciesName = h.SpecieCode != null ? speciesTypes.Where(t => t.Code == h.SpecieCode).FirstOrDefault().Name : null,
-                            Code = h.SpecieCode,
-                            Group = h.SpecieType,
+                            SpeciesName = h.SpeciesCode != null ? speciesTypes.Where(t => t.Code == h.SpeciesCode).FirstOrDefault().Name : null,
+                            Code = h.SpeciesCode,
+                            Group = h.SPgroup,
                             Type = h.PopulationType,
-                            Min = h.PopulationMin,
-                            Max = h.PopulationMax,
+                            Min = h.Lowerbound,
+                            Max = h.Upperbound,
                             Unit = h.CountingUnit,
-                            Category = h.AbundaceCategory,
+                            Category = h.AbundanceCategory,
                             DataQuality = h.DataQuality,
                             Population = h.Population,
                             Conservation = h.Conservation,
-                            Isolation = h.Insolation,
+                            Isolation = h.Isolation,
                             Global = h.Global
                         };
-                        if (h.SensitiveInfo != null)
-                            temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanFalse;
-                        if (h.NonPersistence != null)
-                            temp.NP = (h.NonPersistence == true) ? booleanChecked : booleanUnchecked;
+                        if (h.Sensitive != null)
+                            temp.Sensitive = (h.Sensitive == true) ? booleanTrue : booleanFalse;
+                        if (h.NonPresenceInSite != null)
+                            temp.NP = (h.NonPresenceInSite == true) ? booleanChecked : booleanUnchecked;
                         result.EcologicalInformation.Species.Add(temp);
                     });
                 }
@@ -211,18 +222,18 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         SpeciesSDF temp = new()
                         {
-                            SpeciesName = h.SpecieCode,
-                            Code = h.OtherSpecieCode ?? "-",
-                            Group = h.SpecieType,
-                            Min = h.PopulationMin,
-                            Max = h.PopulationMax,
+                            SpeciesName = h.SpeciesName,
+                            Code = h.SpeciesCode ?? "-",
+                            Group = h.SpeciesGroup,
+                            Min = h.Lowerbound,
+                            Max = h.Upperbound,
                             Unit = h.CountingUnit,
-                            Category = h.AbundaceCategory
+                            Category = h.AbundanceCategory
                         };
-                        if (h.SensitiveInfo != null)
-                            temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanFalse;
-                        if (h.NonPersistence != null)
-                            temp.NP = (h.NonPersistence == true) ? booleanChecked : booleanUnchecked;
+                        if (h.Sensitive != null)
+                            temp.Sensitive = (h.Sensitive == true) ? booleanTrue : booleanFalse;
+                        if (h.NonPresenceInSite != null)
+                            temp.NP = (h.NonPresenceInSite == true) ? booleanChecked : booleanUnchecked;
                         if (h.Motivation != null)
                         {
                             temp.AnnexIV = h.Motivation.Contains("IV") ? booleanChecked : booleanUnchecked;
@@ -258,9 +269,9 @@ namespace N2K_BackboneBackEnd.Services
                         Threats temp = new()
                         {
                             Rank = h.Intensity,
-                            Impacts = h.ActivityCode,
+                            Impacts = h.ImpactCode,
                             Pollution = h.PollutionCode,
-                            Origin = h.Ocurrence
+                            Origin = h.Occurrence
                         };
                         if (h.ImpactType == "N")
                         {
@@ -339,9 +350,9 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         BodyResponsible temp = new()
                         {
-                            Organisation = h.ContactName ?? h.OrgName,
-                            Address = h.addressArea,
-                            Email = h.Email
+                            Organisation = h.OrgName,
+                            Address = h.OrgAddress,
+                            Email = h.OrgEmail
                         };
                         result.SiteManagement.BodyResponsible.Add(temp);
                     });
@@ -373,7 +384,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SDFService - GetData", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseSDFService - GetData", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
