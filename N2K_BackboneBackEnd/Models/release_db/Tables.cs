@@ -1,9 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using N2K_BackboneBackEnd.Helpers;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Data;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace N2K_BackboneBackEnd.Models.releases_db
 {
@@ -14,7 +9,7 @@ namespace N2K_BackboneBackEnd.Models.releases_db
         public string? COUNTRY_CODE { get; set; }
         public string? SITECODE { get; set; }
         public string? HabitatCode { get; set; }
-        public string? DECRIPTION { get; set; }
+        public string? DESCRIPTION { get; set; }
         public string? HABITAT_PRIORITY { get; set; }
         public bool? PRIORITY_FORM_HABITAT_TYPE { get; set; }
         public int? NON_PRESENCE_IN_SITE { get; set; }
