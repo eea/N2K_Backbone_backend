@@ -43,7 +43,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else
                 {
-                    release = await _releaseContext.Set<Models.releases_db.Releases>().Where(r => r.id == ReleaseId).FirstOrDefaultAsync();
+                    release = await _releaseContext.Set<Models.releases_db.Releases>().Where(r => r.ID == ReleaseId).FirstOrDefaultAsync();
                 }
 
                 if (release == null)
@@ -51,49 +51,49 @@ namespace N2K_BackboneBackEnd.Services
                     // TODO error
                 }
 
-                Natura2000Sites site = await _releaseContext.Set<Natura2000Sites>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).FirstOrDefaultAsync();
+                Natura2000Sites site = await _releaseContext.Set<Natura2000Sites>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).FirstOrDefaultAsync();
 
-                List<Models.releases_db.Habitats> habitats = await _releaseContext.Set<Models.releases_db.Habitats>().Where(h => h.SiteCode == SiteCode && h.ReleaseId == release.id).AsNoTracking().ToListAsync();
+                List<Models.releases_db.Habitats> habitats = await _releaseContext.Set<Models.releases_db.Habitats>().Where(h => h.SITECODE == SiteCode && h.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<HabitatClass> habitatClasses = await _releaseContext.Set<HabitatClass>().AsNoTracking().ToListAsync();
                 List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
 
-                List<Models.releases_db.Species> species = await _releaseContext.Set<Models.releases_db.Species>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).AsNoTracking().ToListAsync();
+                List<Models.releases_db.Species> species = await _releaseContext.Set<Models.releases_db.Species>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<SpeciesTypes> speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
-                List<OtherSpecies> speciesOther = await _releaseContext.Set<OtherSpecies>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).AsNoTracking().ToListAsync();
+                List<OtherSpecies> speciesOther = await _releaseContext.Set<OtherSpecies>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
 
                 List<DataQualityTypes> dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
 
-                List<Management> respondents = await _releaseContext.Set<Management>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).AsNoTracking().ToListAsync();
+                List<Management> respondents = await _releaseContext.Set<Management>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
 
-                List<NutsBySite> nutsBySite = await _dataContext.Set<NutsBySite>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+                List<NutsBySite> nutsBySite = await _dataContext.Set<NutsBySite>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
                 List<Nuts> nuts = await _dataContext.Set<Nuts>().AsNoTracking().ToListAsync();
 
-                List<BioRegion> bioRegions = await _releaseContext.Set<BioRegion>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).AsNoTracking().ToListAsync();
+                List<BioRegion> bioRegions = await _releaseContext.Set<BioRegion>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().AsNoTracking().ToListAsync();
                 
-                List<SiteLargeDescriptions> siteLargeDescriptions = await _dataContext.Set<SiteLargeDescriptions>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
-                List<DescribeSites> describeSites = await _dataContext.Set<DescribeSites>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+                List<SiteLargeDescriptions> siteLargeDescriptions = await _dataContext.Set<SiteLargeDescriptions>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
+                List<DescribeSites> describeSites = await _dataContext.Set<DescribeSites>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
 
-                List<Impact> isImpactedBy = await _releaseContext.Set<Impact>().Where(a => a.SiteCode == SiteCode && a.ReleaseId == release.id).AsNoTracking().ToListAsync();
+                List<Impact> isImpactedBy = await _releaseContext.Set<Impact>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
 
-                List<SiteOwnerType> siteOwnerType = await _dataContext.Set<SiteOwnerType>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+                List<SiteOwnerType> siteOwnerType = await _dataContext.Set<SiteOwnerType>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
                 List<OwnerShipTypes> ownerShipTypes = await _dataContext.Set<OwnerShipTypes>().AsNoTracking().ToListAsync();
-                List<DocumentationLinks> documentationLinks = await _dataContext.Set<DocumentationLinks>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
-                List<HasNationalProtection> hasNationalProtection = await _dataContext.Set<HasNationalProtection>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
-                List<DetailedProtectionStatus> detailedProtectionStatus = await _dataContext.Set<DetailedProtectionStatus>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
-                ReferenceMap referenceMap = await _dataContext.Set<ReferenceMap>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().FirstOrDefaultAsync();
+                List<DocumentationLinks> documentationLinks = await _dataContext.Set<DocumentationLinks>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
+                List<HasNationalProtection> hasNationalProtection = await _dataContext.Set<HasNationalProtection>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
+                List<DetailedProtectionStatus> detailedProtectionStatus = await _dataContext.Set<DetailedProtectionStatus>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
+                ReferenceMap referenceMap = await _dataContext.Set<ReferenceMap>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().FirstOrDefaultAsync();
 
                 ReleaseSDF result = new();
                 #region SiteInfo
                 if (site != null)
                 {
-                    result.SiteInfo.SiteName = site.SiteName;
-                    result.SiteInfo.Country = site.CountryCode;
-                    result.SiteInfo.Directive = site.SiteType; //UNSURE
+                    result.SiteInfo.SiteName = site.SITENAME;
+                    result.SiteInfo.Country = site.COUNTRY_CODE;
+                    result.SiteInfo.Directive = site.SITETYPE; //UNSURE
                     result.SiteInfo.SiteCode = SiteCode;
-                    result.SiteInfo.Area = site.Areaha;
-                    result.SiteInfo.Est = site.DateCompilation; //UNSURE
-                    result.SiteInfo.MarineArea = site.MarineAreaPercentage;
+                    result.SiteInfo.Area = site.AREAHA;
+                    result.SiteInfo.Est = site.DATE_COMPILATION; //UNSURE
+                    result.SiteInfo.MarineArea = site.MARINE_AREA_PERCENTAGE;
                 }
                 if (habitats != null && habitats.Count > 0)
                     result.SiteInfo.Habitats = habitats.Count;
@@ -104,39 +104,39 @@ namespace N2K_BackboneBackEnd.Services
                 #region SiteIdentification
                 if (site != null)
                 {
-                    result.SiteIdentification.Type = site.SiteType;
+                    result.SiteIdentification.Type = site.SITETYPE;
                     result.SiteIdentification.SiteCode = SiteCode;
-                    result.SiteIdentification.SiteName = site.SiteName;
-                    result.SiteIdentification.FirstCompletionDate = site.DateCompilation;
-                    result.SiteIdentification.UpdateDate = site.DateUpdate;
+                    result.SiteIdentification.SiteName = site.SITENAME;
+                    result.SiteIdentification.FirstCompletionDate = site.DATE_COMPILATION;
+                    result.SiteIdentification.UpdateDate = site.DATE_UPDATE;
                     SiteDesignation siteDesignation = new()
                     {
-                        ClassifiedSPA = site.DateSpa,
-                        ReferenceSPA = site.SpaLegalReference,
-                        ProposedSCI = site.DatePropSci,
-                        ConfirmedSCI = site.DateConfSci,
-                        DesignatedSAC = site.DateSac,
-                        ReferenceSAC = site.SacLegalReference,
-                        Explanations = site.Explanations
+                        ClassifiedSPA = site.DATE_SPA,
+                        ReferenceSPA = site.SPA_LEGAL_REFERENCE,
+                        ProposedSCI = site.DATE_PROP_SCI,
+                        ConfirmedSCI = site.DATE_CONF_SCI,
+                        DesignatedSAC = site.DATE_SAC,
+                        ReferenceSAC = site.SAC_LEGAL_REFERENCE,
+                        Explanations = site.EXPLANATIONS
                     }; //UNSURE HOW COULD THERE BE MORE THAN ONE
                     result.SiteIdentification.SiteDesignation.Add(siteDesignation);
                 }
                 if (respondents != null && respondents.Count > 0) //UNSURE
                 {
-                    result.SiteIdentification.Respondent.Name = respondents.FirstOrDefault().OrgName;
-                    result.SiteIdentification.Respondent.Address = respondents.FirstOrDefault().OrgAddress;
-                    result.SiteIdentification.Respondent.Email = respondents.FirstOrDefault().OrgEmail;
+                    result.SiteIdentification.Respondent.Name = respondents.FirstOrDefault().ORG_NAME;
+                    result.SiteIdentification.Respondent.Address = respondents.FirstOrDefault().ORG_ADDRESS;
+                    result.SiteIdentification.Respondent.Email = respondents.FirstOrDefault().ORG_EMAIL;
                 }
                 #endregion
 
                 #region SiteLocation
                 if (site != null)
                 {
-                    result.SiteLocation.Longitude = site.Longitude;
-                    result.SiteLocation.Latitude = site.Latitude;
-                    result.SiteLocation.Area = site.Areaha;
-                    result.SiteLocation.MarineArea = site.MarineAreaPercentage;
-                    result.SiteLocation.SiteLength = site.Lengthkm;
+                    result.SiteLocation.Longitude = site.LONGITUDE;
+                    result.SiteLocation.Latitude = site.LATITUDE;
+                    result.SiteLocation.Area = site.AREAHA;
+                    result.SiteLocation.MarineArea = site.MARINE_AREA_PERCENTAGE;
+                    result.SiteLocation.SiteLength = site.LENGTHKM;
                 }
                 if (nutsBySite != null && nutsBySite.Count > 0)
                 {
@@ -156,8 +156,8 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         BiogeographicalRegions temp = new()
                         {
-                            Name = br.BioGeoGraphicReg,
-                            Value = br.Percentage
+                            Name = br.BIOGEOGRAPHICREG,
+                            Value = br.PERCENTAGE
                         };
                         result.SiteLocation.BiogeographicalRegions.Add(temp);
                     });
@@ -173,19 +173,19 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             HabitatName = h.HabitatCode != null ? habitatTypes.Where(t => t.Code == h.HabitatCode).FirstOrDefault().Name : null,
                             Code = h.HabitatCode,
-                            Cover = h.CoverHa,
-                            Cave = h.Caves,
+                            Cover = h.COVER_HA,
+                            Cave = h.CAVES,
                             // TODO data quality tables don't match!!
                             //DataQuality = h.DataQuality != null ? dataQualityTypes.Where(c => c.Id == h.DataQuality).FirstOrDefault().Name : null,
-                            Representativity = h.Representativity,
-                            RelativeSurface = h.RelSurface,
-                            Conservation = h.Conservation,
-                            Global = h.Global
+                            Representativity = h.REPRESENTATIVITY,
+                            RelativeSurface = h.RELSURFACE,
+                            Conservation = h.CONSERVATION,
+                            Global = h.GLOBAL
                         };
-                        if (h.PriorityFormHabitatType != null)
-                            temp.PF = (h.PriorityFormHabitatType == true) ? booleanChecked : booleanUnchecked;
-                        if (h.NonPresenceInSite != null)
-                            temp.NP = (h.NonPresenceInSite == 1) ? booleanChecked : booleanUnchecked;
+                        if (h.PRIORITY_FORM_HABITAT_TYPE != null)
+                            temp.PF = (h.PRIORITY_FORM_HABITAT_TYPE == true) ? booleanChecked : booleanUnchecked;
+                        if (h.NON_PRESENCE_IN_SITE != null)
+                            temp.NP = (h.NON_PRESENCE_IN_SITE == 1) ? booleanChecked : booleanUnchecked;
                         result.EcologicalInformation.HabitatTypes.Add(temp);
                     });
                 }
@@ -195,24 +195,24 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         SpeciesSDF temp = new()
                         {
-                            SpeciesName = h.SpeciesCode != null ? speciesTypes.Where(t => t.Code == h.SpeciesCode).FirstOrDefault().Name : null,
-                            Code = h.SpeciesCode,
-                            Group = h.SPgroup,
-                            Type = h.PopulationType,
-                            Min = h.Lowerbound,
-                            Max = h.Upperbound,
-                            Unit = h.CountingUnit,
-                            Category = h.AbundanceCategory,
-                            DataQuality = h.DataQuality,
-                            Population = h.Population,
-                            Conservation = h.Conservation,
-                            Isolation = h.Isolation,
-                            Global = h.Global
+                            SpeciesName = h.SPECIESCODE != null ? speciesTypes.Where(t => t.Code == h.SPECIESCODE).FirstOrDefault().Name : null,
+                            Code = h.SPECIESCODE,
+                            Group = h.SPGROUP,
+                            Type = h.POPULATION_TYPE,
+                            Min = h.LOWERBOUND,
+                            Max = h.UPPERBOUND,
+                            Unit = h.COUNTING_UNIT,
+                            Category = h.ABUNDANCE_CATEGORY,
+                            DataQuality = h.DATAQUALITY,
+                            Population = h.POPULATION,
+                            Conservation = h.CONSERVATION,
+                            Isolation = h.ISOLATION,
+                            Global = h.GLOBAL
                         };
-                        if (h.Sensitive != null)
-                            temp.Sensitive = (h.Sensitive == true) ? booleanTrue : booleanFalse;
-                        if (h.NonPresenceInSite != null)
-                            temp.NP = (h.NonPresenceInSite == true) ? booleanChecked : booleanUnchecked;
+                        if (h.SENSITIVE != null)
+                            temp.Sensitive = (h.SENSITIVE == true) ? booleanTrue : booleanFalse;
+                        if (h.NONPRESENCEINSITE != null)
+                            temp.NP = (h.NONPRESENCEINSITE == true) ? booleanChecked : booleanUnchecked;
                         result.EcologicalInformation.Species.Add(temp);
                     });
                 }
@@ -222,27 +222,27 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         SpeciesSDF temp = new()
                         {
-                            SpeciesName = h.SpeciesName,
-                            Code = h.SpeciesCode ?? "-",
-                            Group = h.SpeciesGroup,
-                            Min = h.Lowerbound,
-                            Max = h.Upperbound,
-                            Unit = h.CountingUnit,
-                            Category = h.AbundanceCategory
+                            SpeciesName = h.SPECIESNAME,
+                            Code = h.SPECIESCODE ?? "-",
+                            Group = h.SPECIESGROUP,
+                            Min = h.LOWERBOUND,
+                            Max = h.UPPERBOUND,
+                            Unit = h.COUNTING_UNIT,
+                            Category = h.ABUNDANCE_CATEGORY
                         };
-                        if (h.Sensitive != null)
-                            temp.Sensitive = (h.Sensitive == true) ? booleanTrue : booleanFalse;
-                        if (h.NonPresenceInSite != null)
-                            temp.NP = (h.NonPresenceInSite == true) ? booleanChecked : booleanUnchecked;
-                        if (h.Motivation != null)
+                        if (h.SENSITIVE != null)
+                            temp.Sensitive = (h.SENSITIVE == true) ? booleanTrue : booleanFalse;
+                        if (h.NONPRESENCEINSITE != null)
+                            temp.NP = (h.NONPRESENCEINSITE == true) ? booleanChecked : booleanUnchecked;
+                        if (h.MOTIVATION != null)
                         {
-                            temp.AnnexIV = h.Motivation.Contains("IV") ? booleanChecked : booleanUnchecked;
-                            string annex = h.Motivation.Replace("IV", "");
+                            temp.AnnexIV = h.MOTIVATION.Contains("IV") ? booleanChecked : booleanUnchecked;
+                            string annex = h.MOTIVATION.Replace("IV", "");
                             temp.AnnexV = annex.Contains("V") ? booleanChecked : booleanUnchecked;
-                            temp.OtherCategoriesA = h.Motivation.Contains("A") ? booleanChecked : booleanUnchecked;
-                            temp.OtherCategoriesB = h.Motivation.Contains("B") ? booleanChecked : booleanUnchecked;
-                            temp.OtherCategoriesC = h.Motivation.Contains("C") ? booleanChecked : booleanUnchecked;
-                            temp.OtherCategoriesD = h.Motivation.Contains("D") ? booleanChecked : booleanUnchecked;
+                            temp.OtherCategoriesA = h.MOTIVATION.Contains("A") ? booleanChecked : booleanUnchecked;
+                            temp.OtherCategoriesB = h.MOTIVATION.Contains("B") ? booleanChecked : booleanUnchecked;
+                            temp.OtherCategoriesC = h.MOTIVATION.Contains("C") ? booleanChecked : booleanUnchecked;
+                            temp.OtherCategoriesD = h.MOTIVATION.Contains("D") ? booleanChecked : booleanUnchecked;
                         }
                         result.EcologicalInformation.OtherSpecies.Add(temp);
                     });
@@ -268,16 +268,16 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         Threats temp = new()
                         {
-                            Rank = h.Intensity,
-                            Impacts = h.ImpactCode,
-                            Pollution = h.PollutionCode,
-                            Origin = h.Occurrence
+                            Rank = h.INTENSITY,
+                            Impacts = h.IMPACTCODE,
+                            Pollution = h.POLLUTIONCODE,
+                            Origin = h.OCCURRENCE
                         };
-                        if (h.ImpactType == "N")
+                        if (h.IMPACT_TYPE == "N")
                         {
                             result.SiteDescription.NegativeThreats.Add(temp);
                         }
-                        else if (h.ImpactType == "P")
+                        else if (h.IMPACT_TYPE == "P")
                         {
                             result.SiteDescription.PositiveThreats.Add(temp);
                         }
@@ -350,9 +350,9 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         BodyResponsible temp = new()
                         {
-                            Organisation = h.OrgName,
-                            Address = h.OrgAddress,
-                            Email = h.OrgEmail
+                            Organisation = h.ORG_NAME,
+                            Address = h.ORG_ADDRESS,
+                            Email = h.ORG_EMAIL
                         };
                         result.SiteManagement.BodyResponsible.Add(temp);
                     });
