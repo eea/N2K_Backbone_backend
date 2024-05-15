@@ -23,7 +23,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<Models.releases_db.Releases>> GetReleases()
         {
-            return await _releaseContext.Set<Models.releases_db.Releases>().ToListAsync(); 
+            return await _releaseContext.Set<Models.releases_db.Releases>().ToListAsync();
         }
 
         public async Task<ReleaseSDF> GetData(string SiteCode, int ReleaseId = -1)
@@ -70,7 +70,7 @@ namespace N2K_BackboneBackEnd.Services
 
                 List<BioRegion> bioRegions = await _releaseContext.Set<BioRegion>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().AsNoTracking().ToListAsync();
-                
+
                 List<SiteLargeDescriptions> siteLargeDescriptions = await _dataContext.Set<SiteLargeDescriptions>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
                 List<DescribeSites> describeSites = await _dataContext.Set<DescribeSites>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
 

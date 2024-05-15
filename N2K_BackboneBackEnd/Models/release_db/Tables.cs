@@ -40,15 +40,15 @@ namespace N2K_BackboneBackEnd.Models.releases_db
         }
     }
 
-	public class HabitatClass : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ID { get; set; }
-		public long ReleaseId { get; set; }
-		public string? SITECODE { get; set; }
-		public string? HABITATCODE { get; set; }
-		public decimal? PERCENTAGECOVER { get; set; }
-		public string? DESCRIPTION { get; set; }
-		
+    public class HabitatClass : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ID { get; set; }
+        public long ReleaseId { get; set; }
+        public string? SITECODE { get; set; }
+        public string? HABITATCODE { get; set; }
+        public decimal? PERCENTAGECOVER { get; set; }
+        public string? DESCRIPTION { get; set; }
+
         private string dbConnection = string.Empty;
 
         public HabitatClass() { }
@@ -64,20 +64,20 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("HABITATCLASS")
                 .HasKey(c => new { c.ID });
         }
-	}
-	
-	public class Impact : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ID { get; set; }
-		public long ReleaseId { get; set; }
-		public string? SITECODE { get; set; }
-		public string? IMPACTCODE { get; set; }
-		public string? DESCRIPTION { get; set; }
-		public string? INTENSITY { get; set; }
-		public string? POLLUTIONCODE { get; set; }
-		public string? OCCURRENCE { get; set; }
-		public string? IMPACT_TYPE { get; set; }
-		
+    }
+
+    public class Impact : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ID { get; set; }
+        public long ReleaseId { get; set; }
+        public string? SITECODE { get; set; }
+        public string? IMPACTCODE { get; set; }
+        public string? DESCRIPTION { get; set; }
+        public string? INTENSITY { get; set; }
+        public string? POLLUTIONCODE { get; set; }
+        public string? OCCURRENCE { get; set; }
+        public string? IMPACT_TYPE { get; set; }
+
         private string dbConnection = string.Empty;
 
         public Impact() { }
@@ -93,22 +93,22 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("IMPACT")
                 .HasKey(c => new { c.ID });
         }
-	}
+    }
 
-	public class DirectiveSpecies : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ID { get; set; }
-		public long ReleaseId { get; set; }
-		public string? DIRECTIVE { get; set; }
-		public string? SPECIESNAME { get; set; }
-		public string? ANNEXII { get; set; }
-		public string? ANNEXII1 { get; set; }
-		public string? ANNEXII2 { get; set; }
-		public string? ANNEXIII1 { get; set; }
-		public string? ANNEXIII2 { get; set; }
-		public string? ANNEXIV { get; set; }
-		public string? ANNEXV { get; set; }
-		
+    public class DirectiveSpecies : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ID { get; set; }
+        public long ReleaseId { get; set; }
+        public string? DIRECTIVE { get; set; }
+        public string? SPECIESNAME { get; set; }
+        public string? ANNEXII { get; set; }
+        public string? ANNEXII1 { get; set; }
+        public string? ANNEXII2 { get; set; }
+        public string? ANNEXIII1 { get; set; }
+        public string? ANNEXIII2 { get; set; }
+        public string? ANNEXIV { get; set; }
+        public string? ANNEXV { get; set; }
+
         private string dbConnection = string.Empty;
 
         public DirectiveSpecies() { }
@@ -124,18 +124,18 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("DIRECTIVESPECIES")
                 .HasKey(c => new { c.ID });
         }
-	}
+    }
 
-	public class DesignationStatus : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ID { get; set; }
-		public long ReleaseId { get; set; }
-		public string? SITECODE { get; set; }
-		public string? DESIGNATIONCODE { get; set; }
-		public string? DESIGNATEDSITENAME { get; set; }
-		public string? OVERLAPCODE { get; set; }
-		public string? OVERLAPPERC { get; set; }
-		
+    public class DesignationStatus : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ID { get; set; }
+        public long ReleaseId { get; set; }
+        public string? SITECODE { get; set; }
+        public string? DESIGNATIONCODE { get; set; }
+        public string? DESIGNATEDSITENAME { get; set; }
+        public string? OVERLAPCODE { get; set; }
+        public string? OVERLAPPERC { get; set; }
+
         private string dbConnection = string.Empty;
 
         public DesignationStatus() { }
@@ -151,16 +151,16 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("DESIGNATIONSTATUS")
                 .HasKey(c => new { c.ID });
         }
-	}
+    }
 
-	public class BioRegion : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ID { get; set; }
-		public long ReleaseId { get; set; }
-		public string? SITECODE { get; set; }
-		public string? BIOGEOGRAPHICREG { get; set; }
-		public float PERCENTAGE { get; set; }
-		
+    public class BioRegion : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ID { get; set; }
+        public long ReleaseId { get; set; }
+        public string? SITECODE { get; set; }
+        public string? BIOGEOGRAPHICREG { get; set; }
+        public float PERCENTAGE { get; set; }
+
         private string dbConnection = string.Empty;
 
         public BioRegion() { }
@@ -176,27 +176,27 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("BIOREGION")
                 .HasKey(c => new { c.ID });
         }
-	}
+    }
 
-	public class Management : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ID { get; set; }
-		public long ReleaseId { get; set; }
-		public string? SITECODE { get; set; }
-		public string? ORG_NAME { get; set; }
-		public string? ORG_EMAIL { get; set; }
-		public string? MANAG_CONSERV_MEASURES { get; set; }
-		public string? MANAG_PLAN { get; set; }
-		public string? MANAG_PLAN_URL { get; set; }
-		public string? MANAG_STATUS { get; set; }
-		public string? ORG_LOCATORNAME { get; set; }
-		public string? ORG_DESIGNATOR { get; set; }
-		public string? ORG_ADMINUNIT { get; set; }
-		public string? ORG_POSTCODE { get; set; }
-		public string? ORG_POSTNAME { get; set; }
-		public string? ORG_ADDRESS { get; set; }
-		public string? ORG_ADDRESS_UNSTRUCTURED { get; set; }
-		
+    public class Management : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ID { get; set; }
+        public long ReleaseId { get; set; }
+        public string? SITECODE { get; set; }
+        public string? ORG_NAME { get; set; }
+        public string? ORG_EMAIL { get; set; }
+        public string? MANAG_CONSERV_MEASURES { get; set; }
+        public string? MANAG_PLAN { get; set; }
+        public string? MANAG_PLAN_URL { get; set; }
+        public string? MANAG_STATUS { get; set; }
+        public string? ORG_LOCATORNAME { get; set; }
+        public string? ORG_DESIGNATOR { get; set; }
+        public string? ORG_ADMINUNIT { get; set; }
+        public string? ORG_POSTCODE { get; set; }
+        public string? ORG_POSTNAME { get; set; }
+        public string? ORG_ADDRESS { get; set; }
+        public string? ORG_ADDRESS_UNSTRUCTURED { get; set; }
+
         private string dbConnection = string.Empty;
 
         public Management() { }
@@ -212,15 +212,15 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("MANAGEMENT")
                 .HasKey(c => new { c.ID });
         }
-	}
+    }
 
-	public class MetaData : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ID { get; set; }
-		public long ReleaseId { get; set; }
-		public string? parameter { get; set; }
-		public string? value { get; set; }
-		
+    public class MetaData : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ID { get; set; }
+        public long ReleaseId { get; set; }
+        public string? parameter { get; set; }
+        public string? value { get; set; }
+
         private string dbConnection = string.Empty;
 
         public MetaData() { }
@@ -236,36 +236,36 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("METADATA")
                 .HasKey(c => new { c.ID });
         }
-	}
+    }
 
-	public class Natura2000Sites : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ReleaseId { get; set; }
-		public string? COUNTRY_CODE { get; set; }
-		public string? SITECODE { get; set; }
-		public int VERSION { get; set; }
-		public string? SITENAME { get; set; }
-		public string? SITETYPE { get; set; }
-		public DateTime? DATE_COMPILATION { get; set; }
-		public DateTime? DATE_UPDATE { get; set; }
-		public DateTime? DATE_SPA { get; set; }
-		public string? SPA_LEGAL_REFERENCE { get; set; }
-		public DateTime? DATE_PROP_SCI { get; set; }
-		public DateTime? DATE_CONF_SCI { get; set; }
-		public DateTime? DATE_SAC { get; set; }
-		public string? SAC_LEGAL_REFERENCE { get; set; }
-		public string? EXPLANATIONS { get; set; }
-		public decimal AREAHA { get; set; }
-		public decimal LENGTHKM { get; set; }
-		public decimal MARINE_AREA_PERCENTAGE { get; set; }
-		public decimal LONGITUDE { get; set; }
-		public decimal LATITUDE { get; set; }
-		public string? DOCUMENTATION { get; set; }
-		public string? QUALITY { get; set; }
-		public string? DESIGNATION { get; set; }
-		public string? OTHERCHARACT { get; set; }
-		public string? INSPIRE_ID { get; set; }
-		
+    public class Natura2000Sites : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ReleaseId { get; set; }
+        public string? COUNTRY_CODE { get; set; }
+        public string? SITECODE { get; set; }
+        public int VERSION { get; set; }
+        public string? SITENAME { get; set; }
+        public string? SITETYPE { get; set; }
+        public DateTime? DATE_COMPILATION { get; set; }
+        public DateTime? DATE_UPDATE { get; set; }
+        public DateTime? DATE_SPA { get; set; }
+        public string? SPA_LEGAL_REFERENCE { get; set; }
+        public DateTime? DATE_PROP_SCI { get; set; }
+        public DateTime? DATE_CONF_SCI { get; set; }
+        public DateTime? DATE_SAC { get; set; }
+        public string? SAC_LEGAL_REFERENCE { get; set; }
+        public string? EXPLANATIONS { get; set; }
+        public decimal AREAHA { get; set; }
+        public decimal LENGTHKM { get; set; }
+        public decimal MARINE_AREA_PERCENTAGE { get; set; }
+        public decimal LONGITUDE { get; set; }
+        public decimal LATITUDE { get; set; }
+        public string? DOCUMENTATION { get; set; }
+        public string? QUALITY { get; set; }
+        public string? DESIGNATION { get; set; }
+        public string? OTHERCHARACT { get; set; }
+        public string? INSPIRE_ID { get; set; }
+
         private string dbConnection = string.Empty;
 
         public Natura2000Sites() { }
@@ -281,26 +281,26 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("NATURA2000SITES")
                 .HasKey(c => new { c.ReleaseId });
         }
-	}
+    }
 
-	public class OtherSpecies : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ID { get; set; }
-		public long ReleaseId { get; set; }
-		public string? COUNTRY_CODE { get; set; }
-		public string? SITECODE { get; set; }
-		public string? SPECIESGROUP { get; set; }
-		public string? SPECIESNAME { get; set; }
-		public string? SPECIESCODE { get; set; }
-		public string? MOTIVATION { get; set; }
-		public bool SENSITIVE { get; set; }
-		public bool NONPRESENCEINSITE { get; set; }
-		public int LOWERBOUND { get; set; }
-		public int UPPERBOUND { get; set; }
-		public string? ABUNDANCE_CATEGORY { get; set; }
-		public string? COUNTING_UNIT { get; set; }
-		public bool INTRODUCTION_CANDIDATE { get; set; }
-		
+    public class OtherSpecies : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ID { get; set; }
+        public long ReleaseId { get; set; }
+        public string? COUNTRY_CODE { get; set; }
+        public string? SITECODE { get; set; }
+        public string? SPECIESGROUP { get; set; }
+        public string? SPECIESNAME { get; set; }
+        public string? SPECIESCODE { get; set; }
+        public string? MOTIVATION { get; set; }
+        public bool SENSITIVE { get; set; }
+        public bool NONPRESENCEINSITE { get; set; }
+        public int LOWERBOUND { get; set; }
+        public int UPPERBOUND { get; set; }
+        public string? ABUNDANCE_CATEGORY { get; set; }
+        public string? COUNTING_UNIT { get; set; }
+        public bool INTRODUCTION_CANDIDATE { get; set; }
+
         private string dbConnection = string.Empty;
 
         public OtherSpecies() { }
@@ -316,19 +316,19 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("OTHERSPECIES")
                 .HasKey(c => new { c.ID });
         }
-	}
+    }
 
-	public class Releases : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ID { get; set; }
-		public string? Title { get; set; }
-		public string? Author { get; set; }
-		public DateTime? CreateDate { get; set; }
-		public bool Final { get; set; }
-		public string? ModifyUser { get; set; }
-		public DateTime? ModifyDate { get; set; }
-		public string? Character { get; set; }
-		
+    public class Releases : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ID { get; set; }
+        public string? Title { get; set; }
+        public string? Author { get; set; }
+        public DateTime? CreateDate { get; set; }
+        public bool Final { get; set; }
+        public string? ModifyUser { get; set; }
+        public DateTime? ModifyDate { get; set; }
+        public string? Character { get; set; }
+
         private string dbConnection = string.Empty;
 
         public Releases() { }
@@ -344,32 +344,32 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("RELEASES")
                 .HasKey(c => new { c.ID });
         }
-	}
+    }
 
-	public class Species : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ID { get; set; }
-		public long ReleaseId { get; set; }
-		public string? COUNTRY_CODE { get; set; }
-		public string? SITECODE { get; set; }
-		public string? SPECIESNAME { get; set; }
-		public string? SPECIESCODE { get; set; }
-		public string? REF_SPGROUP { get; set; }
-		public string? SPGROUP { get; set; }
-		public bool SENSITIVE { get; set; }
-		public bool NONPRESENCEINSITE { get; set; }
-		public string? POPULATION_TYPE { get; set; }
-		public int LOWERBOUND { get; set; }
-		public int UPPERBOUND { get; set; }
-		public string? COUNTING_UNIT { get; set; }
-		public string? ABUNDANCE_CATEGORY { get; set; }
-		public string? DATAQUALITY { get; set; }
-		public string? POPULATION { get; set; }
-		public string? CONSERVATION { get; set; }
-		public string? ISOLATION { get; set; }
-		public string? GLOBAL { get; set; }
-		public bool INTRODUCTION_CANDIDATE { get; set; }
-		
+    public class Species : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ID { get; set; }
+        public long ReleaseId { get; set; }
+        public string? COUNTRY_CODE { get; set; }
+        public string? SITECODE { get; set; }
+        public string? SPECIESNAME { get; set; }
+        public string? SPECIESCODE { get; set; }
+        public string? REF_SPGROUP { get; set; }
+        public string? SPGROUP { get; set; }
+        public bool SENSITIVE { get; set; }
+        public bool NONPRESENCEINSITE { get; set; }
+        public string? POPULATION_TYPE { get; set; }
+        public int LOWERBOUND { get; set; }
+        public int UPPERBOUND { get; set; }
+        public string? COUNTING_UNIT { get; set; }
+        public string? ABUNDANCE_CATEGORY { get; set; }
+        public string? DATAQUALITY { get; set; }
+        public string? POPULATION { get; set; }
+        public string? CONSERVATION { get; set; }
+        public string? ISOLATION { get; set; }
+        public string? GLOBAL { get; set; }
+        public bool INTRODUCTION_CANDIDATE { get; set; }
+
         private string dbConnection = string.Empty;
 
         public Species() { }
@@ -385,14 +385,14 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("SPECIES")
                 .HasKey(c => new { c.ID });
         }
-	}
+    }
 
-	public class SiteSpatial : IEntityModel, IEntityModelReleasesDB
-	{
-		public long ReleaseId { get; set; }
-		public string? siteCode { get; set; }
-		public string? data { get; set; }
-		
+    public class SiteSpatial : IEntityModel, IEntityModelReleasesDB
+    {
+        public long ReleaseId { get; set; }
+        public string? siteCode { get; set; }
+        public string? data { get; set; }
+
         private string dbConnection = string.Empty;
 
         public SiteSpatial() { }
@@ -408,5 +408,5 @@ namespace N2K_BackboneBackEnd.Models.releases_db
                 .ToTable("SITESPATIAL")
                 .HasKey(c => new { c.ReleaseId });
         }
-	}
+    }
 }
