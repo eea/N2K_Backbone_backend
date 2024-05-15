@@ -21,6 +21,30 @@ namespace N2K_BackboneBackEnd.Controllers
             _mapper = mapper;
         }
 
+        [Route("GetExtraData")]
+        [HttpGet]
+        public async Task<ActionResult<SDF>> GetExtraData(string SiteCode, int submission)
+        {
+            ServiceResponse<SDF> response = new();
+            try
+            {
+                SDF result = await _SDFService.GetExtraData(SiteCode, submission);
+                response.Success = true;
+                response.Message = "";
+                response.Data = result;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new SDF();
+                return Ok(response);
+            }
+        }
+
         [Route("GetData")]
         [HttpGet]
         public async Task<ActionResult<SDF>> GetData(string SiteCode, int Version = -1)
