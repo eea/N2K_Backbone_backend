@@ -4,6 +4,7 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
+using Microsoft.Data.SqlClient;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -16,6 +17,86 @@ namespace N2K_BackboneBackEnd.Services
         {
             _dataContext = dataContext;
             _appSettings = app;
+        }
+
+        public async Task<SDF> GetExtraData(string SiteCode, int submission)
+        {
+            try
+            {
+                List<SiteBasicBulk> queryResults = new();
+                SiteBasicBulk mySiteView = new();
+                string queryString = String.Empty;
+
+                if (submission == 0)
+                {
+                    queryString = String.Format(@" 
+                        SELECT DISTINCT TOP(1) [SiteCode],
+                            [Sites].[Version],
+                            [N2KVersioningVersion]
+                        FROM [dbo].[Sites]
+                        INNER JOIN [dbo].[ProcessedEnvelopes] PE ON [Sites].[CountryCode] = PE.[Country]
+                            AND [Sites].[N2KVersioningVersion] = PE.[Version]
+                            AND PE.[Status] != 3
+                        WHERE [SiteCode] = '{0}' AND [Sites].[CurrentStatus] = 1
+                        ORDER BY [SiteCode], [N2KVersioningVersion] DESC, [Sites].[Version] DESC", SiteCode);
+                }
+                else if (submission == 1)
+                {
+                    queryString = String.Format(@" 
+                        SELECT DISTINCT [SiteCode],
+	                        MAX([Sites].[Version]) AS 'Version',
+	                        [N2KVersioningVersion]
+                        FROM [dbo].[Sites]
+                        INNER JOIN [dbo].[ProcessedEnvelopes] PE ON [Sites].[CountryCode] = PE.[Country]
+	                        AND [Sites].[N2KVersioningVersion] = PE.[Version]
+	                        AND PE.[Status] = 3
+                        WHERE [SiteCode] = '{0}'
+                        GROUP BY [SiteCode],
+	                        [N2KVersioningVersion]
+                        ORDER BY [SiteCode]", SiteCode);
+                }
+
+                SqlConnection backboneConn = null;
+                SqlCommand command = null;
+                SqlDataReader reader = null;
+                try
+                {
+                    backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                    backboneConn.Open();
+                    command = new SqlCommand(queryString, backboneConn);
+                    reader = await command.ExecuteReaderAsync();
+                    while (reader.Read())
+                    {
+                        mySiteView.SiteCode = reader["SiteCode"].ToString();
+                        mySiteView.Version = int.Parse(reader["Version"].ToString());
+                        mySiteView.N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SDFService - GetExtraData - GetSiteData", "", _dataContext.Database.GetConnectionString());
+                }
+                finally
+                {
+                    if (reader != null) await reader.DisposeAsync();
+                    if (command != null) command.Dispose();
+                    if (backboneConn != null) backboneConn.Dispose();
+                }
+
+                if (mySiteView.Version != null)
+                {
+                    return await GetData(SiteCode, mySiteView.Version);
+                }
+                else
+                {
+                    return await GetData(SiteCode, -1);
+                }
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SDFService - GetExtraData", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
 
         public async Task<SDF> GetData(string SiteCode, int Version = -1)
