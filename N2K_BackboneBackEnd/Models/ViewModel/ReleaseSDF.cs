@@ -17,22 +17,13 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
 
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<SDF>().HasNoKey();
+            builder.Entity<ReleaseSDF>().HasNoKey();
         }
     }
 
     [NotMapped]
-    public class SiteInfoRelease
+    public class SiteInfoRelease : SiteInfo
     {
-        public string? SiteName { get; set; }
-        public string? Country { get; set; }
-        public string? Directive { get; set; }
-        public string? SiteCode { get; set; }
-        public decimal? Area { get; set; }
-        public DateTime? Est { get; set; }
-        public decimal? MarineArea { get; set; }
-        public int? Habitats { get; set; }
-        public int? Species { get; set; }
         public ReleaseInfo[]? Releases { get; set; }
     }
 
