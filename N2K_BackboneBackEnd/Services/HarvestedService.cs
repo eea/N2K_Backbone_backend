@@ -671,7 +671,7 @@ namespace N2K_BackboneBackEnd.Services
                                     {
                                         SiteCode = storedSite.SiteCode,
                                         Version = storedSite.VersionId,
-                                        ChangeCategory = "Network general structure",
+                                        ChangeCategory = "Lineage",
                                         ChangeType = "Site Deleted",
                                         Country = envelope.CountryCode,
                                         Level = Enumerations.Level.Critical,
@@ -1101,7 +1101,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 SiteCode = harvestingSite.SiteCode,
                                 Version = harvestingSite.VersionId,
-                                ChangeCategory = "Network general structure",
+                                ChangeCategory = "Lineage",
                                 ChangeType = "Site Merged",
                                 Country = envelope.CountryCode,
                                 Level = Enumerations.Level.Critical,
@@ -1132,7 +1132,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 SiteCode = harvestingSite.SiteCode,
                                 Version = harvestingSite.VersionId,
-                                ChangeCategory = "Network general structure",
+                                ChangeCategory = "Lineage",
                                 ChangeType = "Site Split",
                                 Country = envelope.CountryCode,
                                 Level = Enumerations.Level.Critical,
@@ -1172,7 +1172,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 SiteCode = harvestingSite.SiteCode,
                                 Version = harvestingSite.VersionId,
-                                ChangeCategory = "Network general structure",
+                                ChangeCategory = "Lineage",
                                 ChangeType = "Site Merged",
                                 Country = envelope.CountryCode,
                                 Level = Enumerations.Level.Critical,
@@ -1204,7 +1204,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 SiteCode = harvestingSite.SiteCode,
                                 Version = harvestingSite.VersionId,
-                                ChangeCategory = "Network general structure",
+                                ChangeCategory = "Lineage",
                                 ChangeType = "Site Split",
                                 Country = envelope.CountryCode,
                                 Level = Enumerations.Level.Critical,
@@ -1226,7 +1226,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 SiteCode = harvestingSite.SiteCode,
                                 Version = harvestingSite.VersionId,
-                                ChangeCategory = "Network general structure",
+                                ChangeCategory = "Lineage",
                                 ChangeType = "Site Added",
                                 Country = envelope.CountryCode,
                                 Level = Enumerations.Level.Critical,
@@ -1379,7 +1379,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             SiteCode = harvestingSite.SiteCode,
                             Version = harvestingSite.VersionId,
-                            ChangeCategory = "Network general structure",
+                            ChangeCategory = "Lineage",
                             ChangeType = "Site Merged",
                             Country = envelope.CountryCode,
                             Level = Enumerations.Level.Critical,
@@ -1411,7 +1411,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             SiteCode = harvestingSite.SiteCode,
                             Version = harvestingSite.VersionId,
-                            ChangeCategory = "Network general structure",
+                            ChangeCategory = "Lineage",
                             ChangeType = "Site Split",
                             Country = envelope.CountryCode,
                             Level = Enumerations.Level.Critical,
@@ -1433,7 +1433,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             SiteCode = harvestingSite.SiteCode,
                             Version = harvestingSite.VersionId,
-                            ChangeCategory = "Network general structure",
+                            ChangeCategory = "Lineage",
                             ChangeType = "Site Added",
                             Country = envelope.CountryCode,
                             Level = Enumerations.Level.Critical,
@@ -1458,7 +1458,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             SiteCode = storedSite.SiteCode,
                             Version = storedSite.VersionId,
-                            ChangeCategory = "Network general structure",
+                            ChangeCategory = "Lineage",
                             ChangeType = "Site Deleted",
                             Country = envelope.CountryCode,
                             Level = Enumerations.Level.Critical,

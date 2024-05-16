@@ -4,6 +4,7 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
+using Microsoft.Data.SqlClient;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -18,12 +19,92 @@ namespace N2K_BackboneBackEnd.Services
             _appSettings = app;
         }
 
+        public async Task<SDF> GetExtraData(string SiteCode, int submission)
+        {
+            try
+            {
+                List<SiteBasicBulk> queryResults = new();
+                SiteBasicBulk mySiteView = new();
+                string queryString = String.Empty;
+
+                if (submission == 0)
+                {
+                    queryString = String.Format(@" 
+                        SELECT DISTINCT TOP(1) [SiteCode],
+                            [Sites].[Version],
+                            [N2KVersioningVersion]
+                        FROM [dbo].[Sites]
+                        INNER JOIN [dbo].[ProcessedEnvelopes] PE ON [Sites].[CountryCode] = PE.[Country]
+                            AND [Sites].[N2KVersioningVersion] = PE.[Version]
+                            AND PE.[Status] != 3
+                        WHERE [SiteCode] = '{0}' AND [Sites].[CurrentStatus] = 1
+                        ORDER BY [SiteCode], [N2KVersioningVersion] DESC, [Sites].[Version] DESC", SiteCode);
+                }
+                else if (submission == 1)
+                {
+                    queryString = String.Format(@" 
+                        SELECT DISTINCT [SiteCode],
+	                        MAX([Sites].[Version]) AS 'Version',
+	                        [N2KVersioningVersion]
+                        FROM [dbo].[Sites]
+                        INNER JOIN [dbo].[ProcessedEnvelopes] PE ON [Sites].[CountryCode] = PE.[Country]
+	                        AND [Sites].[N2KVersioningVersion] = PE.[Version]
+	                        AND PE.[Status] = 3
+                        WHERE [SiteCode] = '{0}'
+                        GROUP BY [SiteCode],
+	                        [N2KVersioningVersion]
+                        ORDER BY [SiteCode]", SiteCode);
+                }
+
+                SqlConnection backboneConn = null;
+                SqlCommand command = null;
+                SqlDataReader reader = null;
+                try
+                {
+                    backboneConn = new SqlConnection(_dataContext.Database.GetConnectionString());
+                    backboneConn.Open();
+                    command = new SqlCommand(queryString, backboneConn);
+                    reader = await command.ExecuteReaderAsync();
+                    while (reader.Read())
+                    {
+                        mySiteView.SiteCode = reader["SiteCode"].ToString();
+                        mySiteView.Version = int.Parse(reader["Version"].ToString());
+                        mySiteView.N2KVersioningVersion = int.Parse(reader["N2KVersioningVersion"].ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SDFService - GetExtraData - GetSiteData", "", _dataContext.Database.GetConnectionString());
+                }
+                finally
+                {
+                    if (reader != null) await reader.DisposeAsync();
+                    if (command != null) command.Dispose();
+                    if (backboneConn != null) backboneConn.Dispose();
+                }
+
+                if (mySiteView.Version != null)
+                {
+                    return await GetData(SiteCode, mySiteView.Version);
+                }
+                else
+                {
+                    return await GetData(SiteCode, -1);
+                }
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SDFService - GetExtraData", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
         public async Task<SDF> GetData(string SiteCode, int Version = -1)
         {
             try
             {
-                string booleanTrue = "yes";
-                string booleanFalse = "no";
+                string booleanTrue = "Yes";
+                string booleanFalse = "No";
                 string booleanChecked = "x";
                 string booleanUnchecked = "";
 
@@ -103,11 +184,15 @@ namespace N2K_BackboneBackEnd.Services
                     }; //UNSURE HOW COULD THERE BE MORE THAN ONE
                     result.SiteIdentification.SiteDesignation.Add(siteDesignation);
                 }
-                if (respondents != null && respondents.Count > 0) //UNSURE
+                if (respondents != null && respondents.Count > 0)
                 {
-                    result.SiteIdentification.Respondent.Name = respondents.FirstOrDefault().ContactName;
-                    result.SiteIdentification.Respondent.Address = respondents.FirstOrDefault().addressArea;
-                    result.SiteIdentification.Respondent.Email = respondents.FirstOrDefault().Email;
+                    Respondents contact = respondents.Where(r => r.ContactName != null).FirstOrDefault();
+                    if (contact != null)
+                    {
+                        result.SiteIdentification.Respondent.Name = contact.ContactName;
+                        result.SiteIdentification.Respondent.Address = contact.addressArea;
+                        result.SiteIdentification.Respondent.Email = contact.Email;
+                    }
                 }
                 #endregion
 
@@ -157,7 +242,7 @@ namespace N2K_BackboneBackEnd.Services
                             Code = h.HabitatCode,
                             Cover = h.CoverHA,
                             Cave = h.Caves,
-                            DataQuality = h.DataQty != null ? dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().Name : null,
+                            DataQuality = h.DataQty != null ? dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().HabitatCode : null,
                             Representativity = h.Representativity,
                             RelativeSurface = h.RelativeSurface,
                             Conservation = h.ConsStatus,
@@ -191,7 +276,7 @@ namespace N2K_BackboneBackEnd.Services
                             Global = h.Global
                         };
                         if (h.SensitiveInfo != null)
-                            temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanFalse;
+                            temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanUnchecked;
                         if (h.NonPersistence != null)
                             temp.NP = (h.NonPersistence == true) ? booleanChecked : booleanUnchecked;
                         result.EcologicalInformation.Species.Add(temp);
@@ -212,7 +297,7 @@ namespace N2K_BackboneBackEnd.Services
                             Category = h.AbundaceCategory
                         };
                         if (h.SensitiveInfo != null)
-                            temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanFalse;
+                            temp.Sensitive = (h.SensitiveInfo == true) ? booleanTrue : booleanUnchecked;
                         if (h.NonPersistence != null)
                             temp.NP = (h.NonPersistence == true) ? booleanChecked : booleanUnchecked;
                         if (h.Motivation != null)
@@ -270,7 +355,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         N2K_BackboneBackEnd.Models.ViewModel.Ownership temp = new()
                         {
-                            Type = h.Type,
+                            Type = h.Type.ToLower(),
                             Percent = h.Percent
                         };
                         result.SiteDescription.Ownership.Add(temp);
@@ -280,6 +365,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     result.SiteDescription.Quality = siteLargeDescriptions.FirstOrDefault().Quality;
                     result.SiteDescription.Documents = siteLargeDescriptions.FirstOrDefault().Documentation;
+                    result.SiteDescription.OtherCharacteristics = siteLargeDescriptions.FirstOrDefault().OtherCharact;
                 }
                 if (documentationLinks != null && documentationLinks.Count > 0)
                 {
@@ -310,12 +396,13 @@ namespace N2K_BackboneBackEnd.Services
                         RelationSites temp = new()
                         {
                             DesignationLevel = (h.DesignationCode != null && h.DesignationCode != "") ? "National or regional" : "International",
-                            TypeCode = h.DesignationCode,
+                            TypeCode = (h.DesignationCode != null && h.DesignationCode != "") ? h.DesignationCode : h.Convention,
                             SiteName = h.Name,
                             Type = h.OverlapCode,
                             Percent = h.OverlapPercentage
                         };
                         result.SiteProtectionStatus.RelationSites.Add(temp);
+                        result.SiteProtectionStatus.RelationSites = result.SiteProtectionStatus.RelationSites.OrderByDescending(o => o.DesignationLevel).ToList();
                     });
                 }
                 if (siteLargeDescriptions != null && siteLargeDescriptions.Count > 0)
@@ -329,13 +416,16 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     respondents.ForEach(h =>
                     {
-                        BodyResponsible temp = new()
+                        if (h.OrgName != null)
                         {
-                            Organisation = h.ContactName ?? h.OrgName,
-                            Address = h.addressArea,
-                            Email = h.Email
-                        };
-                        result.SiteManagement.BodyResponsible.Add(temp);
+                            BodyResponsible temp = new()
+                            {
+                                Organisation = h.OrgName,
+                                Address = h.addressArea,
+                                Email = h.Email
+                            };
+                            result.SiteManagement.BodyResponsible.Add(temp);
+                        }
                     });
                 }
                 if (siteLargeDescriptions != null && siteLargeDescriptions.Count > 0)
@@ -345,7 +435,8 @@ namespace N2K_BackboneBackEnd.Services
                         ManagementPlan temp = new()
                         {
                             Name = h.ManagPlan,
-                            Link = h.ManagPlanUrl
+                            Link = h.ManagPlanUrl,
+                            Exists = h.ManagStatus
                         };
                         result.SiteManagement.ManagementPlan.Add(temp);
                     });
