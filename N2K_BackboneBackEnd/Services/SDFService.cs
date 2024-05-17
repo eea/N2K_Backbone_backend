@@ -83,13 +83,13 @@ namespace N2K_BackboneBackEnd.Services
                     if (backboneConn != null) backboneConn.Dispose();
                 }
 
-                if (mySiteView.Version != null)
+                if (mySiteView.SiteCode != "")
                 {
                     return await GetData(SiteCode, mySiteView.Version);
                 }
                 else
                 {
-                    return await GetData(SiteCode, -1);
+                    return await GetData(SiteCode, -2);
                 }
             }
             catch (Exception ex)
@@ -107,6 +107,7 @@ namespace N2K_BackboneBackEnd.Services
                 string booleanFalse = "No";
                 string booleanChecked = "x";
                 string booleanUnchecked = "";
+                SDF result = new();
 
                 Sites site;
                 if (Version == -1)
@@ -123,6 +124,9 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     site = await _dataContext.Set<Sites>().Where(a => a.SiteCode == SiteCode && a.Version == Version).AsNoTracking().FirstOrDefaultAsync();
                 }
+
+                if (site == null)
+                    return result;
 
                 List<Countries> countries = await _dataContext.Set<Countries>().AsNoTracking().ToListAsync();
                 List<Habitats> habitats = await _dataContext.Set<Habitats>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
@@ -146,7 +150,6 @@ namespace N2K_BackboneBackEnd.Services
                 List<DetailedProtectionStatus> detailedProtectionStatus = await _dataContext.Set<DetailedProtectionStatus>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 ReferenceMap referenceMap = await _dataContext.Set<ReferenceMap>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().FirstOrDefaultAsync();
 
-                SDF result = new();
                 #region SiteInfo
                 if (site != null)
                 {
