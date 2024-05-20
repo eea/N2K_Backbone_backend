@@ -481,8 +481,8 @@ namespace N2K_BackboneBackEnd.Services
                 ReleaseSDF result = new();
 
                 List<Releases> releases = await _releaseContext.Set<Releases>().AsNoTracking().ToListAsync();
-
                 Releases release;
+
                 if (ReleaseId == -1)
                 {
                     release = releases.OrderBy(r => r.CreateDate).Last();
@@ -519,10 +519,10 @@ namespace N2K_BackboneBackEnd.Services
                 List<NUTSBYSITE> nutsBySite = await _dataContext.Set<NUTSBYSITE>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<BIOREGION> bioRegions = await _releaseContext.Set<BIOREGION>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<IMPACT> isImpactedBy = await _releaseContext.Set<IMPACT>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<SITEOWNERTYPE> siteOwnerType = await _dataContext.Set<SITEOWNERTYPE>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<DOCUMENTATIONLINKS> documentationLinks = await _dataContext.Set<DOCUMENTATIONLINKS>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<DESIGNATIONSTATUS> designationStatus = await _dataContext.Set<DESIGNATIONSTATUS>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                REFERENCEMAP referenceMap = await _dataContext.Set<REFERENCEMAP>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().FirstOrDefaultAsync();
+                List<SITEOWNERTYPE> siteOwnerType = await _releaseContext.Set<SITEOWNERTYPE>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<DOCUMENTATIONLINKS> documentationLinks = await _releaseContext.Set<DOCUMENTATIONLINKS>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<DESIGNATIONSTATUS> designationStatus = await _releaseContext.Set<DESIGNATIONSTATUS>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                REFERENCEMAP referenceMap = await _releaseContext.Set<REFERENCEMAP>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().FirstOrDefaultAsync();
 
                 #region SiteInfo
                 if (site != null)
