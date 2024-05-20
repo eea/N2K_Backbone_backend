@@ -131,23 +131,26 @@ namespace N2K_BackboneBackEnd.Services
                 if (site == null)
                     return result;
 
+                //Catalogues
+                List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().AsNoTracking().ToListAsync();
                 List<Countries> countries = await _dataContext.Set<Countries>().AsNoTracking().ToListAsync();
-                List<Habitats> habitats = await _dataContext.Set<Habitats>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
-                List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
-                List<Species> species = await _dataContext.Set<Species>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
-                List<SpeciesTypes> speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
-                List<SpeciesOther> speciesOther = await _dataContext.Set<SpeciesOther>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<DataQualityTypes> dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
+                List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
+                List<Nuts> nuts = await _dataContext.Set<Nuts>().AsNoTracking().ToListAsync();
+                List<OwnerShipTypes> ownerShipTypes = await _dataContext.Set<OwnerShipTypes>().AsNoTracking().ToListAsync();
+                List<SpeciesTypes> speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
+
+                //Data
+                List<Habitats> habitats = await _dataContext.Set<Habitats>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+                List<Species> species = await _dataContext.Set<Species>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
+                List<SpeciesOther> speciesOther = await _dataContext.Set<SpeciesOther>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<Respondents> respondents = await _dataContext.Set<Respondents>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<NutsBySite> nutsBySite = await _dataContext.Set<NutsBySite>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
-                List<Nuts> nuts = await _dataContext.Set<Nuts>().AsNoTracking().ToListAsync();
                 List<BioRegions> bioRegions = await _dataContext.Set<BioRegions>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
-                List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().AsNoTracking().ToListAsync();
                 List<SiteLargeDescriptions> siteLargeDescriptions = await _dataContext.Set<SiteLargeDescriptions>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<DescribeSites> describeSites = await _dataContext.Set<DescribeSites>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<IsImpactedBy> isImpactedBy = await _dataContext.Set<IsImpactedBy>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<SiteOwnerType> siteOwnerType = await _dataContext.Set<SiteOwnerType>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
-                List<OwnerShipTypes> ownerShipTypes = await _dataContext.Set<OwnerShipTypes>().AsNoTracking().ToListAsync();
                 List<DocumentationLinks> documentationLinks = await _dataContext.Set<DocumentationLinks>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<HasNationalProtection> hasNationalProtection = await _dataContext.Set<HasNationalProtection>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
                 List<DetailedProtectionStatus> detailedProtectionStatus = await _dataContext.Set<DetailedProtectionStatus>().Where(a => a.SiteCode == SiteCode && a.Version == site.Version).AsNoTracking().ToListAsync();
@@ -475,50 +478,52 @@ namespace N2K_BackboneBackEnd.Services
                 string booleanFalse = "No";
                 string booleanChecked = "x";
                 string booleanUnchecked = "";
+                ReleaseSDF result = new();
 
-                Models.release_db.Releases release;
+                List<Releases> releases = await _releaseContext.Set<Releases>().AsNoTracking().ToListAsync();
 
+                Releases release;
                 if (ReleaseId == -1)
                 {
-                    release = await _releaseContext.Set<Models.release_db.Releases>().OrderBy(r => r.CreateDate).LastAsync();
+                    release = releases.OrderBy(r => r.CreateDate).Last();
                 }
                 else
                 {
-                    release = await _releaseContext.Set<Models.release_db.Releases>().Where(r => r.ID == ReleaseId).FirstOrDefaultAsync();
+                    release = releases.Where(r => r.ID == ReleaseId).FirstOrDefault();
                 }
 
                 if (release == null)
-                {
-                    // TODO error
-                }
+                    return result;
 
-                NATURA2000SITES site = await _releaseContext.Set<NATURA2000SITES>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).FirstOrDefaultAsync();
+                List<NATURA2000SITES> sites = await _releaseContext.Set<NATURA2000SITES>().Where(a => a.SITECODE == SiteCode).ToListAsync();
+                NATURA2000SITES site = sites.Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).FirstOrDefault();
 
+                if (site == null)
+                    return result;
+
+                //Catalogues
                 List<Countries> countries = await _dataContext.Set<Countries>().AsNoTracking().ToListAsync();
-                List<HABITATS> habitats = await _releaseContext.Set<HABITATS>().Where(h => h.SITECODE == SiteCode && h.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<HABITATCLASS> habitatClasses = await _releaseContext.Set<HABITATCLASS>().Where(h => h.SITECODE == SiteCode && h.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
-                List<SPECIES> species = await _releaseContext.Set<SPECIES>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<SpeciesTypes> speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
-                List<OTHERSPECIES> speciesOther = await _releaseContext.Set<OTHERSPECIES>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<DataQualityTypes> dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
-                List<CONTACTS> contacts = await _releaseContext.Set<CONTACTS>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<MANAGEMENT> respondents = await _releaseContext.Set<MANAGEMENT>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<NUTSBYSITE> nutsBySite = await _dataContext.Set<NUTSBYSITE>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
                 List<Nuts> nuts = await _dataContext.Set<Nuts>().AsNoTracking().ToListAsync();
+                List<OwnerShipTypes> ownerShipTypes = await _dataContext.Set<OwnerShipTypes>().AsNoTracking().ToListAsync();
+                List<SpeciesTypes> speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
+
+                //Data
+                List<HABITATS> habitats = await _releaseContext.Set<HABITATS>().Where(h => h.SITECODE == SiteCode && h.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<HABITATCLASS> habitatClass = await _releaseContext.Set<HABITATCLASS>().Where(h => h.SITECODE == SiteCode && h.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<SPECIES> species = await _releaseContext.Set<SPECIES>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<OTHERSPECIES> speciesOther = await _releaseContext.Set<OTHERSPECIES>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<CONTACTS> contacts = await _releaseContext.Set<CONTACTS>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<MANAGEMENT> management = await _releaseContext.Set<MANAGEMENT>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<NUTSBYSITE> nutsBySite = await _dataContext.Set<NUTSBYSITE>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<BIOREGION> bioRegions = await _releaseContext.Set<BIOREGION>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<BioRegionTypes> bioRegionTypes = await _dataContext.Set<BioRegionTypes>().AsNoTracking().ToListAsync();
-                List<SiteLargeDescriptions> siteLargeDescriptions = await _dataContext.Set<SiteLargeDescriptions>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
-                List<DescribeSites> describeSites = await _dataContext.Set<DescribeSites>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
                 List<IMPACT> isImpactedBy = await _releaseContext.Set<IMPACT>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<SITEOWNERTYPE> siteOwnerType = await _dataContext.Set<SITEOWNERTYPE>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<OwnerShipTypes> ownerShipTypes = await _dataContext.Set<OwnerShipTypes>().AsNoTracking().ToListAsync();
                 List<DOCUMENTATIONLINKS> documentationLinks = await _dataContext.Set<DOCUMENTATIONLINKS>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<HasNationalProtection> hasNationalProtection = await _dataContext.Set<HasNationalProtection>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
-                List<DetailedProtectionStatus> detailedProtectionStatus = await _dataContext.Set<DetailedProtectionStatus>().Where(a => a.SiteCode == SiteCode && a.Version == site.VERSION).AsNoTracking().ToListAsync();
+                List<DESIGNATIONSTATUS> designationStatus = await _dataContext.Set<DESIGNATIONSTATUS>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 REFERENCEMAP referenceMap = await _dataContext.Set<REFERENCEMAP>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().FirstOrDefaultAsync();
 
-                ReleaseSDF result = new();
                 #region SiteInfo
                 if (site != null)
                 {
@@ -534,6 +539,15 @@ namespace N2K_BackboneBackEnd.Services
                     result.SiteInfo.Habitats = habitats.Count;
                 if (species != null && species.Count > 0)
                     result.SiteInfo.Species = species.Count;
+                sites.ForEach(st =>
+                {
+                    ReleaseInfo temp = new()
+                    {
+                        ReleaseName = releases.Where(w => w.ID == st.ReleaseId).Select(s => s.Title).FirstOrDefault(),
+                        ReleaseDate = releases.Where(w => w.ID == st.ReleaseId).Select(s => s.CreateDate).FirstOrDefault()
+                    };
+                    result.SiteInfo.Releases.Add(temp);
+                });
                 #endregion
 
                 #region SiteIdentification
@@ -688,14 +702,14 @@ namespace N2K_BackboneBackEnd.Services
                 #endregion
 
                 #region SiteDescription
-                if (describeSites != null && describeSites.Count > 0)
+                if (habitatClass != null && habitatClass.Count > 0)
                 {
-                    describeSites.ForEach(h =>
+                    habitatClass.ForEach(h =>
                     {
                         CodeCover temp = new()
                         {
-                            Code = h.HabitatCode,
-                            Cover = h.Percentage
+                            Code = h.HABITATCODE,
+                            Cover = h.PERCENTAGECOVER
                         };
                         result.SiteDescription.GeneralCharacter.Add(temp);
                     });
@@ -733,12 +747,9 @@ namespace N2K_BackboneBackEnd.Services
                         result.SiteDescription.Ownership.Add(temp);
                     });
                 }
-                if (siteLargeDescriptions != null && siteLargeDescriptions.Count > 0)
-                {
-                    result.SiteDescription.Quality = siteLargeDescriptions.FirstOrDefault().Quality;
-                    result.SiteDescription.Documents = siteLargeDescriptions.FirstOrDefault().Documentation;
-                    result.SiteDescription.OtherCharacteristics = siteLargeDescriptions.FirstOrDefault().OtherCharact;
-                }
+                result.SiteDescription.Quality = site.QUALITY;
+                result.SiteDescription.Documents = site.DOCUMENTATION;
+                result.SiteDescription.OtherCharacteristics = site.OTHERCHARACT;
                 if (documentationLinks != null && documentationLinks.Count > 0)
                 {
                     documentationLinks.ForEach(h =>
@@ -749,44 +760,41 @@ namespace N2K_BackboneBackEnd.Services
                 #endregion
 
                 #region SiteProtectionStatus
-                if (hasNationalProtection != null && hasNationalProtection.Count > 0)
+                if (designationStatus != null && designationStatus.Count > 0)
                 {
-                    hasNationalProtection.ForEach(h =>
+                    designationStatus.ForEach(h =>
                     {
-                        CodeCover temp = new()
+                        if (h.DESIGNATEDSITENAME == null && h.OVERLAPCODE == null)
                         {
-                            Code = h.DesignatedCode,
-                            Cover = h.Percentage
-                        };
-                        result.SiteProtectionStatus.DesignationTypes.Add(temp);
+                            CodeCover temp = new()
+                            {
+                                Code = h.DESIGNATIONCODE,
+                                Cover = h.OVERLAPPERC
+                            };
+                            result.SiteProtectionStatus.DesignationTypes.Add(temp);
+                        }
+                        else
+                        {
+                            RelationSites temp = new()
+                            {
+                                DesignationLevel = (h.DESIGNATIONCODE != null && h.DESIGNATIONCODE != "") ? "National or regional" : "International",
+                                TypeCode = h.DESIGNATIONCODE,
+                                SiteName = h.DESIGNATEDSITENAME,
+                                Type = h.OVERLAPCODE,
+                                Percent = h.OVERLAPPERC
+                            };
+                            result.SiteProtectionStatus.RelationSites.Add(temp);
+                            result.SiteProtectionStatus.RelationSites = result.SiteProtectionStatus.RelationSites.OrderByDescending(o => o.DesignationLevel).ToList();
+                        }
                     });
                 }
-                if (detailedProtectionStatus != null && detailedProtectionStatus.Count > 0)
-                {
-                    detailedProtectionStatus.ForEach(h =>
-                    {
-                        RelationSites temp = new()
-                        {
-                            DesignationLevel = (h.DesignationCode != null && h.DesignationCode != "") ? "National or regional" : "International",
-                            TypeCode = (h.DesignationCode != null && h.DesignationCode != "") ? h.DesignationCode : h.Convention,
-                            SiteName = h.Name,
-                            Type = h.OverlapCode,
-                            Percent = h.OverlapPercentage
-                        };
-                        result.SiteProtectionStatus.RelationSites.Add(temp);
-                        result.SiteProtectionStatus.RelationSites = result.SiteProtectionStatus.RelationSites.OrderByDescending(o => o.DesignationLevel).ToList();
-                    });
-                }
-                if (siteLargeDescriptions != null && siteLargeDescriptions.Count > 0)
-                {
-                    result.SiteProtectionStatus.SiteDesignation = siteLargeDescriptions.FirstOrDefault().Designation;
-                }
+                result.SiteProtectionStatus.SiteDesignation = site.DESIGNATION;
                 #endregion
 
                 #region SiteManagement
-                if (respondents != null && respondents.Count > 0)
+                if (management != null && management.Count > 0)
                 {
-                    respondents.ForEach(h =>
+                    management.ForEach(h =>
                     {
                         if (h.ORG_NAME != null)
                         {
@@ -800,19 +808,19 @@ namespace N2K_BackboneBackEnd.Services
                         }
                     });
                 }
-                if (siteLargeDescriptions != null && siteLargeDescriptions.Count > 0)
+                if (management != null && management.Count > 0)
                 {
-                    siteLargeDescriptions.ForEach(h =>
+                    management.ForEach(h =>
                     {
                         ManagementPlan temp = new()
                         {
-                            Name = h.ManagPlan,
-                            Link = h.ManagPlanUrl,
-                            Exists = h.ManagStatus
+                            Name = h.MANAG_PLAN,
+                            Link = h.MANAG_PLAN_URL,
+                            Exists = h.MANAG_STATUS
                         };
                         result.SiteManagement.ManagementPlan.Add(temp);
                     });
-                    result.SiteManagement.ConservationMeasures = siteLargeDescriptions.FirstOrDefault().ManagConservMeasures;
+                    result.SiteManagement.ConservationMeasures = management.FirstOrDefault().MANAG_CONSERV_MEASURES;
                 }
                 #endregion
 

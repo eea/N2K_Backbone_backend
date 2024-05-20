@@ -67,7 +67,7 @@ namespace N2K_BackboneBackEnd.Models.release_db
         public string? DESIGNATIONCODE { get; set; }
         public string? DESIGNATEDSITENAME { get; set; }
         public string? OVERLAPCODE { get; set; }
-        public string? OVERLAPPERC { get; set; }
+        public decimal? OVERLAPPERC { get; set; }
 
         private string dbConnection = string.Empty;
 

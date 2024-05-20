@@ -24,7 +24,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [NotMapped]
     public class SiteInfoRelease : SiteInfo
     {
-        public ReleaseInfo[]? Releases { get; set; }
+        public List<ReleaseInfo>? Releases { get; set; }
     }
 
     [NotMapped]
