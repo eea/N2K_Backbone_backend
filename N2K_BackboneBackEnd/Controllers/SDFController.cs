@@ -68,5 +68,29 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+        [Route("GetReleaseData")]
+        [HttpGet]
+        public async Task<ActionResult<ReleaseSDF>> GetReleaseData(string SiteCode, int ReleaseId = -1)
+        {
+            ServiceResponse<ReleaseSDF> response = new();
+            try
+            {
+                ReleaseSDF result = await _SDFService.GetReleaseData(SiteCode, ReleaseId);
+                response.Success = true;
+                response.Message = "";
+                response.Data = result;
+                response.Count = 1;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = new ReleaseSDF();
+                return Ok(response);
+            }
+        }
     }
 }

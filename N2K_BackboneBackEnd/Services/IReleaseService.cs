@@ -1,6 +1,7 @@
-﻿using N2K_BackboneBackEnd.Models.backbone_db;
+﻿using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.release_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
-using N2K_BackboneBackEnd.Models;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace N2K_BackboneBackEnd.Services

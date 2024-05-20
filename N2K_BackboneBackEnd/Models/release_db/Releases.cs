@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace N2K_BackboneBackEnd.Models.backbone_db
+namespace N2K_BackboneBackEnd.Models.release_db
 {
     public class ReleasesInputParam : IEntityModel, IEntityModelReleasesDB
     {
