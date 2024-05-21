@@ -30,6 +30,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [NotMapped]
     public class ReleaseInfo
     {
+        public long? ReleaseId { get; set; }
         public string? ReleaseName { get; set; }
         public DateTime? ReleaseDate { get; set; }
     }
