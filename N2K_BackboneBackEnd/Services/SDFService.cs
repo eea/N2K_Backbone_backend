@@ -543,6 +543,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     ReleaseInfo temp = new()
                     {
+                        ReleaseId = st.ReleaseId,
                         ReleaseName = releases.Where(w => w.ID == st.ReleaseId).Select(s => s.Title).FirstOrDefault(),
                         ReleaseDate = releases.Where(w => w.ID == st.ReleaseId).Select(s => s.CreateDate).FirstOrDefault()
                     };
