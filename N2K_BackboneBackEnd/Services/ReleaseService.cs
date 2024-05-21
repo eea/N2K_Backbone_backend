@@ -3,10 +3,11 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Helpers;
+using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.backbone_db;
+using N2K_BackboneBackEnd.Models.release_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using Microsoft.Extensions.Options;
-using N2K_BackboneBackEnd.Models;
 using System.Data;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
@@ -842,6 +843,11 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     _dataContext.Set<UnionListHeader>().Remove(unionlistheader);
                     await _dataContext.SaveChangesAsync();
+
+                    //Delete assignment to Release from Attachments and comments
+                    SqlParameter param1 = new("@id", unionlistheader.idULHeader);
+                    await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spDeleteReleaseUnionList  @id", param1);
+
                     result = 1;
                 }
 

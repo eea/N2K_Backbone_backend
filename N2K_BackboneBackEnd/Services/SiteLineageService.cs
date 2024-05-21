@@ -10,6 +10,7 @@ using System.Data;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.SignalR;
 using N2K_BackboneBackEnd.Hubs;
+using N2K_BackboneBackEnd.Models.BackboneDB;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -32,6 +33,163 @@ namespace N2K_BackboneBackEnd.Services
         }
 
         public async Task<List<SiteLineage>> GetSiteLineageAsync(string siteCode)
+        {
+            try
+            {
+                List<UnionListHeader> headers = await _dataContext.Set<UnionListHeader>().Where(h => h.Final == true).AsNoTracking().ToListAsync();
+                headers = headers.OrderBy(i => i.Date).ToList(); //Order releases by date
+                List<long?> ULHIds = new();
+                foreach (UnionListHeader header in headers)
+                {
+                    ULHIds.Add(header.idULHeader);
+                }
+
+                List<UnionListDetail> ULDetails = await _dataContext.Set<UnionListDetail>().Where(a => ULHIds.Contains(a.idUnionListHeader) && a.SCI_code == siteCode).AsNoTracking().ToListAsync();
+                ULDetails = ULDetails
+                      .GroupBy(p => new { p.SCI_code, p.idUnionListHeader })
+                      .Select(g => g.First())
+                      .ToList();
+                ULDetails = ULDetails.OrderBy(i => i.idUnionListHeader).ToList();
+
+                List<SiteLineage> result = new();
+                if (ULDetails.Any())
+                {
+                    string preSitecode = null;
+                    string preRelease = null;
+
+                    Lineage firstLineage = await _dataContext.Set<Lineage>().Where(a => a.SiteCode == ULDetails.FirstOrDefault().SCI_code && a.Version == ULDetails.FirstOrDefault().version).AsNoTracking().FirstOrDefaultAsync();
+                    List<LineageAntecessors> firstAntecessors = await _dataContext.Set<LineageAntecessors>().Where(a => a.LineageID == firstLineage.ID).AsNoTracking().ToListAsync();
+                    if (firstAntecessors.Any())
+                    {
+                        foreach (LineageAntecessors firstAntecessor in firstAntecessors)
+                        {
+                            UnionListDetail ULDetail = await _dataContext.Set<UnionListDetail>().Where(a => ULHIds.Contains(a.idUnionListHeader)
+                                && a.idUnionListHeader < ULDetails.FirstOrDefault().idUnionListHeader
+                                && a.SCI_code == firstAntecessor.SiteCode
+                                && a.version == firstAntecessor.Version).AsNoTracking().OrderBy(o => o.idUnionListHeader).LastOrDefaultAsync();
+                            if (ULDetail != null)
+                            {
+                                try
+                                {
+                                    SiteLineage temp = new()
+                                    {
+                                        SiteCode = ULDetail.SCI_code,
+                                        Release = headers.Where(c => c.idULHeader == ULDetail.idUnionListHeader).FirstOrDefault().Name
+                                    };
+                                    result.Add(temp);
+                                }
+                                catch (Exception ex)
+                                {
+                                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetSiteLineageAsync - " + ULDetail.SCI_code + "/" + ULDetail.version, "", _dataContext.Database.GetConnectionString());
+                                }
+                                try
+                                {
+                                    preSitecode = string.Join(",", firstAntecessors.Select(r => r.SiteCode));
+                                    preRelease = headers.Where(c => c.idULHeader == ULDetail.idUnionListHeader).FirstOrDefault().Name;
+                                }
+                                catch (Exception)
+                                {
+                                    preSitecode = null;
+                                    preRelease = null;
+                                }
+                            }
+                        }
+                    }
+
+                    foreach (UnionListDetail detail in ULDetails)
+                    {
+                        try
+                        {
+                            SiteLineage temp = new()
+                            {
+                                SiteCode = detail.SCI_code,
+                                Release = headers.Where(c => c.idULHeader == detail.idUnionListHeader).FirstOrDefault().Name
+                            };
+                            if (preSitecode != null && preRelease != null)
+                            {
+                                try
+                                {
+                                    temp.Predecessors.SiteCode = preSitecode;
+                                    temp.Predecessors.Release = preRelease;
+                                }
+                                catch (Exception)
+                                {
+                                    temp.Predecessors.SiteCode = null;
+                                    temp.Predecessors.Release = null;
+                                }
+                            }
+                            result.Add(temp);
+                            preSitecode = temp.SiteCode;
+                            preRelease = temp.Release;
+                        }
+                        catch (Exception ex)
+                        {
+                            await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetSiteLineageAsync - " + detail.SCI_code + "/" + detail.version, "", _dataContext.Database.GetConnectionString());
+                        }
+                    }
+
+                    List<LineageAntecessors> lastAntecessors = await _dataContext.Set<LineageAntecessors>().Where(a => a.SiteCode == ULDetails.LastOrDefault().SCI_code && a.Version == ULDetails.LastOrDefault().version).AsNoTracking().ToListAsync();
+                    if (lastAntecessors.Any())
+                    {
+                        foreach (LineageAntecessors lastAntecessor in lastAntecessors)
+                        {
+                            List<Lineage> lasts = await _dataContext.Set<Lineage>().Where(a => a.ID == lastAntecessor.LineageID && a.Release != null).AsNoTracking().ToListAsync();
+                            if (lasts.Any())
+                            {
+                                foreach (Lineage last in lasts)
+                                {
+                                    try
+                                    {
+                                        SiteLineage temp = new()
+                                        {
+                                            SiteCode = last.SiteCode,
+                                            Release = headers.Where(c => c.idULHeader == last.Release).FirstOrDefault().Name
+                                        };
+                                        if (preSitecode != null && preRelease != null)
+                                        {
+                                            try
+                                            {
+                                                temp.Predecessors.SiteCode = preSitecode;
+                                                temp.Predecessors.Release = preRelease;
+                                            }
+                                            catch (Exception)
+                                            {
+                                                temp.Predecessors.SiteCode = null;
+                                                temp.Predecessors.Release = null;
+                                            }
+                                        }
+                                        result.Add(temp);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetSiteLineageAsync - " + last.SiteCode + "/" + last.Version, "", _dataContext.Database.GetConnectionString());
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    foreach (SiteLineage temp in result)
+                    {
+                        SiteLineage successor = result.Where(s => s.Predecessors.SiteCode == temp.SiteCode && s.Predecessors.Release == temp.Release).FirstOrDefault();
+                        if (successor != null)
+                        {
+                            temp.Successors.SiteCode = successor.SiteCode;
+                            temp.Successors.Release = successor.Release;
+                        }
+                    }
+                }
+                result = result.GroupBy(o => new { o.SiteCode, o.Release }).Select(o => o.FirstOrDefault()).ToList();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteLineageService - GetSiteLineageAsync", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
+        public async Task<List<SiteLineage>> GetSiteLineageAsyncOld(string siteCode)
         {
             try
             {
@@ -340,6 +498,48 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.Set<Lineage>().Remove(hasSuccessors);
                     }
                 });
+
+                SiteChangeDb lineageChange = await _dataContext.Set<SiteChangeDb>().Where(c => c.SiteCode == lineage.SiteCode
+                    && c.Version == lineage.Version && c.ChangeCategory == "Lineage"
+                    && c.ChangeType != "New geometry reported" && c.ChangeType != "No geometry reported").FirstOrDefaultAsync();
+                if (lineageChange != null)
+                {
+                    if (consolidateChanges.Type == LineageTypes.NoChanges)
+                    {
+                        _dataContext.Set<SiteChangeDb>().Remove(lineageChange);
+                    }
+                    else if (consolidateChanges.Type == LineageTypes.Creation)
+                    {
+                        lineageChange.ChangeType = "Site Added";
+                        lineageChange.OldValue = null;
+                        lineageChange.VersionReferenceId = lineage.Version;
+                    }
+                    else if (consolidateChanges.Type == LineageTypes.Deletion)
+                    {
+                        lineageChange.ChangeType = "Site Deleted";
+                        lineageChange.NewValue = null;
+                        lineageChange.OldValue = lineage.SiteCode;
+                        lineageChange.VersionReferenceId = lineage.Version;
+                    }
+                    else if (consolidateChanges.Type == LineageTypes.Split)
+                    {
+                        lineageChange.ChangeType = "Site Split";
+                        lineageChange.OldValue = consolidateChanges.Predecessors;
+                        lineageChange.VersionReferenceId = resultSites.FirstOrDefault().Version;
+                    }
+                    else if (consolidateChanges.Type == LineageTypes.Merge)
+                    {
+                        lineageChange.ChangeType = "Site Merged";
+                        lineageChange.OldValue = consolidateChanges.Predecessors;
+                        lineageChange.VersionReferenceId = lineage.Version;
+                    }
+                    else if (consolidateChanges.Type == LineageTypes.Recode)
+                    {
+                        lineageChange.ChangeType = "Site Recoded";
+                        lineageChange.OldValue = consolidateChanges.Predecessors;
+                        lineageChange.VersionReferenceId = resultSites.FirstOrDefault().Version;
+                    }
+                }
                 await _dataContext.SaveChangesAsync();
 
                 HarvestedService harvest = new(_dataContext, _versioningContext, _hubContext, _appSettings, _fmeHarvestJobs);
