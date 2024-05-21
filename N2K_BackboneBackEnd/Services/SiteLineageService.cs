@@ -10,6 +10,7 @@ using System.Data;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.SignalR;
 using N2K_BackboneBackEnd.Hubs;
+using N2K_BackboneBackEnd.Models.BackboneDB;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -497,6 +498,48 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.Set<Lineage>().Remove(hasSuccessors);
                     }
                 });
+
+                SiteChangeDb lineageChange = await _dataContext.Set<SiteChangeDb>().Where(c => c.SiteCode == lineage.SiteCode
+                    && c.Version == lineage.Version && c.ChangeCategory == "Lineage"
+                    && c.ChangeType != "New geometry reported" && c.ChangeType != "No geometry reported").FirstOrDefaultAsync();
+                if (lineageChange != null)
+                {
+                    if (consolidateChanges.Type == LineageTypes.NoChanges)
+                    {
+                        _dataContext.Set<SiteChangeDb>().Remove(lineageChange);
+                    }
+                    else if (consolidateChanges.Type == LineageTypes.Creation)
+                    {
+                        lineageChange.ChangeType = "Site Added";
+                        lineageChange.OldValue = null;
+                        lineageChange.VersionReferenceId = lineage.Version;
+                    }
+                    else if (consolidateChanges.Type == LineageTypes.Deletion)
+                    {
+                        lineageChange.ChangeType = "Site Deleted";
+                        lineageChange.NewValue = null;
+                        lineageChange.OldValue = lineage.SiteCode;
+                        lineageChange.VersionReferenceId = lineage.Version;
+                    }
+                    else if (consolidateChanges.Type == LineageTypes.Split)
+                    {
+                        lineageChange.ChangeType = "Site Split";
+                        lineageChange.OldValue = consolidateChanges.Predecessors;
+                        lineageChange.VersionReferenceId = resultSites.FirstOrDefault().Version;
+                    }
+                    else if (consolidateChanges.Type == LineageTypes.Merge)
+                    {
+                        lineageChange.ChangeType = "Site Merged";
+                        lineageChange.OldValue = consolidateChanges.Predecessors;
+                        lineageChange.VersionReferenceId = lineage.Version;
+                    }
+                    else if (consolidateChanges.Type == LineageTypes.Recode)
+                    {
+                        lineageChange.ChangeType = "Site Recoded";
+                        lineageChange.OldValue = consolidateChanges.Predecessors;
+                        lineageChange.VersionReferenceId = resultSites.FirstOrDefault().Version;
+                    }
+                }
                 await _dataContext.SaveChangesAsync();
 
                 HarvestedService harvest = new(_dataContext, _versioningContext, _hubContext, _appSettings, _fmeHarvestJobs);

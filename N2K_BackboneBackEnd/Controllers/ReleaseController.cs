@@ -7,6 +7,7 @@ using N2K_BackboneBackEnd.Models.ViewModel;
 using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
 using N2K_BackboneBackEnd.Models;
+using N2K_BackboneBackEnd.Models.release_db;
 
 namespace N2K_BackboneBackEnd.Controllers
 {

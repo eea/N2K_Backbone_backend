@@ -104,8 +104,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [NotMapped]
     public class HabitatSDF
     {
-        public string? HabitatName { get; set; }
         public string? Code { get; set; }
+        public string? HabitatName { get; set; }
         public string? PF { get; set; }
         public string? NP { get; set; }
         public decimal? Cover { get; set; }
@@ -120,9 +120,9 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     [NotMapped]
     public class SpeciesSDF
     {
-        public string? SpeciesName { get; set; }
-        public string? Code { get; set; }
         public string? Group { get; set; }
+        public string? Code { get; set; }
+        public string? SpeciesName { get; set; }
         public string? Sensitive { get; set; }
         public string? NP { get; set; }
         public string? Type { get; set; }
@@ -153,6 +153,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public List<N2K_BackboneBackEnd.Models.ViewModel.Ownership> Ownership { get; set; } = new List<Ownership>();
         public string? Documents { get; set; }
         public List<string> Links { get; set; } = new List<string>();
+        public string? OtherCharacteristics { get; set; }
     }
 
     [NotMapped]
@@ -217,6 +218,7 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
     {
         public string? Name { get; set; }
         public string? Link { get; set; }
+        public string? Exists { get; set; }
     }
 
     [NotMapped]
