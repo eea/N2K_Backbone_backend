@@ -1,9 +1,7 @@
 ﻿using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
-using SevenZip;
-using System.IO.Compression;
+using SharpCompress.Readers;
 using System.Net.Http.Headers;
-using System.Reflection;
 
 namespace N2K_BackboneBackEnd.Helpers
 {
@@ -38,101 +36,49 @@ namespace N2K_BackboneBackEnd.Helpers
             return compressionFormats.Any(x => x.ToLower() == fileExtension.ToLower());
         }
 
-        private bool checkZipCompressedFiles(string fileName)
+        protected List<string> ExtractCompressedFiles(string fileName)
         {
-            bool invalidFile = false;
-            using (ZipArchive archive = ZipFile.OpenRead(fileName))
+            List<(string, MemoryStream)> files = GetAllCompressedFiles(fileName).Result;
+            files.ForEach(f =>
             {
-                foreach (ZipArchiveEntry entry in archive.Entries)
+                using (FileStream fs = new FileStream(Path.Combine(_pathToSave, f.Item1), FileMode.Create, FileAccess.Write))
                 {
-                    if (!CheckExtensions(entry.Name))
-                    {
-                        if (!invalidFile) invalidFile = true;
-                    }
+                    f.Item2.CopyToAsync(fs);
                 }
-            }
-            if (invalidFile) File.Delete(fileName);
-            return invalidFile;
-        }
-
-        private string returnSevenZipDllPath()
-        {
-            return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Environment.Is64BitProcess ? "x64" : "x86", "7z.dll");
-        }
-
-        private bool checkSevenZipCompressedFiles(string fileName)
-        {
-            bool invalidFile = false;
-            using (Stream stream = File.OpenRead(fileName))
-            {
-                SevenZipBase.SetLibraryPath(returnSevenZipDllPath());
-                using (SevenZipExtractor extr = new(stream))
-                {
-                    foreach (ArchiveFileInfo archiveFileInfo in extr.ArchiveFileData)
-                    {
-                        if (!archiveFileInfo.IsDirectory)
-                        {
-                            string shortFileName = Path.GetFileName(archiveFileInfo.FileName);
-                            if (!CheckExtensions(shortFileName))
-                            {
-                                if (!invalidFile) invalidFile = true;
-                            }
-                        }
-                    }
-                }
-            }
-            if (invalidFile) File.Delete(fileName);
-            return invalidFile;
-        }
-
-        private List<string> extractZipCompressedFiles(string fileName)
-        {
-            List<string> fileList = new();
-            using (ZipArchive archive = ZipFile.OpenRead(fileName))
-            {
-                archive.ExtractToDirectory(_pathToSave, true);
-                return archive.Entries.Select(entry => entry.Name).ToList();
-            }
-        }
-
-        private List<string> extractSevenZipCompressedFiles(string fileName)
-        {
-            List<string> fileList = new();
-            using (Stream stream = File.OpenRead(fileName))
-            {
-                SevenZipBase.SetLibraryPath(returnSevenZipDllPath());
-                using (SevenZipExtractor extr = new(stream))
-                {
-                    foreach (ArchiveFileInfo archiveFileInfo in extr.ArchiveFileData)
-                    {
-                        if (!archiveFileInfo.IsDirectory)
-                        {
-                            using (MemoryStream mem = new())
-                            {
-                                extr.ExtractFile(archiveFileInfo.Index, mem);
-                                string shortFileName = Path.GetFileName(archiveFileInfo.FileName);
-                                using (FileStream file = new(Path.Combine(_pathToSave, shortFileName), FileMode.Create, System.IO.FileAccess.Write))
-                                {
-                                    byte[] bytes = new byte[mem.Length];
-                                    mem.Read(bytes, 0, (int)mem.Length);
-                                    file.Write(bytes, 0, bytes.Length);
-                                    fileList.Add(shortFileName);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return fileList;
+            });
+            return files.Select(f => f.Item1).ToList();
         }
 
         protected bool CheckCompressedFiles(string fileName)
         {
-            if (fileName.ToLower().EndsWith(".zip"))
+            List<(string, MemoryStream)> files = GetAllCompressedFiles(fileName).Result;
+            return files.Any(f => !CheckExtensions(f.Item1));
+        }
+
+        protected async Task<List<(string, MemoryStream)>> GetAllCompressedFiles(string fileName)
+        {
+            List<(string, MemoryStream)> files = new();
+            using (Stream stream = File.OpenRead(fileName))
+            using (var reader = ReaderFactory.Open(stream))
             {
-                return checkZipCompressedFiles(fileName);
+                while (reader.MoveToNextEntry())
+                {
+                    if (!reader.Entry.IsDirectory)
+                    {
+                        string name = reader.Entry.Key;
+                        using (var entryStream = reader.OpenEntryStream())
+                        {
+                            MemoryStream currentFile = new MemoryStream();
+                            currentFile.FlushAsync();
+                            currentFile.Position = 0;
+                            await entryStream.CopyToAsync(currentFile);
+                            files.Add((name, currentFile));
+                            entryStream.Dispose();
+                        }
+                    }
+                }
             }
-            else return checkSevenZipCompressedFiles(fileName);
+            return files;
         }
 
         protected async Task<bool> CopyCompressedFileToTempFolder(IFormFile file, string fileName)
@@ -142,15 +88,6 @@ namespace N2K_BackboneBackEnd.Helpers
                 await file.CopyToAsync(stream);
             }
             return true;
-        }
-
-        protected List<string> ExtractCompressedFiles(string fileName)
-        {
-            if (fileName.ToLower().EndsWith(".zip"))
-            {
-                return extractZipCompressedFiles(fileName);
-            }
-            else return extractSevenZipCompressedFiles(fileName);
         }
 
         protected async Task<bool> AllFilesValid(AttachedFile files)
