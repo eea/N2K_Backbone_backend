@@ -239,7 +239,9 @@ namespace N2K_BackboneBackEnd.Services
                                 Level = change.Level,
                                 Status = change.Status,
                                 Tags = change.Tags,
-                                NumChanges = 1
+                                NumChanges = 1,
+                                OldValue = change.OldValue,
+                                NewValue = change.NewValue
                             };
                             siteChange.subRows = new List<SiteChangeView>
                             {
@@ -261,7 +263,9 @@ namespace N2K_BackboneBackEnd.Services
                                     Level = change.Level,
                                     Status = change.Status,
                                     Tags = string.Empty,
-                                    NumChanges = 1
+                                    NumChanges = 1,
+                                    OldValue = change.OldValue,
+                                    NewValue = change.NewValue
                                 });
                             }
                             else
