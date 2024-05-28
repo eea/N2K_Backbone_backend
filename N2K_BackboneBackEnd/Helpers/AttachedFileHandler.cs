@@ -43,7 +43,7 @@ namespace N2K_BackboneBackEnd.Helpers
             {
                 using (FileStream fs = new FileStream(Path.Combine(_pathToSave, f.Item1), FileMode.Create, FileAccess.Write))
                 {
-                    f.Item2.CopyToAsync(fs);
+                    f.Item2.WriteTo(fs);
                 }
             });
             return files.Select(f => f.Item1).ToList();
@@ -73,7 +73,6 @@ namespace N2K_BackboneBackEnd.Helpers
                             currentFile.Position = 0;
                             await entryStream.CopyToAsync(currentFile);
                             files.Add((name, currentFile));
-                            entryStream.Dispose();
                         }
                     }
                 }
