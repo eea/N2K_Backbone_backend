@@ -498,6 +498,11 @@ namespace N2K_BackboneBackEnd.Services
                         _dataContext.Set<Lineage>().Remove(hasSuccessors);
                     }
                 });
+                await Task.Delay(60); //Necessary to prevent connection db overlapping
+                await _dataContext.SaveChangesAsync();
+
+                HarvestedService harvest = new(_dataContext, _versioningContext, _hubContext, _appSettings, _fmeHarvestJobs);
+                await harvest.ChangeDetectionSingleSite(lineage.SiteCode, lineage.Version, _dataContext.Database.GetConnectionString());
 
                 SiteChangeDb lineageChange = await _dataContext.Set<SiteChangeDb>().Where(c => c.SiteCode == lineage.SiteCode
                     && c.Version == lineage.Version && c.ChangeCategory == "Lineage"
@@ -541,9 +546,6 @@ namespace N2K_BackboneBackEnd.Services
                     }
                 }
                 await _dataContext.SaveChangesAsync();
-
-                HarvestedService harvest = new(_dataContext, _versioningContext, _hubContext, _appSettings, _fmeHarvestJobs);
-                await harvest.ChangeDetectionSingleSite(lineage.SiteCode, lineage.Version, _dataContext.Database.GetConnectionString());
             }
             catch (Exception ex)
             {

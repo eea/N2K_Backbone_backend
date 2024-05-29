@@ -20,6 +20,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Action { get; set; } = string.Empty;
         [NotMapped]
         public int NumChanges { get; set; }
+        public string? OldValue { get; set; }
+        public string? NewValue { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
