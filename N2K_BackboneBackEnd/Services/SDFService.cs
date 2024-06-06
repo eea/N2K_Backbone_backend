@@ -721,10 +721,10 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         Threats temp = new()
                         {
-                            Rank = h.INTENSITY,
+                            Rank = h.INTENSITY?.Substring(0,1).ToUpper(),
                             Impacts = h.IMPACTCODE,
                             Pollution = h.POLLUTIONCODE,
-                            Origin = h.OCCURRENCE
+                            Origin = h.OCCURRENCE?.Substring(0,1).ToLower()
                         };
                         if (h.IMPACT_TYPE == "N")
                         {
