@@ -470,7 +470,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<ReleaseSDF> GetReleaseData(string SiteCode, int ReleaseId = -1)
+        public async Task<ReleaseSDF> GetReleaseData(string SiteCode, int ReleaseId = -1, bool showSensitive = true)
         {
             try
             {
@@ -512,8 +512,8 @@ namespace N2K_BackboneBackEnd.Services
                 //Data
                 List<HABITATS> habitats = await _releaseContext.Set<HABITATS>().Where(h => h.SITECODE == SiteCode && h.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<HABITATCLASS> habitatClass = await _releaseContext.Set<HABITATCLASS>().Where(h => h.SITECODE == SiteCode && h.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<SPECIES> species = await _releaseContext.Set<SPECIES>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
-                List<OTHERSPECIES> speciesOther = await _releaseContext.Set<OTHERSPECIES>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<SPECIES> species = await _releaseContext.Set<SPECIES>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID && (!(a.SENSITIVE ?? false) || showSensitive)).AsNoTracking().ToListAsync();
+                List<OTHERSPECIES> speciesOther = await _releaseContext.Set<OTHERSPECIES>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID && (!(a.SENSITIVE ?? false) || showSensitive)).AsNoTracking().ToListAsync();
                 List<CONTACTS> contacts = await _releaseContext.Set<CONTACTS>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<MANAGEMENT> management = await _releaseContext.Set<MANAGEMENT>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
                 List<NUTSBYSITE> nutsBySite = await _releaseContext.Set<NUTSBYSITE>().Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).AsNoTracking().ToListAsync();
@@ -721,10 +721,10 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         Threats temp = new()
                         {
-                            Rank = h.INTENSITY,
+                            Rank = h.INTENSITY?.Substring(0,1).ToUpper(),
                             Impacts = h.IMPACTCODE,
                             Pollution = h.POLLUTIONCODE,
-                            Origin = h.OCCURRENCE
+                            Origin = h.OCCURRENCE?.Substring(0,1).ToLower()
                         };
                         if (h.IMPACT_TYPE == "N")
                         {
