@@ -17,6 +17,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public int Version { get; set; }
         [NotMapped]
         public int? DataLoaded { get; set; }
+        public string? CDR { get; set; }
         public int ChangesTotal { get; set; }
         public int ChangesAccepted { get; set; }
         public int ChangesPending { get; set; }
