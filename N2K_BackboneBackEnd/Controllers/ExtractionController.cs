@@ -20,7 +20,8 @@ namespace N2K_BackboneBackEnd.Controllers
             _mapper = mapper;
         }
 
-        [HttpPost("update")]
+        [Route("update")]
+		[HttpPost]
         public async Task<ActionResult> UpdateExtractions()
         {
             ServiceResponse<ActionResult> response = new();
