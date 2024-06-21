@@ -274,8 +274,8 @@ namespace N2K_BackboneBackEnd.Services
                             Code = h.SpecieCode,
                             Group = h.SpecieType,
                             Type = h.PopulationType,
-                            Min = h.PopulationMin,
-                            Max = h.PopulationMax,
+                            Min = h.PopulationMin.ToString(),
+                            Max = h.PopulationMax.ToString(),
                             Unit = h.CountingUnit,
                             Category = h.AbundaceCategory,
                             DataQuality = h.DataQuality,
@@ -300,8 +300,8 @@ namespace N2K_BackboneBackEnd.Services
                             SpeciesName = h.SpecieCode,
                             Code = h.OtherSpecieCode ?? "-",
                             Group = h.SpecieType,
-                            Min = h.PopulationMin,
-                            Max = h.PopulationMax,
+                            Min = h.PopulationMin.ToString(),
+                            Max = h.PopulationMax.ToString(),
                             Unit = h.CountingUnit,
                             Category = h.AbundaceCategory
                         };
@@ -678,8 +678,8 @@ namespace N2K_BackboneBackEnd.Services
                             SpeciesName = h.SPECIESNAME,
                             Code = h.SPECIESCODE ?? "-",
                             Group = h.SPECIESGROUP,
-                            Min = h.LOWERBOUND,
-                            Max = h.UPPERBOUND,
+                            Min = h.LOWERBOUND.ToString(),
+                            Max = h.UPPERBOUND.ToString(),
                             Unit = h.COUNTING_UNIT,
                             Category = h.ABUNDANCE_CATEGORY
                         };

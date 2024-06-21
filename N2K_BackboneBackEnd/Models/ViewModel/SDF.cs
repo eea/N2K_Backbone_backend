@@ -126,8 +126,8 @@ namespace N2K_BackboneBackEnd.Models.ViewModel
         public string? Sensitive { get; set; }
         public string? NP { get; set; }
         public string? Type { get; set; }
-        public int? Min { get; set; }
-        public int? Max { get; set; }
+        public string? Min { get; set; }
+        public string? Max { get; set; }
         public string? Unit { get; set; }
         public string? Category { get; set; }
         public string? DataQuality { get; set; }

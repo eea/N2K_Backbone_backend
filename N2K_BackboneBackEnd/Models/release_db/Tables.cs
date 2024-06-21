@@ -490,8 +490,8 @@ namespace N2K_BackboneBackEnd.Models.release_db
         public bool? SENSITIVE { get; set; }
         public bool? NONPRESENCEINSITE { get; set; }
         public string? POPULATION_TYPE { get; set; }
-        public int? LOWERBOUND { get; set; }
-        public int? UPPERBOUND { get; set; }
+        public string? LOWERBOUND { get; set; }
+        public string? UPPERBOUND { get; set; }
         public string? COUNTING_UNIT { get; set; }
         public string? ABUNDANCE_CATEGORY { get; set; }
         public string? DATAQUALITY { get; set; }
