@@ -299,7 +299,7 @@ namespace N2K_BackboneBackEnd.Models.release_db
         public long ReleaseId { get; set; }
         public string COUNTRY_CODE { get; set; } = string.Empty;
         public string SITECODE { get; set; } = string.Empty;
-        public int VERSION { get; set; }
+        public int? VERSION { get; set; }
         public string? SITENAME { get; set; }
         public string? SITETYPE { get; set; }
         public DateTime? DATE_COMPILATION { get; set; }
