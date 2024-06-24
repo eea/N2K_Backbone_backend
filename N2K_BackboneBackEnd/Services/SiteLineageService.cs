@@ -10,7 +10,6 @@ using System.Data;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.SignalR;
 using N2K_BackboneBackEnd.Hubs;
-using N2K_BackboneBackEnd.Models.BackboneDB;
 
 namespace N2K_BackboneBackEnd.Services
 {
