@@ -1121,7 +1121,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             // get sibling sites (sites that resulted from the split)
                             List<long> siblingIDs = await ctx.Set<LineageAntecessors>()
-                                .Where(a => a.SiteCode == storedSite.SiteCode && a.N2KVersioningVersion == storedSite.N2KVersioningVersion)
+                                .Where(a => a.SiteCode == storedSite.SiteCode && a.Version == storedSite.VersionId)
                                 .Select(a => a.LineageID).ToListAsync();
                             string siblingSites = string.Join(',',
                                 await ctx.Set<Lineage>()
@@ -1193,7 +1193,7 @@ namespace N2K_BackboneBackEnd.Services
                             LineageAntecessors? antecessor = await ctx.Set<LineageAntecessors>()
                                 .FirstOrDefaultAsync(a => a.LineageID == lineage.ID);
                             List<long> siblingIDs = await ctx.Set<LineageAntecessors>()
-                                .Where(a => a.SiteCode == antecessor.SiteCode)
+                                .Where(a => a.SiteCode == antecessor.SiteCode && a.Version == antecessor.Version)
                                 .Select(a => a.LineageID).ToListAsync();
                             string siblings = string.Join(',',
                                 await ctx.Set<Lineage>()
@@ -1400,7 +1400,7 @@ namespace N2K_BackboneBackEnd.Services
                         LineageAntecessors? antecessor = await ctx.Set<LineageAntecessors>()
                             .FirstOrDefaultAsync(a => a.LineageID == lineage.ID);
                         List<long> siblingIDs = await ctx.Set<LineageAntecessors>()
-                            .Where(a => a.SiteCode == antecessor.SiteCode)
+                            .Where(a => a.SiteCode == antecessor.SiteCode && a.Version == antecessor.Version)
                             .Select(a => a.LineageID).ToListAsync();
                         string siblings = string.Join(',',
                             await ctx.Set<Lineage>()
