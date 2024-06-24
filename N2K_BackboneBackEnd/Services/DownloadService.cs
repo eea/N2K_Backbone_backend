@@ -101,5 +101,17 @@ namespace N2K_BackboneBackEnd.Services
                 FileDownloadName = outputname
             };
         }
+
+        public async Task<FileContentResult> DownloadExtractionsFile()
+        {
+            string dir = "ExtractionFiles";
+            DirectoryInfo files = new DirectoryInfo(dir);
+            FileInfo latest = files.GetFiles("*.zip").OrderBy(f => f.CreationTime).Last();
+            var file_bytes = await readfile(latest.FullName);
+            return new FileContentResult(file_bytes, "application/octet-stream")
+            {
+                FileDownloadName = latest.Name
+            };
+        }
     }
 }

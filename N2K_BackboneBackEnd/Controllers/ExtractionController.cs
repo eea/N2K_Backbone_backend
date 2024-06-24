@@ -27,7 +27,12 @@ namespace N2K_BackboneBackEnd.Controllers
             ServiceResponse<ActionResult> response = new();
             try
             {
-                return await _extractionService.UpdateExtractions();
+                await _extractionService.UpdateExtraction();
+                response.Success = true;
+                response.Message = "";
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -45,7 +50,7 @@ namespace N2K_BackboneBackEnd.Controllers
 			ServiceResponse<FileContentResult> response = new();
 			try
 			{
-				return await _extractionService.DownloadExtractions();
+				return await _extractionService.DownloadExtraction();
 			}
 			catch (Exception ex)
 			{

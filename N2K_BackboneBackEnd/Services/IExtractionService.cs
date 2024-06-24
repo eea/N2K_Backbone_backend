@@ -4,7 +4,7 @@ namespace N2K_BackboneBackEnd.Services
 {
     public interface IExtractionService
     {
-        Task<ActionResult> UpdateExtractions();
-        Task<FileContentResult> DownloadExtractions();
+        Task UpdateExtraction();
+        Task<FileContentResult> DownloadExtraction();
     }
 }

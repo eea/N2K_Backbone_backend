@@ -17,7 +17,9 @@ namespace N2K_BackboneBackEnd.Services
 {
     public class ExtractionService : IExtractionService
     {
-        private interface ISqlResult { }
+        private interface ISqlResult {
+            public Row ToRow();
+        }
 
         private class ExtChanges : ISqlResult
         {
@@ -32,13 +34,14 @@ namespace N2K_BackboneBackEnd.Services
             public string? OldValue;
             public string? Code;
 
-            internal Row ToRow()
+            public Row ToRow()
             {
                 Cell CreateCell(string? val)
                 {
                     return new Cell
                     {
-                        CellValue = new CellValue(val ?? "")
+                        CellValue = new CellValue(val ?? ""),
+                        DataType = CellValues.String
                     };
                 }
                 Row r = new Row();
@@ -66,13 +69,14 @@ namespace N2K_BackboneBackEnd.Services
             public double? Spatial_Area_Increase;
             public double? SDF_Area_Difference;
 
-            internal Row ToRow()
+            public Row ToRow()
             {
                 Cell CreateCell(string? val)
                 {
                     return new Cell
                     {
-                        CellValue = new CellValue(val ?? "")
+                        CellValue = new CellValue(val ?? ""),
+                        DataType = CellValues.String
                     };
                 }
                 Row r = new Row();
@@ -101,13 +105,14 @@ namespace N2K_BackboneBackEnd.Services
             public double? SDF_current_area;
             public double? SDF_area_difference;
 
-            internal Row ToRow()
+            public Row ToRow()
             {
                 Cell CreateCell(string? val)
                 {
                     return new Cell
                     {
-                        CellValue = new CellValue(val ?? "")
+                        CellValue = new CellValue(val ?? ""),
+                        DataType = CellValues.String
                     };
                 }
                 Row r = new Row();
@@ -137,105 +142,146 @@ namespace N2K_BackboneBackEnd.Services
             _dataContext = dataContext;
         }
 
-        public Task<FileContentResult> DownloadExtractions()
+        public Task<FileContentResult> DownloadExtraction()
         {
             throw new NotImplementedException();
         }
 
-        public Task<ActionResult> UpdateExtractions()
+        public async Task UpdateExtraction()
         {
-            throw new NotImplementedException();
+            try
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Updating extractions", "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
+                await GenerateExcelFiles();
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
         }
 
         private async Task GenerateExcelFiles()
         {
             string parent = "ExtractionFiles";
             string dir = Path.Combine(parent, DateTime.Now.ToString().Replace('/', '_').Replace(':', '_'));
-            try
+            DirectoryInfo path = Directory.CreateDirectory(dir);
+            List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>()
+                .Where(e => e.Status == Enumerations.HarvestingStatus.Harvested).ToListAsync();
+            List<string> fileList = new();
+            envelopes.ForEach(async e =>
+                fileList.Add(await ExcelCountry(Path.Combine(parent, path.Name), e.Country, e.Version))
+            );
+            using (var archive = ZipArchive.Create())
             {
-                DirectoryInfo path = Directory.CreateDirectory(dir);
-                List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>()
-                    .Where(e => e.Status == Enumerations.HarvestingStatus.Harvested).ToListAsync();
-                List<string> fileList = new();
-                envelopes.ForEach(async e =>
-                    fileList.Add(await ExcelCountry(path.FullName, e.Country, e.Version))
-                );
-                using (var zip = File.OpenWrite(dir + ".zip"))
-                using (var zipWriter = WriterFactory.Open(zip, ArchiveType.Zip, CompressionType.Deflate))
-                {
-                    foreach (var filePath in fileList)
-                    {
-                        zipWriter.Write(filePath, filePath);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-
+                fileList.ForEach(f => archive.AddEntry(f, f));
+                archive.SaveTo(Path.Combine(dir + ".zip"), CompressionType.Deflate);
             }
         }
 
         private async Task<string> ExcelCountry(string dir, string country, int version)
         {
-            using (SqlConnection con = (SqlConnection)_dataContext.Database.GetDbConnection())
+            List<ExtChanges> allChangesBySiteCode = GetData<ExtChanges>(Extractions.AllChangesBySiteCode, country, version);
+            Console.WriteLine(allChangesBySiteCode.Count());
+            List<ExtChanges> allChangesByChanges = GetData<ExtChanges>(Extractions.AllChangesByChanges, country, version);
+            List<ExtSpatialChanges> allSpatialChanges = GetData<ExtSpatialChanges>(Extractions.SpatialChanges, country, version);
+            List<ExtAreaChanges> allAreaChanges = GetData<ExtAreaChanges>(Extractions.AreaChanges, country, version);
+
+
+            // write data to excel
+            string fileName = Path.Combine(dir, country + ".xlsx");
+            using (SpreadsheetDocument doc = SpreadsheetDocument.Create(fileName, SpreadsheetDocumentType.Workbook))
             {
-                List<ExtChanges> allChangesBySiteCode = await GetData<ExtChanges>(con, Extractions.AllChangesBySiteCode, country, version);
-                List<ExtChanges> allChangesByChanges = await GetData<ExtChanges>(con, Extractions.AllChangesByChanges, country, version);
-                List<ExtSpatialChanges> allSpatialChanges = await GetData<ExtSpatialChanges>(con, Extractions.SpatialChanges, country, version);
-                List<ExtAreaChanges> allAreaChanges = await GetData<ExtAreaChanges>(con, Extractions.AreaChanges, country, version);
+                WorkbookPart workbookPart = doc.AddWorkbookPart();
+                workbookPart.Workbook = new Workbook();
 
-                // write data to excel
-                string fileName = Path.Combine(dir, country + ".xlsx");
-                using (SpreadsheetDocument doc = SpreadsheetDocument.Create(Path.Combine(dir, country + ".xlsx"), SpreadsheetDocumentType.Workbook))
-                {
-                    WorkbookPart workbookPart = doc.AddWorkbookPart();
-                    workbookPart.Workbook = new Workbook();
-                    WorksheetPart worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-                    worksheetPart.Worksheet = new Worksheet(new SheetData());
+                Sheets sheets = workbookPart.Workbook.AppendChild<Sheets>(new Sheets());
 
-                    Sheets sheets = workbookPart.Workbook.AppendChild(new Sheets());
+                // All Changes By SiteCode
+                List<string> headerChangesNames = new List<string> {"BioRegions","SiteCode","Name","SiteType","Level","ChangeCategory","ChangeType","NewValue","OldValue","Code"};
+                Row header1Changes = new Row();
+                headerChangesNames.ForEach(h => header1Changes.Append(new Cell{CellValue = new CellValue(h), DataType = CellValues.String}));
+                WorksheetPart worksheetPart1 = workbookPart.AddNewPart<WorksheetPart>();
+                Worksheet workSheet1 = new Worksheet();
+                workSheet1.Append(header1Changes);
+                workSheet1.Append(InsertData<ExtChanges>(allChangesBySiteCode));
+                worksheetPart1.Worksheet = workSheet1;
+                worksheetPart1.Worksheet.Save();
+                Sheet sheet1 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart1), SheetId = 1, Name = "All Changes By SiteCode" };
+                sheets.Append(sheet1);
 
-                    Sheet sheet1 = new Sheet() { Id = workbookPart.GetIdOfPart(worksheetPart), SheetId = 1, Name = "Changes By SiteCode" };
-                    sheets.Append(sheet1);
-                    allChangesBySiteCode.ForEach(c => sheet1.Append(c.ToRow()));
+                // All Changes By Changes
+                WorksheetPart worksheetPart2 = workbookPart.AddNewPart<WorksheetPart>();
+                Worksheet workSheet2 = new Worksheet();
+                Row header2Changes = new Row();
+                headerChangesNames.ForEach(h => header2Changes.Append(new Cell {CellValue = new CellValue(h), DataType = CellValues.String}));
+                workSheet1.Append(header2Changes);
+                workSheet2.Append(InsertData<ExtChanges>(allChangesByChanges));
+                worksheetPart2.Worksheet = workSheet2;
+                worksheetPart2.Worksheet.Save();
+                Sheet sheet2 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart2), SheetId = 2, Name = "All Changes By Changes" };
+                sheets.Append(sheet2);
 
-                    Sheet sheet2 = new Sheet() { Id = workbookPart.GetIdOfPart(worksheetPart), SheetId = 2, Name = "Changes By Changes" };
-                    sheets.Append(sheet2);
-                    allChangesByChanges.ForEach(c => sheet2.Append(c.ToRow()));
+                // Spatial Changes
+                List<string> headerSpatialChangesNames = new List<string> { "BioRegions","SiteCode","Name","SiteType","Spatial Area Decrease","Spatial Area Increase","SDF Area Difference" };
+                Row headerSpatialChanges = new Row();
+                headerSpatialChangesNames.ForEach(h => headerSpatialChanges.Append(new Cell{CellValue = new CellValue(h), DataType = CellValues.String}));
+                WorksheetPart worksheetPart3 = workbookPart.AddNewPart<WorksheetPart>();
+                Worksheet workSheet3 = new Worksheet();
+                workSheet1.Append(headerSpatialChanges);
+                workSheet3.Append(InsertData<ExtSpatialChanges>(allSpatialChanges));
+                worksheetPart3.Worksheet = workSheet3;
+                worksheetPart3.Worksheet.Save();
+                Sheet sheet3 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart3), SheetId = 3, Name = "Spatial Changes" };
+                sheets.Append(sheet3);
 
-                    Sheet sheet3 = new Sheet() { Id = workbookPart.GetIdOfPart(worksheetPart), SheetId = 3, Name = "Spatial Changes" };
-                    sheets.Append(sheet3);
-                    allSpatialChanges.ForEach(c => sheet3.Append(c.ToRow()));
+                // Area Changes
+                List<string> headerAreaChangesNames = new List<string> { "BioRegions","SiteCode","Name","SiteType","Spatial area deleted (ha)","Spatial area added (ha)","Spatial former area (ha)","Spatial current area (ha)","SDF former area (ha)","SDF current area (ha)","SDF area difference (ha)" };
+                Row headerAreaChanges = new Row();
+                headerAreaChangesNames.ForEach(h => headerAreaChanges.Append(new Cell{CellValue = new CellValue(h), DataType = CellValues.String}));
+                WorksheetPart worksheetPart4 = workbookPart.AddNewPart<WorksheetPart>();
+                Worksheet workSheet4 = new Worksheet();
+                workSheet1.Append(headerAreaChanges);
+                workSheet4.Append(InsertData<ExtAreaChanges>(allAreaChanges));
+                worksheetPart4.Worksheet = workSheet4;
+                worksheetPart4.Worksheet.Save();
+                Sheet sheet4 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart4), SheetId = 4, Name = "Area Changes" };
+                sheets.Append(sheet4);
 
-                    Sheet sheet4 = new Sheet() { Id = workbookPart.GetIdOfPart(worksheetPart), SheetId = 4, Name = "Area Changes" };
-                    sheets.Append(sheet4);
-                    allAreaChanges.ForEach(c => sheet4.Append(c.ToRow()));
-
-                }
-                return fileName;
             }
+            return fileName;
         }
 
-        private async Task<List<T>> GetData<T>(SqlConnection con, string query, string country, int version) where T : ISqlResult
+        private List<T> GetData<T>(string query, string country, int version)
         {
             List<T> result = new();
-            SqlCommand cmd = new SqlCommand(query, con);
-            cmd.Parameters.AddWithValue("@COUNTRYCODE", country);
-            cmd.Parameters.AddWithValue("@COUNTRYVERSION", version);
-            using (SqlDataReader reader = cmd.ExecuteReader())
+            using (SqlConnection con = new(_dataContext.Database.GetConnectionString()))
             {
-                while (reader.Read())
+                con.Open();
+                SqlCommand cmd = new SqlCommand(query, con);
+                cmd.Parameters.AddWithValue("@COUNTRYCODE", country);
+                cmd.Parameters.AddWithValue("@COUNTRYVERSION", version);
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    result.Add((T)DataMapper<T>(reader));
+                    while (reader.Read())
+                    {
+                        result.Add((T)DataMapper<T>(reader));
+                    }
                 }
             }
             return result;
         }
 
-        private ISqlResult DataMapper<T>(SqlDataReader r) where T : ISqlResult
+        private SheetData InsertData<T>(List<T> data) where T: ISqlResult
         {
-            T check = default(T);
-            if (check is ExtChanges)
+            SheetData sheetData = new();
+            data.ForEach(c => sheetData.Append(c.ToRow()));
+            return sheetData;
+        }
+
+        private ISqlResult DataMapper<T>(SqlDataReader r)
+        {
+            if (typeof(T) == typeof(ExtChanges))
             {
                 return new ExtChanges
                 {
@@ -251,34 +297,54 @@ namespace N2K_BackboneBackEnd.Services
                     Code = r["Code"].ToString(),
                 };
             }
-            else if (check is ExtAreaChanges)
+            else if (typeof(T) == typeof(ExtAreaChanges))
             {
+                double areaDeleted = 0;
+                Double.TryParse(r["Spatial area deleted (ha)"].ToString(), out areaDeleted);
+                double areaAdded = 0;
+                Double.TryParse(r["Spatial area added (ha)"].ToString(), out areaAdded);
+                double formerArea = 0;
+                Double.TryParse(r["Spatial former area (ha)"].ToString(), out formerArea);
+                double currentArea = 0;
+                Double.TryParse(r["Spatial current area (ha)"].ToString(), out currentArea);
+                double sdfFormerArea = 0;
+                Double.TryParse(r["SDF former area (ha)"].ToString(), out sdfFormerArea);
+                double sdfCurrentArea = 0;
+                Double.TryParse(r["SDF current area (ha)"].ToString(), out sdfCurrentArea);
+                double areaDifference = 0;
+                Double.TryParse(r["SDF area difference (ha)"].ToString(), out areaDifference);
                 return new ExtAreaChanges
                 {
                     BioRegions = r["BioRegions"].ToString(),
                     SiteCode = r["SiteCode"].ToString(),
                     Name = r["Name"].ToString(),
                     SiteType = r["SiteType"].ToString(),
-                    Spatial_area_deleted = (double)r["Spatial area deleted"],
-                    Spatial_area_added = (double)r["Spatial area added"],
-                    Spatial_former_area = (double)r["Spatial former area"],
-                    Spatial_current_area = (double)r["Spatial current area"],
-                    SDF_former_area = (double)r["SDF former area"],
-                    SDF_current_area = (double)r["SDF current area"],
-                    SDF_area_difference = (double)r["SDF area difference"],
+                    Spatial_area_deleted = areaDeleted,
+                    Spatial_area_added = areaAdded,
+                    Spatial_former_area = formerArea,
+                    Spatial_current_area = currentArea,
+                    SDF_former_area = sdfFormerArea,
+                    SDF_current_area = sdfCurrentArea,
+                    SDF_area_difference = areaDifference,
                 };
             }
-            else if (check is ExtSpatialChanges)
+            else if (typeof(T) == typeof(ExtSpatialChanges))
             {
+                double areaDecrease = 0;
+                Double.TryParse(r["Spatial Area Decrease"].ToString(), out areaDecrease);
+                double areaIncrease = 0;
+                Double.TryParse(r["Spatial Area Increase"].ToString(), out areaIncrease);
+                double areaDiff = 0;
+                Double.TryParse(r["SDF Area Difference"].ToString(), out areaDiff);
                 return new ExtSpatialChanges
                 {
                     BioRegions = r["BioRegions"].ToString(),
                     SiteCode = r["SiteCode"].ToString(),
                     Name = r["Name"].ToString(),
                     SiteType = r["SiteType"].ToString(),
-                    Spatial_Area_Decrease = (double)r["Spatial Area Decrease"],
-                    Spatial_Area_Increase = (double)r["Spatial Area Increase"],
-                    SDF_Area_Difference = (double)r["SDF Area Difference"],
+                    Spatial_Area_Decrease = areaDecrease,
+                    Spatial_Area_Increase = areaIncrease,
+                    SDF_Area_Difference = areaDiff,
                 };
             }
             else

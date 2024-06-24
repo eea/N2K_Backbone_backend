@@ -62,5 +62,24 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+        
+        [HttpGet("GetExtractions/")]
+        public async Task<ActionResult> DownloadExtractionsFile()
+        {
+            ServiceResponse<FileContentResult> response = new();
+            try
+            {
+                return await _downloadService.DownloadExtractionsFile();
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
     }
 }

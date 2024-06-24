@@ -41,6 +41,7 @@ builder.Services.AddScoped<ISiteLineageService, SiteLineageService>();
 builder.Services.AddScoped<ISDFService, SDFService>();
 builder.Services.AddScoped<IReportingPeriodService, ReportingPeriodService>();
 builder.Services.AddScoped<IDownloadService, DownloadService>();
+builder.Services.AddScoped<IExtractionService, ExtractionService>();
 
 builder.Services.AddTransient<IFireForgetRepositoryHandler, FireForgetRepositoryHandler>();
 //builder.Services.AddHostedService<FMELongRunningService>();
