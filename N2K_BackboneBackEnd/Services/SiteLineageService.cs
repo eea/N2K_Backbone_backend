@@ -433,63 +433,69 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 Lineage lineage = await _dataContext.Set<Lineage>().Where(c => c.ID == consolidateChanges.ChangeId).FirstOrDefaultAsync();
+                List<LineageAntecessors> antecessors = await _dataContext.Set<LineageAntecessors>().Where(c => c.LineageID == consolidateChanges.ChangeId).ToListAsync();
 
                 //When changing to Creation, check if antecessors have more successors, if not, create Deletion records for the antecessors
                 if (consolidateChanges.Type == LineageTypes.Creation)
                 {
-                    DataTable lineageInsertion = new("LineageInsertion");
-                    lineageInsertion.Columns.Add("SiteCode", typeof(string));
-                    lineageInsertion.Columns.Add("Version", typeof(int));
-                    lineageInsertion.Columns.Add("N2KVersioningVersion", typeof(int));
-                    lineageInsertion.Columns.Add("Type", typeof(int));
-                    lineageInsertion.Columns.Add("Status", typeof(int));
-                    lineageInsertion.Columns.Add("AntecessorSiteCode", typeof(string));
-                    lineageInsertion.Columns.Add("AntecessorVersion", typeof(int));
-
-                    List<LineageAntecessors> antecessors = await _dataContext.Set<LineageAntecessors>().Where(c => c.LineageID == consolidateChanges.ChangeId).ToListAsync();
-
-                    antecessors.ForEach(async a =>
+                    if (antecessors.Any())
                     {
-                        LineageAntecessors hasSuccessors = await _dataContext.Set<LineageAntecessors>().Where(c => c.LineageID != consolidateChanges.ChangeId && c.SiteCode == a.SiteCode && c.Version == a.Version && c.N2KVersioningVersion == a.N2KVersioningVersion).FirstOrDefaultAsync();
-                        if (hasSuccessors == null)
+                        DataTable lineageInsertion = new("LineageInsertion");
+                        lineageInsertion.Columns.Add("SiteCode", typeof(string));
+                        lineageInsertion.Columns.Add("Version", typeof(int));
+                        lineageInsertion.Columns.Add("N2KVersioningVersion", typeof(int));
+                        lineageInsertion.Columns.Add("Type", typeof(int));
+                        lineageInsertion.Columns.Add("Status", typeof(int));
+                        lineageInsertion.Columns.Add("AntecessorSiteCode", typeof(string));
+                        lineageInsertion.Columns.Add("AntecessorVersion", typeof(int));
+
+                        antecessors.ForEach(async a =>
                         {
-                            lineageInsertion.Rows.Add(new Object[] { a.SiteCode, a.Version, lineage.N2KVersioningVersion, LineageTypes.Deletion, LineageStatus.Proposed, a.SiteCode, a.Version });
-                        }
-                    });
+                            LineageAntecessors hasSuccessors = await _dataContext.Set<LineageAntecessors>().Where(c => c.LineageID != consolidateChanges.ChangeId
+                                && c.SiteCode == a.SiteCode && c.Version == a.Version && c.N2KVersioningVersion == a.N2KVersioningVersion).FirstOrDefaultAsync();
+                            if (hasSuccessors == null)
+                            {
+                                lineageInsertion.Rows.Add(new Object[] { a.SiteCode, a.Version, lineage.N2KVersioningVersion, LineageTypes.Deletion, LineageStatus.Proposed, a.SiteCode, a.Version });
+                            }
+                        });
 
-                    SqlParameter paramTable = new("@siteCodes", System.Data.SqlDbType.Structured)
-                    {
-                        Value = lineageInsertion,
-                        TypeName = "[dbo].[LineageInsertion]"
-                    };
-                    await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spInsertIntoLineageBulk  @siteCodes", paramTable);
+                        SqlParameter paramTable = new("@siteCodes", System.Data.SqlDbType.Structured)
+                        {
+                            Value = lineageInsertion,
+                            TypeName = "[dbo].[LineageInsertion]"
+                        };
+                        await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spInsertIntoLineageBulk  @siteCodes", paramTable);
+                    }
                 }
 
+                //Delete the original antecessors and add the new ones if there are any
                 SqlParameter param1 = new("@country", lineage.SiteCode[..2]);
                 List<SiteBasic> resultSites = await _dataContext.Set<SiteBasic>().FromSqlRaw($"exec [dbo].[spGetLineageReferenceSites]  @country",
                                     param1).ToListAsync();
-                resultSites = resultSites.Where(c => consolidateChanges.Predecessors.Contains(c.SiteCode)).ToList();
-
+                if (resultSites.Any())
+                    resultSites = resultSites.Where(c => consolidateChanges.Predecessors.Contains(c.SiteCode)).ToList();
                 DataTable sitecodesfilter = new("sitecodesfilter");
                 sitecodesfilter.Columns.Add("SiteCode", typeof(string));
                 sitecodesfilter.Columns.Add("Version", typeof(int));
-                resultSites.ToList().ForEach(cs =>
+                if (resultSites.Any())
                 {
-                    sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.Version });
-                });
+                    resultSites.ForEach(cs =>
+                    {
+                        sitecodesfilter.Rows.Add(new Object[] { cs.SiteCode, cs.Version });
+                    });
+                }
                 SqlParameter paramId = new("@id", consolidateChanges.ChangeId);
                 SqlParameter paramSitecodesTable = new("@siteCodes", System.Data.SqlDbType.Structured)
                 {
                     Value = sitecodesfilter,
                     TypeName = "[dbo].[SiteCodeFilter]"
                 };
-
                 await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spConsolidatePredecessors @id, @siteCodes", paramId, paramSitecodesTable);
 
                 lineage.Type = consolidateChanges.Type;
 
-                List<LineageAntecessors> antecessorsDeletion = await _dataContext.Set<LineageAntecessors>().Where(c => c.LineageID == consolidateChanges.ChangeId).ToListAsync();
-                antecessorsDeletion.ForEach(async a =>
+                //Remove lineage Deletion if they have successors now
+                antecessors.ForEach(async a =>
                 {
                     Lineage hasSuccessors = await _dataContext.Set<Lineage>().Where(c => c.SiteCode == a.SiteCode && c.Version == a.Version && c.Type == LineageTypes.Deletion).FirstOrDefaultAsync();
                     if (hasSuccessors != null)
@@ -503,7 +509,7 @@ namespace N2K_BackboneBackEnd.Services
                 HarvestedService harvest = new(_dataContext, _versioningContext, _hubContext, _appSettings, _fmeHarvestJobs);
                 await harvest.ChangeDetectionSingleSite(lineage.SiteCode, lineage.Version, _dataContext.Database.GetConnectionString());
 
-                SiteChangeDb lineageChange = await _dataContext.Set<SiteChangeDb>().Where(c => c.SiteCode == lineage.SiteCode
+                SiteChangeDb? lineageChange = await _dataContext.Set<SiteChangeDb>().Where(c => c.SiteCode == lineage.SiteCode
                     && c.Version == lineage.Version && c.ChangeCategory == "Lineage"
                     && c.ChangeType != "New geometry reported" && c.ChangeType != "No geometry reported").FirstOrDefaultAsync();
                 if (lineageChange != null)
