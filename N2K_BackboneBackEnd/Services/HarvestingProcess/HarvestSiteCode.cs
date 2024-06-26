@@ -1068,8 +1068,8 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         opt => opt.EnableRetryOnFailure()).Options;
                 using (N2KBackboneContext ctx = new(options))
                 {
-                    Lineage? lineage = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == harvestingSite.SiteCode && l.Version == harvestingSite.VersionId);
-                    if (lineage?.Type == LineageTypes.Recode)
+                    Lineage? lineageCheck = await ctx.Set<Lineage>().FirstOrDefaultAsync(l => l.SiteCode == harvestingSite.SiteCode && l.Version == harvestingSite.VersionId);
+                    if (lineageCheck?.Type == LineageTypes.Recode)
                     {
                         SiteChangeDb siteChange = new()
                         {
