@@ -17,7 +17,8 @@ namespace N2K_BackboneBackEnd.Services
 {
     public class ExtractionService : IExtractionService
     {
-        private interface ISqlResult {
+        private interface ISqlResult
+        {
             public Row ToRow();
         }
 
@@ -198,12 +199,8 @@ namespace N2K_BackboneBackEnd.Services
                 Sheets sheets = workbookPart.Workbook.AppendChild<Sheets>(new Sheets());
 
                 // All Changes By SiteCode
-                List<string> headerChangesNames = new List<string> {"BioRegions","SiteCode","Name","SiteType","Level","ChangeCategory","ChangeType","NewValue","OldValue","Code"};
-                Row header1Changes = new Row();
-                headerChangesNames.ForEach(h => header1Changes.Append(new Cell{CellValue = new CellValue(h), DataType = CellValues.String}));
                 WorksheetPart worksheetPart1 = workbookPart.AddNewPart<WorksheetPart>();
                 Worksheet workSheet1 = new Worksheet();
-                workSheet1.Append(header1Changes);
                 workSheet1.Append(InsertData<ExtChanges>(allChangesBySiteCode));
                 worksheetPart1.Worksheet = workSheet1;
                 worksheetPart1.Worksheet.Save();
@@ -214,7 +211,6 @@ namespace N2K_BackboneBackEnd.Services
                 WorksheetPart worksheetPart2 = workbookPart.AddNewPart<WorksheetPart>();
                 Worksheet workSheet2 = new Worksheet();
                 Row header2Changes = new Row();
-                headerChangesNames.ForEach(h => header2Changes.Append(new Cell {CellValue = new CellValue(h), DataType = CellValues.String}));
                 workSheet1.Append(header2Changes);
                 workSheet2.Append(InsertData<ExtChanges>(allChangesByChanges));
                 worksheetPart2.Worksheet = workSheet2;
@@ -223,12 +219,8 @@ namespace N2K_BackboneBackEnd.Services
                 sheets.Append(sheet2);
 
                 // Spatial Changes
-                List<string> headerSpatialChangesNames = new List<string> { "BioRegions","SiteCode","Name","SiteType","Spatial Area Decrease","Spatial Area Increase","SDF Area Difference" };
-                Row headerSpatialChanges = new Row();
-                headerSpatialChangesNames.ForEach(h => headerSpatialChanges.Append(new Cell{CellValue = new CellValue(h), DataType = CellValues.String}));
                 WorksheetPart worksheetPart3 = workbookPart.AddNewPart<WorksheetPart>();
                 Worksheet workSheet3 = new Worksheet();
-                workSheet1.Append(headerSpatialChanges);
                 workSheet3.Append(InsertData<ExtSpatialChanges>(allSpatialChanges));
                 worksheetPart3.Worksheet = workSheet3;
                 worksheetPart3.Worksheet.Save();
@@ -236,12 +228,8 @@ namespace N2K_BackboneBackEnd.Services
                 sheets.Append(sheet3);
 
                 // Area Changes
-                List<string> headerAreaChangesNames = new List<string> { "BioRegions","SiteCode","Name","SiteType","Spatial area deleted (ha)","Spatial area added (ha)","Spatial former area (ha)","Spatial current area (ha)","SDF former area (ha)","SDF current area (ha)","SDF area difference (ha)" };
-                Row headerAreaChanges = new Row();
-                headerAreaChangesNames.ForEach(h => headerAreaChanges.Append(new Cell{CellValue = new CellValue(h), DataType = CellValues.String}));
                 WorksheetPart worksheetPart4 = workbookPart.AddNewPart<WorksheetPart>();
                 Worksheet workSheet4 = new Worksheet();
-                workSheet1.Append(headerAreaChanges);
                 workSheet4.Append(InsertData<ExtAreaChanges>(allAreaChanges));
                 worksheetPart4.Worksheet = workSheet4;
                 worksheetPart4.Worksheet.Save();
@@ -272,9 +260,31 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        private SheetData InsertData<T>(List<T> data) where T: ISqlResult
+        private SheetData InsertData<T>(List<T> data) where T : ISqlResult
         {
+            List<string> headerNames = (new Func<List<string>>(() =>
+            {
+                if (typeof(T) == typeof(ExtChanges))
+                {
+                    return new List<string> { "BioRegions", "SiteCode", "Name", "SiteType", "Level", "ChangeCategory", "ChangeType", "NewValue", "OldValue", "Code" };
+                }
+                if (typeof(T) == typeof(ExtSpatialChanges))
+                {
+                    return new List<string> { "BioRegions", "SiteCode", "Name", "SiteType", "Spatial Area Decrease", "Spatial Area Increase", "SDF Area Difference" };
+                }
+                if (typeof(T) == typeof(ExtAreaChanges))
+                {
+                    return new List<string> { "BioRegions", "SiteCode", "Name", "SiteType", "Spatial area deleted (ha)", "Spatial area added (ha)", "Spatial former area (ha)", "Spatial current area (ha)", "SDF former area (ha)", "SDF current area (ha)", "SDF area difference (ha)" };
+                }
+                else
+                {
+                    throw new Exception("Invalid data type");
+                }
+            }))();
+            Row header = new Row();
+            headerNames.ForEach(h => header.Append(new Cell { CellValue = new CellValue(h), DataType = CellValues.String }));
             SheetData sheetData = new();
+            sheetData.Append(header);
             data.ForEach(c => sheetData.Append(c.ToRow()));
             return sheetData;
         }
