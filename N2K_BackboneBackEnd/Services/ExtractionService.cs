@@ -1,3 +1,4 @@
+using System.Linq;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
@@ -182,7 +183,6 @@ namespace N2K_BackboneBackEnd.Services
         private async Task<string> ExcelCountry(string dir, string country, int version)
         {
             List<ExtChanges> allChangesBySiteCode = GetData<ExtChanges>(Extractions.AllChangesBySiteCode, country, version);
-            Console.WriteLine(allChangesBySiteCode.Count());
             List<ExtChanges> allChangesByChanges = GetData<ExtChanges>(Extractions.AllChangesByChanges, country, version);
             List<ExtSpatialChanges> allSpatialChanges = GetData<ExtSpatialChanges>(Extractions.SpatialChanges, country, version);
             List<ExtAreaChanges> allAreaChanges = GetData<ExtAreaChanges>(Extractions.AreaChanges, country, version);
@@ -200,27 +200,32 @@ namespace N2K_BackboneBackEnd.Services
                 // All Changes By SiteCode
                 WorksheetPart worksheetPart1 = workbookPart.AddNewPart<WorksheetPart>();
                 Worksheet workSheet1 = new Worksheet();
-                workSheet1.Append(InsertData<ExtChanges>(allChangesBySiteCode));
+                Row header1 = CreateHeader<ExtChanges>();
+                Columns cols1 = ColSize(header1);
+                workSheet1.Append(cols1);
+                workSheet1.Append(InsertData<ExtChanges>(header1, allChangesBySiteCode));
                 worksheetPart1.Worksheet = workSheet1;
-                worksheetPart1.Worksheet.Save();
                 Sheet sheet1 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart1), SheetId = 1, Name = "All Changes By SiteCode" };
                 sheets.Append(sheet1);
 
                 // All Changes By Changes
                 WorksheetPart worksheetPart2 = workbookPart.AddNewPart<WorksheetPart>();
                 Worksheet workSheet2 = new Worksheet();
-                Row header2Changes = new Row();
-                workSheet1.Append(header2Changes);
-                workSheet2.Append(InsertData<ExtChanges>(allChangesByChanges));
+                Row header2 = CreateHeader<ExtChanges>();
+                Columns cols2 = ColSize(header2);
+                workSheet2.Append(cols2);
+                workSheet2.Append(InsertData<ExtChanges>(header2, allChangesBySiteCode));
                 worksheetPart2.Worksheet = workSheet2;
-                worksheetPart2.Worksheet.Save();
                 Sheet sheet2 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart2), SheetId = 2, Name = "All Changes By Changes" };
                 sheets.Append(sheet2);
 
                 // Spatial Changes
                 WorksheetPart worksheetPart3 = workbookPart.AddNewPart<WorksheetPart>();
                 Worksheet workSheet3 = new Worksheet();
-                workSheet3.Append(InsertData<ExtSpatialChanges>(allSpatialChanges));
+                Row header3 = CreateHeader<ExtSpatialChanges>();
+                Columns cols3 = ColSize(header3);
+                workSheet3.Append(cols3);
+                workSheet3.Append(InsertData<ExtSpatialChanges>(header3, allSpatialChanges));
                 worksheetPart3.Worksheet = workSheet3;
                 worksheetPart3.Worksheet.Save();
                 Sheet sheet3 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart3), SheetId = 3, Name = "Spatial Changes" };
@@ -229,7 +234,10 @@ namespace N2K_BackboneBackEnd.Services
                 // Area Changes
                 WorksheetPart worksheetPart4 = workbookPart.AddNewPart<WorksheetPart>();
                 Worksheet workSheet4 = new Worksheet();
-                workSheet4.Append(InsertData<ExtAreaChanges>(allAreaChanges));
+                Row header4 = CreateHeader<ExtAreaChanges>();
+                Columns cols4 = ColSize(header4);
+                workSheet4.Append(cols4);
+                workSheet4.Append(InsertData<ExtAreaChanges>(header4, allAreaChanges));
                 worksheetPart4.Worksheet = workSheet4;
                 worksheetPart4.Worksheet.Save();
                 Sheet sheet4 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart4), SheetId = 4, Name = "Area Changes" };
@@ -259,7 +267,15 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        private SheetData InsertData<T>(List<T> data) where T : ISqlResult
+        private SheetData InsertData<T>(Row header, List<T> data) where T : ISqlResult
+        {
+            SheetData sheetData = new();
+            sheetData.Append(header);
+            data.ForEach(c => sheetData.Append(c.ToRow()));
+            return sheetData;
+        }
+
+        private Row CreateHeader<T>() where T : ISqlResult
         {
             List<string> headerNames = (new Func<List<string>>(() =>
             {
@@ -282,10 +298,28 @@ namespace N2K_BackboneBackEnd.Services
             }))();
             Row header = new Row();
             headerNames.ForEach(h => header.Append(new Cell { CellValue = new CellValue(h), DataType = CellValues.String }));
-            SheetData sheetData = new();
-            sheetData.Append(header);
-            data.ForEach(c => sheetData.Append(c.ToRow()));
-            return sheetData;
+            return header;
+        }
+
+        private Columns ColSize(Row header)
+        {
+            Columns columns = new();
+            List<Cell> cells = header.Elements<Cell>().ToList();
+            foreach (Cell c in cells)
+            {
+                // https://stackoverflow.com/questions/18268620/openxml-auto-size-column-width-in-excel#26180406
+                double width = Math.Truncate(((double)(c.CellValue?.InnerText.Length ?? 0) * 12 + 30) / 12 * 256) / 256;
+                Column col = new Column()
+                {
+                    BestFit = true,
+                    Min = (UInt32)cells.IndexOf(c) + 1,
+                    Max = (UInt32)cells.IndexOf(c) + 1,
+                    CustomWidth = true,
+                    Width = (DoubleValue)width
+                };
+                columns.Append(col);
+            }
+            return columns;
         }
 
         private ISqlResult DataMapper<T>(SqlDataReader r)
