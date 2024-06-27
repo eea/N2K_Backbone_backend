@@ -16,10 +16,12 @@ namespace N2K_BackboneBackEnd.Services
         {
             _logger.LogInformation("Started background service \"BackgroundTasks\"");
             
-            DateTime now = new DateTime();
-            DateTime executionTime = new DateTime(now.Year, now.Month, now.Day + 1, 0, 0, 0);
+            DateTime now = DateTime.Now;
+            DateTime then = new DateTime(now.Year, now.Month, now.Day + 1, 0, 0, 0);
             // Execute at midnight
-            using PeriodicTimer timer = new(executionTime - now);
+            TimeSpan remainingTime = then - now;
+            _logger.LogInformation(String.Format("New extractions will be generated on {0:s}", then));
+            using PeriodicTimer timer = new(remainingTime);
 
             try
             {
