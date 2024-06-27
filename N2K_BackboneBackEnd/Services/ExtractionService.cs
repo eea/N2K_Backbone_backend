@@ -11,7 +11,6 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Zip;
 using SharpCompress.Common;
-using SharpCompress.Writers;
 
 namespace N2K_BackboneBackEnd.Services
 {
