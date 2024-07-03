@@ -12,15 +12,17 @@ namespace N2K_BackboneBackEnd.Controllers
     public class ExtractionController : ControllerBase
     {
         private readonly IExtractionService _extractionService;
+		private readonly IDownloadService _downloadService;
         private readonly IMapper _mapper;
 
-        public ExtractionController(IExtractionService extractionService, IMapper mapper)
+        public ExtractionController(IExtractionService extractionService, IDownloadService downloadService, IMapper mapper)
         {
             _extractionService = extractionService;
+			_downloadService = downloadService;
             _mapper = mapper;
         }
 
-        [Route("update")]
+        [Route("Update")]
 		[HttpPost]
         public async Task<ActionResult> UpdateExtractions()
         {
@@ -44,13 +46,13 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-		[HttpGet("download")]
+		[HttpGet("Download")]
 		public async Task<ActionResult> DownloadExtractions()
 		{
 			ServiceResponse<FileContentResult> response = new();
 			try
 			{
-				return await _extractionService.DownloadExtraction();
+				return await _downloadService.DownloadExtractionsFile();
 			}
 			catch (Exception ex)
 			{

@@ -1,8 +1,6 @@
-using System.Linq;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -143,41 +141,44 @@ namespace N2K_BackboneBackEnd.Services
             _dataContext = dataContext;
         }
 
-        public Task<FileContentResult> DownloadExtraction()
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task UpdateExtraction()
         {
+            string parent = "ExtractionFiles";
+            string dir = Path.Combine(parent, DateTime.Now.ToString().Replace('/', '_').Replace(':', '_'));
             try
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Updating extractions", "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
-                await GenerateExcelFiles();
+                string archive = await GenerateExcelFiles(dir);
             }
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
+            finally
+            {
+                List<string> files = Directory.EnumerateFileSystemEntries(parent).ToList();
+                files.Where(d => !d.Contains(dir)).ToList().ForEach(d => Directory.Delete(d));
+            }
         }
 
-        private async Task GenerateExcelFiles()
+        private async Task<string> GenerateExcelFiles(string dir)
         {
-            string parent = "ExtractionFiles";
-            string dir = Path.Combine(parent, DateTime.Now.ToString().Replace('/', '_').Replace(':', '_'));
             DirectoryInfo path = Directory.CreateDirectory(dir);
             List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>()
                 .Where(e => e.Status == Enumerations.HarvestingStatus.Harvested).ToListAsync();
             List<string> fileList = new();
             envelopes.ForEach(async e =>
-                fileList.Add(await ExcelCountry(Path.Combine(parent, path.Name), e.Country, e.Version))
+                fileList.Add(await ExcelCountry(dir, e.Country, e.Version))
             );
+            string result = Path.Combine(dir + ".zip");
             using (var archive = ZipArchive.Create())
             {
                 fileList.ForEach(f => archive.AddEntry(f, f));
-                archive.SaveTo(Path.Combine(dir + ".zip"), CompressionType.Deflate);
+                archive.SaveTo(result, CompressionType.Deflate);
             }
+            Directory.Delete(dir);
+            return result;
         }
 
         private async Task<string> ExcelCountry(string dir, string country, int version)
