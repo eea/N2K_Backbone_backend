@@ -132,6 +132,7 @@ namespace N2K_BackboneBackEnd.Services
 
         private readonly IOptions<ConfigSettings> _appSettings;
         private readonly N2KBackboneContext _dataContext;
+        private string parent = "ExtractionFiles";
 
         private Extractions ext = new();
 
@@ -141,9 +142,15 @@ namespace N2K_BackboneBackEnd.Services
             _dataContext = dataContext;
         }
 
+        public string GetLast()
+        {
+            DirectoryInfo files = new DirectoryInfo(parent);
+            FileInfo latest = files.GetFiles("*.zip").OrderBy(f => f.CreationTime).Last();
+            return latest.Name.Replace(".zip", "");
+        }
+
         public async Task UpdateExtraction()
         {
-            string parent = "ExtractionFiles";
             string dir = Path.Combine(parent, DateTime.Now.ToString().Replace('/', '_').Replace(':', '_'));
             try
             {

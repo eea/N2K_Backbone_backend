@@ -46,6 +46,24 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+		[HttpGet("GetLast")]
+		public async Task<string> GetLast()
+		{
+			ServiceResponse<string> response = new();
+			try
+			{
+				 return _extractionService.GetLast();
+			}
+			catch (Exception ex)
+			{
+				response.Success = false;
+				response.Message = ex.Message;
+				response.Count = 0;
+				response.Data = null;
+				return Ok(response);
+			}
+		}
+
 		[HttpGet("Download")]
 		public async Task<ActionResult> DownloadExtractions()
 		{
