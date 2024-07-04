@@ -145,8 +145,8 @@ namespace N2K_BackboneBackEnd.Services
         public string GetLast()
         {
             DirectoryInfo files = new DirectoryInfo(parent);
-            FileInfo latest = files.GetFiles("*.zip").OrderBy(f => f.CreationTime).Last();
-            return latest.Name.Replace(".zip", "");
+            FileInfo? latest = files.GetFiles("*.zip").OrderBy(f => f.CreationTime).LastOrDefault();
+            return latest?.Name.Replace(".zip", "") ?? "";
         }
 
         public async Task UpdateExtraction()
@@ -164,8 +164,11 @@ namespace N2K_BackboneBackEnd.Services
             }
             finally
             {
-                List<string> files = Directory.EnumerateFileSystemEntries(parent).ToList();
-                files.Where(d => !d.Contains(dir)).ToList().ForEach(d => Directory.Delete(d));
+                // delete files and folders from previous extractions
+                List<string> folders = Directory.EnumerateDirectories(parent).ToList();
+                folders.Where(d => !d.Contains(dir)).ToList().ForEach(d => Directory.Delete(d, true));
+                List<string> files = Directory.EnumerateFiles(parent).ToList();
+                files.Where(d => !d.Contains(dir)).ToList().ForEach(d => File.Delete(d));
             }
         }
 

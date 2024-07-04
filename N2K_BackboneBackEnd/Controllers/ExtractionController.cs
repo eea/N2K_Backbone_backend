@@ -47,7 +47,7 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
 		[HttpGet("GetLast")]
-		public async Task<string> GetLast()
+		public async Task<ActionResult<string>> GetLast()
 		{
 			ServiceResponse<string> response = new();
 			try
