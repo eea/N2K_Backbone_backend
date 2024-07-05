@@ -142,7 +142,7 @@ namespace N2K_BackboneBackEnd.Services
             _dataContext = dataContext;
         }
 
-        public string GetLast()
+        public async Task<string> GetLast()
         {
             DirectoryInfo files = new DirectoryInfo(parent);
             FileInfo? latest = files.GetFiles("*.zip").OrderBy(f => f.CreationTime).LastOrDefault();
@@ -151,7 +151,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task UpdateExtraction()
         {
-            string dir = Path.Combine(parent, DateTime.Now.ToString().Replace('/', '_').Replace(':', '_'));
+            string dir = Path.Combine(parent, DateTime.Now.ToString().Replace('/', '-').Replace(':', '-').Replace(' ', '_'));
             try
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Updating extractions", "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
@@ -165,10 +165,23 @@ namespace N2K_BackboneBackEnd.Services
             finally
             {
                 // delete files and folders from previous extractions
+                DeleteFiles(dir);
+            }
+        }
+
+        private async void DeleteFiles(string dir, bool deleteAll = false)
+        {
+            try
+            {
                 List<string> folders = Directory.EnumerateDirectories(parent).ToList();
-                folders.Where(d => !d.Contains(dir)).ToList().ForEach(d => Directory.Delete(d, true));
+                folders.Where(d => !d.Contains(dir) || deleteAll).ToList().ForEach(d => Directory.Delete(d, true));
                 List<string> files = Directory.EnumerateFiles(parent).ToList();
-                files.Where(d => !d.Contains(dir)).ToList().ForEach(d => File.Delete(d));
+                files.Where(d => !d.Contains(dir) || deleteAll).ToList().ForEach(d => File.Delete(d));
+            }
+            catch (IOException iex)
+            {
+                // ommit
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Warning, iex, "ExtractionService - DeleteFiles Deleting non-empty directory", "", _dataContext.Database.GetConnectionString());
             }
         }
 
@@ -187,7 +200,6 @@ namespace N2K_BackboneBackEnd.Services
                 fileList.ForEach(f => archive.AddEntry(f, f));
                 archive.SaveTo(result, CompressionType.Deflate);
             }
-            Directory.Delete(dir);
             return result;
         }
 

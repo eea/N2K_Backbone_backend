@@ -107,7 +107,8 @@ namespace N2K_BackboneBackEnd.Services
             string dir = "ExtractionFiles";
             DirectoryInfo files = new DirectoryInfo(dir);
             FileInfo latest = files.GetFiles("*.zip").OrderBy(f => f.CreationTime).Last();
-            var file_bytes = await readfile(Path.Combine(dir, latest.Name));
+            IAttachedFileHandler fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
+            byte[] file_bytes = await fileHandler.ReadFile(latest.FullName);
             return new FileContentResult(file_bytes, "application/octet-stream")
             {
                 FileDownloadName = latest.Name
