@@ -7,5 +7,7 @@ namespace N2K_BackboneBackEnd.Services
         Task<FileContentResult> DownloadFile(int id, int docuType);
 
         Task<FileContentResult> DownloadFile(int id, int docuType, string token);
+
+        Task<FileContentResult> DownloadExtractionsFile();
     }
 }
