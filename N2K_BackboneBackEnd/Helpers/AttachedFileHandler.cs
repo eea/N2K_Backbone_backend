@@ -1,5 +1,6 @@
 ﻿using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
+using SharpCompress.Common;
 using SharpCompress.Readers;
 using System.Net.Http.Headers;
 
@@ -55,17 +56,41 @@ namespace N2K_BackboneBackEnd.Helpers
             return files.Any(f => !CheckExtensions(f.Item1));
         }
 
+        // recursively returns a flat list of all compressed files and their subfiles
+        // fileName needs to be a compressed file
         protected async Task<List<(string, MemoryStream)>> GetAllCompressedFiles(string fileName)
         {
-            List<(string, MemoryStream)> files = new();
+            List<(string, MemoryStream)> files;
             using (Stream stream = File.OpenRead(fileName))
-            using (var reader = ReaderFactory.Open(stream))
             {
-                while (reader.MoveToNextEntry())
+                using (var reader = ReaderFactory.Open(stream, new ReaderOptions { LeaveStreamOpen = true }))
                 {
-                    if (!reader.Entry.IsDirectory)
+                    files = await SeekFiles(fileName, reader, 3);
+                }
+            }
+            return files;
+        }
+
+        private async Task<List<(string, MemoryStream)>> SeekFiles(string fileName, IReader reader, int? recurse = 0)
+        {
+            List<(string, MemoryStream)> files = new();
+            if (recurse < 1)
+            {
+                throw new Exception("Limit for recursion reached");
+            }
+            while (reader.MoveToNextEntry())
+            {
+                if (!reader.Entry.IsDirectory)
+                {
+                    string name = reader.Entry.Key;
+                    if (CheckCompressionFormats(name))
                     {
-                        string name = reader.Entry.Key;
+                        var auxReader = ReaderFactory.Open(reader.OpenEntryStream(), new ReaderOptions { LeaveStreamOpen = true });
+                        var auxFiles = await SeekFiles(name, auxReader, recurse - 1);
+                        auxFiles.ForEach(files.Add);
+                    }
+                    else
+                    {
                         using (var entryStream = reader.OpenEntryStream())
                         {
                             MemoryStream currentFile = new MemoryStream();
