@@ -34,38 +34,16 @@ namespace N2K_BackboneBackEnd.Helpers
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
                     string? fullPath = Path.Combine(_pathToSave, fileName);
 
-                    //if the file is compressed (extract all the content)
-                    if (CheckCompressionFormats(fileName))
-                    {
-                        List<string> uncompressedFiles = ExtractCompressedFiles(fullPath);
-                        foreach (var uncompressed in uncompressedFiles)
-                        {
-                            JustificationFiles item = new JustificationFiles();
-                            remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                    FileInfo fi = new FileInfo(fullPath);
+                    string newfilename = string.Format("{0}_{1}{2}", System.Guid.NewGuid().ToString(), DateTime.Now.Ticks, fi.Extension);
+                    File.Move(fullPath, Path.Combine(_pathToSave, newfilename));
 
-                            FileInfo fi = new FileInfo(Path.Combine(_pathToSave, uncompressed));
-                            string newfilename = string.Format("{0}_{1}{2}", System.Guid.NewGuid().ToString(), DateTime.Now.Ticks, fi.Extension);
-                            File.Move(Path.Combine(_pathToSave, uncompressed), Path.Combine(_pathToSave, newfilename));
+                    JustificationFiles item = new JustificationFiles();
+                    remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
 
-                            item.Path = newfilename;
-                            item.OriginalName = uncompressed;
-                            uploadedFiles.Add(item);
-                        }
-                        File.Delete(fullPath);
-                    }
-                    else
-                    {
-                        FileInfo fi = new FileInfo(fullPath);
-                        string newfilename = string.Format("{0}_{1}{2}", System.Guid.NewGuid().ToString(), DateTime.Now.Ticks, fi.Extension);
-                        File.Move(fullPath, Path.Combine(_pathToSave, newfilename));
-
-                        JustificationFiles item = new JustificationFiles();
-                        remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-
-                        item.Path = newfilename;
-                        item.OriginalName = fileName;
-                        uploadedFiles.Add(item);
-                    }
+                    item.Path = newfilename;
+                    item.OriginalName = fileName;
+                    uploadedFiles.Add(item);
                 }
                 return uploadedFiles;
             }

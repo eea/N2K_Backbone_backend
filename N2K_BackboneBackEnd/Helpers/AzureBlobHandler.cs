@@ -46,35 +46,15 @@ namespace N2K_BackboneBackEnd.Helpers
                     string? fullPath = Path.Combine(_pathToSave, fileName);
 
                     //if the file is compressed (extract all the content)
-                    if (CheckCompressionFormats(fileName))
-                    {
-                        List<string> uncompressedFiles = ExtractCompressedFiles(fullPath);
-                        foreach (var uncompressed in uncompressedFiles)
-                        {
-                            JustificationFiles item = new JustificationFiles();
-                            FileInfo fi = new FileInfo(Path.Combine(_pathToSave, uncompressed));
-                            string newfilename= string.Format("{0}_{1}{2}", System.Guid.NewGuid().ToString(), DateTime.Now.Ticks, fi.Extension);
-                            BlobClient blobClient1 = ConnectToAzureBlob().GetBlobClient(newfilename);
-                            await blobClient1.UploadAsync(Path.Combine(_pathToSave, uncompressed), true);
-                            remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                            item.Path = newfilename;
-                            item.OriginalName = uncompressed;
-                            uploadedFiles.Add(item);
-                            File.Delete(Path.Combine(_pathToSave, uncompressed));
-                        }
-                    }
-                    else
-                    {
-                        JustificationFiles item = new JustificationFiles();
-                        FileInfo fi = new FileInfo(fullPath);
-                        string newfilename = string.Format("{0}_{1}{2}", System.Guid.NewGuid().ToString(), DateTime.Now.Ticks, fi.Extension);
-                        BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(newfilename);
-                        await blobClient.UploadAsync(fullPath, true);
-                        remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
-                        item.Path = newfilename;
-                        item.OriginalName = fileName;
-                        uploadedFiles.Add(item);
-                    }
+                    JustificationFiles item = new JustificationFiles();
+                    FileInfo fi = new FileInfo(fullPath);
+                    string newfilename = string.Format("{0}_{1}{2}", System.Guid.NewGuid().ToString(), DateTime.Now.Ticks, fi.Extension);
+                    BlobClient blobClient = ConnectToAzureBlob().GetBlobClient(newfilename);
+                    await blobClient.UploadAsync(fullPath, true);
+                    remoteUrl = _attachedFilesConfig.PublicFilesUrl + (!_attachedFilesConfig.PublicFilesUrl.EndsWith("/") ? "/" : "");
+                    item.Path = newfilename;
+                    item.OriginalName = fileName;
+                    uploadedFiles.Add(item);
                     File.Delete(fullPath);
                 }
                 return uploadedFiles;
