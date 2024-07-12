@@ -721,10 +721,10 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         Threats temp = new()
                         {
-                            Rank = h.INTENSITY?.Substring(0,1).ToUpper(),
+                            Rank = h.INTENSITY?.Substring(0, 1).ToUpper(),
                             Impacts = h.IMPACTCODE,
                             Pollution = h.POLLUTIONCODE,
-                            Origin = h.OCCURRENCE?.Substring(0,1).ToLower()
+                            Origin = h.OCCURRENCE?.Substring(0, 1).ToLower()
                         };
                         if (h.IMPACT_TYPE == "N")
                         {
@@ -742,7 +742,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         N2K_BackboneBackEnd.Models.ViewModel.Ownership temp = new()
                         {
-                            Type = h.TYPE.ToLower(),
+                            Type = h.TYPE == null ? null : h.TYPE.ToLower(),
                             Percent = h.PERCENT
                         };
                         result.SiteDescription.Ownership.Add(temp);

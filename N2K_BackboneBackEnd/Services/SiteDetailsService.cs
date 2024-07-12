@@ -780,17 +780,19 @@ namespace N2K_BackboneBackEnd.Services
                     //site = await _dataContext.Set<Sites>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Current == true).FirstOrDefaultAsync();
                     if (site != null)
                     {
+                        List<BioRegions> bioRegions = await _dataContext.Set<BioRegions>().Where(e => e.SiteCode == changeEdition.SiteCode && e.Version == changeEdition.Version).ToListAsync();
                         if (changeEdition.BioRegion != null && changeEdition.BioRegion != "string" && changeEdition.BioRegion != "")
                         {
                             string[] bioregions = changeEdition.BioRegion.Split(",");
                             foreach (string bioregion in bioregions)
                             {
+                                double? percent = bioRegions.Where(f => f.BGRID == int.Parse(bioregion)).Select(s => s.Percentage).FirstOrDefault();
                                 BioRegions bioreg = new()
                                 {
                                     SiteCode = changeEdition.SiteCode,
                                     Version = site.Version,
                                     BGRID = int.Parse(bioregion),
-                                    Percentage = 100 / bioregions.Length // NEEDS TO BE CHANGED - PENDING
+                                    Percentage = percent != null ? percent : null
                                 };
                                 _dataContext.Set<BioRegions>().Add(bioreg);
                             }
