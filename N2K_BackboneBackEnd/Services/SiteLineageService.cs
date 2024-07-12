@@ -495,14 +495,14 @@ namespace N2K_BackboneBackEnd.Services
                 lineage.Type = consolidateChanges.Type;
 
                 //Remove lineage Deletion if they have successors now
-                antecessors.ForEach(async a =>
+                foreach (LineageAntecessors a in antecessors)
                 {
                     Lineage hasSuccessors = await _dataContext.Set<Lineage>().Where(c => c.SiteCode == a.SiteCode && c.Version == a.Version && c.Type == LineageTypes.Deletion).FirstOrDefaultAsync();
                     if (hasSuccessors != null)
                     {
                         _dataContext.Set<Lineage>().Remove(hasSuccessors);
                     }
-                });
+                };
                 await Task.Delay(60); //Necessary to prevent connection db overlapping
                 await _dataContext.SaveChangesAsync();
 
