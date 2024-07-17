@@ -1,11 +1,10 @@
 namespace N2K_BackboneBackEnd.Data
 {
-	public class Extractions
-	{
-		public Extractions() {}
-		
-		//All changes by SiteCode
-		public static string AllChangesBySiteCode = @"
+    public class Extractions
+    {
+        public Extractions() { }
+
+        public static string AllChangesBySiteCode = @"
 			SELECT
 				STRING_AGG(sub.BioRegion, ',') WITHIN GROUP (ORDER BY sub.BioRegion) AS 'BioRegions',
 				C.[SiteCode],
@@ -93,9 +92,8 @@ namespace N2K_BackboneBackEnd.Data
 				[OldValue],
 				[Code]
 			";
-		
-		//All changes by Changes
-		public static string AllChangesByChanges = @"
+
+        public static string AllChangesByChanges = @"
 			SELECT
 				STRING_AGG(sub.BioRegion, ',') WITHIN GROUP (ORDER BY sub.BioRegion) AS 'BioRegions',
 				C.[SiteCode],
@@ -184,9 +182,8 @@ namespace N2K_BackboneBackEnd.Data
 				[OldValue],
 				[Code]
 			";
-		
-		//Spatial Changes
-		public static string SpatialChanges = @"
+
+        public static string SpatialChanges = @"
 			SELECT DISTINCT S.BioRegions,
 				C.[SiteCode],
 				S.[Name],
@@ -263,91 +260,179 @@ namespace N2K_BackboneBackEnd.Data
 			
 			ORDER BY C.[SiteCode]
 			";
-		
-		public static string AreaChanges = @"
-			SELECT
-				STRING_AGG(sub.BioRegion, ',') WITHIN GROUP (ORDER BY sub.BioRegion) AS 'BioRegions'
-				, s.SiteCode
-				, s.Name
-				, s.SiteType
-				, ISNULL(spAreaDeleted.area, 0) as 'Spatial area deleted (ha)'
-				, ISNULL(spAreaAdded.area, 0) as 'Spatial area added (ha)'
-				, ISNULL(SUM(spFormerArea.area), 0) as 'Spatial former area (ha)'
-				, ISNULL(SUM(spCurrentArea.area), 0) as 'Spatial current area (ha)'
-				, ISNULL(SUM(tabFormerArea.area), 0) as 'SDF former area (ha)'
-				, ISNULL(SUM(tabCurrentArea.area), 0) as 'SDF current area (ha)'
-				, ISNULL(SUM(tabCurrentArea.area), 0) - ISNULL(SUM(tabFormerArea.area), 0) as 'SDF area difference (ha)'
-			FROM Sites s
+
+        public static string AreaChanges = @"
+			SELECT DISTINCT S.[BioRegions],
+				C.[SiteCode],
+				S.[Name],
+				S.[SiteType],
+				ISNULL(spAreaDeleted.area, 0) AS 'Spatial area deleted (ha)',
+				ISNULL(spAreaAdded.area, 0) AS 'Spatial area added (ha)',
+				SpatialAreaChanged.OldValue AS 'Spatial former area (ha)',
+				SpatialAreaChanged.NewValue AS 'Spatial current area (ha)',
+				AreaChanged.OldValue AS 'SDF former area (ha)',
+				AreaChanged.NewValue AS 'SDF current area (ha)',
+				ISNULL(SUM(CAST(AreaChanged.NewValue AS DECIMAL(38, 4))), 0) - ISNULL(SUM(CAST(AreaChanged.OldValue AS DECIMAL(38, 4))), 0) AS 'SDF area difference (ha)'
+			FROM [dbo].[Changes] C
+			INNER JOIN (
+				SELECT DISTINCT STRING_AGG(B.[RefBioGeoName], ', ') WITHIN
+				GROUP (
+						ORDER BY B.[RefBioGeoName]
+						) AS 'BioRegions',
+					S.[SiteCode],
+					S.[Name],
+					S.[SiteType],
+					S.[N2KVersioningVersion]
+				FROM [dbo].[Sites] S
+				INNER JOIN (
+					SELECT DISTINCT [SiteCode],
+						[Version],
+						[RefBioGeoName],
+						[Percentage]
+					FROM [dbo].[BioRegions] B
+					INNER JOIN [dbo].[BioRegionTypes] BT ON B.BGRID = BT.[Code]
+					) B ON S.[SiteCode] = B.[SiteCode]
+					AND S.[Version] = B.[Version]
+				GROUP BY S.[SiteCode],
+					S.[Name],
+					S.[SiteType],
+					S.[N2KVersioningVersion]
+				) S ON S.[SiteCode] = C.[SiteCode]
+				AND S.[N2KVersioningVersion] = C.[N2KVersioningVersion]
+				AND (
+					C.[ChangeType] = 'Deletion of Spatial Area'
+					OR C.[ChangeType] = 'Addition of Spatial Area'
+					OR C.[ChangeType] = 'Spatial Area Decrease'
+					OR C.[ChangeType] = 'Spatial Area Increase'
+					OR C.[ChangeType] = 'SDF Area Increase'
+					OR C.[ChangeType] = 'SDF Area Decrease'
+					OR C.[ChangeType] = 'SDF Area Change'
+					)
 			LEFT JOIN (
-				SELECT
-					SiteCode,
+				SELECT SiteCode,
 					N2KVersioningVersion,
-					SUM(CONVERT(DECIMAL(20,10), NewValue)) AS 'area'
+					SUM(CONVERT(DECIMAL(20, 10), NewValue)) AS 'area'
 				FROM Changes c
-				WHERE ChangeType = 'Deletion of Spatial Area' OR ChangeType = 'Deleton of Spatial Area'
-				GROUP BY SiteCode, N2KVersioningVersion, NewValue
-				) spAreaDeleted ON spAreaDeleted.SiteCode = s.SiteCode
-					AND spAreaDeleted.N2KVersioningVersion = s.N2KVersioningVersion
-			LEFT JOIN (
-				SELECT 
-					SiteCode,
+				WHERE ChangeType = 'Deletion of Spatial Area'
+				GROUP BY SiteCode,
 					N2KVersioningVersion,
-					SUM(CONVERT(DECIMAL(20,10), NewValue)) AS 'area'
+					NewValue
+				) spAreaDeleted ON spAreaDeleted.SiteCode = S.[SiteCode]
+				AND spAreaDeleted.N2KVersioningVersion = S.[N2KVersioningVersion]
+			LEFT JOIN (
+				SELECT SiteCode,
+					N2KVersioningVersion,
+					SUM(CONVERT(DECIMAL(20, 10), NewValue)) AS 'area'
 				FROM Changes c
-				WHERE ChangeType = 'Additon of Spatial Area'
-					OR ChangeType = 'Addition of Spatial Area'
-				GROUP BY SiteCode, N2KVersioningVersion, NewValue
-				) spAreaAdded ON spAreaAdded.SiteCode = s.SiteCode
-					AND spAreaAdded.N2KVersioningVersion = s.N2KVersioningVersion
+				WHERE ChangeType = 'Addition of Spatial Area'
+				GROUP BY SiteCode,
+					N2KVersioningVersion,
+					NewValue
+				) spAreaAdded ON spAreaAdded.SiteCode = S.[SiteCode]
+				AND spAreaAdded.N2KVersioningVersion = S.[N2KVersioningVersion]
 			LEFT JOIN (
-				SELECT s.SiteCode, ss.area AS 'Area'
-				FROM Sites s
-				INNER JOIN SiteSpatial ss
-					ON ss.SiteCode = s.SiteCode
-					AND ss.Version = s.Version
-				INNER JOIN ProcessedEnvelopes pe
-					ON pe.Country = s.CountryCode 
-					AND pe.Version = s.N2KVersioningVersion
-				WHERE pe.Status = 8
-				) spFormerArea ON spFormerArea.SiteCode = s.SiteCode
+				SELECT SiteCode,
+					N2KVersioningVersion,
+					NewValue,
+					OldValue
+				FROM Changes c
+				WHERE C.[ChangeType] = 'Spatial Area Decrease'
+					OR C.[ChangeType] = 'Spatial Area Increase'
+				) SpatialAreaChanged ON SpatialAreaChanged.SiteCode = S.[SiteCode]
+				AND SpatialAreaChanged.N2KVersioningVersion = S.[N2KVersioningVersion]
 			LEFT JOIN (
-				SELECT s.SiteCode, ss.area AS 'Area'
-				FROM Sites s
-				INNER JOIN SiteSpatial ss
-					ON ss.SiteCode = s.SiteCode
-					AND ss.Version = s.Version
-				INNER JOIN ProcessedEnvelopes pe
-					ON pe.Country = s.CountryCode 
-					AND pe.Version = s.N2KVersioningVersion
-				WHERE pe.Status = 3
-				) spCurrentArea ON spCurrentArea.SiteCode = s.SiteCode
-			LEFT JOIN (
-				SELECT SiteCode, Area
-				FROM Sites s
-				INNER JOIN ProcessedEnvelopes pe
-					ON pe.Country = s.CountryCode
-					AND pe.Version = s.N2KVersioningVersion
-				WHERE pe.Status = 8
-				) tabFormerArea ON tabFormerArea.SiteCode = s.SiteCode
-			LEFT JOIN (
-				SELECT SiteCode, Area
-				FROM Sites s
-				INNER JOIN ProcessedEnvelopes pe
-					ON pe.Country = s.CountryCode
-					AND pe.Version = s.N2KVersioningVersion
-				WHERE pe.Status = 3
-				) tabCurrentArea ON tabCurrentArea.SiteCode = s.SiteCode
-			LEFT JOIN (
-				SELECT BR.[SiteCode],
-					BR.[Version],
-					BT.[RefBioGeoName] AS 'BioRegion'
-				FROM [dbo].[BioRegions] BR
-				INNER JOIN [dbo].[BioRegionTypes] BT ON BR.[BGRID] = BT.[Code]
-				) sub ON sub.[SiteCode] = S.[SiteCode]
-				AND sub.[Version] = S.[Version]
-			WHERE
-				s.CountryCode = @COUNTRYCODE AND s.N2KVersioningVersion = @COUNTRYVERSION
-			GROUP BY s.SiteCode, s.SiteType, s.Name, spAreaDeleted.area, spAreaAdded.area
+				SELECT SiteCode,
+					N2KVersioningVersion,
+					NewValue,
+					OldValue
+				FROM Changes c
+				WHERE C.[ChangeType] = 'SDF Area Increase'
+					OR C.[ChangeType] = 'SDF Area Decrease'
+					OR C.[ChangeType] = 'SDF Area Change'
+				) AreaChanged ON AreaChanged.SiteCode = S.[SiteCode]
+				AND AreaChanged.N2KVersioningVersion = S.[N2KVersioningVersion]
+			WHERE C.[Country] = @COUNTRYCODE
+				AND C.[N2KVersioningVersion] = @COUNTRYVERSION
+			GROUP BY S.[BioRegions],
+				C.[SiteCode],
+				S.[Name],
+				S.[SiteType],
+				spAreaDeleted.area,
+				spAreaAdded.area,
+				SpatialAreaChanged.OldValue,
+				SpatialAreaChanged.NewValue,
+				AreaChanged.OldValue,
+				AreaChanged.NewValue
+
+			UNION
+
+			SELECT DISTINCT S.[BioRegions],
+				S.[SiteCode],
+				S.[Name],
+				S.[SiteType],
+				'0.0000000000' AS 'Spatial area deleted (ha)',
+				'0.0000000000' AS 'Spatial area added (ha)',
+				SS.[area] AS 'Spatial former area (ha)',
+				SS.[area] AS 'Spatial current area (ha)',
+				S.[Area] AS 'SDF former area (ha)',
+				S.[Area] AS 'SDF current area (ha)',
+				'0.0000' AS 'SDF area difference (ha)'
+			FROM (
+				SELECT DISTINCT STRING_AGG(B.[RefBioGeoName], ', ') WITHIN
+				GROUP (
+						ORDER BY B.[RefBioGeoName]
+						) AS 'BioRegions',
+					S.[SiteCode],
+					S.[Version],
+					S.[Name],
+					S.[SiteType],
+					S.[CountryCode],
+					S.[N2KVersioningVersion],
+					S.[Area]
+				FROM [dbo].[Sites] S
+				INNER JOIN (
+					SELECT DISTINCT [SiteCode],
+						[Version],
+						[RefBioGeoName],
+						[Percentage]
+					FROM [dbo].[BioRegions] B
+					INNER JOIN [dbo].[BioRegionTypes] BT ON B.BGRID = BT.[Code]
+					) B ON S.[SiteCode] = B.[SiteCode]
+					AND S.[Version] = B.[Version]
+				GROUP BY S.[SiteCode],
+					S.[Version],
+					S.[Name],
+					S.[SiteType],
+					S.[CountryCode],
+					S.[N2KVersioningVersion],
+					S.[Area]
+				) S
+			LEFT JOIN [dbo].[SiteSpatial] SS ON SS.[SiteCode] = S.[SiteCode]
+				AND SS.[Version] = S.[Version]
+			WHERE S.[CountryCode] = @COUNTRYCODE
+				AND S.[N2KVersioningVersion] = @COUNTRYVERSION
+				AND S.[SiteCode] NOT IN (
+					SELECT [SiteCode]
+					FROM [dbo].[Changes] C
+					WHERE C.[Country] = @COUNTRYCODE
+						AND C.[N2KVersioningVersion] = @COUNTRYVERSION
+						AND (
+							C.[ChangeType] = 'Deletion of Spatial Area'
+							OR C.[ChangeType] = 'Addition of Spatial Area'
+							OR C.[ChangeType] = 'Spatial Area Decrease'
+							OR C.[ChangeType] = 'Spatial Area Increase'
+							OR C.[ChangeType] = 'SDF Area Increase'
+							OR C.[ChangeType] = 'SDF Area Decrease'
+							OR C.[ChangeType] = 'SDF Area Change'
+							)
+					)
+			GROUP BY S.[BioRegions],
+				S.[SiteCode],
+				S.[Name],
+				S.[SiteType],
+				SS.[area],
+				S.[Area]
+			ORDER BY C.[SiteCode]
 			";
-	}
+    }
 }
