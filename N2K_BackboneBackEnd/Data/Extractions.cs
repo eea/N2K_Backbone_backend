@@ -266,13 +266,13 @@ namespace N2K_BackboneBackEnd.Data
 				C.[SiteCode],
 				S.[Name],
 				S.[SiteType],
-				ISNULL(spAreaDeleted.area, 0) AS 'Spatial area deleted (ha)',
-				ISNULL(spAreaAdded.area, 0) AS 'Spatial area added (ha)',
-				SpatialAreaChanged.OldValue AS 'Spatial former area (ha)',
-				SpatialAreaChanged.NewValue AS 'Spatial current area (ha)',
-				AreaChanged.OldValue AS 'SDF former area (ha)',
-				AreaChanged.NewValue AS 'SDF current area (ha)',
-				ISNULL(CAST(AreaChanged.NewValue AS DECIMAL(38, 4)), 0) - ISNULL(CAST(AreaChanged.OldValue AS DECIMAL(38, 4)), 0) AS 'SDF area difference (ha)'
+				CAST(ISNULL(spAreaDeleted.area, 0) AS NVARCHAR(MAX)) AS 'Spatial area deleted (ha)',
+				CAST(ISNULL(spAreaAdded.area, 0) AS NVARCHAR(MAX)) AS 'Spatial area added (ha)',
+				CAST(SpatialAreaChanged.OldValue AS NVARCHAR(MAX)) AS 'Spatial former area (ha)',
+				CAST(SpatialAreaChanged.NewValue AS NVARCHAR(MAX)) AS 'Spatial current area (ha)',
+				CAST(AreaChanged.OldValue AS NVARCHAR(MAX)) AS 'SDF former area (ha)',
+				CAST(AreaChanged.NewValue AS NVARCHAR(MAX)) AS 'SDF current area (ha)',
+				CAST(ISNULL(CAST(AreaChanged.NewValue AS DECIMAL(38, 4)), 0) - ISNULL(CAST(AreaChanged.OldValue AS DECIMAL(38, 4)), 0) AS NVARCHAR(MAX)) AS 'SDF area difference (ha)'
 			FROM [dbo].[Changes] C
 			INNER JOIN (
 				SELECT DISTINCT STRING_AGG(B.[RefBioGeoName], ', ') WITHIN
@@ -372,10 +372,10 @@ namespace N2K_BackboneBackEnd.Data
 				S.[SiteType],
 				'0.0000000000' AS 'Spatial area deleted (ha)',
 				'0.0000000000' AS 'Spatial area added (ha)',
-				SS.[area] AS 'Spatial former area (ha)',
-				SS.[area] AS 'Spatial current area (ha)',
-				S.[Area] AS 'SDF former area (ha)',
-				S.[Area] AS 'SDF current area (ha)',
+				CAST(SS.[area] AS NVARCHAR(MAX)) AS 'Spatial former area (ha)',
+				CAST(SS.[area] AS NVARCHAR(MAX)) AS 'Spatial current area (ha)',
+				CAST(S.[Area] AS NVARCHAR(MAX)) AS 'SDF former area (ha)',
+				CAST(S.[Area] AS NVARCHAR(MAX)) AS 'SDF current area (ha)',
 				'0.0000' AS 'SDF area difference (ha)'
 			FROM (
 				SELECT DISTINCT STRING_AGG(B.[RefBioGeoName], ', ') WITHIN
