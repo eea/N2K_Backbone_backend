@@ -272,7 +272,7 @@ namespace N2K_BackboneBackEnd.Data
 				SpatialAreaChanged.NewValue AS 'Spatial current area (ha)',
 				AreaChanged.OldValue AS 'SDF former area (ha)',
 				AreaChanged.NewValue AS 'SDF current area (ha)',
-				ISNULL(SUM(CAST(AreaChanged.NewValue AS DECIMAL(38, 4))), 0) - ISNULL(SUM(CAST(AreaChanged.OldValue AS DECIMAL(38, 4))), 0) AS 'SDF area difference (ha)'
+				ISNULL(CAST(AreaChanged.NewValue AS DECIMAL(38, 4)), 0) - ISNULL(CAST(AreaChanged.OldValue AS DECIMAL(38, 4)), 0) AS 'SDF area difference (ha)'
 			FROM [dbo].[Changes] C
 			INNER JOIN (
 				SELECT DISTINCT STRING_AGG(B.[RefBioGeoName], ', ') WITHIN
