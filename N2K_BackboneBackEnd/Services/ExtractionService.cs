@@ -96,13 +96,13 @@ namespace N2K_BackboneBackEnd.Services
             public string? SiteCode;
             public string? Name;
             public string? SiteType;
-            public double? Spatial_area_deleted;
-            public double? Spatial_area_added;
-            public double? Spatial_former_area;
-            public double? Spatial_current_area;
-            public double? SDF_former_area;
-            public double? SDF_current_area;
-            public double? SDF_area_difference;
+            public string? Spatial_area_deleted;
+            public string? Spatial_area_added;
+            public string? Spatial_former_area;
+            public string? Spatial_current_area;
+            public string? SDF_former_area;
+            public string? SDF_current_area;
+            public string? SDF_area_difference;
 
             public Row ToRow()
             {
@@ -119,13 +119,13 @@ namespace N2K_BackboneBackEnd.Services
                 r.Append(CreateCell(SiteCode));
                 r.Append(CreateCell(Name));
                 r.Append(CreateCell(SiteType));
-                r.Append(CreateCell(Spatial_area_deleted.ToString()));
-                r.Append(CreateCell(Spatial_area_added.ToString()));
-                r.Append(CreateCell(Spatial_former_area.ToString()));
-                r.Append(CreateCell(Spatial_current_area.ToString()));
-                r.Append(CreateCell(SDF_former_area.ToString()));
-                r.Append(CreateCell(SDF_current_area.ToString()));
-                r.Append(CreateCell(SDF_area_difference.ToString()));
+                r.Append(CreateCell(Spatial_area_deleted));
+                r.Append(CreateCell(Spatial_area_added));
+                r.Append(CreateCell(Spatial_former_area));
+                r.Append(CreateCell(Spatial_current_area));
+                r.Append(CreateCell(SDF_former_area));
+                r.Append(CreateCell(SDF_current_area));
+                r.Append(CreateCell(SDF_area_difference));
                 return r;
             }
         }
@@ -144,28 +144,35 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<string> GetLast()
         {
-            DirectoryInfo files = new(parent);
-            FileInfo? latest = files.GetFiles("*.zip").OrderBy(f => f.CreationTime).LastOrDefault();
-            return latest?.Name.Replace(".zip", "") ?? "";
+            try
+            {
+                DirectoryInfo files = new(parent);
+                FileInfo? latest = files.GetFiles("*.zip").OrderBy(f => f.CreationTime).LastOrDefault();
+                return latest?.Name.Replace(".zip", "") ?? "";
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - GetLast", "");
+                throw ex;
+            }
         }
 
         public async Task UpdateExtraction()
         {
-            string dir = Path.Combine(parent, DateTime.Now.ToString().Replace('/', '-').Replace(':', '-').Replace(' ', '_'));
             try
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Updating extractions", "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
+                string dir = Path.Combine(parent, DateTime.Now.ToString().Replace('/', '-').Replace(':', '-').Replace(' ', '_'));
+
+                SystemLog.write(SystemLog.errorLevel.Info, "Updating extractions", "ExtractionService - UpdateExtractions", "");
                 string archive = await GenerateExcelFiles(dir);
+
+                // delete files and folders from previous extractions
+                DeleteFiles(dir);
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - UpdateExtractions", "");
                 throw ex;
-            }
-            finally
-            {
-                // delete files and folders from previous extractions
-                DeleteFiles(dir);
             }
         }
 
@@ -181,121 +188,157 @@ namespace N2K_BackboneBackEnd.Services
             catch (IOException iex)
             {
                 // ommit
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Warning, iex, "ExtractionService - DeleteFiles Deleting non-empty directory", "", _dataContext.Database.GetConnectionString());
+                SystemLog.write(SystemLog.errorLevel.Warning, iex, "ExtractionService - DeleteFiles Deleting non-empty directory", "");
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - DeleteFiles", "");
+                throw ex;
             }
         }
 
         private async Task<string> GenerateExcelFiles(string dir)
         {
-            DirectoryInfo path = Directory.CreateDirectory(dir);
-            List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>()
-                .Where(e => e.Status == Enumerations.HarvestingStatus.Harvested).ToListAsync();
-            List<string> fileList = new();
-            envelopes.ForEach(async e =>
-                fileList.Add(await ExcelCountry(dir, e.Country, e.Version))
-            );
-            string result = Path.Combine(dir + ".zip");
-            using (var archive = ZipArchive.Create())
+            try
             {
-                fileList.ForEach(f => archive.AddEntry(f, f));
-                archive.SaveTo(result, CompressionType.Deflate);
+                DirectoryInfo path = Directory.CreateDirectory(dir);
+                List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>()
+                    .Where(e => e.Status == Enumerations.HarvestingStatus.Harvested).ToListAsync();
+                List<string> fileList = new();
+                envelopes.ForEach(async e =>
+                    fileList.Add(await ExcelCountry(dir, e.Country, e.Version))
+                );
+                string result = Path.Combine(dir + ".zip");
+                using (var archive = ZipArchive.Create())
+                {
+                    fileList.ForEach(f => archive.AddEntry(f, f));
+                    archive.SaveTo(result, CompressionType.Deflate);
+                }
+                return result;
             }
-            return result;
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - GenerateExcelFiles", "");
+                throw ex;
+            }
         }
 
         private async Task<string> ExcelCountry(string dir, string country, int version)
         {
-            List<ExtChanges> allChangesBySiteCode = GetData<ExtChanges>(Extractions.AllChangesBySiteCode, country, version);
-            List<ExtChanges> allChangesByChanges = GetData<ExtChanges>(Extractions.AllChangesByChanges, country, version);
-            List<ExtSpatialChanges> allSpatialChanges = GetData<ExtSpatialChanges>(Extractions.SpatialChanges, country, version);
-            List<ExtAreaChanges> allAreaChanges = GetData<ExtAreaChanges>(Extractions.AreaChanges, country, version);
-
-
-            // write data to excel
-            string fileName = Path.Combine(dir, country + ".xlsx");
-            using (SpreadsheetDocument doc = SpreadsheetDocument.Create(fileName, SpreadsheetDocumentType.Workbook))
+            try
             {
-                WorkbookPart workbookPart = doc.AddWorkbookPart();
-                workbookPart.Workbook = new Workbook();
+                List<ExtChanges> allChangesBySiteCode = GetData<ExtChanges>(Extractions.AllChangesBySiteCode, country, version);
+                List<ExtChanges> allChangesByChanges = GetData<ExtChanges>(Extractions.AllChangesByChanges, country, version);
+                List<ExtSpatialChanges> allSpatialChanges = GetData<ExtSpatialChanges>(Extractions.SpatialChanges, country, version);
+                List<ExtAreaChanges> allAreaChanges = GetData<ExtAreaChanges>(Extractions.AreaChanges, country, version);
 
-                Sheets sheets = workbookPart.Workbook.AppendChild<Sheets>(new Sheets());
+                // write data to excel
+                string fileName = Path.Combine(dir, country + ".xlsx");
+                using (SpreadsheetDocument doc = SpreadsheetDocument.Create(fileName, SpreadsheetDocumentType.Workbook))
+                {
+                    WorkbookPart workbookPart = doc.AddWorkbookPart();
+                    workbookPart.Workbook = new Workbook();
 
-                // All Changes By SiteCode
-                WorksheetPart worksheetPart1 = workbookPart.AddNewPart<WorksheetPart>();
-                Worksheet workSheet1 = new();
-                Row header1 = CreateHeader<ExtChanges>();
-                Columns cols1 = ColSize(header1);
-                workSheet1.Append(cols1);
-                workSheet1.Append(InsertData<ExtChanges>(header1, allChangesBySiteCode));
-                worksheetPart1.Worksheet = workSheet1;
-                Sheet sheet1 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart1), SheetId = 1, Name = "All Changes By SiteCode" };
-                sheets.Append(sheet1);
+                    Sheets sheets = workbookPart.Workbook.AppendChild<Sheets>(new Sheets());
 
-                // All Changes By Changes
-                WorksheetPart worksheetPart2 = workbookPart.AddNewPart<WorksheetPart>();
-                Worksheet workSheet2 = new();
-                Row header2 = CreateHeader<ExtChanges>();
-                Columns cols2 = ColSize(header2);
-                workSheet2.Append(cols2);
-                workSheet2.Append(InsertData<ExtChanges>(header2, allChangesByChanges));
-                worksheetPart2.Worksheet = workSheet2;
-                Sheet sheet2 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart2), SheetId = 2, Name = "All Changes By Changes" };
-                sheets.Append(sheet2);
+                    // All Changes By SiteCode
+                    WorksheetPart worksheetPart1 = workbookPart.AddNewPart<WorksheetPart>();
+                    Worksheet workSheet1 = new();
+                    Row header1 = CreateHeader<ExtChanges>();
+                    Columns cols1 = ColSize(header1);
+                    workSheet1.Append(cols1);
+                    workSheet1.Append(InsertData<ExtChanges>(header1, allChangesBySiteCode));
+                    worksheetPart1.Worksheet = workSheet1;
+                    Sheet sheet1 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart1), SheetId = 1, Name = "All Changes By SiteCode" };
+                    sheets.Append(sheet1);
 
-                // Spatial Changes
-                WorksheetPart worksheetPart3 = workbookPart.AddNewPart<WorksheetPart>();
-                Worksheet workSheet3 = new();
-                Row header3 = CreateHeader<ExtSpatialChanges>();
-                Columns cols3 = ColSize(header3);
-                workSheet3.Append(cols3);
-                workSheet3.Append(InsertData<ExtSpatialChanges>(header3, allSpatialChanges));
-                worksheetPart3.Worksheet = workSheet3;
-                worksheetPart3.Worksheet.Save();
-                Sheet sheet3 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart3), SheetId = 3, Name = "Spatial Changes" };
-                sheets.Append(sheet3);
+                    // All Changes By Changes
+                    WorksheetPart worksheetPart2 = workbookPart.AddNewPart<WorksheetPart>();
+                    Worksheet workSheet2 = new();
+                    Row header2 = CreateHeader<ExtChanges>();
+                    Columns cols2 = ColSize(header2);
+                    workSheet2.Append(cols2);
+                    workSheet2.Append(InsertData<ExtChanges>(header2, allChangesByChanges));
+                    worksheetPart2.Worksheet = workSheet2;
+                    Sheet sheet2 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart2), SheetId = 2, Name = "All Changes By Changes" };
+                    sheets.Append(sheet2);
 
-                // Area Changes
-                WorksheetPart worksheetPart4 = workbookPart.AddNewPart<WorksheetPart>();
-                Worksheet workSheet4 = new();
-                Row header4 = CreateHeader<ExtAreaChanges>();
-                Columns cols4 = ColSize(header4);
-                workSheet4.Append(cols4);
-                workSheet4.Append(InsertData<ExtAreaChanges>(header4, allAreaChanges));
-                worksheetPart4.Worksheet = workSheet4;
-                worksheetPart4.Worksheet.Save();
-                Sheet sheet4 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart4), SheetId = 4, Name = "Area Changes" };
-                sheets.Append(sheet4);
+                    // Spatial Changes
+                    WorksheetPart worksheetPart3 = workbookPart.AddNewPart<WorksheetPart>();
+                    Worksheet workSheet3 = new();
+                    Row header3 = CreateHeader<ExtSpatialChanges>();
+                    Columns cols3 = ColSize(header3);
+                    workSheet3.Append(cols3);
+                    workSheet3.Append(InsertData<ExtSpatialChanges>(header3, allSpatialChanges));
+                    worksheetPart3.Worksheet = workSheet3;
+                    worksheetPart3.Worksheet.Save();
+                    Sheet sheet3 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart3), SheetId = 3, Name = "Spatial Changes" };
+                    sheets.Append(sheet3);
 
+                    // Area Changes
+                    WorksheetPart worksheetPart4 = workbookPart.AddNewPart<WorksheetPart>();
+                    Worksheet workSheet4 = new();
+                    Row header4 = CreateHeader<ExtAreaChanges>();
+                    Columns cols4 = ColSize(header4);
+                    workSheet4.Append(cols4);
+                    workSheet4.Append(InsertData<ExtAreaChanges>(header4, allAreaChanges));
+                    worksheetPart4.Worksheet = workSheet4;
+                    worksheetPart4.Worksheet.Save();
+                    Sheet sheet4 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart4), SheetId = 4, Name = "Area Changes" };
+                    sheets.Append(sheet4);
+
+                }
+                return fileName;
             }
-            return fileName;
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - ExcelCountry", "");
+                throw ex;
+            }
         }
 
         private List<T> GetData<T>(string query, string country, int version)
         {
-            List<T> result = new();
-            using (SqlConnection con = new(_dataContext.Database.GetConnectionString()))
+            try
             {
-                con.Open();
-                SqlCommand cmd = new(query, con);
-                cmd.Parameters.AddWithValue("@COUNTRYCODE", country);
-                cmd.Parameters.AddWithValue("@COUNTRYVERSION", version);
-                using (SqlDataReader reader = cmd.ExecuteReader())
+                List<T> result = new();
+                using (SqlConnection con = new(_dataContext.Database.GetConnectionString()))
                 {
-                    while (reader.Read())
+                    con.Open();
+                    SqlCommand cmd = new(query, con);
+                    cmd.Parameters.AddWithValue("@COUNTRYCODE", country);
+                    cmd.Parameters.AddWithValue("@COUNTRYVERSION", version);
+                    using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        result.Add((T)DataMapper<T>(reader));
+                        while (reader.Read())
+                        {
+                            result.Add((T)DataMapper<T>(reader));
+                        }
                     }
                 }
+                return result;
             }
-            return result;
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - GetData", "");
+                throw ex;
+            }
         }
 
         private SheetData InsertData<T>(Row header, List<T> data) where T : ISqlResult
         {
-            SheetData sheetData = new();
-            sheetData.Append(header);
-            data.ForEach(c => sheetData.Append(c.ToRow()));
-            return sheetData;
+            try
+            {
+                SheetData sheetData = new();
+                sheetData.Append(header);
+                data.ForEach(c => sheetData.Append(c.ToRow()));
+                return sheetData;
+            }
+            catch (Exception ex)
+            {
+                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - InsertData", "");
+                throw ex;
+            }
         }
 
         private Row CreateHeader<T>() where T : ISqlResult
@@ -365,33 +408,19 @@ namespace N2K_BackboneBackEnd.Services
             }
             else if (typeof(T) == typeof(ExtAreaChanges))
             {
-                double areaDeleted = 0;
-                Double.TryParse(r["Spatial area deleted (ha)"].ToString(), out areaDeleted);
-                double areaAdded = 0;
-                Double.TryParse(r["Spatial area added (ha)"].ToString(), out areaAdded);
-                double formerArea = 0;
-                Double.TryParse(r["Spatial former area (ha)"].ToString(), out formerArea);
-                double currentArea = 0;
-                Double.TryParse(r["Spatial current area (ha)"].ToString(), out currentArea);
-                double sdfFormerArea = 0;
-                Double.TryParse(r["SDF former area (ha)"].ToString(), out sdfFormerArea);
-                double sdfCurrentArea = 0;
-                Double.TryParse(r["SDF current area (ha)"].ToString(), out sdfCurrentArea);
-                double areaDifference = 0;
-                Double.TryParse(r["SDF area difference (ha)"].ToString(), out areaDifference);
                 return new ExtAreaChanges
                 {
                     BioRegions = r["BioRegions"].ToString(),
                     SiteCode = r["SiteCode"].ToString(),
                     Name = r["Name"].ToString(),
                     SiteType = r["SiteType"].ToString(),
-                    Spatial_area_deleted = areaDeleted,
-                    Spatial_area_added = areaAdded,
-                    Spatial_former_area = formerArea,
-                    Spatial_current_area = currentArea,
-                    SDF_former_area = sdfFormerArea,
-                    SDF_current_area = sdfCurrentArea,
-                    SDF_area_difference = areaDifference,
+                    Spatial_area_deleted = r["Spatial area deleted (ha)"].ToString(),
+                    Spatial_area_added = r["Spatial area added (ha)"].ToString(),
+                    Spatial_former_area = r["Spatial former area (ha)"].ToString(),
+                    Spatial_current_area = r["Spatial current area (ha)"].ToString(),
+                    SDF_former_area = r["SDF former area (ha)"].ToString(),
+                    SDF_current_area = r["SDF current area (ha)"].ToString(),
+                    SDF_area_difference = r["SDF area difference (ha)"].ToString(),
                 };
             }
             else if (typeof(T) == typeof(ExtSpatialChanges))
@@ -418,7 +447,5 @@ namespace N2K_BackboneBackEnd.Services
                 throw new Exception("Type missmatch");
             }
         }
-
     }
 }
-
