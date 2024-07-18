@@ -607,6 +607,11 @@ namespace N2K_BackboneBackEnd.Services
                     });
                 });
                 result = result.DistinctBy(c => c.SiteCode).ToList();
+                DateTime? latestRelease = result.OrderByDescending(o => o.ReleaseDate).Select(s =>  s.ReleaseDate).FirstOrDefault();
+                result.ForEach(r =>
+                {
+                    r.ReleaseDate = latestRelease;
+                });
             }
             catch (Exception ex)
             {

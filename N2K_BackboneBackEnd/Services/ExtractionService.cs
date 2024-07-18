@@ -43,7 +43,7 @@ namespace N2K_BackboneBackEnd.Services
                         DataType = CellValues.String
                     };
                 }
-                Row r = new Row();
+                Row r = new();
                 r.Append(CreateCell(BioRegions ?? ""));
                 r.Append(CreateCell(SiteCode ?? ""));
                 r.Append(CreateCell(Name ?? ""));
@@ -78,7 +78,7 @@ namespace N2K_BackboneBackEnd.Services
                         DataType = CellValues.String
                     };
                 }
-                Row r = new Row();
+                Row r = new();
                 r.Append(CreateCell(BioRegions));
                 r.Append(CreateCell(SiteCode));
                 r.Append(CreateCell(Name));
@@ -114,7 +114,7 @@ namespace N2K_BackboneBackEnd.Services
                         DataType = CellValues.String
                     };
                 }
-                Row r = new Row();
+                Row r = new();
                 r.Append(CreateCell(BioRegions));
                 r.Append(CreateCell(SiteCode));
                 r.Append(CreateCell(Name));
@@ -144,7 +144,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<string> GetLast()
         {
-            DirectoryInfo files = new DirectoryInfo(parent);
+            DirectoryInfo files = new(parent);
             FileInfo? latest = files.GetFiles("*.zip").OrderBy(f => f.CreationTime).LastOrDefault();
             return latest?.Name.Replace(".zip", "") ?? "";
         }
@@ -222,48 +222,48 @@ namespace N2K_BackboneBackEnd.Services
 
                 // All Changes By SiteCode
                 WorksheetPart worksheetPart1 = workbookPart.AddNewPart<WorksheetPart>();
-                Worksheet workSheet1 = new Worksheet();
+                Worksheet workSheet1 = new();
                 Row header1 = CreateHeader<ExtChanges>();
                 Columns cols1 = ColSize(header1);
                 workSheet1.Append(cols1);
                 workSheet1.Append(InsertData<ExtChanges>(header1, allChangesBySiteCode));
                 worksheetPart1.Worksheet = workSheet1;
-                Sheet sheet1 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart1), SheetId = 1, Name = "All Changes By SiteCode" };
+                Sheet sheet1 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart1), SheetId = 1, Name = "All Changes By SiteCode" };
                 sheets.Append(sheet1);
 
                 // All Changes By Changes
                 WorksheetPart worksheetPart2 = workbookPart.AddNewPart<WorksheetPart>();
-                Worksheet workSheet2 = new Worksheet();
+                Worksheet workSheet2 = new();
                 Row header2 = CreateHeader<ExtChanges>();
                 Columns cols2 = ColSize(header2);
                 workSheet2.Append(cols2);
-                workSheet2.Append(InsertData<ExtChanges>(header2, allChangesBySiteCode));
+                workSheet2.Append(InsertData<ExtChanges>(header2, allChangesByChanges));
                 worksheetPart2.Worksheet = workSheet2;
-                Sheet sheet2 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart2), SheetId = 2, Name = "All Changes By Changes" };
+                Sheet sheet2 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart2), SheetId = 2, Name = "All Changes By Changes" };
                 sheets.Append(sheet2);
 
                 // Spatial Changes
                 WorksheetPart worksheetPart3 = workbookPart.AddNewPart<WorksheetPart>();
-                Worksheet workSheet3 = new Worksheet();
+                Worksheet workSheet3 = new();
                 Row header3 = CreateHeader<ExtSpatialChanges>();
                 Columns cols3 = ColSize(header3);
                 workSheet3.Append(cols3);
                 workSheet3.Append(InsertData<ExtSpatialChanges>(header3, allSpatialChanges));
                 worksheetPart3.Worksheet = workSheet3;
                 worksheetPart3.Worksheet.Save();
-                Sheet sheet3 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart3), SheetId = 3, Name = "Spatial Changes" };
+                Sheet sheet3 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart3), SheetId = 3, Name = "Spatial Changes" };
                 sheets.Append(sheet3);
 
                 // Area Changes
                 WorksheetPart worksheetPart4 = workbookPart.AddNewPart<WorksheetPart>();
-                Worksheet workSheet4 = new Worksheet();
+                Worksheet workSheet4 = new();
                 Row header4 = CreateHeader<ExtAreaChanges>();
                 Columns cols4 = ColSize(header4);
                 workSheet4.Append(cols4);
                 workSheet4.Append(InsertData<ExtAreaChanges>(header4, allAreaChanges));
                 worksheetPart4.Worksheet = workSheet4;
                 worksheetPart4.Worksheet.Save();
-                Sheet sheet4 = new Sheet() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart4), SheetId = 4, Name = "Area Changes" };
+                Sheet sheet4 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart4), SheetId = 4, Name = "Area Changes" };
                 sheets.Append(sheet4);
 
             }
@@ -276,7 +276,7 @@ namespace N2K_BackboneBackEnd.Services
             using (SqlConnection con = new(_dataContext.Database.GetConnectionString()))
             {
                 con.Open();
-                SqlCommand cmd = new SqlCommand(query, con);
+                SqlCommand cmd = new(query, con);
                 cmd.Parameters.AddWithValue("@COUNTRYCODE", country);
                 cmd.Parameters.AddWithValue("@COUNTRYVERSION", version);
                 using (SqlDataReader reader = cmd.ExecuteReader())
@@ -319,7 +319,7 @@ namespace N2K_BackboneBackEnd.Services
                     throw new Exception("Invalid data type");
                 }
             }))();
-            Row header = new Row();
+            Row header = new();
             headerNames.ForEach(h => header.Append(new Cell { CellValue = new CellValue(h), DataType = CellValues.String }));
             return header;
         }
@@ -332,7 +332,7 @@ namespace N2K_BackboneBackEnd.Services
             {
                 // https://stackoverflow.com/questions/18268620/openxml-auto-size-column-width-in-excel#26180406
                 double width = Math.Truncate(((double)(c.CellValue?.InnerText.Length ?? 0) * 12 + 30) / 12 * 256) / 256;
-                Column col = new Column()
+                Column col = new()
                 {
                     BestFit = true,
                     Min = (UInt32)cells.IndexOf(c) + 1,
