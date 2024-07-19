@@ -32,7 +32,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 await _extractionService.UpdateExtraction();
                 response.Success = true;
                 response.Message = "";
-                response.Count = 0;
+                response.Count = 1;
                 response.Data = null;
                 return Ok(response);
             }
@@ -47,13 +47,14 @@ namespace N2K_BackboneBackEnd.Controllers
         }
 
         [HttpGet("GetLast")]
-        public async Task<ActionResult<string>> GetLast()
+        public async Task<ActionResult<ServiceResponse<string>>> GetLast()
         {
             ServiceResponse<string> response = new();
             try
             {
                 response.Data = await _extractionService.GetLast();
                 response.Success = true;
+                response.Message = "";
                 response.Count = 1;
                 return Ok(response);
             }

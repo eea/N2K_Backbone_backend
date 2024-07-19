@@ -15,6 +15,14 @@ namespace N2K_BackboneBackEnd.Services
 {
     public class ExtractionService : IExtractionService
     {
+        private readonly N2KBackboneContext _dataContext;
+        private readonly string parent = "ExtractionFiles";
+
+        public ExtractionService(N2KBackboneContext dataContext)
+        {
+            _dataContext = dataContext;
+        }
+
         private interface ISqlResult
         {
             public Row ToRow();
@@ -64,9 +72,9 @@ namespace N2K_BackboneBackEnd.Services
             public string? SiteCode;
             public string? Name;
             public string? SiteType;
-            public double? Spatial_Area_Decrease;
-            public double? Spatial_Area_Increase;
-            public double? SDF_Area_Difference;
+            public string? Spatial_Area_Decrease;
+            public string? Spatial_Area_Increase;
+            public string? SDF_Area_Difference;
 
             public Row ToRow()
             {
@@ -130,18 +138,6 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        private readonly IOptions<ConfigSettings> _appSettings;
-        private readonly N2KBackboneContext _dataContext;
-        private string parent = "ExtractionFiles";
-
-        private Extractions ext = new();
-
-        public ExtractionService(IOptions<ConfigSettings> app, N2KBackboneContext dataContext)
-        {
-            _appSettings = app;
-            _dataContext = dataContext;
-        }
-
         public async Task<string> GetLast()
         {
             try
@@ -152,7 +148,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - GetLast", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - GetLast", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -163,7 +159,7 @@ namespace N2K_BackboneBackEnd.Services
             {
                 string dir = Path.Combine(parent, DateTime.Now.ToString().Replace('/', '-').Replace(':', '-').Replace(' ', '_'));
 
-                SystemLog.write(SystemLog.errorLevel.Info, "Updating extractions", "ExtractionService - UpdateExtractions", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Updating extractions", "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
                 string archive = await GenerateExcelFiles(dir);
 
                 // delete files and folders from previous extractions
@@ -171,7 +167,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - UpdateExtractions", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -188,11 +184,11 @@ namespace N2K_BackboneBackEnd.Services
             catch (IOException iex)
             {
                 // ommit
-                SystemLog.write(SystemLog.errorLevel.Warning, iex, "ExtractionService - DeleteFiles Deleting non-empty directory", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Warning, iex, "ExtractionService - DeleteFiles Deleting non-empty directory", "", _dataContext.Database.GetConnectionString());
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - DeleteFiles", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - DeleteFiles", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -218,7 +214,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - GenerateExcelFiles", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - GenerateExcelFiles", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -227,10 +223,10 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<ExtChanges> allChangesBySiteCode = GetData<ExtChanges>(Extractions.AllChangesBySiteCode, country, version);
-                List<ExtChanges> allChangesByChanges = GetData<ExtChanges>(Extractions.AllChangesByChanges, country, version);
-                List<ExtSpatialChanges> allSpatialChanges = GetData<ExtSpatialChanges>(Extractions.SpatialChanges, country, version);
-                List<ExtAreaChanges> allAreaChanges = GetData<ExtAreaChanges>(Extractions.AreaChanges, country, version);
+                List<ExtChanges> allChangesBySiteCode = await GetData<ExtChanges>(Extractions.AllChangesBySiteCode, country, version);
+                List<ExtChanges> allChangesByChanges = await GetData<ExtChanges>(Extractions.AllChangesByChanges, country, version);
+                List<ExtSpatialChanges> allSpatialChanges = await GetData<ExtSpatialChanges>(Extractions.SpatialChanges, country, version);
+                List<ExtAreaChanges> allAreaChanges = await GetData<ExtAreaChanges>(Extractions.AreaChanges, country, version);
 
                 // write data to excel
                 string fileName = Path.Combine(dir, country + ".xlsx");
@@ -247,7 +243,7 @@ namespace N2K_BackboneBackEnd.Services
                     Row header1 = CreateHeader<ExtChanges>();
                     Columns cols1 = ColSize(header1);
                     workSheet1.Append(cols1);
-                    workSheet1.Append(InsertData<ExtChanges>(header1, allChangesBySiteCode));
+                    workSheet1.Append(await InsertData<ExtChanges>(header1, allChangesBySiteCode));
                     worksheetPart1.Worksheet = workSheet1;
                     Sheet sheet1 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart1), SheetId = 1, Name = "All Changes By SiteCode" };
                     sheets.Append(sheet1);
@@ -258,7 +254,7 @@ namespace N2K_BackboneBackEnd.Services
                     Row header2 = CreateHeader<ExtChanges>();
                     Columns cols2 = ColSize(header2);
                     workSheet2.Append(cols2);
-                    workSheet2.Append(InsertData<ExtChanges>(header2, allChangesByChanges));
+                    workSheet2.Append(await InsertData<ExtChanges>(header2, allChangesByChanges));
                     worksheetPart2.Worksheet = workSheet2;
                     Sheet sheet2 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart2), SheetId = 2, Name = "All Changes By Changes" };
                     sheets.Append(sheet2);
@@ -269,7 +265,7 @@ namespace N2K_BackboneBackEnd.Services
                     Row header3 = CreateHeader<ExtSpatialChanges>();
                     Columns cols3 = ColSize(header3);
                     workSheet3.Append(cols3);
-                    workSheet3.Append(InsertData<ExtSpatialChanges>(header3, allSpatialChanges));
+                    workSheet3.Append(await InsertData<ExtSpatialChanges>(header3, allSpatialChanges));
                     worksheetPart3.Worksheet = workSheet3;
                     worksheetPart3.Worksheet.Save();
                     Sheet sheet3 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart3), SheetId = 3, Name = "Spatial Changes" };
@@ -281,7 +277,7 @@ namespace N2K_BackboneBackEnd.Services
                     Row header4 = CreateHeader<ExtAreaChanges>();
                     Columns cols4 = ColSize(header4);
                     workSheet4.Append(cols4);
-                    workSheet4.Append(InsertData<ExtAreaChanges>(header4, allAreaChanges));
+                    workSheet4.Append(await InsertData<ExtAreaChanges>(header4, allAreaChanges));
                     worksheetPart4.Worksheet = workSheet4;
                     worksheetPart4.Worksheet.Save();
                     Sheet sheet4 = new() { Id = doc.WorkbookPart.GetIdOfPart(worksheetPart4), SheetId = 4, Name = "Area Changes" };
@@ -292,12 +288,12 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - ExcelCountry", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - ExcelCountry", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
 
-        private List<T> GetData<T>(string query, string country, int version)
+        private async Task<List<T>> GetData<T>(string query, string country, int version)
         {
             try
             {
@@ -320,12 +316,12 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - GetData", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - GetData", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
 
-        private SheetData InsertData<T>(Row header, List<T> data) where T : ISqlResult
+        private async Task<SheetData> InsertData<T>(Row header, List<T> data) where T : ISqlResult
         {
             try
             {
@@ -336,7 +332,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                SystemLog.write(SystemLog.errorLevel.Error, ex, "ExtractionService - InsertData", "");
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - InsertData", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -425,21 +421,15 @@ namespace N2K_BackboneBackEnd.Services
             }
             else if (typeof(T) == typeof(ExtSpatialChanges))
             {
-                double areaDecrease = 0;
-                Double.TryParse(r["Spatial Area Decrease"].ToString(), out areaDecrease);
-                double areaIncrease = 0;
-                Double.TryParse(r["Spatial Area Increase"].ToString(), out areaIncrease);
-                double areaDiff = 0;
-                Double.TryParse(r["SDF Area Difference"].ToString(), out areaDiff);
                 return new ExtSpatialChanges
                 {
                     BioRegions = r["BioRegions"].ToString(),
                     SiteCode = r["SiteCode"].ToString(),
                     Name = r["Name"].ToString(),
                     SiteType = r["SiteType"].ToString(),
-                    Spatial_Area_Decrease = areaDecrease,
-                    Spatial_Area_Increase = areaIncrease,
-                    SDF_Area_Difference = areaDiff,
+                    Spatial_Area_Decrease = r["Spatial Area Decrease"].ToString(),
+                    Spatial_Area_Increase = r["Spatial Area Increase"].ToString(),
+                    SDF_Area_Difference = r["SDF Area Difference"].ToString(),
                 };
             }
             else

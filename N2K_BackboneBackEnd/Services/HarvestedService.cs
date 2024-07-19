@@ -36,7 +36,7 @@ namespace N2K_BackboneBackEnd.Services
         private readonly IHubContext<ChatHub> _hubContext;
         //private static SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1);
 
-       //private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
+        //private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
 
         private IDictionary<Type, object> _siteItems = new Dictionary<Type, object>(); private struct SiteVersion
         {
@@ -320,7 +320,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - GetEnvelopesByStatus", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - GetEnvelopesByStatus - " + status, "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -1740,7 +1740,8 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         await SystemLog.WriteAsync(SystemLog.errorLevel.Error, string.Format("Error Event handler {0}", ex.Message), "EventHandler", "", _connectionString);
                     }
-                    finally { 
+                    finally
+                    {
                         //release and reset the sempahore for the next execution
                         _semaphore.Release();
                         _semaphore.Dispose();
