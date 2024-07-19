@@ -30,7 +30,7 @@ namespace N2K_BackboneBackEnd.Data
 			WHERE [Country] = @COUNTRYCODE
 				AND C.[N2KVersioningVersion] = @COUNTRYVERSION
 				--AND [ChangeType] != 'Deletion of Spatial Area'
-				--AND [ChangeType] != 'Additon of Spatial Area'
+				--AND [ChangeType] != 'Addition of Spatial Area'
 				AND [ChangeType] != 'Sites added due to a change of BGR'
 				AND [ChangeType] != 'Sites deleted due to a change of BGR'
 			GROUP BY C.[SiteCode],
@@ -119,7 +119,7 @@ namespace N2K_BackboneBackEnd.Data
 			WHERE [Country] = @COUNTRYCODE
 				AND C.[N2KVersioningVersion] = @COUNTRYVERSION
 				--AND [ChangeType] != 'Deletion of Spatial Area'
-				--AND [ChangeType] != 'Additon of Spatial Area'
+				--AND [ChangeType] != 'Addition of Spatial Area'
 				AND [ChangeType] != 'Sites added due to a change of BGR'
 				AND [ChangeType] != 'Sites deleted due to a change of BGR'
 			GROUP BY C.[SiteCode],
@@ -188,9 +188,9 @@ namespace N2K_BackboneBackEnd.Data
 				C.[SiteCode],
 				S.[Name],
 				S.[SiteType],
-				ISNULL(spadec.NewValue, '') AS 'Spatial Area Decrease',
-				ISNULL(spainc.NewValue, '') AS 'Spatial Area Increase',
-				area.[NewValue] - area.[OldValue] AS 'SDF Area Difference'
+				CAST(ISNULL(spadec.NewValue, '') AS NVARCHAR(MAX)) AS 'Spatial Area Decrease',
+				CAST(ISNULL(spainc.NewValue, '') AS NVARCHAR(MAX)) AS 'Spatial Area Increase',
+				CAST(ISNULL(CAST(area.[NewValue] AS DECIMAL(38, 4)), 0) - ISNULL(CAST(area.[OldValue] AS DECIMAL(38, 4)), 0) AS NVARCHAR(MAX)) AS 'SDF Area Difference'
 			FROM [dbo].[Changes] C
 			INNER JOIN (
 				SELECT DISTINCT [dbo].[Sites].[SiteCode],
