@@ -13,8 +13,8 @@ namespace N2K_BackboneBackEnd.Data
 				[Level],
 				[ChangeCategory],
 				[ChangeType],
-				ISNULL([NewValue], '') AS [NewValue],
-				ISNULL([OldValue], '') AS [OldValue],
+				CAST(ISNULL([NewValue], '') AS NVARCHAR(MAX)) AS [NewValue],
+				CAST(ISNULL([OldValue], '') AS NVARCHAR(MAX)) AS [OldValue],
 				ISNULL([Code], '') AS [Code]
 			FROM [dbo].[Changes] C
 			INNER JOIN [dbo].[Sites] S ON C.[SiteCode] = S.[SiteCode]
@@ -102,8 +102,8 @@ namespace N2K_BackboneBackEnd.Data
 				[Level],
 				[ChangeCategory],
 				[ChangeType],
-				ISNULL([NewValue], '') AS [NewValue],
-				ISNULL([OldValue], '') AS [OldValue],
+				CAST(ISNULL([NewValue], '') AS NVARCHAR(MAX)) AS [NewValue],
+				CAST(ISNULL([OldValue], '') AS NVARCHAR(MAX)) AS [OldValue],
 				ISNULL([Code], '') AS [Code]
 			FROM [dbo].[Changes] C
 			INNER JOIN [dbo].[Sites] S ON C.[SiteCode] = S.[SiteCode]
@@ -268,10 +268,10 @@ namespace N2K_BackboneBackEnd.Data
 				S.[SiteType],
 				CAST(ISNULL(spAreaDeleted.area, 0) AS NVARCHAR(MAX)) AS 'Spatial area deleted (ha)',
 				CAST(ISNULL(spAreaAdded.area, 0) AS NVARCHAR(MAX)) AS 'Spatial area added (ha)',
-				CAST(SpatialAreaChanged.OldValue AS NVARCHAR(MAX)) AS 'Spatial former area (ha)',
-				CAST(SpatialAreaChanged.NewValue AS NVARCHAR(MAX)) AS 'Spatial current area (ha)',
-				CAST(AreaChanged.OldValue AS NVARCHAR(MAX)) AS 'SDF former area (ha)',
-				CAST(AreaChanged.NewValue AS NVARCHAR(MAX)) AS 'SDF current area (ha)',
+				CAST(ISNULL(SpatialAreaChanged.OldValue, SS.[Area]) AS NVARCHAR(MAX)) AS 'Spatial former area (ha)',
+				CAST(ISNULL(SpatialAreaChanged.NewValue, SS.[Area]) AS NVARCHAR(MAX)) AS 'Spatial current area (ha)',
+				CAST(ISNULL(AreaChanged.OldValue, Q.[area]) AS NVARCHAR(MAX)) AS 'SDF former area (ha)',
+				CAST(ISNULL(AreaChanged.NewValue, Q.[area]) AS NVARCHAR(MAX)) AS 'SDF current area (ha)',
 				CAST(ISNULL(CAST(AreaChanged.NewValue AS DECIMAL(38, 4)), 0) - ISNULL(CAST(AreaChanged.OldValue AS DECIMAL(38, 4)), 0) AS NVARCHAR(MAX)) AS 'SDF area difference (ha)'
 			FROM [dbo].[Changes] C
 			INNER JOIN (
@@ -351,18 +351,51 @@ namespace N2K_BackboneBackEnd.Data
 					OR C.[ChangeType] = 'SDF Area Change'
 				) AreaChanged ON AreaChanged.SiteCode = S.[SiteCode]
 				AND AreaChanged.N2KVersioningVersion = S.[N2KVersioningVersion]
+			LEFT JOIN (
+				SELECT DISTINCT STRING_AGG(B.[RefBioGeoName], ', ') WITHIN
+				GROUP (
+						ORDER BY B.[RefBioGeoName]
+						) AS 'BioRegions',
+					S.[SiteCode],
+					S.[Version],
+					S.[Name],
+					S.[SiteType],
+					S.[CountryCode],
+					S.[N2KVersioningVersion],
+					S.[Area]
+				FROM [dbo].[Sites] S
+				INNER JOIN (
+					SELECT DISTINCT [SiteCode],
+						[Version],
+						[RefBioGeoName],
+						[Percentage]
+					FROM [dbo].[BioRegions] B
+					INNER JOIN [dbo].[BioRegionTypes] BT ON B.BGRID = BT.[Code]
+					) B ON S.[SiteCode] = B.[SiteCode]
+					AND S.[Version] = B.[Version]
+				GROUP BY S.[SiteCode],
+					S.[Version],
+					S.[Name],
+					S.[SiteType],
+					S.[CountryCode],
+					S.[N2KVersioningVersion],
+					S.[Area]
+				) Q ON C.[SiteCode] = Q.[SiteCode]
+				AND C.[Version] = Q.[Version]
+			LEFT JOIN [dbo].[SiteSpatial] SS ON SS.[SiteCode] = C.[SiteCode]
+				AND SS.[Version] = C.[Version]
 			WHERE C.[Country] = @COUNTRYCODE
 				AND C.[N2KVersioningVersion] = @COUNTRYVERSION
-			GROUP BY S.[BioRegions],
-				C.[SiteCode],
-				S.[Name],
-				S.[SiteType],
-				spAreaDeleted.area,
-				spAreaAdded.area,
-				SpatialAreaChanged.OldValue,
-				SpatialAreaChanged.NewValue,
-				AreaChanged.OldValue,
-				AreaChanged.NewValue
+			--GROUP BY S.[BioRegions],
+			--	C.[SiteCode],
+			--	S.[Name],
+			--	S.[SiteType],
+			--	spAreaDeleted.area,
+			--	spAreaAdded.area,
+			--	IIF(SpatialAreaChanged.OldValue IS NULL, Q.[Area], SpatialAreaChanged.OldValue),
+			--	IIF(SpatialAreaChanged.NewValue IS NULL, Q.[Area], SpatialAreaChanged.NewValue),
+			--	IIF(AreaChanged.OldValue IS NULL, SS.[area], AreaChanged.OldValue),
+			--	IIF(AreaChanged.NewValue IS NULL, SS.[area], AreaChanged.NewValue)
 
 			UNION
 

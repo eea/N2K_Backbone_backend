@@ -201,9 +201,10 @@ namespace N2K_BackboneBackEnd.Services
                 List<ProcessedEnvelopes> envelopes = await _dataContext.Set<ProcessedEnvelopes>()
                     .Where(e => e.Status == Enumerations.HarvestingStatus.Harvested).ToListAsync();
                 List<string> fileList = new();
-                envelopes.ForEach(async e =>
-                    fileList.Add(await ExcelCountry(dir, e.Country, e.Version))
-                );
+                foreach(ProcessedEnvelopes e in envelopes)
+                {
+                    fileList.Add(await ExcelCountry(dir, e.Country, e.Version));
+                }
                 string result = Path.Combine(dir + ".zip");
                 using (var archive = ZipArchive.Create())
                 {
@@ -288,7 +289,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - ExcelCountry", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - ExcelCountry: Contry: " + country + " - Version: " + version, "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -316,7 +317,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - GetData", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - GetData: Contry: " + country + " - Version: " + version, "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
