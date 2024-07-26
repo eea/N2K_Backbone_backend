@@ -321,7 +321,6 @@ namespace N2K_BackboneBackEnd.Models.release_db
         public string? DESIGNATION { get; set; }
         public string? OTHERCHARACT { get; set; }
         public DateTime? RELEASE_DATE { get; set; }
-        public int? N2KVersioningVersion { get; set; }
 
         private string dbConnection = string.Empty;
 
