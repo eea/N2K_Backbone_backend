@@ -299,7 +299,7 @@ namespace N2K_BackboneBackEnd.Models.release_db
         public long ReleaseId { get; set; }
         public string COUNTRY_CODE { get; set; } = string.Empty;
         public string SITECODE { get; set; } = string.Empty;
-        public int VERSION { get; set; }
+        public int? VERSION { get; set; }
         public string? SITENAME { get; set; }
         public string? SITETYPE { get; set; }
         public DateTime? DATE_COMPILATION { get; set; }
@@ -490,8 +490,8 @@ namespace N2K_BackboneBackEnd.Models.release_db
         public bool? SENSITIVE { get; set; }
         public bool? NONPRESENCEINSITE { get; set; }
         public string? POPULATION_TYPE { get; set; }
-        public int? LOWERBOUND { get; set; }
-        public int? UPPERBOUND { get; set; }
+        public string? LOWERBOUND { get; set; }
+        public string? UPPERBOUND { get; set; }
         public string? COUNTING_UNIT { get; set; }
         public string? ABUNDANCE_CATEGORY { get; set; }
         public string? DATAQUALITY { get; set; }

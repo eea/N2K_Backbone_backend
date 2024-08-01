@@ -38,7 +38,6 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
-
         [HttpGet("Get/id={id:int}&docuType={docuType:int}&token={token:string}")]
         [AllowAnonymous]
         public async Task<ActionResult> DownloadFileWithToken(int id, int docuType, string token)
@@ -46,8 +45,7 @@ namespace N2K_BackboneBackEnd.Controllers
             ServiceResponse<FileContentResult> response = new();
             try
             {
-                                
-                return await _downloadService.DownloadFile(id, docuType,token);
+                return await _downloadService.DownloadFile(id, docuType, token);
             }
             catch (UnauthorizedAccessException)
             {

@@ -36,7 +36,7 @@ namespace N2K_BackboneBackEnd.Services
         private readonly IHubContext<ChatHub> _hubContext;
         //private static SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1);
 
-       //private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
+        //private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount:1);
 
         private IDictionary<Type, object> _siteItems = new Dictionary<Type, object>(); private struct SiteVersion
         {
@@ -320,7 +320,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - GetEnvelopesByStatus", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - GetEnvelopesByStatus - " + status, "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
         }
@@ -1121,7 +1121,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             // get sibling sites (sites that resulted from the split)
                             List<long> siblingIDs = await ctx.Set<LineageAntecessors>()
-                                .Where(a => a.SiteCode == storedSite.SiteCode && a.N2KVersioningVersion == storedSite.N2KVersioningVersion)
+                                .Where(a => a.SiteCode == storedSite.SiteCode && a.Version == storedSite.VersionId)
                                 .Select(a => a.LineageID).ToListAsync();
                             string siblingSites = string.Join(',',
                                 await ctx.Set<Lineage>()
@@ -1193,7 +1193,7 @@ namespace N2K_BackboneBackEnd.Services
                             LineageAntecessors? antecessor = await ctx.Set<LineageAntecessors>()
                                 .FirstOrDefaultAsync(a => a.LineageID == lineage.ID);
                             List<long> siblingIDs = await ctx.Set<LineageAntecessors>()
-                                .Where(a => a.SiteCode == antecessor.SiteCode)
+                                .Where(a => a.SiteCode == antecessor.SiteCode && a.Version == antecessor.Version)
                                 .Select(a => a.LineageID).ToListAsync();
                             string siblings = string.Join(',',
                                 await ctx.Set<Lineage>()
@@ -1400,7 +1400,7 @@ namespace N2K_BackboneBackEnd.Services
                         LineageAntecessors? antecessor = await ctx.Set<LineageAntecessors>()
                             .FirstOrDefaultAsync(a => a.LineageID == lineage.ID);
                         List<long> siblingIDs = await ctx.Set<LineageAntecessors>()
-                            .Where(a => a.SiteCode == antecessor.SiteCode)
+                            .Where(a => a.SiteCode == antecessor.SiteCode && a.Version == antecessor.Version)
                             .Select(a => a.LineageID).ToListAsync();
                         string siblings = string.Join(',',
                             await ctx.Set<Lineage>()
@@ -1740,7 +1740,8 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         await SystemLog.WriteAsync(SystemLog.errorLevel.Error, string.Format("Error Event handler {0}", ex.Message), "EventHandler", "", _connectionString);
                     }
-                    finally { 
+                    finally
+                    {
                         //release and reset the sempahore for the next execution
                         _semaphore.Release();
                         _semaphore.Dispose();
