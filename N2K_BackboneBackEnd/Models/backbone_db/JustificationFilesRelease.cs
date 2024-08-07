@@ -13,6 +13,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public String OriginalName { get; set; } = String.Empty;
         public DateTime? ImportDate { get; set; }
         public string? Username { get; set; }
+        public string? Comment { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
