@@ -9,6 +9,7 @@ namespace N2K_BackboneBackEnd.Models
         public int Version { get; set; }
         [NotMapped]
         public List<IFormFile>? Files { get; set; }
+        public string? Comment { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
