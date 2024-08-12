@@ -584,7 +584,8 @@ namespace N2K_BackboneBackEnd.Services
                         OriginalName = fUrl.OriginalName,
                         CountryCode = attachedFile.Country,
                         ImportDate = DateTime.Now,
-                        Username = username
+                        Username = username,
+                        Comment = attachedFile.Comment,
                     };
                     await _dataContext.Set<JustificationFilesRelease>().AddAsync(justFile);
                     await _dataContext.SaveChangesAsync();

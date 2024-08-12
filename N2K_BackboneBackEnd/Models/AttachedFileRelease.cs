@@ -8,6 +8,7 @@ namespace N2K_BackboneBackEnd.Models
         public string Country { get; set; } = string.Empty;
         [NotMapped]
         public List<IFormFile>? Files { get; set; }
+        public string? Comment { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {

@@ -522,7 +522,8 @@ namespace N2K_BackboneBackEnd.Services
                         Path = release.Path,
                         ImportDate = release.ImportDate,
                         Username = release.Username,
-                        OriginalName = release.OriginalName
+                        OriginalName = release.OriginalName,
+                        Comment = release.Comment
                     };
                     result.Add(temp);
                 }
@@ -570,7 +571,8 @@ namespace N2K_BackboneBackEnd.Services
                         SiteCode = attachedFile.SiteCode,
                         Version = attachedFile.Version,
                         ImportDate = DateTime.Now,
-                        Username = username
+                        Username = username,
+                        Comment = attachedFile.Comment
                     };
                     if (temporal)
                     {
