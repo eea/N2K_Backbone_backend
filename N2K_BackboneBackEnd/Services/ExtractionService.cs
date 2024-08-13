@@ -16,11 +16,13 @@ namespace N2K_BackboneBackEnd.Services
     public class ExtractionService : IExtractionService
     {
         private readonly N2KBackboneContext _dataContext;
+        private readonly IOptions<ConfigSettings> _appSettings;
         private readonly string parent = "ExtractionFiles";
 
-        public ExtractionService(N2KBackboneContext dataContext)
+        public ExtractionService(N2KBackboneContext dataContext, IOptions<ConfigSettings> app)
         {
             _dataContext = dataContext;
+            _appSettings = app;
         }
 
         private interface ISqlResult
@@ -157,13 +159,32 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                string dir = Path.Combine(parent, DateTime.Now.ToString().Replace('/', '-').Replace(':', '-').Replace(' ', '_'));
+                //string dir = Path.Combine(parent, DateTime.Now.ToString().Replace('/', '-').Replace(':', '-').Replace(' ', '_'));
+                //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Updating extractions", "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
+                //string archive = await GenerateExcelFiles(dir);
 
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Updating extractions", "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
-                string archive = await GenerateExcelFiles(dir);
+                HttpClient client = new();
+                String serverUrl = String.Format(_appSettings.Value.fme_service_extractions, "*", _appSettings.Value.fme_security_token);
+                try
+                {
+                    //TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
+                    client.Timeout = TimeSpan.FromHours(5);
+                    Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
+                    string content = await response.Result.Content.ReadAsStringAsync();
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
+                }
+                finally
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End Excel extraction generation"), "ExtractionService - UpdateExtractions", "", _dataContext.Database.GetConnectionString());
+                    client.Dispose();
+                    //TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString().ToString(), "End");
+                }
 
                 // delete files and folders from previous extractions
-                DeleteFiles(dir);
+                DeleteFiles(await GetLast());
             }
             catch (Exception ex)
             {
