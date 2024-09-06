@@ -130,12 +130,14 @@ namespace N2K_BackboneBackEnd.Helpers
                     if (!invalidFile) invalidFile = true;
                     File.Delete(fullPath);
                 }
+                /*
                 if (CheckCompressionFormats(fileName))
                 {
                     //copy file to temp repository                    
                     //check compressed files types
                     if (!invalidFile && CheckCompressedFiles(fullPath)) invalidFile = true;
                 }
+                */
             }
             if (invalidFile)
                 throw new Exception("some of the attached file(s) have invalid extensions");
