@@ -252,6 +252,7 @@ namespace N2K_BackboneBackEnd.Models.release_db
         public string? ORG_POSTNAME { get; set; }
         public string? ORG_ADDRESS { get; set; }
         public string? ORG_ADDRESS_UNSTRUCTURED { get; set; }
+        public string? THOROUGHFARE { get; set; }
 
         private string dbConnection = string.Empty;
 
@@ -346,6 +347,7 @@ namespace N2K_BackboneBackEnd.Models.release_db
         public string SITECODE { get; set; } = string.Empty;
         public string NUTID { get; set; } = string.Empty;
         public decimal? COVERPERCENTAGE { get; set; }
+        public string? NUTS_NAME { get; set; } = string.Empty;
 
         private string dbConnection = string.Empty;
 
