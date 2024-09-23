@@ -17,6 +17,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         //[NotMapped]
         //public bool Temporal { get; set; } = false;
         public String? OriginalName { get; set; }
+        public string? Comment { get; set; }
 
         public static  void OnModelCreating(ModelBuilder builder)
         {
