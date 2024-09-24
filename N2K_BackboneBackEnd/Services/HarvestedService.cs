@@ -1831,7 +1831,7 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompl
                             if (envelopes.Count == 0 && env.FirstInCountry)
                             {
 
-await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: Process Change", env.Envelope.CountryCode, env.Envelope.VersionId ), "HarvestedService - FME Job Completed", "", _connectionString);
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: Process Change 1", env.Envelope.CountryCode, env.Envelope.VersionId ), "HarvestedService - FME Job Completed", "", _connectionString);
                                 
                                 //change the status of the whole process to PreHarvested                    
                                 await Task.Run(() =>
@@ -1989,6 +1989,7 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompl
                             if (envelopes.Count == 0)
                             {
                                 //change the status of the whole process to PreHarvested
+                                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: Process Change 2", envelope.CountryCode,envelope.VersionId ), "HarvestedService - FME Job Completed", "", _connectionString);
                                 await ChangeStatus(
                                     GetCountryVersionToStatusFromSingleEnvelope(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested)
                                     , cache);
@@ -2154,6 +2155,8 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompl
             HarvestingStatus toStatus = changeEnvelopes.toStatus;
             try
             {
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Change status ", "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString());
+                
                 List<ProcessedEnvelopes> envelopeList = new();
                 ProcessedEnvelopes? envelope = new();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
@@ -2165,6 +2168,9 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompl
                         country = data.CountryCode;
                         version = data.VersionId;
 
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Change status {0}-{1}", country, version) , "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString());
+                           
+                        
                         envelope = await ctx.Set<ProcessedEnvelopes>().Where(e => e.Country == country && e.Version == version).FirstOrDefaultAsync();
 
                         if (envelope != null)
@@ -2260,6 +2266,7 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompl
                                             await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
                                         }
                                         //change the status of the whole process to PreHarvested
+                                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: Process Change 3",nextEnvelope.Country,extEnvelope.Version ), "HarvestedService - FME Job Completed", "", _connectionString);
                                         await ChangeStatus(
                                                 GetCountryVersionToStatusFromSingleEnvelope(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested),
                                                 cache, true);
