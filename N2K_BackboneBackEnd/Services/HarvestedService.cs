@@ -1765,6 +1765,9 @@ namespace N2K_BackboneBackEnd.Services
         private async void FMEJobCompleted(object sender, FMEJobEventArgs env, IMemoryCache cache)
         {
             string _connectionString = "";
+
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: DataLoadded", env.Envelope.CountryCode, env.Envelope.VersionId ), "HarvestedService - FME Job Completed", "", _connectionString);
+            
             try
             {
                 await Task.Delay(10);
@@ -1814,13 +1817,22 @@ namespace N2K_BackboneBackEnd.Services
                         //if the tabular data has been already harvested change the status to data loaded
                         //if dataloading is completed launch change detection tool
 
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: Enter", _procEnv.Country, _procEnv.Version ), "HarvestedService - FME Job Completed", "", _connectionString);
+                        
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: {2}", env.Envelope.CountryCode, env.Envelope.VersionId, env.FirstInCountry ), "HarvestedService - FME Job Completed", "", _connectionString);
+
                         if (_procEnv.Status == HarvestingStatus.DataLoaded)
                         {
                             //When there is no previous envelopes to resolve for this country
                             List<ProcessedEnvelopes> envelopes = await ctx.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == env.Envelope.CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToListAsync();
 
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: DataLoadded", env.Envelope.CountryCode, env.Envelope.VersionId ), "HarvestedService - FME Job Completed", "", _connectionString);
+                            
                             if (envelopes.Count == 0 && env.FirstInCountry)
                             {
+
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: Process Change", env.Envelope.CountryCode, env.Envelope.VersionId ), "HarvestedService - FME Job Completed", "", _connectionString);
+                                
                                 //change the status of the whole process to PreHarvested                    
                                 await Task.Run(() =>
                                     ChangeStatus(
