@@ -1765,6 +1765,9 @@ namespace N2K_BackboneBackEnd.Services
         private async void FMEJobCompleted(object sender, FMEJobEventArgs env, IMemoryCache cache)
         {
             string _connectionString = "";
+
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted 00 {0}-{1}: DataLoadded", env.Envelope.CountryCode, env.Envelope.VersionId ), "HarvestedService - FME Job Completed", "", _connectionString);
+            
             try
             {
                 await Task.Delay(10);
@@ -1814,11 +1817,13 @@ namespace N2K_BackboneBackEnd.Services
                         //if the tabular data has been already harvested change the status to data loaded
                         //if dataloading is completed launch change detection tool
 
+
                         if (_procEnv.Status == HarvestingStatus.DataLoaded)
                         {
                             //When there is no previous envelopes to resolve for this country
                             List<ProcessedEnvelopes> envelopes = await ctx.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == env.Envelope.CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToListAsync();
 
+                            
                             if (envelopes.Count == 0 && env.FirstInCountry)
                             {
                                 //change the status of the whole process to PreHarvested                    
@@ -1846,7 +1851,7 @@ namespace N2K_BackboneBackEnd.Services
             finally
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "HarvestedService - FME Job Completed", "", _connectionString);
-                Console.WriteLine(String.Format("FMEJobCompleted {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId));
+                Console.WriteLine(String.Format("FMEJobCompleted FINN {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId));
             }
         }
 
@@ -1977,6 +1982,7 @@ namespace N2K_BackboneBackEnd.Services
                             if (envelopes.Count == 0)
                             {
                                 //change the status of the whole process to PreHarvested
+                                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FullHarvest {0}-{1}: Process Change 2", envelope.CountryCode,envelope.VersionId ), "FullHarvest - FME Job Completed", "", _dataContext.Database.GetConnectionString());
                                 await ChangeStatus(
                                     GetCountryVersionToStatusFromSingleEnvelope(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested)
                                     , cache);
@@ -2142,6 +2148,8 @@ namespace N2K_BackboneBackEnd.Services
             HarvestingStatus toStatus = changeEnvelopes.toStatus;
             try
             {
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString());
+                
                 List<ProcessedEnvelopes> envelopeList = new();
                 ProcessedEnvelopes? envelope = new();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
@@ -2152,7 +2160,6 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         country = data.CountryCode;
                         version = data.VersionId;
-
                         envelope = await ctx.Set<ProcessedEnvelopes>().Where(e => e.Country == country && e.Version == version).FirstOrDefaultAsync();
 
                         if (envelope != null)
