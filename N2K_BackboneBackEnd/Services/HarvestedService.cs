@@ -1989,7 +1989,7 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompl
                             if (envelopes.Count == 0)
                             {
                                 //change the status of the whole process to PreHarvested
-                                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: Process Change 2", envelope.CountryCode,envelope.VersionId ), "HarvestedService - FME Job Completed", "", _connectionString);
+                                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: Process Change 2", envelope.CountryCode,envelope.VersionId ), "HarvestedService - FME Job Completed", "", _dataContext.Database.GetConnectionString());
                                 await ChangeStatus(
                                     GetCountryVersionToStatusFromSingleEnvelope(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested)
                                     , cache);
@@ -2266,7 +2266,7 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Change stat
                                             await Task.WhenAll(tabChangeDetectionTask, spatialChangeDetectionTask);
                                         }
                                         //change the status of the whole process to PreHarvested
-                                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: Process Change 3",nextEnvelope.Country,extEnvelope.Version ), "HarvestedService - FME Job Completed", "", _connectionString);
+                                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}: Process Change 3",nextEnvelope.Country,nextEnvelope.Version ), "HarvestedService - FME Job Completed", "", _dataContext.Database.GetConnectionString());
                                         await ChangeStatus(
                                                 GetCountryVersionToStatusFromSingleEnvelope(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested),
                                                 cache, true);
