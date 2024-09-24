@@ -202,7 +202,13 @@ namespace N2K_BackboneBackEnd.Services
                 //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, fileName + " Deleted ", "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
                 File.Delete(fileName);
             }
-
+            if (firstInCountry) {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("OnFMEJobIdCompleted with fme job {0}-{1}: Is FIRST", envelope.CountryCode, envelope.VersionId), "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
+            }
+            else {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("OnFMEJobIdCompleted with fme job {0}-{1}: NOT FIRST", envelope.CountryCode, envelope.VersionId), "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
+            }
+            
             FMEJobEventArgs evt = new()
             {
                 Envelope = envelope,
