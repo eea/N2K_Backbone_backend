@@ -171,7 +171,9 @@ namespace N2K_BackboneBackEnd.Services
 
             //read the file. The first line shows if the job is the first of the country
             string line1 = File.ReadLines(fileName).First();
-            firstInCountry = bool.Parse(line1);
+            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("OnFMEJobIdCompleted with fme job {0}-{1}: {2}", envelope.CountryCode, envelope.VersionId,line1), "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
+            //firstInCountry = bool.Parse(line1);
+            firstInCountry = line1.Trim().ToLower() == "true";
 
             /*
             //fetch the FME jobs launched for the present country
@@ -200,7 +202,7 @@ namespace N2K_BackboneBackEnd.Services
                 //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, fileName + " Deleted ", "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
                 File.Delete(fileName);
             }
-
+            
             FMEJobEventArgs evt = new()
             {
                 Envelope = envelope,
