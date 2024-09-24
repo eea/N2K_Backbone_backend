@@ -2155,7 +2155,7 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompl
             HarvestingStatus toStatus = changeEnvelopes.toStatus;
             try
             {
-await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Change status ", "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString());
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString());
                 
                 List<ProcessedEnvelopes> envelopeList = new();
                 ProcessedEnvelopes? envelope = new();
