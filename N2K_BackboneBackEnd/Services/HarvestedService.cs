@@ -1765,8 +1765,6 @@ namespace N2K_BackboneBackEnd.Services
         private async void FMEJobCompleted(object sender, FMEJobEventArgs env, IMemoryCache cache)
         {
             string _connectionString = "";
-
-await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted 00 {0}-{1}: DataLoadded", env.Envelope.CountryCode, env.Envelope.VersionId ), "HarvestedService - FME Job Completed", "", _connectionString);
             
             try
             {
@@ -1851,7 +1849,7 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompl
             finally
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FMEJobCompleted {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "HarvestedService - FME Job Completed", "", _connectionString);
-                Console.WriteLine(String.Format("FMEJobCompleted FINN {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId));
+                Console.WriteLine(String.Format("FMEJobCompleted {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId));
             }
         }
 
