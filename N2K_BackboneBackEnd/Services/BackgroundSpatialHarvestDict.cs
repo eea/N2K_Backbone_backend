@@ -31,7 +31,7 @@ namespace N2K_BackboneBackEnd.Services
             return _dataContext;
         }
 
-        public async Task LaunchFMESpatialHarvestBackground(EnvelopesToProcess envelope)
+        public async Task LaunchFMESpatialHarvestBackground(EnvelopesToProcess envelope, int countryMinVersion)
         {
             if (envelope == null)
             {
@@ -84,29 +84,8 @@ namespace N2K_BackboneBackEnd.Services
 
                 //check if there are FME jobs launched for the country
                 //if there are no such jobs, this FME job is the first
-                bool firstInCountry = false;
-                //fetch the FME jobs launched for the present country
-                var fmeFiles = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Resources"),
-                    string.Format("FMELaunched-{0}-*.txt", envelope.CountryCode));
-                if (fmeFiles.Any())
-                {
-                    long minVersionCountry = long.MaxValue;
+                bool firstInCountry = envelope.VersionId== countryMinVersion;
 
-                    //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Join(",", fmeFiles) , "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
-                    //and from these get the one with the minimun version
-                    foreach (var file in fmeFiles)
-                    {
-                        string _aux = file.Split(".txt")[0];
-                        long _currVersion = 0;
-                        if (long.TryParse(_aux.Replace(string.Format(Path.Combine(Directory.GetCurrentDirectory(), "Resources", "FMELaunched-{0}-"), envelope.CountryCode), ""), out _currVersion))
-                        {
-                            if (_currVersion < minVersionCountry) minVersionCountry = _currVersion;
-                        }
-                    }
-                    firstInCountry = envelope.VersionId < minVersionCountry;
-                }
-                else
-                    firstInCountry = true;
 
                 //if the file exists means that the event was handled and we ignore it
                 if (!File.Exists(fileName))
