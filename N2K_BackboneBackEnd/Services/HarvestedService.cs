@@ -1672,12 +1672,15 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
+                //calculate the min versionID of each country    
+                var minVersionPerCountry = envelopeIDs.GroupBy(c => c.CountryCode).SelectMany(g => g.Where(p => p.VersionId == g.Min(h => h.VersionId))).ToList();
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
                     try
                     {
-                        await _fmeHarvestJobs.LaunchFMESpatialHarvestBackground(envelope);
+                        var minCountryVersion = minVersionPerCountry.Find(a => a.CountryCode == envelope.CountryCode).VersionId;
+                        await _fmeHarvestJobs.LaunchFMESpatialHarvestBackground(envelope, minCountryVersion);
                     }
                     catch (Exception ex)
                     {
