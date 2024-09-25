@@ -40,7 +40,7 @@ namespace N2K_BackboneBackEnd.Services
 
         private IDictionary<Type, object> _siteItems = new Dictionary<Type, object>(); private struct SiteVersion
         {
-            public string SiteCode;
+            public string SiteCode; 
             public int MaxVersion;
         }
 
