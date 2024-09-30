@@ -40,7 +40,7 @@ namespace N2K_BackboneBackEnd.Services
 
         private IDictionary<Type, object> _siteItems = new Dictionary<Type, object>(); private struct SiteVersion
         {
-            public string SiteCode;
+            public string SiteCode; 
             public int MaxVersion;
         }
 
@@ -1672,12 +1672,15 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
+                //calculate the min versionID of each country    
+                var minVersionPerCountry = envelopeIDs.GroupBy(c => c.CountryCode).SelectMany(g => g.Where(p => p.VersionId == g.Min(h => h.VersionId))).ToList();
                 //for each envelope to process
                 foreach (EnvelopesToProcess envelope in envelopeIDs)
                 {
                     try
                     {
-                        await _fmeHarvestJobs.LaunchFMESpatialHarvestBackground(envelope);
+                        var minCountryVersion = minVersionPerCountry.Find(a => a.CountryCode == envelope.CountryCode).VersionId;
+                        await _fmeHarvestJobs.LaunchFMESpatialHarvestBackground(envelope, minCountryVersion);
                     }
                     catch (Exception ex)
                     {
@@ -1762,6 +1765,7 @@ namespace N2K_BackboneBackEnd.Services
         private async void FMEJobCompleted(object sender, FMEJobEventArgs env, IMemoryCache cache)
         {
             string _connectionString = "";
+            
             try
             {
                 await Task.Delay(10);
@@ -1811,11 +1815,13 @@ namespace N2K_BackboneBackEnd.Services
                         //if the tabular data has been already harvested change the status to data loaded
                         //if dataloading is completed launch change detection tool
 
+
                         if (_procEnv.Status == HarvestingStatus.DataLoaded)
                         {
                             //When there is no previous envelopes to resolve for this country
                             List<ProcessedEnvelopes> envelopes = await ctx.Set<ProcessedEnvelopes>().AsNoTracking().Where(pe => (pe.Country == env.Envelope.CountryCode) && (pe.Status == HarvestingStatus.Harvested || pe.Status == HarvestingStatus.PreHarvested)).ToListAsync();
 
+                            
                             if (envelopes.Count == 0 && env.FirstInCountry)
                             {
                                 //change the status of the whole process to PreHarvested                    
@@ -1974,6 +1980,7 @@ namespace N2K_BackboneBackEnd.Services
                             if (envelopes.Count == 0)
                             {
                                 //change the status of the whole process to PreHarvested
+                                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FullHarvest {0}-{1}: Process Change 2", envelope.CountryCode,envelope.VersionId ), "FullHarvest - FME Job Completed", "", _dataContext.Database.GetConnectionString());
                                 await ChangeStatus(
                                     GetCountryVersionToStatusFromSingleEnvelope(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested)
                                     , cache);
@@ -2139,6 +2146,8 @@ namespace N2K_BackboneBackEnd.Services
             HarvestingStatus toStatus = changeEnvelopes.toStatus;
             try
             {
+await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString());
+                
                 List<ProcessedEnvelopes> envelopeList = new();
                 ProcessedEnvelopes? envelope = new();
                 var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
@@ -2149,7 +2158,6 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         country = data.CountryCode;
                         version = data.VersionId;
-
                         envelope = await ctx.Set<ProcessedEnvelopes>().Where(e => e.Country == country && e.Version == version).FirstOrDefaultAsync();
 
                         if (envelope != null)
