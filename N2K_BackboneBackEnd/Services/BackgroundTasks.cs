@@ -17,7 +17,7 @@ namespace N2K_BackboneBackEnd.Services
             _logger.LogInformation("Started background service \"BackgroundTasks\"");
             
             DateTime now = DateTime.Now;
-            DateTime then = new DateTime(now.Year, now.Month, now.Day + 1, 0, 0, 0);
+            DateTime then = now.AddDays(1);
             // Execute at midnight
             TimeSpan remainingTime = then - now;
             _logger.LogInformation(String.Format("New extractions will be generated on {0:s}", then));
