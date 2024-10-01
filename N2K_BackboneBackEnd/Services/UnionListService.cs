@@ -451,7 +451,7 @@ namespace N2K_BackboneBackEnd.Services
                 Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                 string content = await response.Result.Content.ReadAsStringAsync();
 
-                DirectoryInfo latestFiles = new(repositoryPath);
+                DirectoryInfo latestFiles = new(_appSettings.Value.AttachedFiles.JustificationFolder);
                 FileInfo? latest = latestFiles.GetFiles("*.zip").OrderBy(f => f.CreationTime).LastOrDefault();
 
                 return _appSettings.Value.AttachedFiles.PublicFilesUrl + "/" + _appSettings.Value.AttachedFiles.JustificationFolder + "/" + latest;
