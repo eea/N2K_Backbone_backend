@@ -431,6 +431,64 @@ namespace N2K_BackboneBackEnd.Services
                 Path.Combine(Directory.GetCurrentDirectory(), _appSettings.Value.AttachedFiles.JustificationFolder) :
                 Path.Combine(_appSettings.Value.AttachedFiles.FilesRootPath, _appSettings.Value.AttachedFiles.JustificationFolder);
 
+            //Delete file to avoid duplicates with the same name
+            string[] files = Directory.GetFiles(repositoryPath);
+            foreach (string file in files)
+            {
+                if (file.EndsWith("_Union List.zip"))
+                    File.Delete(file);
+            }
+            await fileHandler.DeleteUnionListsFilesAsync();
+
+            if (bioregs.Length == 0)
+                bioregs = "*";
+
+            HttpClient client = new();
+            String serverUrl = String.Format(_appSettings.Value.fme_service_union_lists, bioregs, username, _appSettings.Value.Environment, repositoryPath, _appSettings.Value.fme_security_token);
+            try
+            {
+                client.Timeout = TimeSpan.FromHours(5);
+                Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
+                string content = await response.Result.Content.ReadAsStringAsync();
+
+                DirectoryInfo latestFiles = new(repositoryPath);
+                FileInfo? latest = latestFiles.GetFiles("*.zip").OrderBy(f => f.CreationTime).LastOrDefault();
+
+                return _appSettings.Value.AttachedFiles.PublicFilesUrl + "/" + _appSettings.Value.AttachedFiles.JustificationFolder + "/" + latest;
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "UnionListService - UnionListDownload", "", _dataContext.Database.GetConnectionString());
+                return "";
+            }
+            finally
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End UnionList Excel generation"), "UnionListService - UnionListDownload", "", _dataContext.Database.GetConnectionString());
+                client.Dispose();
+            }
+        }
+
+        #region Unused old UnionListDownload
+        /*
+        public async Task<string> UnionListDownload(string bioregs)
+        {
+            IAttachedFileHandler? fileHandler = null;
+            string username = GlobalData.Username;
+#pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
+            if (_appSettings.Value.AttachedFiles.AzureBlob)
+            {
+                fileHandler = new AzureBlobHandler(_appSettings.Value.AttachedFiles, _dataContext);
+            }
+            else
+            {
+                fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
+            }
+#pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
+
+            string repositoryPath = string.IsNullOrEmpty(_appSettings.Value.AttachedFiles.FilesRootPath) ?
+                Path.Combine(Directory.GetCurrentDirectory(), _appSettings.Value.AttachedFiles.JustificationFolder) :
+                Path.Combine(_appSettings.Value.AttachedFiles.FilesRootPath, _appSettings.Value.AttachedFiles.JustificationFolder);
+
             string tempZipFile = repositoryPath + "//" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + GlobalData.Username.Split("@")[0] + "_Union List.zip";
 
             //Delete file to avoid duplicates with the same name
@@ -773,6 +831,8 @@ namespace N2K_BackboneBackEnd.Services
                 archive.Dispose();
             }
         }
+        */
+        #endregion
 
         public async Task<UnionListComparerSummaryViewModel> GetUnionListComparerSummary(IMemoryCache _cache)
         {
