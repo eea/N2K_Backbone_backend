@@ -41,5 +41,6 @@
         public string current_ul_name { get; set; } = string.Empty;
         public string current_ul_createdby { get; set; } = string.Empty;
         public string fme_service_extractions { get; set; } = string.Empty;
+        public string fme_service_union_lists { get; set; } = string.Empty;
     }
 }
