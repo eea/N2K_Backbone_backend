@@ -411,6 +411,7 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<string> UnionListDownload(string bioregs)
         {
             IAttachedFileHandler? fileHandler = null;
+            string username = GlobalData.Username.Split("@")[0];
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
             if (_appSettings.Value.AttachedFiles.AzureBlob)
             {
@@ -439,7 +440,7 @@ namespace N2K_BackboneBackEnd.Services
                 bioregs = "*";
 
             HttpClient client = new();
-            String serverUrl = String.Format(_appSettings.Value.fme_service_union_lists, bioregs, GlobalData.Username.Split("@")[0], _appSettings.Value.Environment, _appSettings.Value.fme_security_token);
+            String serverUrl = String.Format(_appSettings.Value.fme_service_union_lists, bioregs, username, _appSettings.Value.Environment, _appSettings.Value.fme_security_token);
             try
             {
                 client.Timeout = TimeSpan.FromHours(5);
