@@ -5,10 +5,6 @@ using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml;
-using System.IO.Compression;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
 
@@ -415,7 +411,6 @@ namespace N2K_BackboneBackEnd.Services
         public async Task<string> UnionListDownload(string bioregs)
         {
             IAttachedFileHandler? fileHandler = null;
-            string username = GlobalData.Username;
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
             if (_appSettings.Value.AttachedFiles.AzureBlob)
             {
@@ -444,14 +439,14 @@ namespace N2K_BackboneBackEnd.Services
                 bioregs = "*";
 
             HttpClient client = new();
-            String serverUrl = String.Format(_appSettings.Value.fme_service_union_lists, bioregs, username, _appSettings.Value.Environment, repositoryPath, _appSettings.Value.fme_security_token);
+            String serverUrl = String.Format(_appSettings.Value.fme_service_union_lists, bioregs, GlobalData.Username.Split("@")[0], _appSettings.Value.Environment, _appSettings.Value.fme_security_token);
             try
             {
                 client.Timeout = TimeSpan.FromHours(5);
                 Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                 string content = await response.Result.Content.ReadAsStringAsync();
 
-                DirectoryInfo latestFiles = new(_appSettings.Value.AttachedFiles.JustificationFolder);
+                DirectoryInfo latestFiles = new("justificationfiles");
                 FileInfo? latest = latestFiles.GetFiles("*.zip").OrderBy(f => f.CreationTime).LastOrDefault();
 
                 return _appSettings.Value.AttachedFiles.PublicFilesUrl + "/" + _appSettings.Value.AttachedFiles.JustificationFolder + "/" + latest;
