@@ -447,10 +447,10 @@ namespace N2K_BackboneBackEnd.Services
                 Task<HttpResponseMessage> response = client.GetAsync(serverUrl);
                 string content = await response.Result.Content.ReadAsStringAsync();
 
-                string[] latestFiles = Directory.GetFiles(repositoryPath);
-                string? latest = latestFiles.Where(w => w.EndsWith("_Union List.zip")).OrderBy(o => o).LastOrDefault();
+                DirectoryInfo latestFiles = new(repositoryPath);
+                FileInfo? latest = latestFiles.GetFiles("*_Union List.zip").OrderBy(f => f.CreationTime).LastOrDefault();
 
-                return _appSettings.Value.AttachedFiles.PublicFilesUrl + "/" + _appSettings.Value.AttachedFiles.JustificationFolder + "/" + latest;
+                return _appSettings.Value.AttachedFiles.PublicFilesUrl + "/" + _appSettings.Value.AttachedFiles.JustificationFolder + "/" + latest?.Name;
             }
             catch (Exception ex)
             {
