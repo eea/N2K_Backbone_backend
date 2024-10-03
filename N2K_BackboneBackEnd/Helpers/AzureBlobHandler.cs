@@ -122,7 +122,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 blobContainerClient.GetBlobs();
                 foreach (BlobItem blob in blobContainerClient.GetBlobs())
                 {
-                    if (blob.Name.EndsWith("_Union List.zip"))
+                    if (blob.Name.EndsWith("_Union Lists.zip"))
                         await blobContainerClient.GetBlobClient(blob.Name).DeleteIfExistsAsync();
                 }
                 return 1;
