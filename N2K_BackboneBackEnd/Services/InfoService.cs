@@ -212,8 +212,8 @@ namespace N2K_BackboneBackEnd.Services
                 ReleaseCounters result = new()
                 {
                     SitesNumber = sites.Count(),
-                    HabitatsNumber = habitats.Count(),
-                    SpeciesNumber = species.Count(),
+                    HabitatsNumber = habitats.DistinctBy(d => d.HABITATCODE).Count(),
+                    SpeciesNumber = species.DistinctBy(d => d.SPECIESCODE).Count(),
                     ReleaseDate = release.CreateDate
                 };
 
