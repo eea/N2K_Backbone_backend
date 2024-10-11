@@ -575,7 +575,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
                 }
-                List<JustificationFiles> fileUrl = await fileHandler.UploadFileAsync(new AttachedFile() { Files = attachedFile.Files});
+                List<JustificationFiles> fileUrl = await fileHandler.UploadFileAsync(new AttachedFile() { Files = attachedFile.Files });
                 foreach (JustificationFiles fUrl in fileUrl)
                 {
                     JustificationFilesRelease justFile = new()
@@ -604,7 +604,7 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 JustificationFilesRelease file = _dataContext.Set<JustificationFilesRelease>().First(f => f.ID == fileId);
-                if(file != null)
+                if (file != null)
                 {
                     _dataContext.Set<JustificationFilesRelease>().Remove(file);
                     await _dataContext.SaveChangesAsync();
@@ -719,57 +719,54 @@ namespace N2K_BackboneBackEnd.Services
 
                 //call the FME service that creates the SHP, MDB and GPKG
 
-                if (Final.HasValue && Final.Value)
+                if (releaseID.Count > 0)
                 {
-                    if (releaseID.Count > 0)
+                    long _releaseID = releaseID.ElementAt(0).ID;
+
+                    //call the FME in Async mode and do not wait for it.
+                    //FME will send an email to the user when it´s finished
+                    HttpClient client = new();
+                    try
                     {
-                        long _releaseID = releaseID.ElementAt(0).ID;
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Launch FME release creation", "CreateRelease", "", _dataContext.Database.GetConnectionString());
+                        client.Timeout = TimeSpan.FromHours(5);
+                        string url = string.Format("{0}/fmerest/v3/transformations/submit/{1}/{2}",
+                           _appSettings.Value.fme_service_release.server_url,
+                           _appSettings.Value.fme_service_release.repository,
+                           _appSettings.Value.fme_service_release.workspace);
 
-                        //call the FME in Async mode and do not wait for it.
-                        //FME will send an email to the user when it´s finished
-                        HttpClient client = new();
-                        try
+                        string body = string.Format(@"{{""publishedParameters"":[" +
+                            @"{{""name"":""ReleaseId"",""value"":{0}}}," +
+                            @"{{""name"":""DestDatasetFolder"",""value"":""{1}""}}," +
+                            @"{{""name"":""OutputName"",""value"": ""{2}""}}," +
+                            @"{{""name"":""Environment"",""value"": ""{3}""}}," +
+                            @"{{""name"":""EMail"",""value"": ""{4}""}}]" +
+                            @"}}", _releaseID, _appSettings.Value.ReleaseDestDatasetFolder, title, _appSettings.Value.Environment, GlobalData.Username);
+
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("fmetoken", "token=" + _appSettings.Value.fme_security_token);
+                        client.DefaultRequestHeaders.Accept
+                            .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));//ACCEPT header
+
+                        HttpRequestMessage request = new(HttpMethod.Post, url)
                         {
-                            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Launch FME release creation", "CreateRelease", "", _dataContext.Database.GetConnectionString());
-                            client.Timeout = TimeSpan.FromHours(5);
-                            string url = string.Format("{0}/fmerest/v3/transformations/submit/{1}/{2}",
-                               _appSettings.Value.fme_service_release.server_url,
-                               _appSettings.Value.fme_service_release.repository,
-                               _appSettings.Value.fme_service_release.workspace);
+                            Content = new StringContent(body, Encoding.UTF8, "application/json")//CONTENT-TYPE header
+                        };
 
-                            string body = string.Format(@"{{""publishedParameters"":[" +
-                                @"{{""name"":""ReleaseId"",""value"":{0}}}," +
-                                @"{{""name"":""DestDatasetFolder"",""value"":""{1}""}}," +
-                                @"{{""name"":""OutputName"",""value"": ""{2}""}}," +
-                                @"{{""name"":""Environment"",""value"": ""{3}""}}," +
-                                @"{{""name"":""EMail"",""value"": ""{4}""}}]" +
-                                @"}}", _releaseID, _appSettings.Value.ReleaseDestDatasetFolder, title, _appSettings.Value.Environment, GlobalData.Username);
-
-                            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("fmetoken", "token=" + _appSettings.Value.fme_security_token);
-                            client.DefaultRequestHeaders.Accept
-                                .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));//ACCEPT header
-
-                            HttpRequestMessage request = new(HttpMethod.Post, url)
-                            {
-                                Content = new StringContent(body, Encoding.UTF8, "application/json")//CONTENT-TYPE header
-                            };
-
-                            //call the FME script in async 
-                            var res = await client.SendAsync(request);
-                            //get the JobId 
-                            var json = await res.Content.ReadAsStringAsync();
-                            JObject jResponse = JObject.Parse(json);
-                            string jobId = jResponse.GetValue("id").ToString();
-                            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("FME release creation Launched with jobId:{0}", jobId), "CreateRelease", "", _dataContext.Database.GetConnectionString());
-                        }
-                        catch (Exception ex)
-                        {
-                            await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("Error Launching FME:{0}", ex.Message), "CreateRelease", "", _dataContext.Database.GetConnectionString());
-                        }
-                        finally
-                        {
-                            client.Dispose();
-                        }
+                        //call the FME script in async 
+                        var res = await client.SendAsync(request);
+                        //get the JobId 
+                        var json = await res.Content.ReadAsStringAsync();
+                        JObject jResponse = JObject.Parse(json);
+                        string jobId = jResponse.GetValue("id").ToString();
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("FME release creation Launched with jobId:{0}", jobId), "CreateRelease", "", _dataContext.Database.GetConnectionString());
+                    }
+                    catch (Exception ex)
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, String.Format("Error Launching FME:{0}", ex.Message), "CreateRelease", "", _dataContext.Database.GetConnectionString());
+                    }
+                    finally
+                    {
+                        client.Dispose();
                     }
                 }
 
