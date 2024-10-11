@@ -203,17 +203,20 @@ namespace N2K_BackboneBackEnd.Services
             {
                 Releases release = await _releaseContext.Set<Releases>().Where(w => w.Final == true).OrderByDescending(o => o.CreateDate).AsNoTracking().FirstOrDefaultAsync();
 
-                List<NATURA2000SITES> sites = await _releaseContext.Set<NATURA2000SITES>().Where(w => w.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                //List<NATURA2000SITES> sites = await _releaseContext.Set<NATURA2000SITES>().Where(w => w.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<string> sites = await _releaseContext.Set<NATURA2000SITES>().Where(w => w.ReleaseId == release.ID).Select(s => s.SITECODE.ToUpper()).AsNoTracking().ToListAsync();
 
-                List<HABITATS> habitats = await _releaseContext.Set<HABITATS>().Where(w => w.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                //List<HABITATS> habitats = await _releaseContext.Set<HABITATS>().Where(w => w.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<string> habitats = await _releaseContext.Set<HABITATS>().Where(w => w.ReleaseId == release.ID).Select(s => s.HABITATCODE.ToUpper()).AsNoTracking().ToListAsync();
 
-                List<SPECIES> species = await _releaseContext.Set<SPECIES>().Where(w => w.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                //List<SPECIES> species = await _releaseContext.Set<SPECIES>().Where(w => w.ReleaseId == release.ID).AsNoTracking().ToListAsync();
+                List<string> species = await _releaseContext.Set<SPECIES>().Where(w => w.ReleaseId == release.ID).Select(s => s.SPECIESCODE.ToUpper()).AsNoTracking().ToListAsync();
 
                 ReleaseCounters result = new()
                 {
-                    SitesNumber = sites.Count(),
-                    HabitatsNumber = habitats.Count(),
-                    SpeciesNumber = species.Count(),
+                    SitesNumber = sites.Distinct().Count(),
+                    HabitatsNumber = habitats.Distinct().Count(),
+                    SpeciesNumber = species.Distinct().Count(),
                     ReleaseDate = release.CreateDate
                 };
 
