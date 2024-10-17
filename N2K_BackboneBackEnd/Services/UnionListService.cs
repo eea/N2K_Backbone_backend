@@ -7,6 +7,7 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -408,7 +409,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<string> UnionListDownload(string bioregs)
+        public async Task<FileContentResult> UnionListDownload(string bioregs)
         {
             IAttachedFileHandler? fileHandler = null;
             string username = GlobalData.Username.Split("@")[0];
@@ -449,13 +450,16 @@ namespace N2K_BackboneBackEnd.Services
 
                 DirectoryInfo latestFiles = new(repositoryPath);
                 FileInfo? latest = latestFiles.GetFiles("*_Union Lists.zip").OrderBy(f => f.CreationTime).LastOrDefault();
-
-                return _appSettings.Value.AttachedFiles.PublicFilesUrl + "/" + _appSettings.Value.AttachedFiles.JustificationFolder + "/" + latest?.Name;
+                byte[] file_bytes = await fileHandler.ReadFile(latest.FullName);
+                return new FileContentResult(file_bytes, "application/octet-stream")
+                {
+                    FileDownloadName = latest.Name
+                };
             }
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "UnionListService - UnionListDownload", "", _dataContext.Database.GetConnectionString());
-                return "";
+                return null;
             }
             finally
             {
