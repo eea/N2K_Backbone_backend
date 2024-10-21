@@ -450,7 +450,8 @@ namespace N2K_BackboneBackEnd.Services
 
                 DirectoryInfo latestFiles = new(repositoryPath);
                 FileInfo? latest = latestFiles.GetFiles("*_Union Lists.zip").OrderBy(f => f.CreationTime).LastOrDefault();
-                byte[] file_bytes = await fileHandler.ReadFile(latest.FullName);
+                //byte[] file_bytes = await fileHandler.ReadFile(latest.FullName);
+                byte[] file_bytes = File.ReadAllBytes(latest.FullName);
                 return new FileContentResult(file_bytes, "application/octet-stream")
                 {
                     FileDownloadName = latest.Name
