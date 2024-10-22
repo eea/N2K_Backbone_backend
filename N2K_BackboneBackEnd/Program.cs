@@ -156,6 +156,7 @@ app.UseCors(x => x
     .AllowAnyMethod()
     .AllowAnyHeader()
     .SetIsOriginAllowed(origin => true) // allow any origin
+    .WithExposedHeaders("Content-Disposition")
     .AllowCredentials()); // allow credentials
 
 // Configure the HTTP request pipeline.
