@@ -26,24 +26,19 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("Download")]
         [HttpGet]
-        public async Task<ActionResult<string>> UnionListDownload(string? bioregs)
+        public async Task<ActionResult> UnionListDownload(string? bioregs)
         {
-            ServiceResponse<string> response = new();
+            ServiceResponse<FileContentResult> response = new();
             try
             {
-                string unionListHeader = await _unionListService.UnionListDownload(bioregs ?? "");
-                response.Success = true;
-                response.Message = "";
-                response.Data = unionListHeader;
-                response.Count = (bioregs == null) ? 1 : bioregs.Split(',').Length;
-                return Ok(response);
+                return await _unionListService.UnionListDownload(bioregs ?? "");
             }
             catch (Exception ex)
             {
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = String.Empty;
+                response.Data = null;
                 return Ok(response);
             }
         }
