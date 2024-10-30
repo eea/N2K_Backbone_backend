@@ -111,7 +111,7 @@ namespace N2K_BackboneBackEnd.Services
             byte[] file_bytes = File.ReadAllBytes(latest.FullName);
             return new FileContentResult(file_bytes, "application/octet-stream")
             {
-                FileDownloadName = latest.Name
+                FileDownloadName = "\"" + latest.Name + "\""
             };
         }
     }
