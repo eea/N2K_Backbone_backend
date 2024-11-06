@@ -109,7 +109,7 @@ namespace N2K_BackboneBackEnd.Helpers
                 string[] files = Directory.GetFiles(filesUrl);
                 foreach (string file in files)
                 {
-                    if (file.EndsWith("_Union Lists.zip"))
+                    if (file.EndsWith("_Union_Lists.zip"))
                         File.Delete(file);
                 }
                 return 1;
