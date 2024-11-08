@@ -104,14 +104,14 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<FileContentResult> DownloadExtractionsFile()
         {
-            string dir = "ExtractionFiles";
-            DirectoryInfo files = new DirectoryInfo(dir);
+            DirectoryInfo files = new DirectoryInfo("ExtractionFiles");
             FileInfo latest = files.GetFiles("*.zip").OrderBy(f => f.CreationTime).Last();
             IAttachedFileHandler fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);
-            byte[] file_bytes = await fileHandler.ReadFile(latest.FullName);
+            //byte[] file_bytes = await fileHandler.ReadFile(latest.FullName);
+            byte[] file_bytes = File.ReadAllBytes(latest.FullName);
             return new FileContentResult(file_bytes, "application/octet-stream")
             {
-                FileDownloadName = latest.Name
+                FileDownloadName = "\"" + latest.Name + "\""
             };
         }
     }

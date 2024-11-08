@@ -432,7 +432,7 @@ namespace N2K_BackboneBackEnd.Services
             string[] files = Directory.GetFiles(repositoryPath);
             foreach (string file in files)
             {
-                if (file.EndsWith("_Union Lists.zip"))
+                if (file.EndsWith("_Union_Lists.zip"))
                     File.Delete(file);
             }
             await fileHandler.DeleteUnionListsFilesAsync();
@@ -449,12 +449,12 @@ namespace N2K_BackboneBackEnd.Services
                 string content = await response.Result.Content.ReadAsStringAsync();
 
                 DirectoryInfo latestFiles = new(repositoryPath);
-                FileInfo? latest = latestFiles.GetFiles("*_Union Lists.zip").OrderBy(f => f.CreationTime).LastOrDefault();
+                FileInfo? latest = latestFiles.GetFiles("*_Union_Lists.zip").OrderBy(f => f.CreationTime).LastOrDefault();
                 //byte[] file_bytes = await fileHandler.ReadFile(latest.FullName);
                 byte[] file_bytes = File.ReadAllBytes(latest.FullName);
                 return new FileContentResult(file_bytes, "application/octet-stream")
                 {
-                    FileDownloadName = latest.Name
+                    FileDownloadName = "\"" + latest.Name + "\""
                 };
             }
             catch (Exception ex)
@@ -490,13 +490,13 @@ namespace N2K_BackboneBackEnd.Services
                 Path.Combine(Directory.GetCurrentDirectory(), _appSettings.Value.AttachedFiles.JustificationFolder) :
                 Path.Combine(_appSettings.Value.AttachedFiles.FilesRootPath, _appSettings.Value.AttachedFiles.JustificationFolder);
 
-            string tempZipFile = repositoryPath + "//" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + GlobalData.Username.Split("@")[0] + "_Union Lists.zip";
+            string tempZipFile = repositoryPath + "//" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day + "_" + GlobalData.Username.Split("@")[0] + "_Union_Lists.zip";
 
             //Delete file to avoid duplicates with the same name
             string[] files = Directory.GetFiles(repositoryPath);
             foreach (string file in files)
             {
-                if (file.EndsWith("_Union Lists.zip"))
+                if (file.EndsWith("_Union_Lists.zip"))
                     File.Delete(file);
             }
             await fileHandler.DeleteUnionListsFilesAsync();
