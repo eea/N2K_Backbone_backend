@@ -164,7 +164,7 @@ namespace N2K_BackboneBackEnd.Services
                 //string archive = await GenerateExcelFiles(dir);
 
                 HttpClient client = new();
-                String serverUrl = String.Format(_appSettings.Value.fme_service_extractions, "*", _appSettings.Value.fme_security_token);
+                String serverUrl = String.Format(_appSettings.Value.fme_service_extractions, "all-MS", _appSettings.Value.fme_security_token);
                 try
                 {
                     //TimeLog.setTimeStamp("Geospatial changes for site " + envelope.CountryCode + " - " + envelope.VersionId.ToString(), "Starting");
