@@ -11,10 +11,12 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
     {
         public long ID { get; set; }
         public string SiteCode { get; set; } = string.Empty;
-        public int Version { get; set; }
+        public int Version { get; set; }        
         public int? N2KVersioningVersion { get; set; }
         public LineageTypes Type { get; set; }
         public LineageStatus Status { get; set; }
+        [NotMapped]
+        public string Name { get; set; }
         public long? Release { get; set; }
         [NotMapped]
         public String? AntecessorsSiteCodes { get; set; }
