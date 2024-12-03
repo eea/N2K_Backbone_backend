@@ -644,7 +644,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false, bool onlyjustreq = false, bool onlysci = false)
         {
-            DuckDBLoader duckDBLoader=null;
+            //DuckDBLoader duckDBLoader=null;
             try
             {
 
@@ -666,6 +666,8 @@ namespace N2K_BackboneBackEnd.Services
                 else
                 {
                     await BuildSitecodesCaches(country, cache);
+                    cache.TryGetValue(listName, out List<SiteCodeView> _cachedList);
+                    result = _cachedList;
 
 
                     //SqlParameter param1 = new("@country", country);
