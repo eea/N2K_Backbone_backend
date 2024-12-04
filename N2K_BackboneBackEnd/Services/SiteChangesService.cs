@@ -614,6 +614,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Start loading changes from DB", "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+
                 SqlParameter param1 = new("@country", country);
                 List<SiteChangesSummary> changes = await _dataContext.Set<SiteChangesSummary>().FromSqlRaw($"exec dbo.[spGetSiteChangesSummary]  @country",
                                 param1).ToListAsync();
@@ -630,7 +632,7 @@ namespace N2K_BackboneBackEnd.Services
                 await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Critical, cache);
                 await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Warning, cache);
                 await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Info, cache);
-
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "End populating caches", "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
 
             }
             catch (Exception ex)
@@ -647,6 +649,7 @@ namespace N2K_BackboneBackEnd.Services
             //DuckDBLoader duckDBLoader=null;
             try
             {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Start GetSiteCodesByStatusAndLevelAndCountry", "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
 
                 //duckDBLoader = new Helpers.DuckDBLoader(_dataContext);
 
@@ -791,13 +794,14 @@ namespace N2K_BackboneBackEnd.Services
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetSiteCodesByStatusAndLevelAndCountry", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
-            /*
+            
             finally
             {
-                if (duckDBLoader!=null)
-                    await duckDBLoader.DisposeAsync();
+                //if (duckDBLoader!=null)
+                //    await duckDBLoader.DisposeAsync();
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "END GetSiteCodesByStatusAndLevelAndCountry", "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
             }
-            */
+            
 
         }
 
