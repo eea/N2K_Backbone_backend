@@ -614,7 +614,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Start loading changes from DB", "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info,string.Format("Start loading changes from DB {0}",country), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
 
                 SqlParameter param1 = new("@country", country);
                 List<SiteChangesSummary> changes = await _dataContext.Set<SiteChangesSummary>().FromSqlRaw($"exec dbo.[spGetSiteChangesSummary]  @country",
@@ -632,7 +632,7 @@ namespace N2K_BackboneBackEnd.Services
                 await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Critical, cache);
                 await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Warning, cache);
                 await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Info, cache);
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "End populating caches", "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End populating caches {0}",country), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
 
             }
             catch (Exception ex)
@@ -649,15 +649,17 @@ namespace N2K_BackboneBackEnd.Services
             //DuckDBLoader duckDBLoader=null;
             try
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "Start GetSiteCodesByStatusAndLevelAndCountry", "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
-
-                //duckDBLoader = new Helpers.DuckDBLoader(_dataContext);
-
                 string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes",
                     country,
                     status.ToString(),
                     level.ToString()
                 );
+
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Start GetSiteCodesByStatusAndLevelAndCountry {0}",listName), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+
+                //duckDBLoader = new Helpers.DuckDBLoader(_dataContext);
+
+
                 //if there has been a change in the status refresh the changed sitecodes cache
                 if (refresh) cache.Remove(listName);
 
@@ -799,7 +801,7 @@ namespace N2K_BackboneBackEnd.Services
             {
                 //if (duckDBLoader!=null)
                 //    await duckDBLoader.DisposeAsync();
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, "END GetSiteCodesByStatusAndLevelAndCountry", "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info,string.Format("END GetSiteCodesByStatusAndLevelAndCountry {0}_{1}_{2}", country, status.ToString(), level.ToString()), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
             }
             
 
@@ -809,20 +811,58 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                //return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null,cache)).Count;
-                SqlParameter param1 = new("@country", country);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Start GetPendingChangesByCountry  {0}", country), "SiteChangesService - GetPendingChangesByCountry", "", _dataContext.Database.GetConnectionString());
+                int pending = 0;
+                bool _critical = false;
+                bool _warning = false;
+                bool _info = false;
 
-                IQueryable<PendingSites> changes = _dataContext.Set<PendingSites>().FromSqlRaw($"exec dbo.[spGetPendingSiteCodesByCountry] @country ",
-                            param1);
+                //check if the cache of changes are loaded 
+                List<SiteCodeView> cachedList;
+                string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", country, "Pending", "Critical");
+                if (cache.TryGetValue(listName, out cachedList))
+                {
+                    pending += cachedList.Count;
+                    _critical = true;
+                }
 
-                var result = (await changes.ToListAsync());
-                if (result != null && result.Count > 0) return result[0].NumSites;
-                return 0;
+                listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", country, "Pending", "Warning");
+                if (cache.TryGetValue(listName, out cachedList))
+                {
+                    pending += cachedList.Count;
+                    _warning = true;
+                }
+
+                listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", country, "Pending", "Info");
+                if (cache.TryGetValue(listName, out cachedList))
+                {
+                    pending += cachedList.Count;
+                    _info = true;
+                }
+
+                //do not query the DB if all caches have been loaded
+                if (!_critical || !_warning || !_info)
+                {
+                    //return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null,cache)).Count;
+                    SqlParameter param1 = new("@country", country);
+
+                    IQueryable<PendingSites> changes = _dataContext.Set<PendingSites>().FromSqlRaw($"exec dbo.[spGetPendingSiteCodesByCountry] @country ",
+                                param1);
+
+                    var result = (await changes.ToListAsync());
+                    if (result != null && result.Count > 0) return result[0].NumSites;
+                    return 0;
+                }
+                return pending;
             }
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetPendingChangesByCountry", "", _dataContext.Database.GetConnectionString());
                 throw ex;
+            }
+            finally
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("END GetPendingChangesByCountry  {0}", country), "SiteChangesService - GetPendingChangesByCountry", "", _dataContext.Database.GetConnectionString());
             }
         }
 
