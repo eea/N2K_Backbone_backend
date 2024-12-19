@@ -12,6 +12,9 @@ using System.Data;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
+using N2K_BackboneBackEnd.Enumerations;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -542,6 +545,59 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+
+        public async Task<ActionResult> DownloadFile(int id, ReleaseProductType filetype)
+        {
+            try
+            {
+                //check if the releaseID exists
+                UnionListHeader ulh=  await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(uh => uh.ReleaseID == id);
+                if (ulh == null)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, "ReleaseID does not exist", "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    return null;
+                }
+                HttpClient client = new();
+                String serverUrl = String.Format(_appSettings.Value.fme_release_product_download, 
+                    id.ToString(),
+                    _appSettings.Value.Environment, 
+                    _appSettings.Value.ReleaseDestDatasetFolder,
+                    filetype.ToString(),
+                    _appSettings.Value.fme_security_token);
+                try
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Start Release product generation"), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    client.Timeout = TimeSpan.FromHours(5);
+                    Task<HttpResponseMessage> response = client.GetAsync(serverUrl, HttpCompletionOption.ResponseHeadersRead);
+                    Stream content = await response.Result.Content.ReadAsStreamAsync(); 
+                    string filename = response.Result.Content.Headers.ContentDisposition.FileNameStar;
+
+                    return new FileContentResult(TypeConverters.StreamToByteArray(content), "application/octet-stream")
+                    {
+                        FileDownloadName = filename
+                    };
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    return null;
+                }
+                finally
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End Release product generation"), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    client.Dispose();
+                }
+                
+
+            }
+
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
         #region CountryDocuments
         public async Task<List<JustificationFilesRelease>> GetCountryDocuments(string country)
         {
@@ -865,5 +921,6 @@ namespace N2K_BackboneBackEnd.Services
                 throw ex;
             }
         }
+
     }
 }

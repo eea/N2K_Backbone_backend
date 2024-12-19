@@ -3,6 +3,8 @@ using N2K_BackboneBackEnd.Models.backbone_db;
 using N2K_BackboneBackEnd.Models.release_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.Mvc;
+using N2K_BackboneBackEnd.Enumerations;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -19,6 +21,7 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<JustificationFilesRelease>> AddCountryDocument(AttachedFileRelease document);
         Task<List<JustificationFilesRelease>> DeleteCountryDocument(long documentId);
         Task<List<StatusChangesRelease>> GetCountryComments(string country);
+        Task<ActionResult> DownloadFile(int id, ReleaseProductType filetype);
         Task<List<StatusChangesRelease>> AddCountryComment(StatusChangesRelease comment);
         Task<List<StatusChangesRelease>> UpdateCountryComment(StatusChangesRelease comment);
         Task<List<StatusChangesRelease>> DeleteCountryComment(long commentId);

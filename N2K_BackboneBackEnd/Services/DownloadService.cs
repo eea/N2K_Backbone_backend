@@ -104,6 +104,7 @@ namespace N2K_BackboneBackEnd.Services
 
         public async Task<FileContentResult> DownloadExtractionsFile()
         {
+            await Task.Delay(10);
             DirectoryInfo files = new DirectoryInfo("ExtractionFiles");
             FileInfo latest = files.GetFiles("*.zip").OrderBy(f => f.CreationTime).Last();
             IAttachedFileHandler fileHandler = new FileSystemHandler(_appSettings.Value.AttachedFiles, _dataContext);

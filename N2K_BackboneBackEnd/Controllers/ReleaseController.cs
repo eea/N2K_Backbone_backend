@@ -8,6 +8,7 @@ using N2K_BackboneBackEnd.ServiceResponse;
 using N2K_BackboneBackEnd.Services;
 using N2K_BackboneBackEnd.Models;
 using N2K_BackboneBackEnd.Models.release_db;
+using N2K_BackboneBackEnd.Enumerations;
 
 namespace N2K_BackboneBackEnd.Controllers
 {
@@ -363,6 +364,26 @@ namespace N2K_BackboneBackEnd.Controllers
             }
         }
 
+
+        [HttpGet("Download")]
+        public async Task<ActionResult> DownloadProduct(int id, ReleaseProductType file)
+        {
+            ServiceResponse<FileContentResult> response = new();
+            try
+            {
+                return await _releaseService.DownloadFile(id, file);
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                response.Count = 0;
+                response.Data = null;
+                return Ok(response);
+            }
+        }
+
+
         [Route("AddCountryComment")]
         [HttpPost]
         public async Task<ActionResult<List<StatusChangesRelease>>> AddCountryComment(StatusChangesRelease comment)
@@ -507,5 +528,8 @@ namespace N2K_BackboneBackEnd.Controllers
                 return Ok(response);
             }
         }
+
+
+
     }
 }
