@@ -546,7 +546,8 @@ namespace N2K_BackboneBackEnd.Services
         }
 
 
-        public async Task<ActionResult> DownloadFile(int id, ReleaseProductType filetype)
+        //public async Task<ActionResult> 
+        public async Task<FileContentResult> DownloadFile(int id, ReleaseProductType filetype)
         {
             try
             {
@@ -557,25 +558,25 @@ namespace N2K_BackboneBackEnd.Services
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Error, "ReleaseID does not exist", "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
                     return null;
                 }
-                HttpClient client = new();
-                String serverUrl = String.Format(_appSettings.Value.fme_release_product_download, 
-                    id.ToString(),
-                    _appSettings.Value.Environment, 
-                    _appSettings.Value.ReleaseDestDatasetFolder,
-                    filetype.ToString(),
-                    _appSettings.Value.fme_security_token);
+
                 try
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Start Release product generation"), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
-                    client.Timeout = TimeSpan.FromHours(5);
-                    Task<HttpResponseMessage> response = client.GetAsync(serverUrl, HttpCompletionOption.ResponseHeadersRead);
-                    Stream content = await response.Result.Content.ReadAsStreamAsync(); 
-                    string filename = response.Result.Content.Headers.ContentDisposition.FileNameStar;
-
-                    return new FileContentResult(TypeConverters.StreamToByteArray(content), "application/octet-stream")
+                    string path = Path.Combine(_appSettings.Value.ReleaseDestDatasetFolder, ulh.Name, string.Format("{0}_{1}.zip", ulh.Name, filetype));
+                    if (File.Exists(path))
                     {
-                        FileDownloadName = filename
-                    };
+                        var file_bytes = await System.IO.File.ReadAllBytesAsync(path);
+
+                        return new FileContentResult(file_bytes, "application/octet-stream")
+                        {
+                            FileDownloadName = string.Format("{0}_{1}.zip", ulh.Name, filetype)
+                        };
+                    }
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, string.Format("File {0} does not exist",path), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                        return null;
+
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -585,7 +586,6 @@ namespace N2K_BackboneBackEnd.Services
                 finally
                 {
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End Release product generation"), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
-                    client.Dispose();
                 }
                 
 

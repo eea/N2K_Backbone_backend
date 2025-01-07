@@ -21,7 +21,7 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<JustificationFilesRelease>> AddCountryDocument(AttachedFileRelease document);
         Task<List<JustificationFilesRelease>> DeleteCountryDocument(long documentId);
         Task<List<StatusChangesRelease>> GetCountryComments(string country);
-        Task<ActionResult> DownloadFile(int id, ReleaseProductType filetype);
+        Task<FileContentResult> DownloadFile(int id, ReleaseProductType filetype);
         Task<List<StatusChangesRelease>> AddCountryComment(StatusChangesRelease comment);
         Task<List<StatusChangesRelease>> UpdateCountryComment(StatusChangesRelease comment);
         Task<List<StatusChangesRelease>> DeleteCountryComment(long commentId);
