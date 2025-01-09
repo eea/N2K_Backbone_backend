@@ -1689,8 +1689,26 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 _fmeHarvestJobs.FMEJobCompleted += async (sender, env) =>
                 {
+
+                    var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources","tester.txt");
+                    StreamWriter sw = new(fileName, true, Encoding.ASCII);
+                    await sw.WriteAsync("Enter event handler");
+                    //close the file
+                    sw.Close();
+                            
                     //handle the event with a semaphore to ensure the same event is handled only one
-                    string _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
+                    string _connectionString = "Server=whooperswan;Database=n2kbackbone;User ID=sa_backbone;Password=WRnfG2qC;MultipleActiveResultSets=True;Connection Timeout=30000;";
+                    try {
+                        connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
+                    }    
+                     catch (Exception ex1)
+                        
+                            var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources","tester_error.txt");
+                            StreamWriter sw = new(fileName, true, Encoding.ASCII);
+                            await sw.WriteAsync( ex.Message);
+                            //close the file
+                            sw.Close();                        
+                    }
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Enter Event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
 
                     SemaphoreAsync _semaphore;
