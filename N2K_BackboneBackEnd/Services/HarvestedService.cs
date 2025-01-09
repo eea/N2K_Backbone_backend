@@ -1690,11 +1690,11 @@ namespace N2K_BackboneBackEnd.Services
                 _fmeHarvestJobs.FMEJobCompleted += async (sender, env) =>
                 {
 
-                    var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources","tester.txt");
-                    StreamWriter sw = new(fileName, true, Encoding.ASCII);
-                    await sw.WriteAsync("Enter event handler");
+                    var fileName2 = Path.Combine(Directory.GetCurrentDirectory(), "Resources","tester.txt");
+                    StreamWriter sw2 = new(fileName2, true, Encoding.ASCII);
+                    await sw2.WriteAsync("Enter event handler");
                     //close the file
-                    sw.Close();
+                    sw2.Close();
                             
                     //handle the event with a semaphore to ensure the same event is handled only one
                     string _connectionString = "Server=whooperswan;Database=n2kbackbone;User ID=sa_backbone;Password=WRnfG2qC;MultipleActiveResultSets=True;Connection Timeout=30000;";
