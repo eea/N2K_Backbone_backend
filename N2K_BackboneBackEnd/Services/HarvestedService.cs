@@ -1699,7 +1699,7 @@ namespace N2K_BackboneBackEnd.Services
                     //handle the event with a semaphore to ensure the same event is handled only one
                     string _connectionString = "Server=whooperswan;Database=n2kbackbone;User ID=sa_backbone;Password=WRnfG2qC;MultipleActiveResultSets=True;Connection Timeout=30000;";
                     try {
-                        connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
+                        _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
                     }    
                      catch (Exception ex1) {
                         
