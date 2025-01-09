@@ -1704,10 +1704,10 @@ namespace N2K_BackboneBackEnd.Services
                      catch (Exception ex1) {
                         
                             var fileName1 = Path.Combine(Directory.GetCurrentDirectory(), "Resources","tester_error.txt");
-                            StreamWriter sw = new(fileName1, true, Encoding.ASCII);
-                            await sw.WriteAsync( ex1.Message);
+                            StreamWriter sw1 = new(fileName1, true, Encoding.ASCII);
+                            await sw1.WriteAsync( ex1.Message);
                             //close the file
-                            sw.Close();                        
+                            sw1.Close();                        
                     }
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Enter Event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
 
