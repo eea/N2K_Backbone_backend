@@ -1701,7 +1701,7 @@ namespace N2K_BackboneBackEnd.Services
                     try {
                         connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
                     }    
-                     catch (Exception ex1)
+                     catch (Exception ex1) {
                         
                             var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources","tester_error.txt");
                             StreamWriter sw = new(fileName, true, Encoding.ASCII);
