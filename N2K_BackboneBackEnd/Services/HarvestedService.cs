@@ -1703,9 +1703,9 @@ namespace N2K_BackboneBackEnd.Services
                     }    
                      catch (Exception ex1) {
                         
-                            var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources","tester_error.txt");
-                            StreamWriter sw = new(fileName, true, Encoding.ASCII);
-                            await sw.WriteAsync( ex.Message);
+                            var fileName1 = Path.Combine(Directory.GetCurrentDirectory(), "Resources","tester_error.txt");
+                            StreamWriter sw = new(fileName1, true, Encoding.ASCII);
+                            await sw.WriteAsync( ex1.Message);
                             //close the file
                             sw.Close();                        
                     }
