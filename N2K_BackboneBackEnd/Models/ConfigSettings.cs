@@ -37,6 +37,7 @@
         public fme_service_config fme_service_spatialload { get; set; }
         public fme_service_config fme_service_release { get; set; }
         public string fme_service_spatialchanges { get; set; } = string.Empty;
+        public string fme_release_product_download { get; set; } = string.Empty;
         public string fme_service_singlesite_spatialchanges { get; set; } = string.Empty;
         public string current_ul_name { get; set; } = string.Empty;
         public string current_ul_createdby { get; set; } = string.Empty;

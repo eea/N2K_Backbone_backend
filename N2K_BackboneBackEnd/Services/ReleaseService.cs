@@ -12,6 +12,9 @@ using System.Data;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
+using N2K_BackboneBackEnd.Enumerations;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -542,6 +545,59 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+
+        //public async Task<ActionResult> 
+        public async Task<FileContentResult> DownloadFile(int id, ReleaseProductType filetype)
+        {
+            try
+            {
+                //check if the releaseID exists
+                UnionListHeader ulh=  await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(uh => uh.ReleaseID == id);
+                if (ulh == null)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, "ReleaseID does not exist", "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    return null;
+                }
+
+                try
+                {
+                    string path = Path.Combine(_appSettings.Value.ReleaseDestDatasetFolder, ulh.Name, string.Format("{0}_{1}.zip", ulh.Name, filetype));
+                    if (File.Exists(path))
+                    {
+                        var file_bytes = await System.IO.File.ReadAllBytesAsync(path);
+
+                        return new FileContentResult(file_bytes, "application/octet-stream")
+                        {
+                            FileDownloadName = string.Format("{0}_{1}.zip", ulh.Name, filetype)
+                        };
+                    }
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, string.Format("File {0} does not exist",path), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                        return null;
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    return null;
+                }
+                finally
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End Release product generation"), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                }
+                
+
+            }
+
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
         #region CountryDocuments
         public async Task<List<JustificationFilesRelease>> GetCountryDocuments(string country)
         {
@@ -865,5 +921,6 @@ namespace N2K_BackboneBackEnd.Services
                 throw ex;
             }
         }
+
     }
 }
