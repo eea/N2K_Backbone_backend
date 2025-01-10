@@ -94,9 +94,7 @@ namespace N2K_BackboneBackEnd.Helpers
                         using (var entryStream = reader.OpenEntryStream())
                         {
                             MemoryStream currentFile = new MemoryStream();
-#pragma warning disable CS4014 // Dado que no se esperaba esta llamada, la ejecución del método actual continuará antes de que se complete la llamada
-                            currentFile.FlushAsync();
-#pragma warning restore CS4014 // Dado que no se esperaba esta llamada, la ejecución del método actual continuará antes de que se complete la llamada
+                            await currentFile.FlushAsync();
                             currentFile.Position = 0;
                             await entryStream.CopyToAsync(currentFile);
                             files.Add((name, currentFile));
