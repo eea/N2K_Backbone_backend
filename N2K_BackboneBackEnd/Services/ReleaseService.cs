@@ -561,10 +561,21 @@ namespace N2K_BackboneBackEnd.Services
 
                 try
                 {
-                    string path = Path.Combine(_appSettings.Value.ReleaseDestDatasetFolder, ulh.Name, string.Format("{0}_{1}.zip", ulh.Name, filetype));
-                    if (File.Exists(path))
+                    //check first if the ReleaseID path exists.
+                    string path_id = Path.Combine(_appSettings.Value.ReleaseDestDatasetFolder, id.ToString() , string.Format("{0}_{1}.zip", id, filetype));
+                    string path_name = Path.Combine(_appSettings.Value.ReleaseDestDatasetFolder, ulh.Name, string.Format("{0}_{1}.zip", ulh.Name, filetype));
+                    if (File.Exists(path_id))
                     {
-                        var file_bytes = await System.IO.File.ReadAllBytesAsync(path);
+                        var file_bytes = await System.IO.File.ReadAllBytesAsync(path_id);
+                        return new FileContentResult(file_bytes, "application/octet-stream")
+                        {
+                            FileDownloadName = string.Format("{0}_{1}.zip", ulh.Name, filetype)
+                        };
+
+                    }
+                    //if not, try with the release name
+                    else if (File.Exists(path_name)) { 
+                        var file_bytes = await System.IO.File.ReadAllBytesAsync(path_name);
 
                         return new FileContentResult(file_bytes, "application/octet-stream")
                         {
@@ -573,7 +584,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
                     else
                     {
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, string.Format("File {0} does not exist",path), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, string.Format("File {0} nor {1} do not exist", path_id, path_name), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
                         return null;
 
                     }
