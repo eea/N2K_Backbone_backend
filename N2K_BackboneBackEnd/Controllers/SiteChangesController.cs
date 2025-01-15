@@ -745,7 +745,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
-                response.Count =  1;
+                response.Count = 1;
                 return Ok(response);
             }
             catch (Exception ex)

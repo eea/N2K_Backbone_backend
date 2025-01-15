@@ -1867,9 +1867,6 @@ namespace N2K_BackboneBackEnd.Services
                 //List<EnvelopesToProcess> envelopes = new();
                 //List<ProcessedEnvelopes> pEnvelopes = new();
 
-                //Get the Envelope_Import data for the CDR codes
-                await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spHarvestEnvelopeImportData");
-
                 List<HarvestedEnvelope> bbEnvelopes = new();
                 List<EnvelopesToProcess> allEnvelopes = new();
                 Dictionary<EnvelopesToProcess, List<Sites>> sitesPerEnvelope = new();
