@@ -562,8 +562,8 @@ namespace N2K_BackboneBackEnd.Services
                 try
                 {
                     //check first if the ReleaseID path exists.
-                    string path_id =string.Format("{0}\\{1}\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, id.ToString() , string.Format("{0}_{1}.zip", id, filetype));
-                    string path_name = string.Format("{0}\\{1}\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, ulh.Name, string.Format("{0}_{1}.zip", ulh.Name, filetype));
+                    string path_id =string.Format("{0}\\\\{1}\\\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, id.ToString() , string.Format("{0}_{1}.zip", id, filetype));
+                    string path_name = string.Format("{0}\\\\{1}\\\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, ulh.Name, string.Format("{0}_{1}.zip", ulh.Name, filetype));
 
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Downloading File {0} name:{1} ", path_id, path_name), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
 
