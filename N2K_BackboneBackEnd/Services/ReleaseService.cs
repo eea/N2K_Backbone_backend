@@ -555,7 +555,7 @@ namespace N2K_BackboneBackEnd.Services
                 UnionListHeader ulh=  await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(uh => uh.ReleaseID == id);
                 if (ulh == null)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, "ReleaseID does not exist", "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error,string.Format("ReleaseID {0} does not exist", id), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
                     return null;
                 }
 
@@ -564,6 +564,9 @@ namespace N2K_BackboneBackEnd.Services
                     //check first if the ReleaseID path exists.
                     string path_id = Path.Combine(_appSettings.Value.ReleaseDestDatasetFolder, id.ToString() , string.Format("{0}_{1}.zip", id, filetype));
                     string path_name = Path.Combine(_appSettings.Value.ReleaseDestDatasetFolder, ulh.Name, string.Format("{0}_{1}.zip", ulh.Name, filetype));
+
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Downloading File {0} name:{1} ", path_id, path_name), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+
                     if (File.Exists(path_id))
                     {
                         var file_bytes = await System.IO.File.ReadAllBytesAsync(path_id);
@@ -596,7 +599,7 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 finally
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End Release product generation"), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End Release download"), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
                 }
                 
 
