@@ -15,6 +15,7 @@ using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using N2K_BackboneBackEnd.Enumerations;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.AspNetCore.Rewrite;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -552,17 +553,18 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 //check if the releaseID exists
-                UnionListHeader ulh=  await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(uh => uh.ReleaseID == id);
+                UnionListHeader ulh=  await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(uh => uh.idULHeader == id);
                 if (ulh == null)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error,string.Format("ReleaseID {0} does not exist", id), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error,string.Format("Release with idULHeader {0} does not exist", id), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
                     return null;
                 }
 
                 try
                 {
+
                     //check first if the ReleaseID path exists.
-                    string path_id =string.Format("{0}\\\\{1}\\\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, id.ToString() , string.Format("{0}_{1}.zip", id, filetype));
+                    string path_id =string.Format("{0}\\\\{1}\\\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, ulh.ReleaseID.Value, string.Format("{0}_{1}.zip", ulh.ReleaseID.Value, filetype));
                     path_id = path_id.Replace("\\\\", "\\");
                     string path_name = string.Format("{0}\\\\{1}\\\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, ulh.Name, string.Format("{0}_{1}.zip", ulh.Name, filetype));
                     path_name = path_name.Replace("\\\\", "\\");
