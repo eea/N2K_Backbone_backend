@@ -546,6 +546,17 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        private byte[] ReadAllBytes(string fileName)
+        {
+            byte[] buffer = null;
+            using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+            {
+                buffer = new byte[fs.Length];
+                fs.Read(buffer, 0, (int)fs.Length);
+            }
+            return buffer;
+        }
+
 
         //public async Task<ActionResult> 
         public async Task<FileContentResult> DownloadFile(int id, ReleaseProductType filetype)
@@ -571,9 +582,13 @@ namespace N2K_BackboneBackEnd.Services
 
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Downloading File {0} name:{1} ", path_id, path_name), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
 
+
                     if (File.Exists(path_id))
                     {
-                        var file_bytes = await System.IO.File.ReadAllBytesAsync(path_id);
+                        await Task.Delay(10);
+                        var file_bytes = await System.IO.File.ReadAllBytesAsync( path_id);
+
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("ReadAllBytesAsync File {0} Length: {1} ", path_id, file_bytes == null? 0: file_bytes.LongLength), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
                         return new FileContentResult(file_bytes, "application/octet-stream")
                         {
                             FileDownloadName = string.Format("{0}_{1}.zip", ulh.Name, filetype)
