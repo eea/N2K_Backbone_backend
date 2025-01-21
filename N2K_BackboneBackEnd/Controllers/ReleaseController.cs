@@ -371,7 +371,10 @@ namespace N2K_BackboneBackEnd.Controllers
             ServiceResponse<FileContentResult> response = new();
             try
             {
-                return await _releaseService.DownloadFile(id, file);
+                var file_result = await _releaseService.DownloadFile(id, file);
+                if (file_result == null)
+                    return NotFound();
+                return file_result; 
             }
             catch (Exception ex)
             {
