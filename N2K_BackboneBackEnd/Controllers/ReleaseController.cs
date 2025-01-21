@@ -378,11 +378,14 @@ namespace N2K_BackboneBackEnd.Controllers
             }
             catch (Exception ex)
             {
+                return NotFound(ex.Message);
+                /*
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
                 response.Data = null;
                 return Ok(response);
+                */
             }
         }
 
