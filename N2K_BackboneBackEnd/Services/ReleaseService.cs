@@ -12,6 +12,10 @@ using System.Data;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
+using N2K_BackboneBackEnd.Enumerations;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.AspNetCore.Rewrite;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -542,6 +546,91 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        private byte[] ReadAllBytes(string fileName)
+        {
+            byte[] buffer = null;
+            using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+            {
+                buffer = new byte[fs.Length];
+                fs.Read(buffer, 0, (int)fs.Length);
+            }
+            return buffer;
+        }
+
+
+        //public async Task<ActionResult> 
+        public async Task<FileContentResult> DownloadFile(int id, ReleaseProductType filetype)
+        {
+            try
+            {
+                //check if the releaseID exists
+                UnionListHeader ulh=  await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(uh => uh.idULHeader == id);
+                if (ulh == null)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error,string.Format("Release with idULHeader {0} does not exist", id), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    return null;
+                }
+
+                try
+                {
+
+                    //check first if the ReleaseID path exists.
+                    string path_id =string.Format("{0}\\\\{1}\\\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, ulh.ReleaseID.Value, string.Format("{0}_{1}.zip", ulh.ReleaseID.Value, filetype));
+                    path_id = path_id.Replace("\\\\", "\\");
+                    string path_name = string.Format("{0}\\\\{1}\\\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, ulh.Name, string.Format("{0}_{1}.zip", ulh.Name, filetype));
+                    path_name = path_name.Replace("\\\\", "\\");
+
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Downloading File {0} name:{1} ", path_id, path_name), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+
+
+                    if (File.Exists(path_id))
+                    {
+                        await Task.Delay(10);
+                        var file_bytes = await System.IO.File.ReadAllBytesAsync( path_id);
+
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("ReadAllBytesAsync File {0} Length: {1} ", path_id, file_bytes == null? 0: file_bytes.LongLength), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                        return new FileContentResult(file_bytes, "application/octet-stream")
+                        {
+                            FileDownloadName = "\"" + ulh.Name + "_" + filetype + ".zip\""
+                        };
+
+                    }
+                    //if not, try with the release name
+                    else if (File.Exists(path_name)) { 
+                        var file_bytes = await System.IO.File.ReadAllBytesAsync(path_name);
+
+                        return new FileContentResult(file_bytes, "application/octet-stream")
+                        {
+                            FileDownloadName = "\"" + ulh.Name + "_" + filetype + ".zip\""
+                        };
+                    }
+                    else
+                    {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, string.Format("File {0} nor {1} do not exist", path_id, path_name), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                        return null;
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    return null;
+                }
+                finally
+                {
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End Release download"), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                }
+                
+
+            }
+
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+        }
+
         #region CountryDocuments
         public async Task<List<JustificationFilesRelease>> GetCountryDocuments(string country)
         {
@@ -865,5 +954,6 @@ namespace N2K_BackboneBackEnd.Services
                 throw ex;
             }
         }
+
     }
 }

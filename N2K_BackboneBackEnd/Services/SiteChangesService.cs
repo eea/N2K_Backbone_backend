@@ -10,6 +10,14 @@ using N2K_BackboneBackEnd.Models.versioning_db;
 using System.Data;
 using N2K_BackboneBackEnd.Helpers;
 using System.Globalization;
+using DocumentFormat.OpenXml.EMMA;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using DocumentFormat.OpenXml.Vml.Office;
+using N2K_BackboneBackEnd.Models.BackboneDB;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Razor;
+using System.Collections.Generic;
+using System.Diagnostics;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -528,8 +536,117 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
+        private async Task PopulateCacheByByStatusAndLevelAndCountry(List<SiteChangesSummary> changes, string country, SiteChangeStatus? status, Level? level, IMemoryCache cache)
+        {
+            await Task.Delay(10);
+
+            string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes",
+                country,
+                status.ToString(),
+                level.ToString()
+            );
+            if (cache.TryGetValue(listName, out List<SiteCodeView> cachedList)) return;
+            
+            List<SiteCodeView> result = new();
+            switch (level)
+            {
+                case Level.Critical:
+                    result = changes.Where(c => c.SiteCode.StartsWith(country) && c.Status == status && c.NumCritical > 0).
+                        Select(c1 => new SiteCodeView
+                        {
+                            SiteCode = c1.SiteCode,
+                            Version = c1.Version,
+                            Name = c1.Name,
+                            EditedBy = c1.Author,
+                            EditedDate = c1.Date,
+                            LineageChangeType =  c1.LineageType,
+                            Type = c1.SiteType,
+                            JustificationRequired = c1.JustificationRequired
+                    }).ToList();
+                    break;
+
+                case Level.Warning:
+                    result = changes.Where(c => c.SiteCode.StartsWith(country) && c.Status == status && c.NumCritical == 0 && c.NumWarning>0).
+                        Select(c1 => new SiteCodeView
+                        {
+                            SiteCode = c1.SiteCode,
+                            Version = c1.Version,
+                            Name = c1.Name,
+                            EditedBy = c1.Author,
+                            EditedDate = c1.Date,
+                            LineageChangeType = c1.LineageType,
+                            Type = c1.SiteType,
+                            JustificationRequired = c1.JustificationRequired
+                        }).ToList();
+                    break;
+
+                case Level.Info:
+                    result = changes.Where(c => c.SiteCode.StartsWith(country) && c.Status == status && c.NumCritical == 0 && c.NumWarning == 0 && c.NumInfo>0).
+                        Select(c1 => new SiteCodeView
+                        {
+                            SiteCode = c1.SiteCode,
+                            Version = c1.Version,
+                            Name = c1.Name,
+                            EditedBy = c1.Author,
+                            EditedDate = c1.Date,
+                            LineageChangeType = c1.LineageType,
+                            Type = c1.SiteType,
+                            JustificationRequired = c1.JustificationRequired
+                        }).ToList();
+
+                    break;
+
+                default:
+                    break;
+            }
+
+
+            var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
+                .SetPriority(CacheItemPriority.Normal)
+                .SetSize(40000);
+            cache.Set(listName, result, cacheEntryOptions);
+        }
+
+
+        private async Task BuildSitecodesCaches(string country, IMemoryCache cache)
+        {
+            try
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info,string.Format("Start loading changes from DB {0}",country), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+
+                SqlParameter param1 = new("@country", country);
+                List<SiteChangesSummary> changes = await _dataContext.Set<SiteChangesSummary>().FromSqlRaw($"exec dbo.[spGetSiteChangesSummary]  @country",
+                                param1).ToListAsync();
+
+
+                await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Pending, Level.Critical, cache);
+                await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Pending, Level.Warning, cache);
+                await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Pending, Level.Info, cache);
+
+                await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Accepted, Level.Critical, cache);
+                await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Accepted, Level.Warning, cache);
+                await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Accepted, Level.Info, cache);
+
+                await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Critical, cache);
+                await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Warning, cache);
+                await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Info, cache);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End populating caches {0}",country), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+                throw ex;
+            }
+
+        }
+
+
         public async Task<List<SiteCodeView>> GetSiteCodesByStatusAndLevelAndCountry(string country, SiteChangeStatus? status, Level? level, IMemoryCache cache, bool refresh = false, bool onlyedited = false, bool onlyjustreq = false, bool onlysci = false)
         {
+            //DuckDBLoader duckDBLoader=null;
             try
             {
                 string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes",
@@ -537,6 +654,12 @@ namespace N2K_BackboneBackEnd.Services
                     status.ToString(),
                     level.ToString()
                 );
+
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Start GetSiteCodesByStatusAndLevelAndCountry {0}",listName), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+
+                //duckDBLoader = new Helpers.DuckDBLoader(_dataContext);
+
+
                 //if there has been a change in the status refresh the changed sitecodes cache
                 if (refresh) cache.Remove(listName);
 
@@ -547,95 +670,118 @@ namespace N2K_BackboneBackEnd.Services
                 }
                 else
                 {
-                    SqlParameter param1 = new("@country", country);
-                    SqlParameter param2 = new("@status", status.ToString());
-                    SqlParameter param3 = new("@level", level.ToString());
+                    await BuildSitecodesCaches(country, cache);
+                    cache.TryGetValue(listName, out List<SiteCodeView> _cachedList);
+                    result = _cachedList;
 
-                    IQueryable<SiteCodeVersion> changes = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryAndStatusAndLevel]  @country, @status, @level",
-                                param1, param2, param3);
 
-                    List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
-                                param1).ToListAsync();
+                    //SqlParameter param1 = new("@country", country);
+                    //SqlParameter param2 = new("@status", status.ToString());
+                    //SqlParameter param3 = new("@level", level.ToString());
 
-                    List<Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
-                                param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
+                    //List<SiteCodeVersion> changedSiteCodes = new List<SiteCodeVersion>();
+                    //List<SiteActivities> activities = new List<SiteActivities>();
+                    //List<Lineage> lineageChanges = new List<Lineage>();
+                    //List<SiteChangeDb> siteChanges = new List<SiteChangeDb>();
+                    //changedSiteCodes = await duckDBLoader.GetActiveSitesByCountryAndStatusAndLevel(country, status, level);
+                    //activities = await duckDBLoader.LoadSiteActivitiesUserEdition(country);
+                    //lineageChanges = await duckDBLoader.LoadLineageChanges(country);
+                    //siteChanges = await duckDBLoader.LoadChanges(country, status);
 
-                    List<SiteChangeDb> siteChanges = new();
-                    if (status != null)
-                    {
-                        siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country
-                                     && e.Status == status).ToListAsync();
-                    }
-                    else
-                    {
-                        siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country).ToListAsync();
-                    }
 
-                    foreach (var change in (await changes.ToListAsync()))
-                    {
-                        SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
-                        if (activity == null)
-                        {
-                            SiteChangeDb editionChange = siteChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
-                            if (editionChange != null)
-                                activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
-                        }
 
-                        // Get Lineage change type from lineageChanges
-                        LineageTypes? changeLineage = lineageChanges.FirstOrDefault(
-                            l => l.SiteCode == change.SiteCode
-                                && l.Version == change.Version
-                            )?.Type ?? LineageTypes.NoChanges;
 
-                        if (changeLineage == LineageTypes.NoChanges)
-                        {
-                            SiteChangeDb lineageChange = siteChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version
-                                && (e.ChangeType == "Site Added" || e.ChangeType == "Site Merged" || e.ChangeType == "Site Recoded"
-                                || e.ChangeType == "Site Split" || e.ChangeType == "Site Deleted"));
-                            if (lineageChange != null)
-                            {
-                                switch (lineageChange.ChangeType)
-                                {
-                                    case "Site Added":
-                                        changeLineage = LineageTypes.Creation;
-                                        break;
-                                    case "Site Deleted":
-                                        changeLineage = LineageTypes.Deletion;
-                                        break;
-                                    case "Site Split":
-                                        changeLineage = LineageTypes.Split;
-                                        break;
-                                    case "Site Merged":
-                                        changeLineage = LineageTypes.Merge;
-                                        break;
-                                    case "Site Recoded":
-                                        changeLineage = LineageTypes.Recode;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                        }
+                    ////IQueryable<SiteCodeVersion> changes = _dataContext.Set<SiteCodeVersion>().FromSqlRaw($"exec dbo.[spGetActiveSiteCodesByCountryAndStatusAndLevel]  @country, @status, @level",
+                    ////            param1, param2, param3);
 
-                        SiteCodeView temp = new()
-                        {
-                            SiteCode = change.SiteCode,
-                            Version = change.Version,
-                            Name = change.Name,
-                            EditedBy = activity is null ? null : activity.Author,
-                            EditedDate = activity is null ? null : activity.Date,
-                            LineageChangeType = changeLineage,
-                            Type = change.Type,
-                            JustificationRequired = await _dataContext.Set<Sites>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).Select(s => s.JustificationRequired).FirstOrDefaultAsync()
-                        };
-                        result.Add(temp);
-                    }
-                    var cacheEntryOptions = new MemoryCacheEntryOptions()
-                            .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
-                            .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
-                            .SetPriority(CacheItemPriority.Normal)
-                            .SetSize(40000);
-                    cache.Set(listName, result, cacheEntryOptions);
+                    ////List<SiteActivities> activities = await _dataContext.Set<SiteActivities>().FromSqlRaw($"exec dbo.spGetSiteActivitiesUserEditionByCountry  @country",
+                    ////            param1).ToListAsync();
+
+                    ////List <Lineage> lineageChanges = await _dataContext.Set<Lineage>().FromSqlRaw($"exec dbo.spGetLineageData @country, @status",
+                    ////            param1, new SqlParameter("@status", DBNull.Value)).ToListAsync();
+
+                    ///*
+                    //List<SiteChangeDb> siteChanges = new();
+                    //if (status != null)
+                    //{
+                    //    siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country
+                    //                 && e.Status == status).ToListAsync();
+                    //}
+                    //else
+                    //{
+                    //    siteChanges = await _dataContext.Set<SiteChangeDb>().Where(e => e.Country == country).ToListAsync();
+                    //}
+                    //*/
+
+                    ////foreach (var change in (await changes.ToListAsync()))
+                    //foreach (var change in changedSiteCodes)
+                    //    {
+                    //    SiteActivities activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).FirstOrDefault();
+                    //    if (activity == null)
+                    //    {
+                    //        SiteChangeDb editionChange = siteChanges.Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version && e.ChangeType == "User edition").FirstOrDefault();
+                    //        if (editionChange != null)
+                    //            activity = activities.Where(e => e.SiteCode == change.SiteCode && e.Version == editionChange.VersionReferenceId).FirstOrDefault();
+                    //    }
+
+                    //    // Get Lineage change type from lineageChanges
+                    //    LineageTypes? changeLineage = lineageChanges.FirstOrDefault(
+                    //        l => l.SiteCode == change.SiteCode
+                    //            && l.Version == change.Version
+                    //        )?.Type ?? LineageTypes.NoChanges;
+
+                    //    if (changeLineage == LineageTypes.NoChanges)
+                    //    {
+                    //        SiteChangeDb lineageChange = siteChanges.FirstOrDefault(e => e.SiteCode == change.SiteCode && e.Version == change.Version
+                    //            && (e.ChangeType == "Site Added" || e.ChangeType == "Site Merged" || e.ChangeType == "Site Recoded"
+                    //            || e.ChangeType == "Site Split" || e.ChangeType == "Site Deleted"));
+                    //        if (lineageChange != null)
+                    //        {
+                    //            switch (lineageChange.ChangeType)
+                    //            {
+                    //                case "Site Added":
+                    //                    changeLineage = LineageTypes.Creation;
+                    //                    break;
+                    //                case "Site Deleted":
+                    //                    changeLineage = LineageTypes.Deletion;
+                    //                    break;
+                    //                case "Site Split":
+                    //                    changeLineage = LineageTypes.Split;
+                    //                    break;
+                    //                case "Site Merged":
+                    //                    changeLineage = LineageTypes.Merge;
+                    //                    break;
+                    //                case "Site Recoded":
+                    //                    changeLineage = LineageTypes.Recode;
+                    //                    break;
+                    //                default:
+                    //                    break;
+                    //            }
+                    //        }
+                    //    }
+
+
+
+                    //    SiteCodeView temp = new()
+                    //    {
+                    //        SiteCode = change.SiteCode,
+                    //        Version = change.Version,
+                    //        Name = change.Name,
+                    //        EditedBy = activity is null ? null : activity.Author,
+                    //        EditedDate = activity is null ? null : activity.Date,
+                    //        LineageChangeType = changeLineage,
+                    //        Type = change.Type,
+                    //        //JustificationRequired = await _dataContext.Set<Sites>().Where(e => e.SiteCode == change.SiteCode && e.Version == change.Version).Select(s => s.JustificationRequired).FirstOrDefaultAsync()
+                    //        JustificationRequired = await duckDBLoader.SiteJustificationRequired(change.SiteCode, change.Version)
+                    //    };
+                    //    result.Add(temp);
+                    //}
+                    //var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    //        .SetSlidingExpiration(TimeSpan.FromSeconds(2500))
+                    //        .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600))
+                    //       .SetPriority(CacheItemPriority.Normal)
+                    //        .SetSize(40000);
+                    //cache.Set(listName, result, cacheEntryOptions);
                 }
                 if (onlyedited)
                     result = result.Where(x => x.EditedDate != null).ToList();
@@ -650,26 +796,73 @@ namespace N2K_BackboneBackEnd.Services
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetSiteCodesByStatusAndLevelAndCountry", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
+            
+            finally
+            {
+                //if (duckDBLoader!=null)
+                //    await duckDBLoader.DisposeAsync();
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info,string.Format("END GetSiteCodesByStatusAndLevelAndCountry {0}_{1}_{2}", country, status.ToString(), level.ToString()), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+            }
+            
+
         }
 
         public async Task<int> GetPendingChangesByCountry(string? country, IMemoryCache cache)
         {
             try
             {
-                //return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null,cache)).Count;
-                SqlParameter param1 = new("@country", country);
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Start GetPendingChangesByCountry  {0}", country), "SiteChangesService - GetPendingChangesByCountry", "", _dataContext.Database.GetConnectionString());
+                int pending = 0;
+                bool _critical = false;
+                bool _warning = false;
+                bool _info = false;
 
-                IQueryable<PendingSites> changes = _dataContext.Set<PendingSites>().FromSqlRaw($"exec dbo.[spGetPendingSiteCodesByCountry] @country ",
-                            param1);
+                //check if the cache of changes are loaded 
+                List<SiteCodeView> cachedList;
+                string listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", country, "Pending", "Critical");
+                if (cache.TryGetValue(listName, out cachedList))
+                {
+                    pending += cachedList.Count;
+                    _critical = true;
+                }
 
-                var result = (await changes.ToListAsync());
-                if (result != null && result.Count > 0) return result[0].NumSites;
-                return 0;
+                listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", country, "Pending", "Warning");
+                if (cache.TryGetValue(listName, out cachedList))
+                {
+                    pending += cachedList.Count;
+                    _warning = true;
+                }
+
+                listName = string.Format("{0}_{1}_{2}_{3}", "listcodes", country, "Pending", "Info");
+                if (cache.TryGetValue(listName, out cachedList))
+                {
+                    pending += cachedList.Count;
+                    _info = true;
+                }
+
+                //do not query the DB if all caches have been loaded
+                if (!_critical || !_warning || !_info)
+                {
+                    //return (await GetSiteCodesByStatusAndLevelAndCountry(country, SiteChangeStatus.Pending, null,cache)).Count;
+                    SqlParameter param1 = new("@country", country);
+
+                    IQueryable<PendingSites> changes = _dataContext.Set<PendingSites>().FromSqlRaw($"exec dbo.[spGetPendingSiteCodesByCountry] @country ",
+                                param1);
+
+                    var result = (await changes.ToListAsync());
+                    if (result != null && result.Count > 0) return result[0].NumSites;
+                    return 0;
+                }
+                return pending;
             }
             catch (Exception ex)
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetPendingChangesByCountry", "", _dataContext.Database.GetConnectionString());
                 throw ex;
+            }
+            finally
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("END GetPendingChangesByCountry  {0}", country), "SiteChangesService - GetPendingChangesByCountry", "", _dataContext.Database.GetConnectionString());
             }
         }
 
@@ -1517,9 +1710,9 @@ namespace N2K_BackboneBackEnd.Services
 
                         mySiteView.LineageChangeType = _lineage.Where(l => l.SiteCode == mySiteView.SiteCode && l.Version == mySiteView.Version).First()?.Type
                             ?? LineageTypes.NoChanges;
-
                         Level level;
                         Enum.TryParse<Level>(reader["Level"].ToString(), out level);
+
                         //Alter cached listd. They come from pendign and goes to accepted
                         await swapSiteInListCache(cache, SiteChangeStatus.Accepted, level, SiteChangeStatus.Pending, mySiteView);
 

@@ -373,3 +373,8 @@ MigrationBackup/
 FodyWeavers.xsd
 /.editorconfig
 #/N2K_BackboneBackEnd/appsettings.json
+/N2K_BackboneBackEnd/file.db
+/N2K_BackboneBackEnd/changes.parquet
+/N2K_BackboneBackEnd/lineage.parquet
+/N2K_BackboneBackEnd/sites.parquet
+/N2K_BackboneBackEnd/UserEdition.parquet

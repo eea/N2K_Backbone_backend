@@ -94,7 +94,7 @@ namespace N2K_BackboneBackEnd.Helpers
                         using (var entryStream = reader.OpenEntryStream())
                         {
                             MemoryStream currentFile = new MemoryStream();
-                            currentFile.FlushAsync();
+                            await currentFile.FlushAsync();
                             currentFile.Position = 0;
                             await entryStream.CopyToAsync(currentFile);
                             files.Add((name, currentFile));
