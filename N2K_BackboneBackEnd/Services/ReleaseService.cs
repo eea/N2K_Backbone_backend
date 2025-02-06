@@ -591,7 +591,7 @@ namespace N2K_BackboneBackEnd.Services
                         await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("ReadAllBytesAsync File {0} Length: {1} ", path_id, file_bytes == null? 0: file_bytes.LongLength), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
                         return new FileContentResult(file_bytes, "application/octet-stream")
                         {
-                            FileDownloadName = string.Format("{0}_{1}.zip", ulh.Name, filetype)
+                            FileDownloadName = "\"" + ulh.Name + "_" + filetype + ".zip\""
                         };
 
                     }
@@ -601,7 +601,7 @@ namespace N2K_BackboneBackEnd.Services
 
                         return new FileContentResult(file_bytes, "application/octet-stream")
                         {
-                            FileDownloadName = string.Format("{0}_{1}.zip", ulh.Name, filetype)
+                            FileDownloadName = "\"" + ulh.Name + "_" + filetype + ".zip\""
                         };
                     }
                     else
