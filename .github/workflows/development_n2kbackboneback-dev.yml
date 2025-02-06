@@ -66,6 +66,6 @@ jobs:
     steps:
       - name: Delete Old Artifacts
         id: artifact
-        uses: geekyeggo/delete-artifact@v3
+        uses: geekyeggo/delete-artifact@v5
         with:
           name: .net-app
