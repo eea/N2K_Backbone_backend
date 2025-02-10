@@ -2262,24 +2262,19 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "Harveste
                                 if (toStatus == HarvestingStatus.Harvested || toStatus == HarvestingStatus.Closed)
                                 {
                                     //Remove country site changes cache
-                                    var field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                                    var collection = field.GetValue(cache) as System.Collections.ICollection;
-                                    if (collection != null)
+                                    if (cache != null)
                                     {
-                                        foreach (var item in collection)
+                                        var _cache = ((Microsoft.Extensions.Caching.Memory.MemoryCache)cache);
+                                        if (_cache.Count > 0)
                                         {
-                                            var methodInfo = item.GetType().GetProperty("Key");
-                                            string listName = methodInfo.GetValue(item).ToString();
-
-                                            if (!string.IsNullOrEmpty(listName))
+                                            foreach (var key in _cache.Keys)
                                             {
-                                                if (listName.IndexOf(country) != -1)
-                                                {
-                                                    cache.Remove(listName);
-                                                }
+                                                if (key.ToString().IndexOf(country) > -1)
+                                                    cache.Remove(key);
                                             }
                                         }
                                     }
+
                                 }
                                 envelope.Status = toStatus;
                                 envelopeList.Add(envelope);
