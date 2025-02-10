@@ -2262,20 +2262,17 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "Harveste
                                 if (toStatus == HarvestingStatus.Harvested || toStatus == HarvestingStatus.Closed)
                                 {
                                     //Remove country site changes cache
-                                    var field = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                                    var collection = field.GetValue(cache) as System.Collections.ICollection;
-                                    if (collection != null)
+                                    if (cache != null)
                                     {
-                                        foreach (var item in collection)
+                                        MemoryCache? _cache = ((Microsoft.Extensions.Caching.Memory.MemoryCache)cache);
+                                        if (_cache != null)
                                         {
-                                            var methodInfo = item.GetType().GetProperty("Key");
-                                            string listName = methodInfo.GetValue(item).ToString();
-
-                                            if (!string.IsNullOrEmpty(listName))
+                                            if (_cache.Count > 0)
                                             {
-                                                if (listName.IndexOf(country) != -1)
+                                                foreach (var key in _cache.Keys)
                                                 {
-                                                    cache.Remove(listName);
+                                                    if (key.ToString().IndexOf(country) > -1)
+                                                        cache.Remove(key);
                                                 }
                                             }
                                         }
