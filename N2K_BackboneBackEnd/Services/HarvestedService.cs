@@ -2264,17 +2264,19 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "Harveste
                                     //Remove country site changes cache
                                     if (cache != null)
                                     {
-                                        var _cache = ((Microsoft.Extensions.Caching.Memory.MemoryCache)cache);
-                                        if (_cache.Count > 0)
+                                        MemoryCache? _cache = ((Microsoft.Extensions.Caching.Memory.MemoryCache)cache);
+                                        if (_cache != null)
                                         {
-                                            foreach (var key in _cache.Keys)
+                                            if (_cache.Count > 0)
                                             {
-                                                if (key.ToString().IndexOf(country) > -1)
-                                                    cache.Remove(key);
+                                                foreach (var key in _cache.Keys)
+                                                {
+                                                    if (key.ToString().IndexOf(country) > -1)
+                                                        cache.Remove(key);
+                                                }
                                             }
                                         }
                                     }
-
                                 }
                                 envelope.Status = toStatus;
                                 envelopeList.Add(envelope);
