@@ -473,7 +473,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<ReleaseSDF> GetReleaseData(string SiteCode, int ReleaseId = -1, bool showSensitive = true)
+        public async Task<ReleaseSDF> GetReleaseData(string SiteCode, int ReleaseId, Boolean initialValidation, Boolean internalViewers, Boolean internalBarometer, Boolean internalPortalSDFSensitive, Boolean publicViewers, Boolean publicBarometer, Boolean sdfPublic, Boolean naturaOnlineList, Boolean productsCreated, Boolean jediDimensionCreated, bool showSensitive = true)
         {
             try
             {
@@ -482,6 +482,32 @@ namespace N2K_BackboneBackEnd.Services
                 string booleanChecked = "x";
                 string booleanUnchecked = "";
                 ReleaseSDF result = new();
+
+                List<ReleaseVisibility> releaseVisibility = await _releaseContext.Set<ReleaseVisibility>().AsNoTracking().ToListAsync();
+                #region filters
+                if (initialValidation)
+                    releaseVisibility = releaseVisibility.Where(w => w.InitialValidation == true).ToList();
+                if (internalViewers)
+                    releaseVisibility = releaseVisibility.Where(w => w.InternalViewers == true).ToList();
+                if (internalBarometer)
+                    releaseVisibility = releaseVisibility.Where(w => w.InternalBarometer == true).ToList();
+                if (internalPortalSDFSensitive)
+                    releaseVisibility = releaseVisibility.Where(w => w.InternalPortalSDFSensitive == true).ToList();
+                if (publicViewers)
+                    releaseVisibility = releaseVisibility.Where(w => w.PublicViewers == true).ToList();
+                if (publicBarometer)
+                    releaseVisibility = releaseVisibility.Where(w => w.PublicBarometer == true).ToList();
+                if (sdfPublic)
+                    releaseVisibility = releaseVisibility.Where(w => w.SDFPublic == true).ToList();
+                if (naturaOnlineList)
+                    releaseVisibility = releaseVisibility.Where(w => w.NaturaOnlineList == true).ToList();
+                if (productsCreated)
+                    releaseVisibility = releaseVisibility.Where(w => w.ProductsCreated == true).ToList();
+                if (jediDimensionCreated)
+                    releaseVisibility = releaseVisibility.Where(w => w.JediDimensionCreated == true).ToList();
+                #endregion
+                List<long> releaseVisibilityIDs = releaseVisibility.Select(s => s.ReleaseID).ToList();
+
 
                 List<Releases> releases = await _releaseContext.Set<Releases>().AsNoTracking().ToListAsync();
                 Releases release;
@@ -498,7 +524,9 @@ namespace N2K_BackboneBackEnd.Services
                 if (release == null)
                     return result;
 
-                List<NATURA2000SITES> sites = await _releaseContext.Set<NATURA2000SITES>().Where(a => a.SITECODE == SiteCode).ToListAsync();
+                List<NATURA2000SITES> sites = await _releaseContext.Set<NATURA2000SITES>().Where(a => a.SITECODE == SiteCode && releaseVisibilityIDs.Contains(a.ReleaseId)).ToListAsync();
+                if (sites.Any()) //If the site is included in a Release that complies with the filters we fetch the Site data
+                    sites = await _releaseContext.Set<NATURA2000SITES>().Where(a => a.SITECODE == SiteCode).ToListAsync();
                 NATURA2000SITES site = sites.Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).FirstOrDefault();
 
                 if (site == null)

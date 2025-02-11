@@ -76,7 +76,7 @@ namespace N2K_BackboneBackEnd.Controllers
             ServiceResponse<ReleaseSDF> response = new();
             try
             {
-                ReleaseSDF result = await _SDFService.GetReleaseData(SiteCode, ReleaseId);
+                ReleaseSDF result = await _SDFService.GetReleaseData(SiteCode, ReleaseId, false, false, false, false, false, false, false, false, false, false);
                 response.Success = true;
                 response.Message = "";
                 response.Data = result;
