@@ -51,7 +51,7 @@ builder.Services.AddSingleton<IBackgroundSpatialHarvestJobs, BackgroundSpatialHa
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
-    options.MimeTypes = new[] { "text/plain", "application/json", "text/json" };
+    options.MimeTypes = new[] { "text/plain", "application/json", "text/json" , "application/octet-stream", "Content-Disposition" };
 });
 builder.Services.Configure<GzipCompressionProviderOptions>
    (opt =>

@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Data;
 using N2K_BackboneBackEnd.Models;
-using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -75,8 +74,8 @@ namespace N2K_BackboneBackEnd.Services
                 var res = await client.SendAsync(request);
                 //get the JobId 
                 var json = await res.Content.ReadAsStringAsync();
-                JObject jResponse = JObject.Parse(json);
-                string jobId = jResponse.GetValue("id").ToString();
+                var response_dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json);                
+                string jobId = response_dict["id"];
 
                 //create a text file to control the FME Jobs (Countr-Version) launched
                 var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",

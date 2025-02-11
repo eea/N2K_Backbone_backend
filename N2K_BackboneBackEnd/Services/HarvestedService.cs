@@ -9,7 +9,7 @@ using N2K_BackboneBackEnd.Services.HarvestingProcess;
 using N2K_BackboneBackEnd.Enumerations;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Caching.Memory;
-using Newtonsoft.Json;
+
 using System.Data;
 using N2K_BackboneBackEnd.Helpers;
 using System.Text;
@@ -2483,7 +2483,7 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "Harveste
         {
             try
             {
-                var dynamicObject = JsonConvert.DeserializeObject<dynamic>(webSocketMsg);
+                var dynamicObject = System.Text.Json.JsonSerializer.Deserialize<dynamic>(webSocketMsg);
                 EnvelopesToProcess env = new()
                 {
                     CountryCode = dynamicObject.Country,

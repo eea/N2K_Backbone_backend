@@ -9,7 +9,7 @@ using N2K_BackboneBackEnd.Models.release_db;
 using N2K_BackboneBackEnd.Models.ViewModel;
 using Microsoft.Extensions.Options;
 using System.Data;
-using Newtonsoft.Json.Linq;
+
 using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
@@ -845,8 +845,9 @@ namespace N2K_BackboneBackEnd.Services
                         var res = await client.SendAsync(request);
                         //get the JobId 
                         var json = await res.Content.ReadAsStringAsync();
-                        JObject jResponse = JObject.Parse(json);
-                        string jobId = jResponse.GetValue("id").ToString();
+                        var response_dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+
+                        string jobId = response_dict["id"].ToString();
                         await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("FME release creation Launched with jobId:{0}", jobId), "CreateRelease", "", _dataContext.Database.GetConnectionString());
                     }
                     catch (Exception ex)
