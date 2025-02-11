@@ -4,7 +4,6 @@ using System.Text.Encodings.Web;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Net.Http.Headers;
-using Newtonsoft.Json.Linq;
 using N2K_BackboneBackEnd.Models;
 
 namespace N2K_BackboneBackEnd.Helpers
