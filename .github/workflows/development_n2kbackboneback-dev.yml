@@ -16,13 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4            
       - name: Set up .NET Core
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
           include-prerelease: true
 
       - name: Build with dotnet
-        run: dotnet build --configuration Release
+        run: dotnet build --configuration Release --no-restore
         
       - name: copy config
         run: |
@@ -31,7 +31,7 @@ jobs:
           rmdir N2K_BackboneBackEnd/Configs               
 
       - name: dotnet publish
-        run: dotnet publish --property:PublishDir ${{env.DOTNET_ROOT}}/myapp
+        run: dotnet publish ---no-build --output ${{env.DOTNET_ROOT}}/myapp
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
