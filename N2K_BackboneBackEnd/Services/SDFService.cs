@@ -572,13 +572,16 @@ namespace N2K_BackboneBackEnd.Services
                     result.SiteInfo.Species = species.Count;
                 sites.ForEach(st =>
                 {
-                    ReleaseInfo temp = new()
+                    if (releaseVisibilityIDs.Contains(st.ReleaseId))
                     {
-                        ReleaseId = st.ReleaseId,
-                        ReleaseName = releases.Where(w => w.ID == st.ReleaseId).Select(s => s.Title).FirstOrDefault(),
-                        ReleaseDate = releases.Where(w => w.ID == st.ReleaseId).Select(s => s.CreateDate).FirstOrDefault()
-                    };
-                    result.SiteInfo.Releases.Add(temp);
+                        ReleaseInfo temp = new()
+                        {
+                            ReleaseId = st.ReleaseId,
+                            ReleaseName = releases.Where(w => w.ID == st.ReleaseId).Select(s => s.Title).FirstOrDefault(),
+                            ReleaseDate = releases.Where(w => w.ID == st.ReleaseId).Select(s => s.CreateDate).FirstOrDefault()
+                        };
+                        result.SiteInfo.Releases.Add(temp);
+                    }
                 });
                 #endregion
 
