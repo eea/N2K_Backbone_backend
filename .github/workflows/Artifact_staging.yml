@@ -18,8 +18,7 @@ jobs:
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v2
         with:
-          dotnet-version: '6.0.x'
-          include-prerelease: true
+          dotnet-version: '8.0.x'
 
       - name: Build with dotnet
         run: dotnet build --configuration Release
@@ -31,7 +30,7 @@ jobs:
           rmdir N2K_BackboneBackEnd/Configs           
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+        run: dotnet publish -c Release --property:PublishDir=${{env.DOTNET_ROOT}}/myapp
 
       - name: Upload artifact for deployment job in Staging
         uses: actions/upload-artifact@v4
