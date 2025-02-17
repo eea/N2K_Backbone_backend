@@ -24,12 +24,12 @@ namespace N2K_BackboneBackEnd.Controllers
         [AllowAnonymous]
         [Route("GetReleaseData")]
         [HttpGet]
-        public async Task<ActionResult<ReleaseSDF>> GetReleaseData(string SiteCode, int ReleaseId = -1, Boolean initialValidation = false, Boolean internalViewers = false, Boolean internalBarometer = false, Boolean internalPortalSDFSensitive = false, Boolean publicViewers = false, Boolean publicBarometer = false, Boolean sdfPublic = false, Boolean naturaOnlineList = false, Boolean productsCreated = false, Boolean jediDimensionCreatedA = false)
+        public async Task<ActionResult<ReleaseSDF>> GetReleaseData(string SiteCode, int ReleaseId = -1, Boolean initialValidation = false, Boolean internalViewers = false, Boolean internalBarometer = false, Boolean internalPortalSDFSensitive = false, Boolean publicViewers = false, Boolean publicBarometer = false, Boolean sdfPublic = false, Boolean naturaOnlineList = false, Boolean productsCreated = false, Boolean jediDimensionCreated = false)
         {
             ServiceResponse<ReleaseSDF> response = new();
             try
             {
-                ReleaseSDF result = await _SDFService.GetReleaseData(SiteCode, ReleaseId, initialValidation, internalViewers, internalBarometer, internalPortalSDFSensitive, publicViewers, publicBarometer, sdfPublic, naturaOnlineList, productsCreated, jediDimensionCreatedA);
+                ReleaseSDF result = await _SDFService.GetReleaseData(SiteCode, ReleaseId, initialValidation, internalViewers, internalBarometer, internalPortalSDFSensitive, publicViewers, publicBarometer, sdfPublic, naturaOnlineList, productsCreated, jediDimensionCreated);
                 response.Success = true;
                 response.Message = "";
                 response.Data = result;
