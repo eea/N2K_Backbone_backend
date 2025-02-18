@@ -4,7 +4,6 @@ using System.Text.Encodings.Web;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Net.Http.Headers;
-using Newtonsoft.Json.Linq;
 using N2K_BackboneBackEnd.Models;
 
 namespace N2K_BackboneBackEnd.Helpers
@@ -20,9 +19,9 @@ namespace N2K_BackboneBackEnd.Helpers
         public ChangeDetectionHashAuthenticationHandler(
             IOptionsMonitor<ChangeDetectionHashAuthenticationSchemeOptions> options,
             ILoggerFactory logger,
-            UrlEncoder encoder,
-            ISystemClock clock)
-            : base(options, logger, encoder, clock)
+            UrlEncoder encoder
+            )
+            : base(options, logger, encoder)
         {
         }
 
