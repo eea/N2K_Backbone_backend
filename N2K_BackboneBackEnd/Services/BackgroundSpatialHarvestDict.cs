@@ -74,8 +74,8 @@ namespace N2K_BackboneBackEnd.Services
                 var res = await client.SendAsync(request);
                 //get the JobId 
                 var json = await res.Content.ReadAsStringAsync();
-                var response_dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json);                
-                string jobId = response_dict["id"];
+                var response_dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json);                
+                string jobId = response_dict["id"].ToString();
 
                 //create a text file to control the FME Jobs (Countr-Version) launched
                 var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
