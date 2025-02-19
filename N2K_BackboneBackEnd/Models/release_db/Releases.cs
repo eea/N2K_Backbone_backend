@@ -34,4 +34,15 @@ namespace N2K_BackboneBackEnd.Models.release_db
                 .HasKey(c => new { c.ID });
         }
     }
+
+    [Keyless]
+    public class ReleasesExtended : Releases
+    {
+        public Boolean? DownloadReady { get; set; }
+
+        public static void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<ReleasesExtended>();
+        }
+    }
 }

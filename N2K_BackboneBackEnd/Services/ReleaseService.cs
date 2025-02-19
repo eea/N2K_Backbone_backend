@@ -46,7 +46,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<Releases>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
+        public async Task<List<ReleasesExtended>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
         {
             try
             {
@@ -76,9 +76,23 @@ namespace N2K_BackboneBackEnd.Services
                 //releaseHeaders = releaseHeaders.Where(ulh => (ulh.Title != _appSettings.Value.current_ul_name) || (ulh.Author != _appSettings.Value.current_ul_createdby)).ToList();
                 releaseHeaders = releaseHeaders.Where(ulh => (ulh.Name != _appSettings.Value.current_ul_name) || (ulh.CreatedBy != _appSettings.Value.current_ul_createdby)).ToList();
 
-                List<Releases> releaseHeadersConverted = await ConvertUnionListHeaderListToReleases(releaseHeaders);
+                List<ReleaseVisibility> releaseVisibility = await _releaseContext.Set<ReleaseVisibility>().AsNoTracking().ToListAsync();
+                List<ReleasesExtended> result = new();
+                foreach (UnionListHeader release in releaseHeaders)
+                {
+                    ReleasesExtended temp = new();
+                    temp.ID = release.idULHeader;
+                    temp.Title = release.Name;
+                    temp.Author = release.CreatedBy;
+                    temp.CreateDate = release.Date;
+                    temp.Final = release.Final;
+                    temp.ModifyUser = release.UpdatedBy;
+                    temp.ModifyDate = release.UpdatedDate;
+                    temp.DownloadReady = releaseVisibility.Where(w => w.ReleaseID == release.ReleaseID).Select(s => s.ProductsCreated).FirstOrDefault();
+                    result.Add(temp);
+                }
 
-                return releaseHeadersConverted.OrderBy(a => a.CreateDate).ToList();
+                return result.OrderBy(a => a.CreateDate).ToList();
             }
             catch (Exception ex)
             {
@@ -564,10 +578,10 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 //check if the releaseID exists
-                UnionListHeader ulh=  await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(uh => uh.idULHeader == id);
+                UnionListHeader ulh = await _dataContext.Set<UnionListHeader>().AsNoTracking().FirstOrDefaultAsync(uh => uh.idULHeader == id);
                 if (ulh == null)
                 {
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error,string.Format("Release with idULHeader {0} does not exist", id), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Error, string.Format("Release with idULHeader {0} does not exist", id), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
                     return null;
                 }
 
@@ -575,7 +589,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
 
                     //check first if the ReleaseID path exists.
-                    string path_id =string.Format("{0}\\\\{1}\\\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, ulh.ReleaseID.Value, string.Format("{0}_{1}.zip", ulh.ReleaseID.Value, filetype));
+                    string path_id = string.Format("{0}\\\\{1}\\\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, ulh.ReleaseID.Value, string.Format("{0}_{1}.zip", ulh.ReleaseID.Value, filetype));
                     path_id = path_id.Replace("\\\\", "\\");
                     string path_name = string.Format("{0}\\\\{1}\\\\{2}", _appSettings.Value.ReleaseDestDatasetFolder, ulh.Name, string.Format("{0}_{1}.zip", ulh.Name, filetype));
                     path_name = path_name.Replace("\\\\", "\\");
@@ -586,9 +600,9 @@ namespace N2K_BackboneBackEnd.Services
                     if (File.Exists(path_id))
                     {
                         await Task.Delay(10);
-                        var file_bytes = await System.IO.File.ReadAllBytesAsync( path_id);
+                        var file_bytes = await System.IO.File.ReadAllBytesAsync(path_id);
 
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("ReadAllBytesAsync File {0} Length: {1} ", path_id, file_bytes == null? 0: file_bytes.LongLength), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("ReadAllBytesAsync File {0} Length: {1} ", path_id, file_bytes == null ? 0 : file_bytes.LongLength), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
                         return new FileContentResult(file_bytes, "application/octet-stream")
                         {
                             FileDownloadName = "\"" + ulh.Name + "_" + filetype + ".zip\""
@@ -596,7 +610,8 @@ namespace N2K_BackboneBackEnd.Services
 
                     }
                     //if not, try with the release name
-                    else if (File.Exists(path_name)) { 
+                    else if (File.Exists(path_name))
+                    {
                         var file_bytes = await System.IO.File.ReadAllBytesAsync(path_name);
 
                         return new FileContentResult(file_bytes, "application/octet-stream")
@@ -620,7 +635,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End Release download"), "ReleaseService - Download product file", "", _dataContext.Database.GetConnectionString());
                 }
-                
+
 
             }
 
@@ -794,7 +809,7 @@ namespace N2K_BackboneBackEnd.Services
         }
         #endregion
 
-        public async Task<List<Releases>> CreateRelease(string title, Boolean? Final, string? character)
+        public async Task<List<ReleasesExtended>> CreateRelease(string title, Boolean? Final, string? character)
         {
             try
             {
@@ -876,7 +891,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        public async Task<List<Releases>> UpdateRelease(long id, string name, Boolean final)
+        public async Task<List<ReleasesExtended>> UpdateRelease(long id, string name, Boolean final)
         {
             try
             {
