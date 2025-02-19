@@ -56,9 +56,9 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("GetReleases")]
         [HttpGet]
-        public async Task<ActionResult<ServiceResponse<List<Releases>>>> GetReleaseHeadersByBioRegion()
+        public async Task<ActionResult<ServiceResponse<List<ReleasesExtended>>>> GetReleaseHeadersByBioRegion()
         {
-            var response = new ServiceResponse<List<Releases>>();
+            var response = new ServiceResponse<List<ReleasesExtended>>();
             try
             {
                 var unionListHeader = await _releaseService.GetReleaseHeadersByBioRegion(null);
@@ -73,16 +73,16 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<Releases>();
+                response.Data = new List<ReleasesExtended>();
                 return Ok(response);
             }
         }
 
         [Route("GetReleases/bioRegion={bioRegionShortCode}")]
         [HttpGet]
-        public async Task<ActionResult<ServiceResponse<List<Releases>>>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
+        public async Task<ActionResult<ServiceResponse<List<ReleasesExtended>>>> GetReleaseHeadersByBioRegion(string? bioRegionShortCode)
         {
-            var response = new ServiceResponse<List<Releases>>();
+            var response = new ServiceResponse<List<ReleasesExtended>>();
             try
             {
                 var unionListHeader = await _releaseService.GetReleaseHeadersByBioRegion(bioRegionShortCode);
@@ -97,7 +97,7 @@ namespace N2K_BackboneBackEnd.Controllers
                 response.Success = false;
                 response.Message = ex.Message;
                 response.Count = 0;
-                response.Data = new List<Releases>();
+                response.Data = new List<ReleasesExtended>();
                 return Ok(response);
             }
         }
@@ -465,12 +465,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("Create")]
         [HttpPost]
-        public async Task<ActionResult<List<Releases>>> CreateRelease([FromBody] ReleasesInputParam release)
+        public async Task<ActionResult<List<ReleasesExtended>>> CreateRelease([FromBody] ReleasesInputParam release)
         {
-            ServiceResponse<List<Releases>> response = new();
+            ServiceResponse<List<ReleasesExtended>> response = new();
             try
             {
-                List<Releases> unionListHeader = await _releaseService.CreateRelease(release.Name, release.Final, release.Character);
+                List<ReleasesExtended> unionListHeader = await _releaseService.CreateRelease(release.Name, release.Final, release.Character);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
@@ -489,12 +489,12 @@ namespace N2K_BackboneBackEnd.Controllers
 
         [Route("Update")]
         [HttpPut]
-        public async Task<ActionResult<List<Releases>>> UpdateRelease([FromBody] UnionListHeaderInputParam unionList)
+        public async Task<ActionResult<List<ReleasesExtended>>> UpdateRelease([FromBody] UnionListHeaderInputParam unionList)
         {
-            ServiceResponse<List<Releases>> response = new();
+            ServiceResponse<List<ReleasesExtended>> response = new();
             try
             {
-                List<Releases> unionListHeader = await _releaseService.UpdateRelease(unionList.Id, unionList.Name, unionList.Final ?? false);
+                List<ReleasesExtended> unionListHeader = await _releaseService.UpdateRelease(unionList.Id, unionList.Name, unionList.Final ?? false);
                 response.Success = true;
                 response.Message = "";
                 response.Data = unionListHeader;
