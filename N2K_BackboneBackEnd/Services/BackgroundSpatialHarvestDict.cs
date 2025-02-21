@@ -213,10 +213,10 @@ namespace N2K_BackboneBackEnd.Services
                 Envelope = envelope,
                 FirstInCountry = firstInCountry
             };
-            if (FMEJobCompleted == null)
-            {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("FMEJobCompleted s null with fme job {0}-{1}", envelope.CountryCode, envelope.VersionId), "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
-            }
+            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("OnFMEJobIdCompleted with fme job {0}-{1}", envelope.CountryCode, envelope.VersionId), "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
+            if (FMEJobCompleted==null) {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("FMEJobCompleted is null {0}-{1}", envelope.CountryCode, envelope.VersionId), "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());            
+            }           
             FMEJobCompleted?.Invoke(this, evt);
 
             /*
