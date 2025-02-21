@@ -1690,7 +1690,8 @@ namespace N2K_BackboneBackEnd.Services
                 _fmeHarvestJobs.FMEJobCompleted += async (sender, env) =>
                 {
                     //handle the event with a semaphore to ensure the same event is handled only one
-                    string _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
+                    string _connectionString = env.DBConnection;
+                    //((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Enter Event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
 
                     SemaphoreAsync _semaphore;
@@ -1734,7 +1735,7 @@ namespace N2K_BackboneBackEnd.Services
                             //close the file
                             sw.Close();
                             //_semaphoreFME.Release();
-                            await Task.Run(() => FMEJobCompleted(sender, env, cache));
+                            await Task.Run(() => FMEJobCompleted( env, cache));
                         }
 
                         await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler END with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
@@ -1762,7 +1763,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        private async void FMEJobCompleted(object sender, FMEJobEventArgs env, IMemoryCache cache)
+        private async void FMEJobCompleted( FMEJobEventArgs env, IMemoryCache cache)
         {
             string _connectionString = "";
             
@@ -1770,8 +1771,8 @@ namespace N2K_BackboneBackEnd.Services
             {
                 await Task.Delay(10);
                 //create a new DBContext to avoid concurrency errors
-                _dataContext = ((BackgroundSpatialHarvestJobs)sender).GetDataContext();
-                _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
+                //_dataContext = ((BackgroundSpatialHarvestJobs)sender).GetDataContext();
+                _connectionString = env.DBConnection; // ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
 
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("FMEJobCompleted {0} - {1}", env.Envelope.CountryCode, env.Envelope.VersionId), "FMEJobCompleted", "", _connectionString);
 
@@ -2483,12 +2484,13 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "Harveste
         {
             try
             {
-                var dynamicObject = System.Text.Json.JsonSerializer.Deserialize<dynamic>(webSocketMsg);
+
+                var response_dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(webSocketMsg);
                 EnvelopesToProcess env = new()
                 {
-                    CountryCode = dynamicObject.Country,
-                    VersionId = dynamicObject.Version,
-                    JobId = dynamicObject.JobId
+                    CountryCode = response_dict["Country"].ToString(),
+                    VersionId = System.Convert.ToInt32(response_dict["Version"].ToString()),
+                    JobId = System.Convert.ToInt64(response_dict["JobId"].ToString())
                 };
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Message received:{0}", webSocketMsg), "Web Socket received", "", _dataContext.Database.GetConnectionString());
                 await _fmeHarvestJobs.CompleteTask(env);
