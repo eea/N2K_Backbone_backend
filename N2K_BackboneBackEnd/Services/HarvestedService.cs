@@ -1735,7 +1735,7 @@ namespace N2K_BackboneBackEnd.Services
                             //close the file
                             sw.Close();
                             //_semaphoreFME.Release();
-                            await Task.Run(() => FMEJobCompleted(sender, env, cache));
+                            await Task.Run(() => FMEJobCompleted( env, cache));
                         }
 
                         await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler END with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
@@ -1763,7 +1763,7 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        private async void FMEJobCompleted(object sender, FMEJobEventArgs env, IMemoryCache cache)
+        private async void FMEJobCompleted( FMEJobEventArgs env, IMemoryCache cache)
         {
             string _connectionString = "";
             
@@ -1771,8 +1771,8 @@ namespace N2K_BackboneBackEnd.Services
             {
                 await Task.Delay(10);
                 //create a new DBContext to avoid concurrency errors
-                _dataContext = ((BackgroundSpatialHarvestJobs)sender).GetDataContext();
-                _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
+                //_dataContext = ((BackgroundSpatialHarvestJobs)sender).GetDataContext();
+                _connectionString = env.DBConnection; // ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
 
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("FMEJobCompleted {0} - {1}", env.Envelope.CountryCode, env.Envelope.VersionId), "FMEJobCompleted", "", _connectionString);
 
