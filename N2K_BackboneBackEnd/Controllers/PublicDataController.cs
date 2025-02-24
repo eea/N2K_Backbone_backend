@@ -29,7 +29,7 @@ namespace N2K_BackboneBackEnd.Controllers
             ServiceResponse<ReleaseSDF> response = new();
             try
             {
-                ReleaseSDF result = await _SDFService.GetReleaseData(SiteCode, ReleaseId, initialValidation, internalViewers, internalBarometer, internalPortalSDFSensitive, publicViewers, publicBarometer, sdfPublic, naturaOnlineList, productsCreated, jediDimensionCreated);
+                ReleaseSDF result = await _SDFService.GetReleaseData(SiteCode, ReleaseId, initialValidation, internalViewers, internalBarometer, internalPortalSDFSensitive, publicViewers, publicBarometer, sdfPublic, naturaOnlineList, productsCreated, jediDimensionCreated, false);
                 response.Success = true;
                 response.Message = "";
                 response.Data = result;
