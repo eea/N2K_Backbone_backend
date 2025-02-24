@@ -551,7 +551,7 @@ namespace N2K_BackboneBackEnd.Services
                             TypeName = "[dbo].[LineageInsertion]"
                         };
                         await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("ChangeDetection 222 {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
-                        await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spInsertIntoLineageBulk  @siteCodes", paramTable);
+                        await ctx.Database.ExecuteSqlRawAsync($"exec dbo.spInsertIntoLineageBulk  @siteCodes", paramTable);
 
                         //get the information of the sites in submission and reported to compare them
                         //we do this to improve the performance: load all in memory first
