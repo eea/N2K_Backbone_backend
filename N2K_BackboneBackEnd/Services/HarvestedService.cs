@@ -550,7 +550,6 @@ namespace N2K_BackboneBackEnd.Services
                             Value = lineageInsertion,
                             TypeName = "[dbo].[LineageInsertion]"
                         };
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("ChangeDetection 222 {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
                         await ctx.Database.ExecuteSqlRawAsync($"exec dbo.spInsertIntoLineageBulk  @siteCodes", paramTable);
 
                         //get the information of the sites in submission and reported to compare them
@@ -577,7 +576,7 @@ namespace N2K_BackboneBackEnd.Services
                         List<BioRegions> bioRegionsRefereceEnvelope = await ctx.Set<BioRegions>().FromSqlRaw($"exec dbo.spGetReferenceBioRegionsBySiteCodes  @siteCodes",
                                         param4).ToListAsync();
 
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("ChangeDetection 333 {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
+
                         //Submission data (versioning)
                         param4.Value = newsitecodesfilter;
                         List<SiteToHarvest>? newsites = await ctx.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetSitesBySiteCodeFilter  @siteCodes",
@@ -609,7 +608,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 concurrentSitesChanges.Add(await ParallelSiteChangeDetection(detectedLineageChanges, previoussites, harvestingSite,
                                     envelope, habitatPriority, speciesPriority,
-                                    processedEnvelope, sitesRelation, false, ctx,
+                                    processedEnvelope, sitesRelation, dbConnString, false,
                                     habitatsVersioningEnvelope, habitatsReferenceEnvelope,
                                     speciesVersioningEnvelope, speciesReferenceEnvelope,
                                     speciesOtherVersioningEnvelope, speciesOtherReferenceEnvelope,
@@ -907,7 +906,7 @@ namespace N2K_BackboneBackEnd.Services
             return result;
         }
 
-        public async Task<List<SiteChangeDb>> ParallelSiteChangeDetection(List<LineageDetection>? detectedLineageChanges, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciesPriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, List<RelatedSites>? sitesRelation, bool manualEdition = false, N2KBackboneContext? _ctx = null,
+        public async Task<List<SiteChangeDb>> ParallelSiteChangeDetection(List<LineageDetection>? detectedLineageChanges, List<SiteToHarvest> referencedSites, SiteToHarvest harvestingSite, EnvelopesToProcess envelope, List<HabitatPriority> habitatPriority, List<SpeciesPriority> speciesPriority, ProcessedEnvelopes? processedEnvelope, List<RelatedSites>? sitesRelation, string dbConnectionString,bool manualEdition = false, 
             List<HabitatsToHarvestPerEnvelope>? habitatsVersioningEnvelope = null, List<HabitatsToHarvestPerEnvelope>? habitatsReferenceEnvelope = null,
             List<SpeciesToHarvestPerEnvelope>? speciesVersioningEnvelope = null, List<SpeciesToHarvestPerEnvelope>? speciesReferenceEnvelope = null,
             List<SpeciesToHarvestPerEnvelope>? speciesOtherVersioningEnvelope = null, List<SpeciesToHarvestPerEnvelope>? speciesOtherReferenceEnvelope = null,
@@ -921,9 +920,8 @@ namespace N2K_BackboneBackEnd.Services
             List<SiteChangeDb> changes = new();
 
             try
-            {
-                if (_ctx == null) _ctx = _dataContext;
-                var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
+            {                
+                var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(dbConnectionString,
                         opt => opt.EnableRetryOnFailure()).Options;
                 using (N2KBackboneContext ctx = new(options))
                 {
@@ -1254,7 +1252,7 @@ namespace N2K_BackboneBackEnd.Services
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ParallelSiteChangeDetection - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", _ctx.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ParallelSiteChangeDetection - Site " + harvestingSite.SiteCode + "/" + harvestingSite.VersionId.ToString(), "", dbConnectionString);
             }
             return changes;
         }
