@@ -432,6 +432,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
+                
+
                 //check if ChangeDetection has been called from the specific end point 
                 //this will determine the "DELETE FROM dbo.Changes" sentences in the end of the execution
                 bool from_end_point = false;
@@ -440,8 +442,9 @@ namespace N2K_BackboneBackEnd.Services
                     from_end_point = true;
                     ctx = this._dataContext;
                 }
+                string dbConnString = ctx.Database.GetConnectionString();
 
-                List<HarvestedEnvelope> result = new();
+                List <HarvestedEnvelope> result = new();
                 List<SiteChangeDb> changes = new();
                 //List<ProcessedEnvelopes> latestVersions = await ctx.Set<ProcessedEnvelopes>().ToListAsync();
                 //await ctx.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.Changes");
@@ -457,7 +460,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     try
                     {
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", ctx.Database.GetConnectionString());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
 
                         SqlParameter param1 = new("@country", envelope.CountryCode);
                         SqlParameter param2 = new("@version", envelope.VersionId);
@@ -499,6 +502,8 @@ namespace N2K_BackboneBackEnd.Services
                         lineageInsertion.Columns.Add("Status", typeof(int));
                         lineageInsertion.Columns.Add("AntecessorSiteCode", typeof(string));
                         lineageInsertion.Columns.Add("AntecessorVersion", typeof(int));
+
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("ChangeDetection 111 {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
                         detectedLineageChanges.ForEach(c =>
                         {
                             LineageTypes type = LineageTypes.NoChanges;
@@ -545,6 +550,7 @@ namespace N2K_BackboneBackEnd.Services
                             Value = lineageInsertion,
                             TypeName = "[dbo].[LineageInsertion]"
                         };
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("ChangeDetection 222 {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
                         await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spInsertIntoLineageBulk  @siteCodes", paramTable);
 
                         //get the information of the sites in submission and reported to compare them
@@ -571,6 +577,7 @@ namespace N2K_BackboneBackEnd.Services
                         List<BioRegions> bioRegionsRefereceEnvelope = await ctx.Set<BioRegions>().FromSqlRaw($"exec dbo.spGetReferenceBioRegionsBySiteCodes  @siteCodes",
                                         param4).ToListAsync();
 
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("ChangeDetection 333 {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
                         //Submission data (versioning)
                         param4.Value = newsitecodesfilter;
                         List<SiteToHarvest>? newsites = await ctx.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetSitesBySiteCodeFilter  @siteCodes",
@@ -593,7 +600,7 @@ namespace N2K_BackboneBackEnd.Services
                         //For each site in Versioning compare it with that site in backboneDB
                         //Parallel change detection (10 parallel threads)
                         //Create a ConcurrentBag to avoid sync errors with shared variables
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("START parallel change detection {0}-{1}", envelope.CountryCode, envelope.VersionId), "Sites tabular change detection", "", ctx.Database.GetConnectionString());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("START parallel change detection {0}-{1}", envelope.CountryCode, envelope.VersionId), "Sites tabular change detection", "", dbConnString);
 
                         ConcurrentBag<List<SiteChangeDb>> concurrentSitesChanges = new();
 
@@ -698,24 +705,25 @@ namespace N2K_BackboneBackEnd.Services
                             Status = HarvestingStatus.PreHarvested
                         });
 
+
                         try
                         {
-                            await SiteChangeDb.SaveBulkRecord(ctx.Database.GetConnectionString(), changes);
+                            await SiteChangeDb.SaveBulkRecord(dbConnString, changes);
                         }
                         catch (Exception ex)
                         {
-                            await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - SaveBulkRecord", "", ctx.Database.GetConnectionString());
+                            await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - SaveBulkRecord", "", dbConnString);
                             throw ex;
                         }
 
                     }
                     catch (Exception ex)
                     {
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", ctx.Database.GetConnectionString());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", dbConnString);
                         throw ex;
 
                     }
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", ctx.Database.GetConnectionString());
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
                 }
 
                 //execute "DELETE FROM dbo.Changes ..." if it has been called directly from the endpoint
