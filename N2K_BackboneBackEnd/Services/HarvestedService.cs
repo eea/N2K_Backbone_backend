@@ -432,6 +432,8 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
+                
+
                 //check if ChangeDetection has been called from the specific end point 
                 //this will determine the "DELETE FROM dbo.Changes" sentences in the end of the execution
                 bool from_end_point = false;
@@ -440,8 +442,9 @@ namespace N2K_BackboneBackEnd.Services
                     from_end_point = true;
                     ctx = this._dataContext;
                 }
+                string dbConnString = ctx.Database.GetConnectionString();
 
-                List<HarvestedEnvelope> result = new();
+                List <HarvestedEnvelope> result = new();
                 List<SiteChangeDb> changes = new();
                 //List<ProcessedEnvelopes> latestVersions = await ctx.Set<ProcessedEnvelopes>().ToListAsync();
                 //await ctx.Database.ExecuteSqlRawAsync("TRUNCATE TABLE dbo.Changes");
@@ -457,7 +460,7 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     try
                     {
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", ctx.Database.GetConnectionString());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("Start ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
 
                         SqlParameter param1 = new("@country", envelope.CountryCode);
                         SqlParameter param2 = new("@version", envelope.VersionId);
@@ -499,6 +502,8 @@ namespace N2K_BackboneBackEnd.Services
                         lineageInsertion.Columns.Add("Status", typeof(int));
                         lineageInsertion.Columns.Add("AntecessorSiteCode", typeof(string));
                         lineageInsertion.Columns.Add("AntecessorVersion", typeof(int));
+
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("ChangeDetection 111 {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
                         detectedLineageChanges.ForEach(c =>
                         {
                             LineageTypes type = LineageTypes.NoChanges;
@@ -545,6 +550,7 @@ namespace N2K_BackboneBackEnd.Services
                             Value = lineageInsertion,
                             TypeName = "[dbo].[LineageInsertion]"
                         };
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("ChangeDetection 222 {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
                         await _dataContext.Database.ExecuteSqlRawAsync($"exec dbo.spInsertIntoLineageBulk  @siteCodes", paramTable);
 
                         //get the information of the sites in submission and reported to compare them
@@ -571,6 +577,7 @@ namespace N2K_BackboneBackEnd.Services
                         List<BioRegions> bioRegionsRefereceEnvelope = await ctx.Set<BioRegions>().FromSqlRaw($"exec dbo.spGetReferenceBioRegionsBySiteCodes  @siteCodes",
                                         param4).ToListAsync();
 
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("ChangeDetection 333 {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
                         //Submission data (versioning)
                         param4.Value = newsitecodesfilter;
                         List<SiteToHarvest>? newsites = await ctx.Set<SiteToHarvest>().FromSqlRaw($"exec dbo.spGetSitesBySiteCodeFilter  @siteCodes",
@@ -593,7 +600,7 @@ namespace N2K_BackboneBackEnd.Services
                         //For each site in Versioning compare it with that site in backboneDB
                         //Parallel change detection (10 parallel threads)
                         //Create a ConcurrentBag to avoid sync errors with shared variables
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("START parallel change detection {0}-{1}", envelope.CountryCode, envelope.VersionId), "Sites tabular change detection", "", ctx.Database.GetConnectionString());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("START parallel change detection {0}-{1}", envelope.CountryCode, envelope.VersionId), "Sites tabular change detection", "", dbConnString);
 
                         ConcurrentBag<List<SiteChangeDb>> concurrentSitesChanges = new();
 
@@ -698,24 +705,25 @@ namespace N2K_BackboneBackEnd.Services
                             Status = HarvestingStatus.PreHarvested
                         });
 
+
                         try
                         {
-                            await SiteChangeDb.SaveBulkRecord(ctx.Database.GetConnectionString(), changes);
+                            await SiteChangeDb.SaveBulkRecord(dbConnString, changes);
                         }
                         catch (Exception ex)
                         {
-                            await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - SaveBulkRecord", "", ctx.Database.GetConnectionString());
+                            await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - SaveBulkRecord", "", dbConnString);
                             throw ex;
                         }
 
                     }
                     catch (Exception ex)
                     {
-                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", ctx.Database.GetConnectionString());
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "ChangeDetection - Envelope " + envelope.CountryCode + "/" + envelope.VersionId.ToString(), "", dbConnString);
                         throw ex;
 
                     }
-                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", ctx.Database.GetConnectionString());
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("End ChangeDetection {0} - {1}", envelope.CountryCode, envelope.VersionId), "ChangeDetection", "", dbConnString);
                 }
 
                 //execute "DELETE FROM dbo.Changes ..." if it has been called directly from the endpoint
@@ -1687,10 +1695,12 @@ namespace N2K_BackboneBackEnd.Services
                         await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestGeodata", "", _dataContext.Database.GetConnectionString());
                     }
                 }
+
                 _fmeHarvestJobs.FMEJobCompleted += async (sender, env) =>
                 {
                     //handle the event with a semaphore to ensure the same event is handled only one
-                    string _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
+                    string _connectionString = env.DBConnection;
+                    //((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
                     await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Enter Event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
 
                     SemaphoreAsync _semaphore;
@@ -1715,6 +1725,7 @@ namespace N2K_BackboneBackEnd.Services
                     await _semaphore.WaitOne();
                     try
                     {
+                        await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Enter Event handler with semaphore fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
                         //avoid handling the same event more than once by the means of memory cache
                         //check if the event has been handled previously to avoid duplicated handlers
                         //for that purpose we will use plain-text files
@@ -1734,7 +1745,7 @@ namespace N2K_BackboneBackEnd.Services
                             //close the file
                             sw.Close();
                             //_semaphoreFME.Release();
-                            await Task.Run(() => FMEJobCompleted(sender, env, cache));
+                            await Task.Run(() => FMEJobCompleted( env, cache));
                         }
 
                         await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler END with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
@@ -1751,6 +1762,7 @@ namespace N2K_BackboneBackEnd.Services
                     }
 
                 };
+                
             }
             catch (Exception ex)
             {
@@ -1762,7 +1774,80 @@ namespace N2K_BackboneBackEnd.Services
             }
         }
 
-        private async void FMEJobCompleted(object sender, FMEJobEventArgs env, IMemoryCache cache)
+        /*
+        public static async Task ProcessFMEJobCompleted(string connectionstring, FMEJobEventArgs env)
+        {
+            //handle the event with a semaphore to ensure the same event is handled only one
+            string _connectionString = env.DBConnection;
+            //((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
+            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Enter Event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
+
+            SemaphoreAsync _semaphore;
+            string sem_name = string.Format("semaphore_{0}_{1}", env.Envelope.CountryCode, env.Envelope.VersionId);
+            try
+            {
+                //Try to Open the Semaphore if Exists, if not throw an exception
+                _semaphore = SemaphoreAsync.OpenExisting(sem_name);
+                //if it exists it means it is running, So we cancel it
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Cancelled event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
+
+            }
+            catch
+            {
+                //If Semaphore not Exists, create a semaphore instance
+                //Here Maximum 2 external threads can access the code at the same time
+                _semaphore = new SemaphoreAsync(1, 1, sem_name);
+            }
+
+
+            //make sure the execution completes until it starts a new one
+            await _semaphore.WaitOne();
+            try
+            {
+                //avoid handling the same event more than once by the means of memory cache
+                //check if the event has been handled previously to avoid duplicated handlers
+                //for that purpose we will use plain-text files
+                var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
+                            string.Format("FMECompleted-{0}-{1}.txt", env.Envelope.CountryCode, env.Envelope.VersionId));
+
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
+                //if the file exists means that the event was handled and we ignore it
+                if (!File.Exists(fileName))
+                {
+
+                    await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler file {0}", fileName), "EventHandler", "", _connectionString);
+                    //if it doesn´t exist create a file
+                    //await _semaphoreFME.WaitAsync();
+                    StreamWriter sw = new(fileName, true, Encoding.ASCII);
+                    await sw.WriteAsync(env.Envelope.JobId.ToString());
+                    //close the file
+                    sw.Close();
+                    //_semaphoreFME.Release();
+
+                    //var cacheEntriesFieldCollectionDefinition = typeof(MemoryCache).GetField("_coherentState", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    //var cacheEntriesPropertyCollectionDefinition = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+
+                    await Task.Run(() => FMEJobCompleted(env, _cache));
+                }
+
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Event handler END with fme job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "EventHandler", "", _connectionString);
+            }
+            catch (Exception ex)
+            {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, string.Format("Error Event handler {0}", ex.Message), "EventHandler", "", _connectionString);
+            }
+            finally
+            {
+                //release and reset the sempahore for the next execution
+                _semaphore.Release();
+                _semaphore.Dispose();
+            }
+
+        }
+        */
+
+        private async void FMEJobCompleted( FMEJobEventArgs env, IMemoryCache cache)
         {
             string _connectionString = "";
             
@@ -1770,8 +1855,8 @@ namespace N2K_BackboneBackEnd.Services
             {
                 await Task.Delay(10);
                 //create a new DBContext to avoid concurrency errors
-                _dataContext = ((BackgroundSpatialHarvestJobs)sender).GetDataContext();
-                _connectionString = ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
+                //_dataContext = ((BackgroundSpatialHarvestJobs)sender).GetDataContext();
+                _connectionString = env.DBConnection; // ((BackgroundSpatialHarvestJobs)sender).GetDataContext().Database.GetConnectionString();
 
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("FMEJobCompleted {0} - {1}", env.Envelope.CountryCode, env.Envelope.VersionId), "FMEJobCompleted", "", _connectionString);
 
@@ -1803,6 +1888,7 @@ namespace N2K_BackboneBackEnd.Services
                         ctx.Set<ProcessedEnvelopes>().Update(_procEnv);
                         try
                         {
+                            await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("SaveChangesAsync job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "FME Job COmpleted", "", _connectionString);
                             await ctx.SaveChangesAsync();
                         }
                         catch (Exception ex)
@@ -1825,10 +1911,11 @@ namespace N2K_BackboneBackEnd.Services
                             if (envelopes.Count == 0 && env.FirstInCountry)
                             {
                                 //change the status of the whole process to PreHarvested                    
+                                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Prev ChangeStatus job {0}-{1}", env.Envelope.CountryCode, env.Envelope.VersionId), "FME Job COmpleted", "", _connectionString);
                                 await Task.Run(() =>
                                     ChangeStatus(
                                         GetCountryVersionToStatusFromSingleEnvelope(env.Envelope.CountryCode, env.Envelope.VersionId, HarvestingStatus.PreHarvested),
-                                        cache)
+                                        cache, _connectionString)
                                 );
                                 //await DeleteUnrelatedChanges(ctx);
                             }
@@ -1983,7 +2070,7 @@ namespace N2K_BackboneBackEnd.Services
                                 await SystemLog.WriteAsync(SystemLog.errorLevel.Info, String.Format("FullHarvest {0}-{1}: Process Change 2", envelope.CountryCode,envelope.VersionId ), "FullHarvest - FME Job Completed", "", _dataContext.Database.GetConnectionString());
                                 await ChangeStatus(
                                     GetCountryVersionToStatusFromSingleEnvelope(envelope.CountryCode, envelope.VersionId, HarvestingStatus.PreHarvested)
-                                    , cache);
+                                    , cache, this._dataContext.Database.GetConnectionString());
                                 bbEnvelope.Status = HarvestingStatus.PreHarvested;
                             }
                             bbEnvelopes.Add(bbEnvelope);
@@ -2138,19 +2225,25 @@ namespace N2K_BackboneBackEnd.Services
         /// <param name="version"></param>
         /// <param name="toStatus"></param>
         /// <returns></returns>
-        public async Task<List<ProcessedEnvelopes>> ChangeStatus(CountryVersionToStatus changeEnvelopes, IMemoryCache cache, bool recursive = false)
+        public async Task<List<ProcessedEnvelopes>> ChangeStatus(CountryVersionToStatus changeEnvelopes, IMemoryCache cache, string dbConnString, bool recursive = false)
         {
             string sqlToExecute = "exec dbo.";
             string country = "";
             int version = 0;
+            string _DBconnectionString = "";
             HarvestingStatus toStatus = changeEnvelopes.toStatus;
             try
             {
-await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "HarvestedService - _Harvest", "", _dataContext.Database.GetConnectionString());
+                _DBconnectionString = dbConnString;
+                if (string.IsNullOrEmpty(dbConnString))
+                    _DBconnectionString = _dataContext.Database.GetConnectionString();
+
+
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "HarvestedService - _Harvest", "", _DBconnectionString);
                 
                 List<ProcessedEnvelopes> envelopeList = new();
                 ProcessedEnvelopes? envelope = new();
-                var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_dataContext.Database.GetConnectionString(),
+                var options = new DbContextOptionsBuilder<N2KBackboneContext>().UseSqlServer(_DBconnectionString,
                     opt => opt.EnableRetryOnFailure()).Options;
                 using (N2KBackboneContext ctx = new(options))
                 {
@@ -2255,7 +2348,7 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "Harveste
                                         //change the status of the whole process to PreHarvested
                                         await ChangeStatus(
                                                 GetCountryVersionToStatusFromSingleEnvelope(nextEnvelope.Country, nextEnvelope.Version, HarvestingStatus.PreHarvested),
-                                                cache, true);
+                                                cache, _DBconnectionString,true);
                                     }
                                 }
 
@@ -2320,7 +2413,7 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "Harveste
             }
             catch (Exception ex)
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeStatus - Envelope " + country + "/" + version.ToString() + " - Status " + toStatus.ToString(), "", _dataContext.Database.GetConnectionString());
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "HarvestedService - ChangeStatus - Envelope " + country + "/" + version.ToString() + " - Status " + toStatus.ToString(), "", _DBconnectionString);
                 return await Task.FromResult(new List<ProcessedEnvelopes>() { new() });
                 //throw ex;
             }
@@ -2483,12 +2576,13 @@ await SystemLog.WriteAsync(SystemLog.errorLevel.Info,"Change status ", "Harveste
         {
             try
             {
-                var dynamicObject = System.Text.Json.JsonSerializer.Deserialize<dynamic>(webSocketMsg);
+
+                var response_dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(webSocketMsg);
                 EnvelopesToProcess env = new()
                 {
-                    CountryCode = dynamicObject.Country,
-                    VersionId = dynamicObject.Version,
-                    JobId = dynamicObject.JobId
+                    CountryCode = response_dict["Country"].ToString(),
+                    VersionId = System.Convert.ToInt32(response_dict["Version"].ToString()),
+                    JobId = System.Convert.ToInt64(response_dict["JobId"].ToString())
                 };
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Message received:{0}", webSocketMsg), "Web Socket received", "", _dataContext.Database.GetConnectionString());
                 await _fmeHarvestJobs.CompleteTask(env);
