@@ -219,26 +219,26 @@ namespace N2K_BackboneBackEnd.Services
             }
             FMEJobCompleted?.Invoke(this, evt);
 
-            /*
-            BlockingClass obj = new BlockingClass();
-            MethodDelegate methodDelegate =new MethodDelegate(obj.Sleep);
-            IAsyncResult asyncResult = methodDelegate.BeginInvoke(_dataContext.Database.GetConnectionString(),evt,  null, null);
-
+            
+            //BlockingClass obj = new HarvestedService()
+            //MethodDelegate methodDelegate =new MethodDelegate(HarvestedService.ProcessFMEJobCompleted);
+            //IAsyncResult asyncResult = methodDelegate.BeginInvoke(_dataContext.Database.GetConnectionString(),evt,  null, null);
+   
             //Do some other stuff here for 5 seconds as the BeginInvoke would return immediately anyways.
-            Console.WriteLine("Hi there, I will do some more stuff here.");
+            //Console.WriteLine("Hi there, I will do some more stuff here.");
             
             //Call the EndInvoke method to wait on the async operation now.            
-            string returnValue = await methodDelegate.EndInvoke(asyncResult);
-            Console.WriteLine(returnValue);
-            Console.ReadLine();
-            */
+            //string returnValue = await methodDelegate.EndInvoke(asyncResult);
+            //Console.WriteLine(returnValue);
+            //Console.ReadLine();
+            
 
 
             //_semaphore.Release();
         }
 
 
-        public delegate Task<string> MethodDelegate(string connectionstring, FMEJobEventArgs env);
+        public delegate Task MethodDelegate(string connectionstring, FMEJobEventArgs env);
 
     }
     /*

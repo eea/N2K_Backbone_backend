@@ -21,7 +21,7 @@ namespace N2K_BackboneBackEnd.Services
         Task<List<HarvestedEnvelope>> Harvest(EnvelopesToProcess[] envelopeIDs);
         Task HarvestSpatialData(EnvelopesToProcess[] envelopeIDs, IMemoryCache cache);
         Task<List<HarvestedEnvelope>> FullHarvest(IMemoryCache cache);
-        Task<List<ProcessedEnvelopes>> ChangeStatus(CountryVersionToStatus envelopesToStatus, IMemoryCache cache, bool recursive = false);
+        Task<List<ProcessedEnvelopes>> ChangeStatus(CountryVersionToStatus envelopesToStatus, IMemoryCache cache, string dbConnString, bool recursive = false);
         Task CompleteFMESpatial(string message);
         Task<int> PriorityChecker(string country, int version, Boolean current, N2KBackboneContext? ctx = null);
         Task<Boolean> SitePriorityChecker(string sitecode, int version, List<HabitatPriority>? habitatPriority = null, List<SpeciesPriority>? speciesPriority = null);

@@ -346,7 +346,7 @@ namespace N2K_BackboneBackEnd.Controllers
             var response = new ServiceResponse<List<ProcessedEnvelopes>>();
             try
             {
-                var siteChanges = await _harvestedService.ChangeStatus(envelopesToStatus, _cache);
+                var siteChanges = await _harvestedService.ChangeStatus(envelopesToStatus, _cache, "");
                 response.Success = true;
                 response.Message = "";
                 response.Data = siteChanges;
