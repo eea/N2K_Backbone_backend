@@ -1,9 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using N2K_BackboneBackEnd.Data;
+using N2K_BackboneBackEnd.Helpers;
 using N2K_BackboneBackEnd.Models;
-using Newtonsoft.Json.Linq;
+using NuGet.Protocol.Plugins;
+using System;
+using System.Data.Common;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text;
 
 namespace N2K_BackboneBackEnd.Services
@@ -75,8 +79,8 @@ namespace N2K_BackboneBackEnd.Services
                 var res = await client.SendAsync(request);
                 //get the JobId 
                 var json = await res.Content.ReadAsStringAsync();
-                JObject jResponse = JObject.Parse(json);
-                string jobId = jResponse.GetValue("id").ToString();
+                var response_dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json);                
+                string jobId = response_dict["id"].ToString();
 
                 //create a text file to control the FME Jobs (Countr-Version) launched
                 var fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources",
@@ -205,12 +209,49 @@ namespace N2K_BackboneBackEnd.Services
             
             FMEJobEventArgs evt = new()
             {
+                DBConnection = _dataContext.Database.GetConnectionString(),
                 Envelope = envelope,
                 FirstInCountry = firstInCountry
             };
             await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("OnFMEJobIdCompleted with fme job {0}-{1}", envelope.CountryCode, envelope.VersionId), "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());
+            if (FMEJobCompleted==null) {
+                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("FMEJobCompleted is null {0}-{1}", envelope.CountryCode, envelope.VersionId), "OnFMEJobIdCompleted", "", _dataContext.Database.GetConnectionString());            
+            }           
             FMEJobCompleted?.Invoke(this, evt);
+
+            
+            //BlockingClass obj = new HarvestedService()
+            //MethodDelegate methodDelegate =new MethodDelegate(HarvestedService.ProcessFMEJobCompleted);
+            //IAsyncResult asyncResult = methodDelegate.BeginInvoke(_dataContext.Database.GetConnectionString(),evt,  null, null);
+   
+            //Do some other stuff here for 5 seconds as the BeginInvoke would return immediately anyways.
+            //Console.WriteLine("Hi there, I will do some more stuff here.");
+            
+            //Call the EndInvoke method to wait on the async operation now.            
+            //string returnValue = await methodDelegate.EndInvoke(asyncResult);
+            //Console.WriteLine(returnValue);
+            //Console.ReadLine();
+            
+
+
             //_semaphore.Release();
         }
+
+
+        public delegate Task MethodDelegate(string connectionstring, FMEJobEventArgs env);
+
     }
+    /*
+    public class BlockingClass
+    {
+        // A method that puts the execution to sleep for the number of seconds specified.
+        public async Task<string> Sleep(string connectionstring, FMEJobEventArgs env)
+        {
+            await Task.Delay(2000);
+            Console.WriteLine("Going to sleep");
+            Thread.Sleep(10 * 1000);
+            return "Woke up from sleep.";
+        }
+    }
+    */
 }

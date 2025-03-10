@@ -5,8 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
-using Newtonsoft.Json.Linq;
-
+using System.Text.Json;
 
 namespace N2K_BackboneBackEnd.Services
 {
@@ -125,17 +124,17 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     var res = await client.PostAsync(uri, content);
                     var json = await res.Content.ReadAsStringAsync();
-                    JObject jResponse = JObject.Parse(json);
+                    var response_dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json);
                     var requestUri = "";
-                    if (jResponse.ContainsKey("request_uri"))
+                    if (response_dict.ContainsKey("request_uri"))
                     {
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
-                        requestUri = jResponse.GetValue("request_uri").ToString();
+                        requestUri = response_dict["request_uri"].ToString();
                     }
                     else
                     {
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
-                        requestUri = jResponse.GetValue("error_description").ToString();
+                        requestUri = response_dict["error_description"].ToString();
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
                     }
                     res.Dispose();
@@ -178,17 +177,19 @@ namespace N2K_BackboneBackEnd.Services
                 {
                     var res = await client.PostAsync(uri, content);
                     var json = await res.Content.ReadAsStringAsync();
-                    JObject jResponse = JObject.Parse(json);
+
+                    var response_dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json);
                     var requestUri = "";
-                    if (jResponse.ContainsKey("id_token"))
+
+                    if (response_dict.ContainsKey("id_token"))
                     {
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
-                        requestUri = jResponse.GetValue("id_token").ToString();
+                        requestUri = response_dict["id_token"].ToString();
                     }
                     else
                     {
 #pragma warning disable CS8602 // Desreferencia de una referencia posiblemente NULL.
-                        requestUri = jResponse.GetValue("error_description").ToString();
+                        requestUri = response_dict["error_description"].ToString();
 #pragma warning restore CS8602 // Desreferencia de una referencia posiblemente NULL.
                     }
                     res.Dispose();

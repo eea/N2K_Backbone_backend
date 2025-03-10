@@ -614,8 +614,6 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info,string.Format("Start loading changes from DB {0}",country), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
-
                 SqlParameter param1 = new("@country", country);
                 List<SiteChangesSummary> changes = await _dataContext.Set<SiteChangesSummary>().FromSqlRaw($"exec dbo.[spGetSiteChangesSummary]  @country",
                                 param1).ToListAsync();
@@ -632,7 +630,7 @@ namespace N2K_BackboneBackEnd.Services
                 await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Critical, cache);
                 await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Warning, cache);
                 await PopulateCacheByByStatusAndLevelAndCountry(changes, country, SiteChangeStatus.Rejected, Level.Info, cache);
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("End populating caches {0}",country), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+
 
             }
             catch (Exception ex)
@@ -655,9 +653,9 @@ namespace N2K_BackboneBackEnd.Services
                     level.ToString()
                 );
 
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Start GetSiteCodesByStatusAndLevelAndCountry {0}",listName), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
+                //await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Start GetSiteCodesByStatusAndLevelAndCountry {0}",listName), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
 
-                //duckDBLoader = new Helpers.DuckDBLoader(_dataContext);
+                
 
 
                 //if there has been a change in the status refresh the changed sitecodes cache
@@ -797,12 +795,6 @@ namespace N2K_BackboneBackEnd.Services
                 throw ex;
             }
             
-            finally
-            {
-                //if (duckDBLoader!=null)
-                //    await duckDBLoader.DisposeAsync();
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info,string.Format("END GetSiteCodesByStatusAndLevelAndCountry {0}_{1}_{2}", country, status.ToString(), level.ToString()), "SiteChangesService - BuildSitecodesCaches", "", _dataContext.Database.GetConnectionString());
-            }
             
 
         }
@@ -811,7 +803,6 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("Start GetPendingChangesByCountry  {0}", country), "SiteChangesService - GetPendingChangesByCountry", "", _dataContext.Database.GetConnectionString());
                 int pending = 0;
                 bool _critical = false;
                 bool _warning = false;
@@ -859,10 +850,6 @@ namespace N2K_BackboneBackEnd.Services
             {
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetPendingChangesByCountry", "", _dataContext.Database.GetConnectionString());
                 throw ex;
-            }
-            finally
-            {
-                await SystemLog.WriteAsync(SystemLog.errorLevel.Info, string.Format("END GetPendingChangesByCountry  {0}", country), "SiteChangesService - GetPendingChangesByCountry", "", _dataContext.Database.GetConnectionString());
             }
         }
 
