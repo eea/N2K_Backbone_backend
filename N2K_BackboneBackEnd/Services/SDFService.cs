@@ -247,7 +247,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         HabitatSDF temp = new()
                         {
-                            HabitatName = h.HabitatCode != null ? habitatTypes.Where(t => t.Code == h.HabitatCode).FirstOrDefault().Name : null,
+                            HabitatName = h.HabitatCode != null ? (habitatTypes.Where(t => t.Code == h.HabitatCode).FirstOrDefault() != null ? habitatTypes.Where(t => t.Code == h.HabitatCode).FirstOrDefault().Name : null) : null,
                             Code = h.HabitatCode,
                             Cover = h.CoverHA,
                             Cave = h.Caves,
@@ -271,7 +271,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         SpeciesSDF temp = new()
                         {
-                            SpeciesName = h.SpecieCode != null ? speciesTypes.Where(t => t.Code == h.SpecieCode).FirstOrDefault().Name : null,
+                            SpeciesName = h.SpecieCode != null ? (speciesTypes.Where(t => t.Code == h.SpecieCode).FirstOrDefault() != null ? speciesTypes.Where(t => t.Code == h.SpecieCode).FirstOrDefault().Name : null) : null,
                             Code = h.SpecieCode,
                             Group = h.SpecieType,
                             Type = h.PopulationType,
@@ -659,7 +659,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         HabitatSDF temp = new()
                         {
-                            HabitatName = h.HABITATCODE != null ? habitatTypes.Where(t => t.Code == h.HABITATCODE).FirstOrDefault().Name : null,
+                            HabitatName = h.HABITATCODE != null ? (habitatTypes.Where(t => t.Code == h.HABITATCODE).FirstOrDefault() != null ? habitatTypes.Where(t => t.Code == h.HABITATCODE).FirstOrDefault().Name : null) : null,
                             Code = h.HABITATCODE,
                             Cover = h.COVER_HA,
                             Cave = h.CAVES,
@@ -683,7 +683,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         SpeciesSDF temp = new()
                         {
-                            SpeciesName = h.SPECIESCODE != null ? speciesTypes.Where(t => t.Code == h.SPECIESCODE).FirstOrDefault().Name : null,
+                            SpeciesName = h.SPECIESCODE != null ? (speciesTypes.Where(t => t.Code == h.SPECIESCODE).FirstOrDefault() != null ? speciesTypes.Where(t => t.Code == h.SPECIESCODE).FirstOrDefault().Name : null) : null,
                             Code = h.SPECIESCODE,
                             Group = h.SPGROUP,
                             Type = h.POPULATION_TYPE,
