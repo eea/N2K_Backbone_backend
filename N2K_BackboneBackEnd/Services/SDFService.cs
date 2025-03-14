@@ -535,10 +535,8 @@ namespace N2K_BackboneBackEnd.Services
                 //Catalogues
                 List<Countries> countries = await _dataContext.Set<Countries>().AsNoTracking().ToListAsync();
                 List<DataQualityTypes> dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
-                List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
                 List<Nuts> nuts = await _dataContext.Set<Nuts>().AsNoTracking().ToListAsync();
                 List<OwnerShipTypes> ownerShipTypes = await _dataContext.Set<OwnerShipTypes>().AsNoTracking().ToListAsync();
-                List<SpeciesTypes> speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
 
                 //Data
                 List<HABITATS> habitats = await _releaseContext.Set<HABITATS>().Where(h => h.SITECODE == SiteCode && h.ReleaseId == release.ID).AsNoTracking().ToListAsync();
@@ -659,7 +657,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         HabitatSDF temp = new()
                         {
-                            HabitatName = h.HABITATCODE != null ? (habitatTypes.Where(t => t.Code == h.HABITATCODE).FirstOrDefault() != null ? habitatTypes.Where(t => t.Code == h.HABITATCODE).FirstOrDefault().Name : null) : null,
+                            HabitatName = h.DESCRIPTION,
                             Code = h.HABITATCODE,
                             Cover = h.COVER_HA,
                             Cave = h.CAVES,
@@ -683,7 +681,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         SpeciesSDF temp = new()
                         {
-                            SpeciesName = h.SPECIESCODE != null ? (speciesTypes.Where(t => t.Code == h.SPECIESCODE).FirstOrDefault() != null ? speciesTypes.Where(t => t.Code == h.SPECIESCODE).FirstOrDefault().Name : null) : null,
+                            SpeciesName = h.SPECIESNAME,
                             Code = h.SPECIESCODE,
                             Group = h.SPGROUP,
                             Type = h.POPULATION_TYPE,
