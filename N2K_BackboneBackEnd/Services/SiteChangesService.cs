@@ -1007,6 +1007,15 @@ namespace N2K_BackboneBackEnd.Services
 
                         if (_levelDetail.ChangeList.Where(c => c.ChangeType.Contains("Other Species Added")).Any())
                         {
+                            if (_Section.AddedCodes.FirstOrDefault(c => c.ChangeType == "Other Species Added") == null)
+                            {
+                                _Section.AddedCodes.Add(new CategoryChangeDetail
+                                {
+                                    ChangeCategory = _levelDetail.Section,
+                                    ChangeType = _levelDetail.ChangeType,
+                                    ChangedCodesDetail = new List<CodeChangeDetail>()
+                                });
+                            }
                             foreach (var changedItem in _levelDetail.ChangeList)
                             {
                                 CategoryChangeDetail otherSpeciesDetail = _Section.AddedCodes.First(c => c.ChangeType == "Other Species Added");
