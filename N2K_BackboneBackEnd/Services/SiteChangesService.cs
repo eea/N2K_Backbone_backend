@@ -1685,7 +1685,7 @@ namespace N2K_BackboneBackEnd.Services
                             Version = int.Parse(reader["Version"].ToString()),
                             Name = reader["SiteName"].ToString(),
                             Type = reader["SiteType"].ToString(),
-                            JustificationRequired = (bool)reader["JustificationRequired"]
+                            JustificationRequired = (reader["JustificationRequired"] != null && reader["JustificationRequired"].ToString() != "") ? (bool)reader["JustificationRequired"] : null
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
 
@@ -1841,7 +1841,7 @@ namespace N2K_BackboneBackEnd.Services
                             Version = int.Parse(reader["Version"].ToString()),
                             Name = reader["SiteName"].ToString(),
                             Type = reader["SiteType"].ToString(),
-                            JustificationRequired = (bool)reader["JustificationRequired"]
+                            JustificationRequired = (reader["JustificationRequired"] != null && reader["JustificationRequired"].ToString() != "") ? (bool)reader["JustificationRequired"] : null
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
 
