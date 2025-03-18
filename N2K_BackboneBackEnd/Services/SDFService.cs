@@ -138,6 +138,7 @@ namespace N2K_BackboneBackEnd.Services
                 List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
                 List<Nuts> nuts = await _dataContext.Set<Nuts>().AsNoTracking().ToListAsync();
                 List<OwnerShipTypes> ownerShipTypes = await _dataContext.Set<OwnerShipTypes>().AsNoTracking().ToListAsync();
+                List<SpeciesGroups> speciesGroups = await _dataContext.Set<SpeciesGroups>().AsNoTracking().ToListAsync();
                 List<SpeciesTypes> speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
 
                 //Data
@@ -273,7 +274,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             SpeciesName = h.SpecieCode != null ? (speciesTypes.Where(t => t.Code == h.SpecieCode).FirstOrDefault() != null ? speciesTypes.Where(t => t.Code == h.SpecieCode).FirstOrDefault().Name : null) : null,
                             Code = h.SpecieCode,
-                            Group = h.SpecieType,
+                            Group = h.SpecieType != null ? (speciesGroups.Where(t => t.Code == h.SpecieType).FirstOrDefault() != null ? speciesGroups.Where(t => t.Code == h.SpecieType).FirstOrDefault().Name : h.SpecieType) : null,
                             Type = h.PopulationType,
                             Min = h.PopulationMin.ToString(),
                             Max = h.PopulationMax.ToString(),
