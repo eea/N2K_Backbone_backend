@@ -3,17 +3,17 @@ using System.ComponentModel.DataAnnotations;
 
 namespace N2K_BackboneBackEnd.Models.backbone_db
 {
-    public class SpeciesGroup : IEntityModel, IEntityModelBackboneDB
+    public class SpeciesGroups : IEntityModel, IEntityModelBackboneDB
     {
         [Key]
         public string Code { get; set; } = string.Empty;
         public string? Name { get; set; }
-        public string? Speciehabitat { get; set; }
+        public string? SpecieHabitat { get; set; }
 
         public static void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<SpeciesGroup>()
-                .ToTable("SpeciesGroup")
+            builder.Entity<SpeciesGroups>()
+                .ToTable("SpeciesGroups")
                 .HasKey(c => new { c.Code });
         }
     }
