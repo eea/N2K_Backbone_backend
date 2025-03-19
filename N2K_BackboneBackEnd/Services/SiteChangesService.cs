@@ -1007,12 +1007,15 @@ namespace N2K_BackboneBackEnd.Services
 
                         if (_levelDetail.ChangeList.Where(c => c.ChangeType.Contains("Other Species Added")).Any())
                         {
-                            _Section.AddedCodes.Add(new CategoryChangeDetail
+                            if (_Section.AddedCodes.FirstOrDefault(c => c.ChangeType == "Other Species Added") == null)
                             {
-                                ChangeCategory = _levelDetail.Section,
-                                ChangeType = _levelDetail.ChangeType,
-                                ChangedCodesDetail = new List<CodeChangeDetail>()
-                            });
+                                _Section.AddedCodes.Add(new CategoryChangeDetail
+                                {
+                                    ChangeCategory = _levelDetail.Section,
+                                    ChangeType = _levelDetail.ChangeType,
+                                    ChangedCodesDetail = new List<CodeChangeDetail>()
+                                });
+                            }
                             foreach (var changedItem in _levelDetail.ChangeList)
                             {
                                 CategoryChangeDetail otherSpeciesDetail = _Section.AddedCodes.First(c => c.ChangeType == "Other Species Added");
@@ -1691,7 +1694,7 @@ namespace N2K_BackboneBackEnd.Services
                             Version = int.Parse(reader["Version"].ToString()),
                             Name = reader["SiteName"].ToString(),
                             Type = reader["SiteType"].ToString(),
-                            JustificationRequired = (bool)reader["JustificationRequired"]
+                            JustificationRequired = (reader["JustificationRequired"] != null && reader["JustificationRequired"].ToString() != "") ? (bool)reader["JustificationRequired"] : null
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
 
@@ -1847,7 +1850,7 @@ namespace N2K_BackboneBackEnd.Services
                             Version = int.Parse(reader["Version"].ToString()),
                             Name = reader["SiteName"].ToString(),
                             Type = reader["SiteType"].ToString(),
-                            JustificationRequired = (bool)reader["JustificationRequired"]
+                            JustificationRequired = (reader["JustificationRequired"] != null && reader["JustificationRequired"].ToString() != "") ? (bool)reader["JustificationRequired"] : null
                         };
                         mySiteView.CountryCode = mySiteView.SiteCode[..2];
 
