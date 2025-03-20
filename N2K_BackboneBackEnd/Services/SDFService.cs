@@ -302,7 +302,7 @@ namespace N2K_BackboneBackEnd.Services
                         {
                             SpeciesName = h.SpecieCode,
                             Code = h.OtherSpecieCode ?? "-",
-                            Group = h.SpecieType,
+                            Group = h.SpecieType != null ? (speciesGroups.Where(t => t.Code == h.SpecieType).FirstOrDefault() != null ? speciesGroups.Where(t => t.Code == h.SpecieType).FirstOrDefault().Name : h.SpecieType) : null,
                             Min = h.PopulationMin.ToString(),
                             Max = h.PopulationMax.ToString(),
                             Unit = h.CountingUnit,
