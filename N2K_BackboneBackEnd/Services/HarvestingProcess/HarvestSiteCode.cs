@@ -342,7 +342,7 @@ namespace N2K_BackboneBackEnd.Services.HarvestingProcess
                         item.NutId = TypeConverters.CheckNull<string>(reader["NutId"]);
                         item.CoverPercentage = null;
                         if (reader["CoverPercentage"] != DBNull.Value)
-                            item.CoverPercentage = decimal.ToDouble(TypeConverters.CheckNull<decimal>(reader["CoverPercentage"]));
+                            item.CoverPercentage = TypeConverters.CheckNull<decimal>(reader["CoverPercentage"]);
 
                         items.Add(item);
                     }
