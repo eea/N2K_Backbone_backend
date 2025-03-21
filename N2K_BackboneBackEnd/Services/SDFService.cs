@@ -137,7 +137,6 @@ namespace N2K_BackboneBackEnd.Services
                 List<DataQualityTypes> dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
                 List<HabitatTypes> habitatTypes = await _dataContext.Set<HabitatTypes>().AsNoTracking().ToListAsync();
                 List<Nuts> nuts = await _dataContext.Set<Nuts>().AsNoTracking().ToListAsync();
-                List<OwnerShipTypes> ownerShipTypes = await _dataContext.Set<OwnerShipTypes>().AsNoTracking().ToListAsync();
                 List<SpeciesGroups> speciesGroups = await _dataContext.Set<SpeciesGroups>().AsNoTracking().ToListAsync();
                 List<SpeciesTypes> speciesTypes = await _dataContext.Set<SpeciesTypes>().AsNoTracking().ToListAsync();
 
@@ -161,7 +160,7 @@ namespace N2K_BackboneBackEnd.Services
                 if (site != null)
                 {
                     result.SiteInfo.SiteName = site.Name;
-                    result.SiteInfo.Country = countries.Where(c => c.Code == site.CountryCode.ToLower()).FirstOrDefault().Country;
+                    result.SiteInfo.Country = site.CountryCode != null ? (countries.Where(c => c.Code == site.CountryCode.ToLower()).FirstOrDefault() != null ? countries.Where(c => c.Code == site.CountryCode.ToLower()).FirstOrDefault().Country : site.CountryCode) : null;
                     result.SiteInfo.Directive = site.SiteType; //UNSURE
                     result.SiteInfo.SiteCode = SiteCode;
                     result.SiteInfo.Area = site.Area;
@@ -222,7 +221,7 @@ namespace N2K_BackboneBackEnd.Services
                         Models.ViewModel.Region temp = new()
                         {
                             NUTSLevel2Code = nbs.NutId,
-                            RegionName = nuts.Where(t => t.Code == nbs.NutId).FirstOrDefault().Region
+                            RegionName = nbs.NutId != null ? (nuts.Where(t => t.Code == nbs.NutId).FirstOrDefault() != null ? nuts.Where(t => t.Code == nbs.NutId).FirstOrDefault().Region : null) : null
                         };
                         result.SiteLocation.Region.Add(temp);
                     });
@@ -233,7 +232,7 @@ namespace N2K_BackboneBackEnd.Services
                     {
                         BiogeographicalRegions temp = new()
                         {
-                            Name = bioRegionTypes.Where(t => t.Code == br.BGRID).FirstOrDefault().RefBioGeoName,
+                            Name = br.BGRID != null ? (bioRegionTypes.Where(t => t.Code == br.BGRID).FirstOrDefault() != null ? bioRegionTypes.Where(t => t.Code == br.BGRID).FirstOrDefault().RefBioGeoName : null) : null,
                             Value = br.Percentage
                         };
                         result.SiteLocation.BiogeographicalRegions.Add(temp);
@@ -252,7 +251,7 @@ namespace N2K_BackboneBackEnd.Services
                             Code = h.HabitatCode,
                             Cover = h.CoverHA,
                             Cave = h.Caves,
-                            DataQuality = h.DataQty != null ? dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().HabitatCode : null,
+                            DataQuality = h.DataQty != null ? (dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault() != null ? dataQualityTypes.Where(c => c.Id == h.DataQty).FirstOrDefault().HabitatCode : null) : null,
                             Representativity = h.Representativity,
                             RelativeSurface = h.RelativeSurface,
                             Conservation = h.ConsStatus,
@@ -540,7 +539,6 @@ namespace N2K_BackboneBackEnd.Services
                 List<Countries> countries = await _dataContext.Set<Countries>().AsNoTracking().ToListAsync();
                 List<DataQualityTypes> dataQualityTypes = await _dataContext.Set<DataQualityTypes>().AsNoTracking().ToListAsync();
                 List<Nuts> nuts = await _dataContext.Set<Nuts>().AsNoTracking().ToListAsync();
-                List<OwnerShipTypes> ownerShipTypes = await _dataContext.Set<OwnerShipTypes>().AsNoTracking().ToListAsync();
 
                 //Data
                 List<HABITATS> habitats = await _releaseContext.Set<HABITATS>().Where(h => h.SITECODE == SiteCode && h.ReleaseId == release.ID).AsNoTracking().ToListAsync();
@@ -561,7 +559,7 @@ namespace N2K_BackboneBackEnd.Services
                 if (site != null)
                 {
                     result.SiteInfo.SiteName = site.SITENAME;
-                    result.SiteInfo.Country = countries.Where(c => c.Code == site.COUNTRY_CODE.ToLower()).FirstOrDefault().Country;
+                    result.SiteInfo.Country = site.COUNTRY_CODE != null ? (countries.Where(c => c.Code == site.COUNTRY_CODE.ToLower()).FirstOrDefault() != null ? countries.Where(c => c.Code == site.COUNTRY_CODE.ToLower()).FirstOrDefault().Country : site.COUNTRY_CODE) : null;
                     result.SiteInfo.Directive = site.SITETYPE; //UNSURE
                     result.SiteInfo.SiteCode = SiteCode;
                     result.SiteInfo.Area = site.AREAHA;
@@ -635,7 +633,7 @@ namespace N2K_BackboneBackEnd.Services
                         Models.ViewModel.Region temp = new()
                         {
                             NUTSLevel2Code = nbs.NUTID,
-                            RegionName = nuts.Where(t => t.Code == nbs.NUTID).FirstOrDefault().Region
+                            RegionName = nbs.NUTID != null ? (nuts.Where(t => t.Code == nbs.NUTID).FirstOrDefault() != null ? nuts.Where(t => t.Code == nbs.NUTID).FirstOrDefault().Region : null) : null
                         };
                         result.SiteLocation.Region.Add(temp);
                     });
@@ -665,7 +663,7 @@ namespace N2K_BackboneBackEnd.Services
                             Code = h.HABITATCODE,
                             Cover = h.COVER_HA,
                             Cave = h.CAVES,
-                            DataQuality = h.DATAQUALITY != null ? dataQualityTypes.Where(c => c.HabitatCode == h.DATAQUALITY).FirstOrDefault().HabitatCode : null,
+                            DataQuality = h.DATAQUALITY != null ? (dataQualityTypes.Where(c => c.HabitatCode == h.DATAQUALITY).FirstOrDefault() != null ? dataQualityTypes.Where(c => c.HabitatCode == h.DATAQUALITY).FirstOrDefault().HabitatCode : null) : null,
                             Representativity = h.REPRESENTATIVITY,
                             RelativeSurface = h.RELSURFACE,
                             Conservation = h.CONSERVATION,
