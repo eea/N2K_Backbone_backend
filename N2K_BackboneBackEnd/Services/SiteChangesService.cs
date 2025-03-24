@@ -65,7 +65,7 @@ namespace N2K_BackboneBackEnd.Services
             try
             {
                 var startRow = (page - 1) * pageLimit;
-                var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache));
+                var sitesList = (await GetSiteCodesByStatusAndLevelAndCountry(country, status, level, cache, false, onlyedited, onlyjustreq, onlysci));
                 if (pageLimit > 0)
                 {
                     sitesList = sitesList
@@ -786,9 +786,6 @@ namespace N2K_BackboneBackEnd.Services
                 await SystemLog.WriteAsync(SystemLog.errorLevel.Error, ex, "SiteChangesService - GetSiteCodesByStatusAndLevelAndCountry", "", _dataContext.Database.GetConnectionString());
                 throw ex;
             }
-            
-            
-
         }
 
         public async Task<int> GetPendingChangesByCountry(string? country, IMemoryCache cache)
