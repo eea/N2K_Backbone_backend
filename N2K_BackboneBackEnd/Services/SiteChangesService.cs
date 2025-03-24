@@ -10,14 +10,6 @@ using N2K_BackboneBackEnd.Models.versioning_db;
 using System.Data;
 using N2K_BackboneBackEnd.Helpers;
 using System.Globalization;
-using DocumentFormat.OpenXml.EMMA;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
-using DocumentFormat.OpenXml.Vml.Office;
-using N2K_BackboneBackEnd.Models.BackboneDB;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Razor;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace N2K_BackboneBackEnd.Services
 {
