@@ -339,7 +339,7 @@ namespace N2K_BackboneBackEnd.Services
                         };
                         result.SiteDescription.GeneralCharacter.Add(temp);
                     });
-                    result.SiteDescription.GeneralCharacter = result.SiteDescription.GeneralCharacter.OrderBy(o => o.Code).ToList();
+                    result.SiteDescription.GeneralCharacter = result.SiteDescription.GeneralCharacter.OrderBy(o => o.Cover).ToList();
                 }
                 if (isImpactedBy != null && isImpactedBy.Count > 0)
                 {
@@ -751,7 +751,7 @@ namespace N2K_BackboneBackEnd.Services
                         };
                         result.SiteDescription.GeneralCharacter.Add(temp);
                     });
-                    result.SiteDescription.GeneralCharacter = result.SiteDescription.GeneralCharacter.OrderBy(o => o.Code).ToList();
+                    result.SiteDescription.GeneralCharacter = result.SiteDescription.GeneralCharacter.OrderBy(o => o.Cover).ToList();
                 }
                 if (isImpactedBy != null && isImpactedBy.Count > 0)
                 {
