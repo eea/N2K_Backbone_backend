@@ -10,7 +10,7 @@ namespace N2K_BackboneBackEnd.Models.backbone_db
         public string SiteCode { get; set; } = string.Empty;
         public int Version { get; set; }
         public string NutId { get; set; } = string.Empty;
-        public double? CoverPercentage { get; set; }
+        public decimal? CoverPercentage { get; set; }
 
         private string dbConnection = string.Empty;
 
