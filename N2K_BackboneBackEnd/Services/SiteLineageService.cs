@@ -449,7 +449,7 @@ namespace N2K_BackboneBackEnd.Services
                         lineageInsertion.Columns.Add("AntecessorSiteCode", typeof(string));
                         lineageInsertion.Columns.Add("AntecessorVersion", typeof(int));
 
-                        antecessors.ForEach(async a =>
+                        foreach (LineageAntecessors a in antecessors)
                         {
                             LineageAntecessors hasSuccessors = await _dataContext.Set<LineageAntecessors>().Where(c => c.LineageID != consolidateChanges.ChangeId
                                 && c.SiteCode == a.SiteCode && c.Version == a.Version && c.N2KVersioningVersion == a.N2KVersioningVersion).FirstOrDefaultAsync();
@@ -457,7 +457,7 @@ namespace N2K_BackboneBackEnd.Services
                             {
                                 lineageInsertion.Rows.Add(new Object[] { a.SiteCode, a.Version, lineage.N2KVersioningVersion, LineageTypes.Deletion, LineageStatus.Proposed, a.SiteCode, a.Version });
                             }
-                        });
+                        }
 
                         SqlParameter paramTable = new("@siteCodes", System.Data.SqlDbType.Structured)
                         {
@@ -491,18 +491,26 @@ namespace N2K_BackboneBackEnd.Services
                     TypeName = "[dbo].[SiteCodeFilter]"
                 };
                 await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spConsolidatePredecessors @id, @siteCodes", paramId, paramSitecodesTable);
+                antecessors = await _dataContext.Set<LineageAntecessors>().Where(c => c.LineageID == consolidateChanges.ChangeId).ToListAsync();
 
                 lineage.Type = consolidateChanges.Type;
 
-                //Remove lineage Deletion if they have successors now
-                foreach (LineageAntecessors a in antecessors)
+                if (consolidateChanges.Type != LineageTypes.Creation)
                 {
-                    Lineage hasSuccessors = await _dataContext.Set<Lineage>().Where(c => c.SiteCode == a.SiteCode && c.Version == a.Version && c.Type == LineageTypes.Deletion).FirstOrDefaultAsync();
-                    if (hasSuccessors != null)
+                    //Remove lineage Deletion if they have successors now
+                    foreach (LineageAntecessors a in antecessors)
                     {
-                        _dataContext.Set<Lineage>().Remove(hasSuccessors);
-                    }
-                };
+                        LineageAntecessors otherAntecessors = await _dataContext.Set<LineageAntecessors>().Where(c => c.SiteCode == a.SiteCode && c.Version == a.Version && c.ID != a.ID).FirstOrDefaultAsync();
+                        if (otherAntecessors != null)
+                        {
+                            Lineage hasSuccessors = await _dataContext.Set<Lineage>().Where(c => c.SiteCode == a.SiteCode && c.Version == a.Version && c.Type == LineageTypes.Deletion).FirstOrDefaultAsync();
+                            if (hasSuccessors != null)
+                            {
+                                _dataContext.Set<Lineage>().Remove(hasSuccessors);
+                            }
+                        }
+                    };
+                }
                 await Task.Delay(60); //Necessary to prevent connection db overlapping
                 await _dataContext.SaveChangesAsync();
 
@@ -607,7 +615,7 @@ namespace N2K_BackboneBackEnd.Services
                     });
                 });
                 result = result.DistinctBy(c => c.SiteCode).ToList();
-                DateTime? latestRelease = result.OrderByDescending(o => o.ReleaseDate).Select(s =>  s.ReleaseDate).FirstOrDefault();
+                DateTime? latestRelease = result.OrderByDescending(o => o.ReleaseDate).Select(s => s.ReleaseDate).FirstOrDefault();
                 result.ForEach(r =>
                 {
                     r.ReleaseDate = latestRelease;
