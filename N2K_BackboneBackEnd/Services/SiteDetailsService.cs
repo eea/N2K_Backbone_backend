@@ -508,8 +508,8 @@ namespace N2K_BackboneBackEnd.Services
             {
                 List<JustificationFiles> result = new();
                 List<JustificationFilesRelease> result2 = new();
-                result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(f => f.SiteCode == pSiteCode && f.Version == pCountryVersion).ToListAsync();
-                result2 = await _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == pSiteCode.Substring(0, 2) && f.Release == null).ToListAsync();
+                result = await _dataContext.Set<JustificationFiles>().AsNoTracking().Where(f => f.SiteCode == pSiteCode).ToListAsync();
+                result2 = await _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == pSiteCode.Substring(0, 2)).ToListAsync();
 
                 foreach (JustificationFilesRelease release in result2)
                 {
