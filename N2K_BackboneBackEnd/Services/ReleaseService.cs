@@ -651,7 +651,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<JustificationFilesRelease> result = _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == country && f.Release == null).ToList();
+                List<JustificationFilesRelease> result = _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == country).ToList();
                 return result;
             }
             catch (Exception ex)
