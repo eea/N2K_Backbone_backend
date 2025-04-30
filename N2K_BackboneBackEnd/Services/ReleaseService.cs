@@ -729,7 +729,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<StatusChangesRelease> result = _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == country && f.Release == null).ToList();
+                List<StatusChangesRelease> result = _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == country).ToList();
                 return result;
             }
             catch (Exception ex)
