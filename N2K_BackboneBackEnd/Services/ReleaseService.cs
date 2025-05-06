@@ -540,8 +540,8 @@ namespace N2K_BackboneBackEnd.Services
                 List<Countries> countries = await _dataContext.Set<Countries>().ToListAsync();
                 foreach (Countries c in countries)
                 {
-                    int documents = _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == c.Code && f.Release == null).Count();
-                    int comments = _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == c.Code && f.Release == null).Count();
+                    int documents = _dataContext.Set<JustificationFilesRelease>().AsNoTracking().Where(f => f.CountryCode == c.Code).Count();
+                    int comments = _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == c.Code).Count();
                     result.Add(new CountriesAttachmentCountViewModel
                     {
                         Country = c.Country,
@@ -729,7 +729,7 @@ namespace N2K_BackboneBackEnd.Services
         {
             try
             {
-                List<StatusChangesRelease> result = _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == country && f.Release == null).ToList();
+                List<StatusChangesRelease> result = _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == country).ToList();
                 return result;
             }
             catch (Exception ex)

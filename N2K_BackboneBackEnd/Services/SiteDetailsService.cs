@@ -133,8 +133,8 @@ namespace N2K_BackboneBackEnd.Services
             {
                 List<StatusChanges> result = new();
                 List<StatusChangesRelease> result2 = new();
-                result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == pSiteCode && ch.Version == pCountryVersion).ToListAsync();
-                result2 = await _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == pSiteCode.Substring(0, 2) && f.Release == null).ToListAsync();
+                result = await _dataContext.Set<StatusChanges>().AsNoTracking().Where(ch => ch.SiteCode == pSiteCode).ToListAsync();
+                result2 = await _dataContext.Set<StatusChangesRelease>().AsNoTracking().Where(f => f.CountryCode == pSiteCode.Substring(0, 2)).ToListAsync();
 
                 foreach (StatusChangesRelease release in result2)
                 {
