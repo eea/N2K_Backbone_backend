@@ -554,6 +554,9 @@ namespace N2K_BackboneBackEnd.Services
                 };
                 await _dataContext.Database.ExecuteSqlRawAsync("exec dbo.spConsolidatePredecessors @id, @siteCodes", paramId, paramSitecodesTable);
 
+                //Update the Type in the site's Lineage record
+                lineage.Type = consolidateChanges.Type;
+
                 await Task.Delay(60); //Necessary to prevent connection db overlapping
                 await _dataContext.SaveChangesAsync();
 
