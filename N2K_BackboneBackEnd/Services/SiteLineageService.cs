@@ -704,7 +704,8 @@ namespace N2K_BackboneBackEnd.Services
                     AreaSDF = site.Area != null ? Convert.ToDouble(site.Area) : null,
                     AreaGEO = (bioregions.Any()) && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault() != null && bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().area != null ? Convert.ToDouble(bioregions.Where(b => b.SiteCode == site.SiteCode && b.Version == site.Version).FirstOrDefault().area) : null,
                     Length = site.Length != null ? Convert.ToDouble(site.Length) : null,
-                    Status = change.Status.ToString()
+                    Status = change.Status.ToString(),
+                    SiteStatus = site.CurrentStatus.ToString() //This won't work for Deletion
                 };
             }
             catch (Exception ex)
