@@ -33,15 +33,11 @@ namespace N2K_BackboneBackEnd.Services
                 if (submission == 0)
                 {
                     queryString = String.Format(@" 
-                        SELECT DISTINCT TOP(1) [SiteCode],
-                            [Sites].[Version],
+                        SELECT [SiteCode],
+                            [Version],
                             [N2KVersioningVersion]
                         FROM [dbo].[Sites]
-                        INNER JOIN [dbo].[ProcessedEnvelopes] PE ON [Sites].[CountryCode] = PE.[Country]
-                            AND [Sites].[N2KVersioningVersion] = PE.[Version]
-                            AND PE.[Status] != 3
-                        WHERE [SiteCode] = '{0}' AND [Sites].[CurrentStatus] = 1
-                        ORDER BY [SiteCode], [N2KVersioningVersion] DESC, [Sites].[Version] DESC", SiteCode);
+                        WHERE [SiteCode] = '{0}' AND [Current] = 1", SiteCode);
                 }
                 else if (submission == 1)
                 {
