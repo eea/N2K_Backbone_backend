@@ -507,28 +507,32 @@ namespace N2K_BackboneBackEnd.Services
                 #endregion
                 List<long> releaseVisibilityIDs = releaseVisibility.Select(s => s.ReleaseID).ToList();
 
-
-                List<Releases> releases = await _releaseContext.Set<Releases>().AsNoTracking().ToListAsync();
-                Releases release;
-
-                if (ReleaseId == -1)
-                {
-                    release = releases.OrderBy(r => r.CreateDate).Last();
-                }
-                else
-                {
-                    release = releases.Where(r => r.ID == ReleaseId).FirstOrDefault();
-                }
-
-                if (release == null)
+                if (releaseVisibilityIDs == null || releaseVisibilityIDs.Count() == 0)
                     return result;
 
-                List<NATURA2000SITES> sites = await _releaseContext.Set<NATURA2000SITES>().Where(a => a.SITECODE == SiteCode && releaseVisibilityIDs.Contains(a.ReleaseId)).ToListAsync();
-                if (sites.Any()) //If the site is included in a Release that complies with the filters we fetch the Site data
-                    sites = await _releaseContext.Set<NATURA2000SITES>().Where(a => a.SITECODE == SiteCode).ToListAsync();
-                NATURA2000SITES site = sites.Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).FirstOrDefault();
+                List<Releases> releases = await _releaseContext.Set<Releases>().Where(w => releaseVisibilityIDs.Contains(w.ID)).AsNoTracking().ToListAsync();
+                Releases release = null;
 
-                if (site == null)
+                List<NATURA2000SITES> sites = sites = await _releaseContext.Set<NATURA2000SITES>().Where(a => a.SITECODE == SiteCode).ToListAsync();
+                List<NATURA2000SITES> sitesFilter = sites.Where(a => a.SITECODE == SiteCode && releaseVisibilityIDs.Contains(a.ReleaseId)).ToList();
+                NATURA2000SITES site = null;
+
+                if (sitesFilter.Any()) //If the site is included in a Release that complies with the filters we fetch the Site data
+                {
+                    if (ReleaseId == -1)
+                    {
+                        List<long> siteReleaseIDs = sites.Select(s => s.ReleaseId).ToList();
+                        release = releases.Where(w => siteReleaseIDs.Contains(w.ID)).OrderBy(r => r.CreateDate).Last();
+                        site = sites.Where(a => a.SITECODE == SiteCode && a.ReleaseId == release.ID).FirstOrDefault();
+                    }
+                    else
+                    {
+                        release = releases.Where(r => r.ID == ReleaseId).FirstOrDefault();
+                        site = sites.Where(a => a.SITECODE == SiteCode && a.ReleaseId == ReleaseId).FirstOrDefault();
+                    }
+                }
+
+                if (release == null || site == null)
                     return result;
 
                 //Catalogues
